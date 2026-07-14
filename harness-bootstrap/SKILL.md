@@ -120,8 +120,9 @@ file, register it in master-plan, append a session-log row, and `/task-resume` i
       including every MCP server, at full schema cost on every request.
 - [ ] **Reviewers have no `Edit` or `Write`.** Not "usually" — none.
 - [ ] Every rule that can be path-scoped **carries `paths:` frontmatter**. Only `00-overview`,
-      `agent-guardrails`, `task-tracking`, and `conventional-commits` load unconditionally. A rule
-      without `paths:` is a permanent context tax on every agent in every session.
+      `agent-guardrails`, `model-policy`, `ai-governance`, `task-tracking`, and `conventional-commits`
+      load unconditionally. A rule without `paths:` is a permanent context tax on every agent in every
+      session.
 - [ ] **No generated file contains a timestamp, a generation date, or a run ID.** These files are
       prompt-cache prefix content; one volatile byte cold-misses the cache on every future run.
 - [ ] `CLAUDE.md` + `AGENTS.md` together stay under ~200 lines. Adherence drops above that.
@@ -136,6 +137,16 @@ file, register it in master-plan, append a session-log row, and `/task-resume` i
       pass case exits 0. Not "should work". In PowerShell check `$LASTEXITCODE`, never `$?` (a boolean).
 - [ ] Hook flavor and the settings registration lines match the detected OS.
 - [ ] `.env.example` covers every integration in the tech-stack rule and nothing more; placeholders only.
+
+**Governance**
+- [ ] `model-policy.md`: the data-classification table is FILLED — no `{{MODEL_*}}` placeholder
+      survives, and every class the project handles names a model or provider. A class with no
+      approved model reads as an explicit "not delegated to an agent" STOP, never as a blank cell.
+- [ ] `model-policy.md`: `{{DATA_RESIDENCY}}` answered; every provider approved for Confidential+ has
+      a retention posture recorded in `docs/context/tool-changelog.md`.
+- [ ] `ip-compliance.md`: the licence allow AND deny lists are set, by the org. A generated default
+      here is a legal opinion nobody gave. `ai-governance.md`: `{{GATED_ACTIONS}}` names this
+      product's real irreversible actions.
 
 **Grounding (brownfield)**
 - [ ] The Inventory Report was produced and confirmed. Every dev agent's scope names real paths. Every

@@ -79,6 +79,10 @@
       "dest": ".claude/rules/agent-guardrails.md"
     },
     {
+      "src": "claude/rules/ai-governance.md",
+      "dest": ".claude/rules/ai-governance.md"
+    },
+    {
       "src": "claude/rules/code-quality.md",
       "dest": ".claude/rules/code-quality.md"
     },
@@ -103,6 +107,14 @@
       "when": [
         "ui"
       ]
+    },
+    {
+      "src": "claude/rules/ip-compliance.md",
+      "dest": ".claude/rules/ip-compliance.md"
+    },
+    {
+      "src": "claude/rules/model-policy.md",
+      "dest": ".claude/rules/model-policy.md"
     },
     {
       "src": "claude/rules/performance.md",

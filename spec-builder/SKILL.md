@@ -88,6 +88,18 @@ Three sections carry the load, and they are the three most often thinned out:
 **5. Verify.** The quality gate below. Then surface the open issues to the user - they cannot
 correct an assumption you did not tell them you made.
 
+## What standard this follows
+
+An **opinionated synthesis**, not a certified implementation of one standard: the SRS content model of
+ISO/IEC/IEEE 29148, the NFR taxonomy of ISO/IEC 25010:2023, BABOK v3 for elicitation and traceability,
+MoSCoW, Cockburn use cases, Given/When/Then, and OWASP ASVS + the LLM Top 10 behind 07's mandatory
+security NFRs. Not certified against 29148 - a regulated system needs the real standard, not this.
+
+**The output is the input contract for `harness-bootstrap`**: 05 clusters into the dev-agent roster,
+08 sets the `db` flag, 10 sets `ui`, 07 sets `ai` and the deny rules, 12 seeds the Phase 1 backlog.
+Without the specs, `spec-guardian` has nothing to guard and requirement drift is undetectable.
+Full derivation and integration map: [`reference/ba-standards.md`](reference/ba-standards.md).
+
 ## Composes with harness-bootstrap
 
 If the full docs workspace exists (`docs/requirements/`, `docs/context/`, `docs/templates/` - see the

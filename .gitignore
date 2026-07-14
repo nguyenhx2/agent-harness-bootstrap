@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 vars.json
 .DS_Store
+.eval-workdir/
+.diag/

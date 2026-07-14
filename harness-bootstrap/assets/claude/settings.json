@@ -17,6 +17,7 @@
       "Bash({{BUILD_CMD}}:*)"
     ],
     "deny": [
+      {{RESTRICTED_DENIES}}
       "Read(**/.env)",
       "Read(**/.env.*)",
       "Read(**/.env_*)",
