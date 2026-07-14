@@ -28,8 +28,17 @@ def render(src: str) -> tuple[bool, str]:
         t = pathlib.Path(td)
         mmd, out = t / "d.mmd", t / "d.svg"
         mmd.write_text(src, encoding="utf-8")
+
+        # mermaid-cli drives a headless Chrome through puppeteer. In a container without a user
+        # namespace (GitHub Actions, most CI images) Chrome's sandbox cannot start, and it fails
+        # with "Failed to launch the browser process: Code: null" - which looks exactly like a
+        # broken diagram. Disable the sandbox: the input is our own repo, not untrusted content.
+        cfg = t / "puppeteer.json"
+        cfg.write_text('{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}', encoding="utf-8")
+
         r = subprocess.run(
-            ["npx", "-y", "@mermaid-js/mermaid-cli@11", "-i", str(mmd), "-o", str(out), "-q"],
+            ["npx", "-y", "@mermaid-js/mermaid-cli@11",
+             "-i", str(mmd), "-o", str(out), "-q", "-p", str(cfg)],
             capture_output=True, text=True, shell=(sys.platform == "win32"),
         )
         if r.returncode == 0 and out.is_file() and out.stat().st_size > 0:

@@ -36,7 +36,20 @@ jobs:
       # GitHub renders mermaid server-side and shows "Unable to render rich display" on a parse
       # error, naming neither the file nor the line. The only way to know is to render it. A
       # semicolon inside a message shipped once and broke two diagrams silently.
+      #
+      # mermaid-cli drives headless Chrome. The runner image has one, but puppeteer will not use it
+      # unless told, and it downloads its own otherwise. Point it at the installed browser so the
+      # step does not spend a minute fetching a second copy.
+      - name: Set up Chrome for the mermaid renderer
+        uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+
       - name: Every mermaid diagram must actually render
+        env:
+          PUPPETEER_EXECUTABLE_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          PUPPETEER_SKIP_DOWNLOAD: "true"
         run: python scripts/check_mermaid.py
 
       # "No invented numbers" is a contributing rule. A rule nobody checks drifts: the session-tax
