@@ -83,8 +83,9 @@ this is still far cheaper than regenerating them — but say so, and fix Python.
 **5. Fill in what only judgment can fill.** The scaffolder installs the invariant assets. You still author:
 - the orchestrator's **routing table** (every agent appears; every module has exactly one owner),
 - each dev agent's **scope** (real module paths — brownfield: paths that actually exist),
-- the **project-specific rules** (`tech-stack`, `coding-standards`, `data-model`, `git-workflow`) from
-  the analysis, never invented,
+- the **project-specific rules** the scaffolder does not ship — `tech-stack.md`, `coding-standards.md`,
+  `git-workflow.md` — written from the analysis, never invented. (`data-model.md` IS shipped: it
+  carries the generic migration-safety discipline. You still fill in this project's actual entities.)
 - the **settings.json allow/deny list** adapted to the actual stack found (the real DB-reset command,
   the real deploy command),
 - `.env.example`, from config reads found in the source — never from guesswork.
