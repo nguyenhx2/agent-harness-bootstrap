@@ -106,6 +106,28 @@ Ask only when agents will never modify the source. See [`audit-mode.md`](audit-m
     per repo; the scanner strategy (host / Docker / config-only — Docker is the default); the
     severity scale; and who applies fixes.
 
+## Batch H — governance (model sovereignty and IP)
+
+Always asked. **Never guess an answer in this batch and never generate a default** — every answer is
+a policy position only the org can hold, and a plausible-looking invented one is worse than a blank,
+because it will be believed. If the user does not know, say so in the file and register a task; do
+not fill it in for them.
+
+23. **Model sovereignty** — for each data class the project actually handles (Public / Internal /
+    Confidential / Restricted), which model or provider may process it? Self-hosted, a specific
+    vendor under contract, or none. **"None" is a valid and common answer for Restricted** — it means
+    that work is not delegated to an agent at all. Fills `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`,
+    `{{MODEL_CONFIDENTIAL}}`, `{{MODEL_RESTRICTED}}`.
+24. **Residency** — which region or boundary must processing stay inside (`{{DATA_RESIDENCY}}`)?
+25. **Dependency licences** — which licence families are allowed, and which are denied
+    (`{{ALLOWED_LICENCES}}`, `{{DENIED_LICENCES}}`)? Typical starting point, to CONFIRM not assume:
+    allow MIT / BSD / Apache-2.0 / ISC; deny GPL / AGPL / SSPL / BSL / Commons Clause in a
+    proprietary product. Also: who owns agent-authored code, in one sentence
+    (`{{IP_OWNERSHIP_STATEMENT}}`).
+26. **Gated actions and the incident path** — which production actions may an agent or an in-product
+    model never take unsupervised (`{{GATED_ACTIONS}}`), and who is notified when a shipped AI
+    feature does something wrong (`{{INCIDENT_CONTACT}}`)?
+
 ## Intake answers to `vars.json`
 
 The scaffolder (`../scripts/scaffold.py`) consumes `vars.json`. Every question above lands in exactly
@@ -134,7 +156,29 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 19 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` |
 | 20-21 branding, a11y | flag `ui`, `{{UI_GLOBS}}`; `rules/frontend.md` body |
 | 22 audit scope | flag `audit`, `{{WORKSPACE_ROOT}}`, `{{REPO_DIR_LIST}}` |
+| 23 model sovereignty | `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`, `{{MODEL_CONFIDENTIAL}}`, `{{MODEL_RESTRICTED}}` |
+| 24 residency | `{{DATA_RESIDENCY}}` |
+| 25 licences + ownership | `{{ALLOWED_LICENCES}}`, `{{DENIED_LICENCES}}`, `{{IP_OWNERSHIP_STATEMENT}}` |
+| 26 gated actions + incident path | `{{GATED_ACTIONS}}`, `{{INCIDENT_CONTACT}}` |
+| — dependency manifests (from analysis) | `{{DEP_MANIFEST_GLOBS}}` |
 | — deploy command (from analysis or Q6) | `{{DEPLOY_CMD}}` |
 | — module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` — from the analysis |
 
 Flags are exactly: `ui`, `db`, `ai`, `audit`, and exactly one of `windows` / `posix`.
+
+### Restricted data paths (asked whenever any class above is Restricted)
+
+**Q: Where does Restricted data live in this repo, as glob patterns?**
+
+This is the question that turns the classification table from advice into enforcement. The answers
+become `permissions.deny` entries on `Read(...)`, so agents cannot obtain the data at all -- and what
+an agent cannot read, it cannot send to any provider.
+
+- Format the answer as ready-to-paste JSON array entries, each ending with a comma, for
+  `{{RESTRICTED_DENIES}}`. For example:
+  `"Read(data/restricted/**)",` and `"Read(**/*.phi.json)",`
+- If the repo holds no Restricted data, that is a normal answer. Use the convention placeholder
+  `"Read(**/.restricted/**)",` so the slot is valid JSON and the convention exists for later.
+- **Never guess this.** A wrong glob here is a control that looks present and is not. If the user
+  does not know, that itself is a finding: record it in `docs/context/known-issues.md` and say the
+  classification table is advisory until it is answered.

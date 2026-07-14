@@ -76,8 +76,10 @@ paths:
 ```
 
 Only genuinely universal rules stay unconditional — in the generated roster that is `00-overview.md`,
-`agent-guardrails.md`, and `task-tracking.md`. Everything else gets a `paths:` block. This is the
-single largest recurring saving available and it costs nothing but frontmatter.
+`agent-guardrails.md`, `task-tracking.md`, `conventional-commits.md`, and the two governance rules
+(`model-policy.md`, `ai-governance.md`), which decide what may be sent where *before* any file is
+touched and so cannot be path-scoped. Everything else gets a `paths:` block. This is the single
+largest recurring saving available and it costs nothing but frontmatter.
 
 **Grant tools narrowly.** Every tool in an agent's `tools:` list ships its JSON schema on every
 request. Reviewers need `Read, Grep, Glob, Bash` — granting them `Edit`/`Write` costs tokens *and*

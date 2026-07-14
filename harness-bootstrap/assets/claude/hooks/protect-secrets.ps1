@@ -2,7 +2,7 @@
 # Event: PreToolUse   Matcher: Read|Edit|Write|Bash
 # Blocks three things:
 #   1. file access (Read/Edit/Write) to secret-bearing paths: .env* (except .env.example), key
-#      material (*.pem/*.key/*.pfx/*.p12), secrets?/ + credentials? dirs, service-account JSON
+#      material (*.pem/*.key/*.pfx/*.p12), secrets?/ + credentials? dirs, service-account JSON, .npmrc/.pypirc/.netrc
 #   2. shell commands that read/copy a .env file
 #   3. destructive DB commands ({{DB_RESET_PATTERN}})
 #
@@ -28,7 +28,7 @@ try {
     exit 0
 }
 
-$secretPattern = '(^|/)\.env(\.[^/]+)?$|(^|/)(secrets?|credentials?)/|\.(pem|key|pfx|p12)$|service[-_]?account.*\.json$'
+$secretPattern = '(^|/)\.env(\.[^/]+)?$|(^|/)(secrets?|credentials?)/|\.(pem|key|pfx|p12|ppk|asc|gpg)$|service[-_]?account.*\.json$|(^|/)id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$|(^|/)\.(npmrc|pypirc|netrc)$|(^|/)\.aws/credentials$|(^|/)\.ssh/'
 $allowPattern  = '\.env\.example$'
 # NOTE: the leading char class is a hand-rolled word boundary. POSIX ERE (grep -E) has no portable
 # \b, so the .sh twin cannot use one; we use the identical construct here so the two regexes stay
