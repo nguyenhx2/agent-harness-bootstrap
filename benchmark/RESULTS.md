@@ -69,11 +69,11 @@ touched.
 
 | | |
 |---|---|
-| First run | **0.16s**, 73 paths created, exit 0 |
+| First run | **~0.2s** (varies 0.15-0.30s across runs), 73 paths created, exit 0 |
 | Re-run (idempotency) | reports `KEPT`, 0 conflicts, nothing clobbered |
 | Unresolved `{{VAR}}` | exits non-zero — fails loudly instead of shipping a placeholder into a rule |
 
-The comparison here is not 0.16s vs some other number of seconds. It is 0.16s of deterministic file
+The comparison here is not a fifth of a second vs some other number of seconds. It is a fifth of a second of deterministic file
 copying versus a model generating ~26,000 output tokens — which is minutes of wall-clock, costs real
 money, and can hallucinate a hook that does not run.
 

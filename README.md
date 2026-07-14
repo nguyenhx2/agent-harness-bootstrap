@@ -2,6 +2,7 @@
 
 Two Claude Code skills that stand up a complete, cost-aware, governed AI-agent harness in any repository.
 
+[![eval](https://github.com/nguyenhx2/claude-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/claude-harness-bootstrap/actions/workflows/eval.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Skills: 2](https://img.shields.io/badge/skills-2-blue.svg)](#what-the-two-skills-do)
 [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
@@ -30,7 +31,7 @@ Baseline is `project-bootstrap`, the predecessor skill, at the commit it was rep
 | Write path — bytes the model must author as output | 95,064 | 14,595 | **−85%** | exact |
 | Write path — tokens | ~26,400 | ~4,100 | −85% | **estimated** at 3.6 chars/token |
 | Session tax — rule content kept *out* of the default session | — | 49,394 of 74,697 B | **66%** | exact |
-| Scaffold — the deterministic path that replaces model generation | — | 0.16 s, 73 paths, exit 0 | — | wall clock, single run |
+| Scaffold — the deterministic path that replaces model generation | — | ~0.2 s, 73 paths, exit 0 | — | wall clock; varies 0.15–0.30 s |
 | Guardrail eval — safety properties that survive a model downgrade | — | **15/15** | — | `python eval/guardrail_eval.py` |
 
 **Byte figures are exact. Token figures are estimated**, because the recorded run had no API key; the
@@ -38,9 +39,9 @@ script emits *measured* counts from the `count_tokens` endpoint when `ANTHROPIC_
 labels the source either way. The write-path baseline is a proxy, and it is conservative. Read the
 caveats before quoting any of this: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 
-The scaffold row is not 0.16 s versus some other number of seconds. It is 0.16 s of deterministic file
-copying versus a model generating ~26,000 output tokens — minutes of wall clock, real money, and a
-chance of hallucinating a hook that never runs.
+The scaffold row is not a fifth of a second versus some other number of seconds — it is a fifth of a second of deterministic file
+copying versus a model generating ~26,000 output tokens, which is minutes of wall clock, real money, and
+a chance of hallucinating a hook that never runs.
 
 ## Install
 
@@ -60,8 +61,7 @@ AI agents", or invoke `/harness-bootstrap` directly. Requires **Python 3** for t
 | [`harness-bootstrap`](harness-bootstrap/) | Generates `.claude/` (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`, so the repo runs under orchestrator-driven task control. Also has a read-only **audit mode** that builds an audit control plane beside untouched source. |
 | [`spec-builder`](spec-builder/) | Generates the 13-section BA specification set under `docs/specs/` from any input — an idea, a transcript, meeting notes, an existing PRD, or legacy docs. Its governing rule: **never invent a requirement.** |
 
-They compose. `spec-builder` writes the contract; `harness-bootstrap` builds the machine that
-implements it.
+They compose: `spec-builder` writes the contract, `harness-bootstrap` builds the machine that implements it.
 
 ```mermaid
 flowchart LR
@@ -82,14 +82,14 @@ flowchart LR
     class IN,SPECS,OUT art
 ```
 
-Green is deterministic and free; purple is a model and is billed; grey is a file on disk. The whole
-skill is an attempt to move work from purple to green. Full diagram set — the scaffolder internals, one
-feature end to end, context loading: [`docs/FLOWS.md`](docs/FLOWS.md).
+Green is deterministic and free; purple is a model and is billed; grey is a file on disk. The skill is
+an attempt to move work from purple to green. Full diagram set — scaffolder internals, one feature end
+to end, context loading — in [`docs/FLOWS.md`](docs/FLOWS.md).
 
 ## Why it is cheap
 
-Four levers, from [`harness-bootstrap/reference/cost-model.md`](harness-bootstrap/reference/cost-model.md),
-ranked by how much they actually move the bill:
+Four levers, ranked by how much they actually move the bill
+([`reference/cost-model.md`](harness-bootstrap/reference/cost-model.md)):
 
 | Lever | One line |
 |---|---|
@@ -118,11 +118,11 @@ Cost of **one feature** through the generated harness, by roster profile (`pytho
 
 | Roster profile | USD / feature | vs default |
 |---|---:|---:|
-| all-frontier (`fable`, xhigh) | 7.062 | 2.97x |
-| all-opus (xhigh, no effort tuning) | 3.531 | 1.48x |
-| **DEFAULT roster (this skill)** | **2.380** | **1.00x** |
-| sonnet-only (high) | 1.924 | 0.81x |
-| haiku-only (medium) | 0.614 | 0.26x |
+| all-frontier (`fable`, xhigh) | 7.228 | 2.96x |
+| all-opus (xhigh, no effort tuning) | 3.614 | 1.48x |
+| **DEFAULT roster (this skill)** | **2.442** | **1.00x** |
+| sonnet-only (high) | 1.974 | 0.81x |
+| haiku-only (medium) | 0.630 | 0.26x |
 
 Two things this table is honest about:
 
@@ -141,8 +141,9 @@ better, but because a hook exits 2 and the tool call never happens. 15/15, byte-
 
 ## Governance
 
-Three rules ship in every generated `.claude/rules/`, and all three load unconditionally, because they
-decide what may be sent where *before* any file is touched — no glob can scope that.
+Three rules ship in every generated `.claude/rules/`. `model-policy` and `ai-governance` load
+unconditionally — they decide what may be sent where *before* any file is touched, so no glob can scope
+them. `ip-compliance` is path-scoped to the source and the dependency manifests.
 
 | Rule | The decision it forces |
 |---|---|
@@ -163,9 +164,7 @@ harness-bootstrap/
     task-control.md           the orchestration loop, crash recovery, merge discipline
     audit-mode.md             read-only multi-repo audit control plane
   assets/                   real files, copied verbatim with {{VAR}} substitution
-    claude/{agents,rules,commands,hooks}/ + settings.json
-    docs/, root/, env/, audit/
-    manifest.json
+    claude/{agents,rules,commands,hooks}/ + settings.json, docs/, root/, env/, audit/, manifest.json
   scripts/scaffold.py       deterministic, stdlib-only, never overwrites
 
 spec-builder/
@@ -174,20 +173,14 @@ spec-builder/
   assets/specs/             13 section templates
   scripts/scaffold.py
 
-benchmark/{benchmark.py,model_cost.py,RESULTS.md}
-eval/guardrail_eval.py
-docs/FLOWS.md
+benchmark/{benchmark.py,model_cost.py,RESULTS.md}   eval/guardrail_eval.py   docs/FLOWS.md
 ```
 
-## Contributing
+## Contributing and licence
 
-Issues and PRs welcome. Two house rules, both enforced by the repo's own doctrine:
-
-- **No invented numbers.** If a claim has a figure in it, a script in `benchmark/` or `eval/` must
-  print that figure, or a file must contain it. Say "estimated" when it is estimated.
-- **Assets stay byte-stable.** No timestamps, generation dates or run IDs in anything under `assets/` —
-  they land in a system prompt and cold-miss the prompt cache forever.
-
-## License
+Issues and PRs welcome. Two house rules, both taken from the repo's own doctrine: **no invented
+numbers** — a script in `benchmark/` or `eval/` must print any figure you cite, and "estimated" is
+said out loud; and **assets stay byte-stable** — no timestamps, generation dates or run IDs under
+`assets/`, because they land in a system prompt and cold-miss the prompt cache forever.
 
 MIT — see [LICENSE](LICENSE).

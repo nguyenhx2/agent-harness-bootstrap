@@ -1,0 +1,87 @@
+name: eval
+
+# Runs the guardrail eval on every push and PR. The eval scaffolds a real harness and fires known-bad
+# payloads at the generated hooks; it exits non-zero if any guardrail fails to block, or if it blocks
+# something it should allow. It is a real test, so this is a real badge.
+#
+# It runs on ubuntu because the POSIX (.sh) hook flavor is what CI can exercise. The PowerShell twin
+# is covered by the parity contract in the hook headers, not by this workflow - a known gap.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  guardrails:
+    name: guardrail eval (15 payloads)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Guardrail eval - does the safety floor survive a model downgrade?
+        run: python eval/guardrail_eval.py
+
+      - name: Benchmark - the harness must still scaffold clean
+        run: python benchmark/benchmark.py
+
+      - name: Cost model - roster profiles must compute
+        run: python benchmark/model_cost.py
+
+  scaffold-matrix:
+    name: scaffold (${{ matrix.flavor }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            flavor: posix
+          - os: windows-latest
+            flavor: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The scaffolder must produce a complete, variable-free harness on both hook flavors.
+      # An unresolved {{VAR}} makes it exit non-zero, so this catches a placeholder shipped
+      # into a rule file - which is the failure mode that would silently disarm a guardrail.
+      - name: Scaffold a harness and assert no unresolved variables
+        shell: python
+        run: |
+          import json, pathlib, subprocess, sys
+          flavor = "${{ matrix.flavor }}"
+          sys.path.insert(0, "eval")
+          import guardrail_eval as G
+
+          v = json.loads(json.dumps(G.VARS))
+          v["flags"] = [flavor, "ui", "db", "ai"]
+          v["vars"]["HOOK_RUNNER"] = "bash" if flavor == "posix" else \
+              "powershell -NoProfile -ExecutionPolicy Bypass -File"
+          v["vars"]["HOOK_EXT"] = "sh" if flavor == "posix" else "ps1"
+
+          pathlib.Path("ci-vars.json").write_text(json.dumps(v))
+          r = subprocess.run(
+              [sys.executable, "harness-bootstrap/scripts/scaffold.py",
+               "--target", "ci-repo", "--vars", "ci-vars.json"],
+              capture_output=True, text=True)
+          print(r.stdout)
+          if r.returncode != 0:
+              print(r.stderr, file=sys.stderr)
+              sys.exit("scaffold failed - see the UNRESOLVED VARIABLES block above")
+
+          left = [p for p in pathlib.Path("ci-repo").rglob("*")
+                  if p.is_file() and "{{" in p.read_text(encoding="utf-8", errors="replace")]
+          if left:
+              sys.exit(f"unsubstituted placeholders survived into: {[str(p) for p in left]}")
+
+          json.loads(pathlib.Path("ci-repo/.claude/settings.json").read_text())
+          print(f"OK: {flavor} harness scaffolded clean, settings.json parses")
