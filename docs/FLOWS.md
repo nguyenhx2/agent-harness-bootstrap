@@ -4,17 +4,16 @@ Visual reference for the two skills in this repo: `spec-builder`, which produces
 contract, and `harness-bootstrap`, which builds the machine that implements it.
 
 Every diagram below is Mermaid and renders natively on GitHub. The claims in them are taken from the
-source - `harness-bootstrap/SKILL.md`, its `reference/` docs, `scripts/scaffold.py`,
+source: `harness-bootstrap/SKILL.md`, its `reference/` docs, `scripts/scaffold.py`,
 `assets/manifest.json`, `assets/claude/settings.json`, `spec-builder/SKILL.md`, and
-`benchmark/RESULTS.md`. Where the source is silent, the prose says so rather than inventing a step.
+`benchmark/RESULTS.md`.
 
 ## Legend
 
-The colours are not decoration. **Green is free, purple is billed** - that split is the whole thesis
-of `harness-bootstrap`. A step is green when a script does it deterministically for zero tokens, and
-purple when a model has to think about it. The skill exists to move as much of the work as possible
-from purple to green: the assets are real files copied by `scaffold.py`, not 1,300 lines of prose for
-a model to retype.
+The colours carry meaning: **green is free, purple is billed**. A step is green when a script does it
+deterministically for zero tokens, and purple when a model has to think about it. `harness-bootstrap`
+moves as much of the work as possible from purple to green: the assets are real files copied by
+`scaffold.py`, not 1,300 lines of prose for a model to retype.
 
 ```mermaid
 flowchart LR
@@ -34,8 +33,7 @@ flowchart LR
     class M mod
     class H hum
     class G gate
-    class A art
-```
+    class A art```
 
 Mermaid applies `classDef` to flowcharts only, not to sequence diagrams. The two sequence diagrams
 below therefore carry the same semantics in their prose and notes rather than in fills.
@@ -44,11 +42,11 @@ below therefore carry the same semantics in their prose and notes rather than in
 
 `spec-builder` writes the contract; `harness-bootstrap` builds the machine that implements it. They
 are separate skills because they answer different questions: *what must be true* versus *who builds
-it, under what guardrails, at what cost*. The decision point is simply whether `docs/specs/` already
-holds a requirements set. If it does, go straight to `harness-bootstrap`. If it does not, either run
+it, under what guardrails, at what cost*. The decision point is whether `docs/specs/` already holds a
+requirements set. If it does, go straight to `harness-bootstrap`. If it does not, either run
 `spec-builder` first, or bootstrap with a single `app-dev` and register a task to split it once
-modules emerge - `harness-bootstrap` does not require specs to exist, it just fields a smaller roster
-when they do not.
+modules emerge. `harness-bootstrap` does not require specs to exist; it fields a smaller roster when
+they do not.
 
 ```mermaid
 flowchart TD
@@ -82,8 +80,7 @@ flowchart TD
     class SB,HB,NOSPEC mod
     class START,Q hum
     class SPECS,HARNESS art
-    class RUN det
-```
+    class RUN det```
 
 The dependency runs one way. `spec-builder` writes into a docs tree that `harness-bootstrap` creates,
 so on a repo with no docs tree at all, `harness-bootstrap` runs first and `spec-builder` fills the
@@ -94,12 +91,11 @@ truth and the context files link back to it.
 
 ## 2. harness-bootstrap, end to end
 
-This is the flow the rest of the repo is about. Read it as three bands: a **purple** analysis and
-decision phase where a model earns its keep, a **green** scaffolding step where a script does the
-bulk copying for free, and a second **purple** phase for the handful of things no template can know -
-the routing table, each dev agent's scope, the real deny commands. The `CONFLICT` branch out of the
-scaffolder is not an error path: it is the brownfield reconciliation queue, and it is the reason the
-scaffolder never overwrites a file the user wrote.
+Read it as three bands: a **purple** analysis and decision phase where a model is required, a
+**green** scaffolding step where a script does the bulk copying for free, and a second **purple**
+phase for the things no template can know - the routing table, each dev agent's scope, the real deny
+commands. The `CONFLICT` branch out of the scaffolder is not an error path: it is the brownfield
+reconciliation queue, and it is why the scaffolder never overwrites a file the user wrote.
 
 ```mermaid
 flowchart TD
@@ -127,7 +123,7 @@ flowchart TD
     ADDED[/"ADDED<br/>file did not exist"/]
     KEPT[/"KEPT<br/>exists and is byte-identical"/]
     CONFLICT[/"CONFLICT<br/>exists and differs - not written"/]
-    MISSINGVAR["Unresolved &#123;&#123;VAR&#125;&#125;<br/>exit 1 - fails loudly"]
+    MISSINGVAR["Unresolved {{VAR}}<br/>exit 1 - fails loudly"]
 
     RECONCILE["Reconcile by hand:<br/>keep / adapt / add / flag.<br/>Never clobber what the user wrote"]
 
@@ -181,24 +177,26 @@ flowchart TD
     class DRY,SCAFFOLD,SMOKE det
     class START,MODE,CONFIRM,PLAN,GF,BF,AU,DONE hum
     class GATE,MISSINGVAR gate
-    class INV,VARS,ADDED,KEPT,CONFLICT art
-```
+    class INV,VARS,ADDED,KEPT,CONFLICT art```
 
-Three things are worth pulling out. **Mode is chosen first and it is not about size:** if agents will
-never modify the source and a human applies every fix, the mode is audit however much code exists;
-otherwise any source code at all means brownfield. **The Inventory Report gates everything** - in
-brownfield and audit it is mandatory, it must be shown to the user, and its mapping tables are what
-turn a generic template into a description of this specific codebase; no file is generated before it
-is confirmed. **CONFLICT is a queue, not a failure** - the scaffolder skips those files, prints them,
-and exits 0; only an unresolved `{{VAR}}` makes it exit non-zero, because a placeholder shipped into
-a live rule file is worse than a loud failure.
+Three points from the diagram:
+
+- **Mode is chosen first, and it is not about size.** If agents will never modify the source and a
+  human applies every fix, the mode is audit however much code exists; otherwise any source code at
+  all means brownfield.
+- **The Inventory Report gates everything.** In brownfield and audit it is mandatory, it must be
+  shown to the user, and its mapping tables are what turn a generic template into a description of
+  this specific codebase. No file is generated before it is confirmed.
+- **CONFLICT is a queue, not a failure.** The scaffolder skips those files, prints them, and exits 0.
+  Only an unresolved `{{VAR}}` makes it exit non-zero, because a placeholder shipped into a live rule
+  file matches nothing and fails silently.
 
 ## 3. The scaffolder in detail
 
-`scripts/scaffold.py` is stdlib-only, has no dependencies, and is the reason the whole skill is cheap:
-it copies real asset files instead of asking a model to regenerate them. It walks
-`assets/manifest.json` once, entry by entry. Everything it does is mechanical, which is why the whole
-diagram is green apart from the two places where it refuses to guess.
+`scripts/scaffold.py` is stdlib-only, has no dependencies, and is what makes the skill cheap: it
+copies real asset files instead of asking a model to regenerate them. It walks `assets/manifest.json`
+once, entry by entry. Everything it does is mechanical, which is why the diagram is green apart from
+the two places where it refuses to guess.
 
 ```mermaid
 flowchart TD
@@ -212,8 +210,8 @@ flowchart TD
     SKIP[/"SKIPPED by flags<br/>e.g. frontend.md without 'ui',<br/>*.ps1 without 'windows'"/]
 
     READ["Read the asset<br/>subst: false to copy bytes verbatim"]
-    BLOCKS["Resolve conditional blocks<br/>&#123;&#123;#IF_X&#125;&#125; kept if flag X is set<br/>&#123;&#123;^IF_X&#125;&#125; kept if flag X is NOT set<br/>repeated passes, innermost first"]
-    SUBST["Substitute &#123;&#123;VAR&#125;&#125; from vars<br/>dest path is substituted too.<br/>A missing key is recorded, not blanked"]
+    BLOCKS["Resolve conditional blocks<br/>{{#IF_X}} kept if flag X is set<br/>{{^IF_X}} kept if flag X is NOT set<br/>repeated passes, innermost first"]
+    SUBST["Substitute {{VAR}} from vars<br/>dest path is substituted too.<br/>A missing key is recorded, not blanked"]
 
     EXISTS{"Destination exists?"}
     SAME{"Bytes identical<br/>to the payload?"}
@@ -223,7 +221,7 @@ flowchart TD
     CONFLICT[/"CONFLICT<br/>exists and differs.<br/>NOT written unless --force"/]
 
     REPORT["Report: ADDED / KEPT / CONFLICT / SKIPPED<br/>+ summary counts"]
-    MISS{"Any unresolved &#123;&#123;VAR&#125;&#125;<br/>across all entries?"}
+    MISS{"Any unresolved {{VAR}}<br/>across all entries?"}
     FAIL["Print the missing keys per file<br/>exit 1"]
     OK["exit 0<br/>CONFLICTs are listed, not fatal"]
     QUEUE["Brownfield reconciliation queue:<br/>keep / adapt / add / flag, by hand"]
@@ -257,25 +255,26 @@ flowchart TD
     class START hum
     class NOMAN,FAIL gate
     class SKIP,ADDED,KEPT,CONFLICT art
-    class QUEUE mod
-```
+    class QUEUE mod```
 
-The two decisions the scaffolder refuses to make for you are both deliberate. It **never overwrites**
-- an existing file that differs is reported and left alone, because on a brownfield repo the
-differing file is usually something a human wrote, and a generator that clobbers it is a generator
-you cannot run twice. `--force` exists for files you have explicitly decided to replace. And it
-**fails on an unresolved variable** rather than writing a literal `{{DB_RESET_CMD}}` into a deny rule
-that would then never match anything. Re-running on an unchanged repo is idempotent: everything comes
-back `KEPT`, nothing is clobbered.
+The scaffolder refuses two decisions on purpose:
+
+- It **never overwrites.** An existing file that differs is reported and left alone, because on a
+  brownfield repo the differing file is usually something a human wrote. Use `--force` for files you
+  have explicitly decided to replace.
+- It **fails on an unresolved variable** rather than writing a literal `{{DB_RESET_CMD}}` into a deny
+  rule that would then never match anything.
+
+Re-running on an unchanged repo is idempotent: everything comes back `KEPT`, nothing is clobbered.
 
 ## 4. One feature, end to end through the generated harness
 
-This is what the harness *is* - the flow the generated `.claude/` folder exists to run. The
-orchestrator is the only entry point for multi-step work; the specialists are dispatched, not driven
-by hand. In cost terms: the orchestrator, the reviewers, and the debugger are Opus seats; the dev
-agents, `qa-test`, and `spec-guardian` are Sonnet; the mechanical seats (`history-tracker`,
-`db-seeder`) are Haiku at `low` effort. The hooks are free - they are shell scripts, not a model -
-and they are the only participant here that can say no.
+This is the flow the generated `.claude/` folder exists to run. The orchestrator is the only entry
+point for multi-step work; the specialists are dispatched, not driven by hand. In cost terms: the
+orchestrator, the reviewers, and the debugger are Opus seats; the dev agents, `qa-test`, and
+`spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are Haiku at `low`
+effort. The hooks cost nothing, being shell scripts rather than a model, and they are the only
+participant here that can say no.
 
 ```mermaid
 sequenceDiagram
@@ -292,7 +291,7 @@ sequenceDiagram
 
     User->>Orch: Mission: implement FR-07
     Orch->>Board: Session-start scan of docs/tasks/active/<br/>grep "status: Active" and "status: Blocked"
-    Board-->>Orch: Unfinished work first; otherwise accept the mission
+    Board-->>Orch: Unfinished work first - otherwise accept the mission
 
     Note over Orch,Board: Registration. A registered-but-not-started task is Planned,<br/>and a Planned file lives in active/ - pending/ means parked.
     Orch->>Board: Create TASK-NNN from docs/templates/TASK.md<br/>status: Planned in frontmatter AND in the master-plan row
@@ -317,7 +316,7 @@ sequenceDiagram
     Dev->>Board: Session-log row: what was done, result
     Dev-->>Orch: Implementation complete (a CLAIM, not a fact)
 
-    Orch->>QA: Run the suite; tests map 1:1 to the acceptance criteria
+    Orch->>QA: Run the suite - tests map 1:1 to the acceptance criteria
     QA->>Board: Session-log row: tests green
     QA-->>Orch: Green
 
@@ -340,31 +339,30 @@ sequenceDiagram
         Orch->>Dev: Re-run the gate. The claim is not evidence.
     else Every gate is logged
         Orch->>Orch: Merge: one merger, serialized, against the LIVE mainline tip<br/>diff with three dots, union on shared lists, never --ours/--theirs
-        Orch->>Board: Post-merge board audit: every task file's frontmatter<br/>status equals its board row; Done files and Done rows agree 1:1
+        Orch->>Board: Post-merge board audit: every task file's frontmatter<br/>status equals its board row - Done files and Done rows agree 1:1
         Orch->>Board: Outcome section, status: Done in BOTH places,<br/>move the file active/ to done/
     end
 
     Note over Orch: Close-out: remove the worktree, delete the merged branch,<br/>prune, and sweep out-of-repo scratch (gated, enumerated).
     Orch->>Board: No Active or Blocked tasks left in scope:<br/>terminal phase + a final MISSION COMPLETE session-log row
     Orch-->>User: Summary. Then the instance terminates rather than idling.
-    Note over Orch,Board: Marker present + silent = finished, do NOT resume.<br/>No marker + silent = crashed, resume from file state.
-```
+    Note over Orch,Board: Marker present + silent = finished, do NOT resume.<br/>No marker + silent = crashed, resume from file state.```
 
-The load-bearing idea is that **the files are the truth and an agent's report is a claim**. A gate is
-passed when the task file's session log holds a row for it, not when an agent says "reviewed". Status
-lives in two places - the task file's frontmatter and the master-plan row - and every status change
-writes both, in the same step, because a merge that resolves a board collision by taking one side
-reverts a status flip with no error at all. The hooks are the hard edge: `PreToolUse` fires before the
-tool runs, exit 2 blocks it, and the message on stderr goes back to the model. The `MISSION COMPLETE`
-marker is what makes "finished" distinguishable from "crashed" by a file check instead of a guess.
+The files are the truth and an agent's report is a claim. A gate is passed when the task file's
+session log holds a row for it, not when an agent says "reviewed". Status lives in two places, the
+task file's frontmatter and the master-plan row, and every status change writes both in the same
+step, because a merge that resolves a board collision by taking one side reverts a status flip with
+no error at all. The hooks are the hard edge: `PreToolUse` fires before the tool runs, exit 2 blocks
+it, and the message on stderr goes back to the model. The `MISSION COMPLETE` marker makes "finished"
+distinguishable from "crashed" by a file check instead of a guess.
 
 ## 5. spec-builder
 
 Same shape, different contract: elicit what only a human knows, let the script lay down the thirteen
-sections, then spend model tokens on the content rather than on the headings. The rule that governs
-everything is that **nothing is invented** - an unstated requirement becomes an assumption (AS-nn) or
-an open issue (OI-nn) with a named owner, because a plausible invented requirement gets estimated,
-built, and discovered in UAT.
+sections, then spend model tokens on the content rather than on the headings. The governing rule is
+that **nothing is invented**. An unstated requirement becomes an assumption (AS-nn) or an open issue
+(OI-nn) with a named owner, because a plausible invented requirement gets estimated, built, and
+discovered in UAT.
 
 ```mermaid
 sequenceDiagram
@@ -387,11 +385,11 @@ sequenceDiagram
     SB->>Scaffold: vars.json - PROJECT_NAME, PROJECT_SLUG,<br/>PROJECT_PURPOSE, DOC_OWNER + flags ai / ui / db
     Scaffold->>Scaffold: --dry-run first
     Scaffold->>Specs: Write 14 files: README + sections 01-13,<br/>headings, tables, Mermaid scaffolds, inline authoring notes
-    Scaffold-->>SB: ADDED / KEPT / CONFLICT. Exit 1 on an unresolved &#123;&#123;VAR&#125;&#125;.
-    Note over Scaffold,Specs: Deterministic and free. The model does not retype the shape;<br/>CONFLICT is the reconciliation queue for a repo that already has specs.
+    Scaffold-->>SB: ADDED / KEPT / CONFLICT. Exit 1 on an unresolved &#123 -&#123 -VAR&#125 -&#125 -.
+    Note over Scaffold,Specs: Deterministic and free. The model does not retype the shape -<br/>CONFLICT is the reconciliation queue for a repo that already has specs.
 
     SB->>Specs: Fill section by section, in order - each depends on the last
-    Note over SB,Specs: The three that carry the load:<br/>05 observable FRs, anchored, with BR-nn and a NEGATIVE acceptance case<br/>07 security NFRs, never "TBD" - an undecided value is an OI with an owner<br/>12 every FR gets Yes / Partial / No; "Partial" and "No" are the valuable output
+    Note over SB,Specs: The three that carry the load:<br/>05 observable FRs, anchored, with BR-nn and a NEGATIVE acceptance case<br/>07 security NFRs, never "TBD" - an undecided value is an OI with an owner<br/>12 every FR gets Yes / Partial / No - "Partial" and "No" are the valuable output
 
     SB->>SB: Traceability check - every FR from 05 appears in 12 (count both),<br/>every screen in 10 names an FR, every role in 06 exists in 03,<br/>every entity in 06 exists in 08, no blank cells, all links resolve
     SB->>User: Surface every OI, every AS, every Partial/No, and every NFR<br/>target that was proposed rather than received
@@ -399,20 +397,19 @@ sequenceDiagram
     opt The docs workspace exists
         SB->>HB: Seed docs/requirements/PRD-FR-NN-*.md, docs/context/glossary.md,<br/>docs/context/business-rules.md - linking back, not duplicating
     end
-    SB-->>HB: Handoff: the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.
-```
+    SB-->>HB: Handoff: the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.```
 
-Note the ordering discipline: the FR list is confirmed *before* anything else is written, and the
+The ordering is a discipline: the FR list is confirmed *before* anything else is written, and the
 sections are filled in order because each depends on the last. The traceability check at the end is
-mechanical - count the FRs in 05, count the rows in 12, they match - which is exactly the kind of
-check that a model will skip unless it is written down as a gate.
+mechanical - count the FRs in 05, count the rows in 12, they match - which is the kind of check a
+model will skip unless it is written down as a gate.
 
 ## 6. Context loading - why the harness is cheap
 
-This is the mechanic behind the numbers in `benchmark/RESULTS.md`, and it is the one most bootstraps
-get wrong. A file in `.claude/rules/` with **no `paths:` frontmatter** loads at launch, into every
-session of every agent, at the same priority as `CLAUDE.md`. It is not a one-time cost, it is rent.
-Add `paths:` and the rule only enters context when Claude actually touches a matching file.
+This is the mechanic behind the numbers in `benchmark/RESULTS.md`. A file in `.claude/rules/` with
+**no `paths:` frontmatter** loads at launch, into every session of every agent, at the same priority
+as `CLAUDE.md`. It is not a one-time cost, it is rent. Add `paths:` and the rule only enters context
+when Claude actually touches a matching file.
 
 ```mermaid
 flowchart TD
@@ -423,7 +420,7 @@ flowchart TD
         R2[/"agent-guardrails.md"/]
         R3[/"task-tracking.md"/]
         R4[/"conventional-commits.md<br/>governs commit MESSAGES, not files -<br/>no glob can ever scope it"/]
-        BODY[/"The agent's own body<br/>.claude/agents/&lt;name&gt;.md"/]
+        BODY[/"The agent's own body<br/>.claude/agents/<name>.md"/]
         SCHEMA[/"Tool schemas - one per entry in tools:<br/>omitting tools: inherits EVERY tool,<br/>including every MCP server on the machine"/]
     end
 
@@ -464,30 +461,32 @@ flowchart TD
     class L1,L2,L3,L4,L5,L6,L7 art
     class NEVER det
     class WINDOW mod
-    class TOUCH hum
-```
+    class TOUCH hum```
 
 Four unconditional rules, seven path-scoped ones. On the shipped asset set that is 13,009 bytes always
-loaded against 43,279 bytes loaded on demand - **77% of the rule content is kept out of the default
+loaded against 43,279 bytes loaded on demand: **77% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
-carries the migration-safety rules. Two other levers sit in the same diagram: every tool in an agent's
-`tools:` list ships its JSON schema on *every* request, which is why omitting `tools:` (and thereby
-inheriting every MCP server on the machine) is treated as a bug in the quality gate; and every file in
-that always-loaded band is prompt-cache prefix content, so a single `Generated: <date>` line in an
-agent body cold-misses that agent's cache on every future run. That is why no generated file carries a
-timestamp.
+carries the migration-safety rules.
+
+Two other levers sit in the same diagram:
+
+- Every tool in an agent's `tools:` list ships its JSON schema on *every* request. Omitting `tools:`,
+  and thereby inheriting every MCP server on the machine, is treated as a bug in the quality gate.
+- Every file in the always-loaded band is prompt-cache prefix content, so a single `Generated: <date>`
+  line in an agent body cold-misses that agent's cache on every future run. No generated file carries
+  a timestamp.
 
 ## Accuracy notes
 
-- The byte and file counts above are exact (counted from disk). The **token figures in
-  `benchmark/RESULTS.md` are estimated** at 3.6 chars/token, not measured - the benchmark run had no
+- The byte and file counts above are exact, counted from disk. The token figures in
+  `benchmark/RESULTS.md` are **estimated** at 3.6 chars/token, not measured: the benchmark run had no
   API key. They are an order of magnitude, not a quote.
 - The orchestrator's session-start scan of `docs/tasks/active/` is a **procedure in the agent body**,
-  not a `SessionStart` hook. The four hook events actually registered in
-  `assets/claude/settings.json` are `PreToolUse` (protect-adr, protect-secrets, guard-main-commit,
-  check-commit-msg), `PostToolUse` (specs-reminder), and `SubagentStop` (agent-history). Diagram 4
-  shows the scan as an orchestrator action for that reason.
+  not a `SessionStart` hook. The hook events registered in `assets/claude/settings.json` are
+  `PreToolUse` (protect-adr, protect-secrets, guard-main-commit, check-commit-msg), `PostToolUse`
+  (specs-reminder), and `SubagentStop` (agent-history). Diagram 4 shows the scan as an orchestrator
+  action for that reason.
 - `CONFLICT` does **not** change the scaffolder's exit code. Only an unresolved `{{VAR}}` (exit 1) or
-  a missing manifest/asset (exit 2) does. Diagram 3 reflects the code, not the prose summary.
-- The `merge-manager` seat is optional and is omitted from diagram 4; where it is not fielded, the
+  a missing manifest/asset (exit 2) does. Diagram 3 reflects the code.
+- The `merge-manager` seat is optional and is omitted from diagram 4. Where it is not fielded, the
   orchestrator merges and applies the same rules itself.

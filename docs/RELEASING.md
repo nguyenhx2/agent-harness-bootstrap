@@ -1,22 +1,23 @@
 # Releasing
 
-The standard every release must meet. It is short on purpose: a process nobody can remember is a
-process nobody follows, which is why it is also executable as a skill (`.claude/skills/release/`).
+The standard every release must meet. It is also executable as a skill (`.claude/skills/release/`),
+so the process does not have to be remembered.
 
 ## The rules
 
-1. **Semver.** `MAJOR.MINOR.PATCH`, tagged `vX.Y.Z`. Breaking change to an asset, a manifest key, or
-   the scaffolder contract is a MAJOR. New assets or rules are a MINOR. Fixes and docs are a PATCH.
-2. **A release ships artifacts.** A tag with no installable `.zip` is not a release, it is a
-   bookmark. `python scripts/package.py --version X.Y.Z` builds them.
+1. **Semver.** `MAJOR.MINOR.PATCH`, tagged `vX.Y.Z`. A breaking change to an asset, a manifest key,
+   or the scaffolder contract is a MAJOR. New assets or rules are a MINOR. Fixes and docs are a
+   PATCH.
+2. **A release ships artifacts.** `python scripts/package.py --version X.Y.Z` builds them. A tag with
+   no installable `.zip` is a bookmark, not a release.
 3. **The version is inside the package.** Each skill directory in the archive carries a `VERSION`
-   file. A skill installed on disk must be traceable to the release it came from - an unversioned
-   skill is an unknown build, and you will not be able to answer "which one is broken".
+   file, so a skill installed on disk is traceable to the release it came from. An unversioned skill
+   is an unknown build, and "which one is broken" becomes unanswerable.
 4. **`SHA256SUMS` ships with every release.** Anyone pulling an artifact can verify it.
 5. **CHANGELOG first, tag second.** `CHANGELOG.md` must contain a `## vX.Y.Z` section before the tag
-   exists. `package.py` refuses to build otherwise - the preflight is the gate.
-6. **The eval must be green.** CI runs the guardrail eval and the scaffold matrix. A release that
-   ships a harness whose guardrails do not block is worse than no release: it looks armed and is not.
+   exists. `package.py` refuses to build otherwise; the preflight is the gate.
+6. **The eval must be green.** CI runs the guardrail eval and the scaffold matrix. Do not ship a
+   harness whose guardrails do not block.
 
 ## The note format
 
@@ -24,7 +25,7 @@ Bullets. Short. Grouped under the Keep a Changelog headings, and only the ones t
 
 ```markdown
 **Added**
-- One line per item. What it is, not how you feel about it.
+- One line per item. What it is.
 
 **Changed**
 - What changed and what a user has to do differently. If nothing, say nothing.
@@ -79,5 +80,5 @@ for someone to install:
 gh release delete vX.Y.Z --yes --cleanup-tag
 ```
 
-Then record it in `CHANGELOG.md` under **Removed**, with the reason. A silently deleted release is
-how a user ends up running a build nobody can identify.
+Then record it in `CHANGELOG.md` under **Removed**, with the reason. A silently deleted release
+leaves users running a build nobody can identify.

@@ -48,8 +48,8 @@ python scripts/package.py --version X.Y.Z --check
 It refuses on a non-semver version, a missing `## vX.Y.Z` CHANGELOG section, a missing `SKILL.md`, or
 a scaffolder with no manifest. If it fails, fix the cause - do not work around it.
 
-**4. Prove the harness still works.** Both must exit 0. A release that ships a harness whose
-guardrails do not block is worse than no release: it looks armed and is not.
+**4. Prove the harness still works.** Both must exit 0. Do not ship a harness whose guardrails do
+not block.
 
 ```bash
 python eval/guardrail_eval.py      # must be 15/15
@@ -100,8 +100,7 @@ someone to install:
 gh release delete vX.Y.Z --yes --cleanup-tag
 ```
 
-Then record it in `CHANGELOG.md` under **Removed**, with the reason. A silently deleted release is how
-a user ends up running a build nobody can identify.
+Then record it in `CHANGELOG.md` under **Removed**, with the reason.
 
 ## Quality gate
 
