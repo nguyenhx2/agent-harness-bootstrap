@@ -180,14 +180,14 @@ def main() -> int:
     verb = "WOULD ADD" if args.dry_run else "ADDED"
     show(verb, added)
     show("KEPT (already identical)", kept)
-    show("CONFLICT (exists and differs — not written)" if not args.force
+    show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
     if skipped:
         print(f"\nSKIPPED by flags ({len(skipped)}): {', '.join(sorted(skipped)[:8])}"
               f"{' ...' if len(skipped) > 8 else ''}")
 
     if all_missing:
-        print("\nUNRESOLVED VARIABLES — placeholders were left in place:")
+        print("\nUNRESOLVED VARIABLES - placeholders were left in place:")
         for src_rel, keys in sorted(all_missing.items()):
             print(f"  {src_rel}: {', '.join(sorted(keys))}")
 
@@ -199,7 +199,7 @@ def main() -> int:
     if conflicts and not args.force:
         print(
             "\nCONFLICTS are not an error. Brownfield rule: reconcile them by hand\n"
-            "(keep-adapt-add-flag) — never clobber content the user wrote. Re-run with\n"
+            "(keep-adapt-add-flag) - never clobber content the user wrote. Re-run with\n"
             "--force only for files you have decided to replace."
         )
     if all_missing:

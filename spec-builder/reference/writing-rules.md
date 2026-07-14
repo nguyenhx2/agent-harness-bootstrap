@@ -65,8 +65,8 @@ test that still names it; a recycled ID makes that reference lie.
 Relative path plus anchor, always:
 
 ```markdown
-[FR-01](05-functional-requirements.md#fr-01)
-[the security NFRs](07-non-functional-requirements.md#nfr-security)
+`FR-01`
+`the security NFRs`
 ```
 
 Relative, so the links survive being moved, mirrored, or published. Anchored, so the reader lands
@@ -113,7 +113,7 @@ adjective cannot fail a test either.
 
 An empty table cell reads as "no constraint" to whoever implements it - which is how a permission
 matrix with a blank cell becomes a data leak. If the value is unknown, write the open-issue ID:
-`<unknown - [OI-03](11-assumptions-constraints.md#oi-03)>`. "TBD" with no ID is a blank cell with
+`<unknown - `OI-03`>`. "TBD" with no ID is a blank cell with
 extra steps.
 
 ## Byte stability

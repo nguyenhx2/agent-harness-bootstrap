@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="660" viewBox="0 0 880 660" role="img" aria-label="Control layers around an agent, ordered from hard to soft. The four outer hard layers are enforced by the harness: settings.json permissions.deny controls what the agent cannot see, PreToolUse hooks exiting 2 control what it cannot do, the tools allowlist controls what it cannot reach, and maxTurns is a circuit breaker. The two inner soft layers are advisory: the rules directory and the agent body. At the core sits the model, whose effort setting is a throttle rather than a rein." font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>Control layers - reining the agents, from hard to soft</title>
+
+  <rect x="0" y="0" width="880" height="660" rx="10" fill="#23272B"/>
+
+  <text x="20" y="34" font-size="17" font-weight="700" fill="#F8F9FA">Reining the agents - hard controls outside, soft controls inside</text>
+  <text x="20" y="58" font-size="13" fill="#ADB5BD">Outermost = enforced by the harness, the model gets no vote. Innermost = advisory. The ranking is the message.</text>
+
+  <!-- HARD 1 - permissions.deny -->
+  <rect x="20" y="70" width="840" height="482" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="40" y="94" font-size="14" font-weight="700" fill="#D8F3DC">HARD 1   settings.json permissions.deny   -&gt;   what it cannot SEE</text>
+  <text x="40" y="112" font-size="13" fill="#D8F3DC">Read(**/.env), *.pem, *.key, id_rsa*, credentials.json, secrets/**, plus the Restricted data paths.</text>
+
+  <!-- HARD 2 - hooks -->
+  <rect x="42" y="118" width="796" height="420" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="62" y="142" font-size="14" font-weight="700" fill="#D8F3DC">HARD 2   PreToolUse hooks, exit 2   -&gt;   what it cannot DO</text>
+  <text x="62" y="160" font-size="13" fill="#D8F3DC">Blocks: commit to main, bad commit message, edit to an Accepted ADR, read of .env.   eval 15/15, model-independent.</text>
+
+  <!-- HARD 3 - tools -->
+  <rect x="64" y="166" width="752" height="358" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="84" y="190" font-size="14" font-weight="700" fill="#D8F3DC">HARD 3   tools: allowlist   -&gt;   what it cannot REACH</text>
+  <text x="84" y="208" font-size="13" fill="#D8F3DC">Reviewers get Read, Grep, Glob, Bash - never Edit or Write. A reviewer that edits code is a dev agent.</text>
+
+  <!-- HARD 4 - maxTurns -->
+  <rect x="86" y="214" width="708" height="296" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="106" y="238" font-size="14" font-weight="700" fill="#D8F3DC">HARD 4   maxTurns   -&gt;   the circuit breaker</text>
+  <text x="106" y="256" font-size="13" fill="#D8F3DC">A stuck agent's cost is otherwise unbounded. debugger 30, code-reviewer 25, history-tracker 10.</text>
+
+  <!-- SOFT 1 - rules -->
+  <rect x="108" y="262" width="664" height="234" rx="12" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="128" y="286" font-size="14" font-weight="700" fill="#E0AAFF">SOFT 1   .claude/rules/   -&gt;   context, not configuration</text>
+  <text x="128" y="304" font-size="13" fill="#E0AAFF">Shapes behaviour; NOT a hard enforcement layer - it holds only if the model complies.</text>
+
+  <!-- SOFT 2 - the agent body -->
+  <rect x="130" y="310" width="620" height="172" rx="12" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="150" y="334" font-size="14" font-weight="700" fill="#E0AAFF">SOFT 2   the agent body / system prompt</text>
+  <text x="150" y="352" font-size="13" fill="#E0AAFF">The role, the scope, the procedure it is asked to follow. Still an instruction.</text>
+
+  <!-- CORE -->
+  <rect x="152" y="358" width="576" height="110" rx="10" fill="#240046" stroke="#E0AAFF" stroke-width="2"/>
+  <text x="440" y="390" font-size="17" font-weight="700" fill="#E0AAFF" text-anchor="middle">AGENT</text>
+  <text x="440" y="412" font-size="13" fill="#E0AAFF" text-anchor="middle">the model. It gets a vote only inside the soft layers.</text>
+
+  <rect x="172" y="424" width="536" height="32" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="440" y="445" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">effort:   a THROTTLE, not a rein - how hard it pulls, not where it can go</text>
+
+  <!-- caption -->
+  <rect x="20" y="568" width="840" height="42" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="440" y="594" font-size="15" font-weight="700" fill="#D8F3DC" text-anchor="middle">A soft control becomes hard the moment you can express it as a file the harness checks.</text>
+
+  <!-- legend -->
+  <rect x="20" y="624" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="44" y="637" font-size="13" fill="#DEE2E6">deterministic - enforced by the harness</text>
+  <rect x="304" y="624" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="328" y="637" font-size="13" fill="#DEE2E6">advisory - the model decides</text>
+  <rect x="544" y="624" width="16" height="16" rx="3" fill="#240046" stroke="#E0AAFF" stroke-width="2"/>
+  <text x="568" y="637" font-size="13" fill="#DEE2E6">the model itself</text>
+</svg>

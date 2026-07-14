@@ -131,7 +131,7 @@ Concretely, the ID scheme buys three things that prose cannot:
   runs in a second and needs no judgment. It is in the quality gate for exactly that reason.
 - A downstream tool can *address* a requirement. `/implement-fr FR-03` opens
   `docs/specs/05-functional-requirements.md`, finds `{#fr-03}`, and reads the block. The PRD template
-  ships with `Source requirement: [FR-NN](../specs/05-functional-requirements.md#fr-nn)` already in
+  ships with `Source requirement: `FR-NN`` already in
   it. The anchor is a runtime contract across a skill boundary, not documentation decoration.
 - An ID survives a rename. `writing-rules.md` forbids reusing a withdrawn ID, and 13 records the
   withdrawal, because somewhere there is a task, a commit, and a test that still names it. A recycled

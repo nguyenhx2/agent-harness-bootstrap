@@ -1,0 +1,116 @@
+name: release
+
+# Builds and attaches the installable artifacts when a vX.Y.Z tag is pushed.
+#
+# This workflow exists because the first three releases of this repo were tags with no artifacts -
+# a version nobody could install and nobody could identify once installed. Automating it means the
+# failure cannot recur through forgetfulness.
+#
+# The gates run BEFORE the artifacts are built. A release that ships a harness whose guardrails do
+# not block is worse than no release: it looks armed and is not.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "semver, no leading v (dry run - builds but does not publish)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve version from the tag
+        id: v
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "resolved version: $V"
+
+      # --- gates: these must pass before anything is packaged ---
+
+      - name: Gate - guardrail eval must be green
+        run: python eval/guardrail_eval.py
+
+      - name: Gate - benchmark must run clean
+        run: python benchmark/benchmark.py
+
+      - name: Gate - preflight (semver, CHANGELOG section, manifest)
+        run: python scripts/package.py --version "${{ steps.v.outputs.version }}" --check
+
+      # --- build ---
+
+      - name: Build artifacts
+        run: python scripts/package.py --version "${{ steps.v.outputs.version }}"
+
+      - name: Assert VERSION is inside every archive
+        run: |
+          python - <<'PY'
+          import pathlib, sys, zipfile
+          v = "${{ steps.v.outputs.version }}"
+          bad = []
+          for z in sorted(pathlib.Path("dist").glob("*.zip")):
+              with zipfile.ZipFile(z) as zf:
+                  stamps = [n for n in zf.namelist() if n.endswith("/VERSION")]
+                  if not stamps:
+                      bad.append(f"{z.name}: no VERSION file inside")
+                      continue
+                  for s in stamps:
+                      got = zf.read(s).decode().strip()
+                      if got != v:
+                          bad.append(f"{z.name}: {s} says {got}, expected {v}")
+          if bad:
+              sys.exit("\n".join(bad))
+          print("every archive carries a correct VERSION")
+          PY
+
+      - name: Extract this version's notes from the CHANGELOG
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+          v = "${{ steps.v.outputs.version }}"
+          ch = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          m = re.search(rf"^## v{re.escape(v)}\s*\n(.*?)(?=^## |\Z)", ch, re.M | re.S)
+          if not m:
+              sys.exit(f"no '## v{v}' section in CHANGELOG.md")
+          body = m.group(1).strip()
+          body += (
+              "\n\n**Install**\n"
+              f"- `unzip harness-bootstrap-v{v}.zip -d ~/.claude/skills/`\n"
+              f"- `unzip spec-builder-v{v}.zip -d ~/.claude/skills/`\n"
+              "- Verify with `sha256sum -c SHA256SUMS`\n"
+          )
+          pathlib.Path("notes.md").write_text(body, encoding="utf-8")
+          print(body)
+          PY
+
+      - name: Publish the release with its artifacts
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Title = the CHANGELOG section's summary line, i.e. the first line that is neither a
+          # group heading nor a bullet. A blind `head -1` would yield "**Added**".
+          SUMMARY=$(grep -m1 -vE '^[[:space:]]*$|^\*\*|^- ' notes.md || echo "release")
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
+            --notes-file notes.md \
+            dist/*
+          echo "attached:"
+          gh release view "${GITHUB_REF_NAME}" --json assets -q '.assets[].name'

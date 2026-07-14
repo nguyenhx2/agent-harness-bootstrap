@@ -128,7 +128,7 @@ Stripped of the aspirational framing, these hold:
 
 1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 15/15.
 2. **The harness itself is cheap to install and cheap to carry.** Measured: 65% less to read, 85%
-   less to author, 68% of rule content kept out of the default session, 0.3s to scaffold.
+   less to author, 66% of rule content kept out of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier -- the
    quality gate treats that as a bug.

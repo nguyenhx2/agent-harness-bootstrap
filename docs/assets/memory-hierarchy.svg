@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="680" viewBox="0 0 880 680" role="img" aria-label="Memory hierarchy of an agent harness. Tier 1 always-RAM and tier 2 lazy-RAM are volatile and are lost on compaction or a crash. Below a boundary line, tier 3 disk (the master-plan board and the task files) and tier 4 archive (.claude/state/history) are durable committed files that survive." font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>Memory hierarchy - RAM is volatile; disk is not</title>
+
+  <rect x="0" y="0" width="880" height="680" rx="10" fill="#23272B"/>
+
+  <text x="28" y="34" font-size="17" font-weight="700" fill="#F8F9FA">Memory hierarchy - RAM is volatile; disk is not</text>
+  <text x="28" y="56" font-size="13" fill="#ADB5BD">What an agent carries in context, and what actually survives when the context goes away.</text>
+
+  <!-- TIER 1 - always-RAM, volatile -->
+  <rect x="28" y="72" width="824" height="112" rx="8" fill="#6C757D" stroke="#343A40" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="46" y="97" font-size="13" font-weight="700" fill="#F8F9FA">TIER 1</text>
+  <text x="46" y="116" font-size="14" font-weight="700" fill="#F8F9FA">ALWAYS-RAM</text>
+  <text x="46" y="136" font-size="13" fill="#E9ECEF">volatile</text>
+  <text x="46" y="154" font-size="13" fill="#E9ECEF">billed every turn</text>
+
+  <rect x="200" y="92" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="99" font-size="13" fill="#F8F9FA">CLAUDE.md  -&gt;  @AGENTS.md   (the contract, imported into every session)</text>
+  <rect x="200" y="114" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="121" font-size="13" fill="#F8F9FA">6 unconditional rules in .claude/rules/   (no paths: frontmatter can scope them)</text>
+  <rect x="200" y="136" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="143" font-size="13" fill="#F8F9FA">the agent's own body / system prompt   +   its tool schemas, shipped every request</text>
+  <text x="216" y="169" font-size="13" font-weight="700" fill="#F8F9FA">Loaded every session, every agent. Re-injected after compaction.</text>
+
+  <!-- TIER 2 - lazy-RAM, volatile -->
+  <rect x="28" y="194" width="824" height="116" rx="8" fill="#6C757D" stroke="#343A40" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="46" y="219" font-size="13" font-weight="700" fill="#F8F9FA">TIER 2</text>
+  <text x="46" y="238" font-size="14" font-weight="700" fill="#F8F9FA">LAZY-RAM</text>
+  <text x="46" y="258" font-size="13" fill="#E9ECEF">volatile</text>
+  <text x="46" y="276" font-size="13" fill="#E9ECEF">billed only on touch</text>
+
+  <rect x="200" y="214" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="221" font-size="13" fill="#F8F9FA">8 path-scoped rules, each carrying a paths: frontmatter glob</text>
+  <text x="216" y="243" font-size="13" fill="#F8F9FA">code-quality, testing, security-privacy, performance,</text>
+  <text x="216" y="263" font-size="13" fill="#F8F9FA">data-model, frontend, docs-workflow, ip-compliance</text>
+  <text x="216" y="291" font-size="13" font-weight="700" fill="#F8F9FA">66% of the rule content. Enters context only when Claude touches a matching file.</text>
+
+  <!-- the loss boundary -->
+  <line x1="28" y1="331" x2="852" y2="331" stroke="#9D0208" stroke-width="3" stroke-dasharray="8 4"/>
+  <rect x="152" y="317" width="576" height="28" rx="6" fill="#9D0208" stroke="#370617" stroke-width="2"/>
+  <text x="440" y="336" font-size="13" font-weight="700" fill="#FFBA08" text-anchor="middle">Everything above this line is ALREADY LOST - you just have not noticed yet</text>
+
+  <!-- TIER 3 - disk, durable. The point of the diagram. -->
+  <rect x="28" y="356" width="824" height="164" rx="8" fill="#495057" stroke="#212529" stroke-width="4"/>
+  <rect x="28" y="356" width="9" height="164" rx="4" fill="#2D6A4F"/>
+  <text x="52" y="382" font-size="13" font-weight="700" fill="#F8F9FA">TIER 3</text>
+  <text x="52" y="403" font-size="15" font-weight="700" fill="#F8F9FA">DISK</text>
+  <text x="52" y="424" font-size="13" fill="#F8F9FA">durable</text>
+  <text x="52" y="442" font-size="13" fill="#F8F9FA">committed</text>
+  <text x="52" y="460" font-size="13" fill="#F8F9FA">markdown</text>
+
+  <rect x="200" y="372" width="636" height="54" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="216" y="394" font-size="14" font-weight="700" fill="#D8F3DC">docs/tasks/master-plan.md   -   the board</text>
+  <text x="216" y="414" font-size="13" fill="#D8F3DC">One row per task: ID, title, owner, status, branch. It must agree with the task file.</text>
+
+  <rect x="200" y="434" width="636" height="54" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="216" y="456" font-size="14" font-weight="700" fill="#D8F3DC">docs/tasks/active/TASK-NNN.md   -   one file per task</text>
+  <text x="216" y="476" font-size="13" fill="#D8F3DC">Goal, acceptance criteria, decisions and blockers, session log appended as work happens.</text>
+
+  <text x="200" y="507" font-size="13" font-weight="700" fill="#F8F9FA">Survives compaction, session end, a crashed agent, a dead IDE.</text>
+
+  <!-- TIER 4 - archive -->
+  <rect x="28" y="530" width="824" height="92" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="46" y="556" font-size="13" font-weight="700" fill="#F8F9FA">TIER 4</text>
+  <text x="46" y="575" font-size="14" font-weight="700" fill="#F8F9FA">ARCHIVE</text>
+  <text x="46" y="595" font-size="13" fill="#F8F9FA">append-only</text>
+
+  <rect x="200" y="550" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="557" font-size="13" fill="#F8F9FA">.claude/state/history/   -   written by the agent-history hook on SubagentStop</text>
+  <rect x="200" y="572" width="7" height="7" fill="#F8F9FA"/>
+  <text x="216" y="579" font-size="13" fill="#F8F9FA">Each finished subagent run is archived: the prompt it was given, and its final response.</text>
+  <text x="216" y="605" font-size="13" font-weight="700" fill="#F8F9FA">What each subagent was asked and answered.</text>
+
+  <!-- legend -->
+  <rect x="28" y="640" width="16" height="16" rx="3" fill="#6C757D" stroke="#343A40" stroke-width="2" stroke-dasharray="5 3"/>
+  <text x="52" y="653" font-size="13" fill="#DEE2E6">volatile - lost</text>
+  <rect x="170" y="640" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="194" y="653" font-size="13" fill="#DEE2E6">artifact - file on disk</text>
+  <rect x="348" y="640" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="372" y="653" font-size="13" fill="#DEE2E6">deterministic - durable state</text>
+  <rect x="572" y="640" width="16" height="16" rx="3" fill="#9D0208" stroke="#370617" stroke-width="2"/>
+  <text x="596" y="653" font-size="13" fill="#DEE2E6">the loss boundary</text>
+</svg>

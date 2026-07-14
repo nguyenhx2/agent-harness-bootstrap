@@ -4,3 +4,5 @@ vars.json
 .DS_Store
 .eval-workdir/
 .diag/
+dist/
+notes.md

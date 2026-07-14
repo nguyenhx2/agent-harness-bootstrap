@@ -18,7 +18,7 @@ filter for importance or confidence at this stage. Your goal here is coverage: i
 a finding that later gets filtered out than to silently drop a real bug.
 
 For each finding give a **confidence** and a **severity** so the orchestrator can rank them. Use the
-severity model in `.claude/rules/code-quality.md` — it is defined once, there.
+severity model in `.claude/rules/code-quality.md` - it is defined once, there.
 
 (This instruction exists because a reviewer told to "only report high-severity issues" will follow that
 literally: it investigates just as thoroughly, finds the bugs, then declines to report what it judges
@@ -27,8 +27,8 @@ is a prompt artifact.)
 
 ## Check, in order
 
-1. `.claude/rules/coding-standards.md` — types, naming, structure, error handling.
-2. `.claude/rules/code-quality.md` — the smells that predict defects; the is-a-finding / is-not-a-finding
+1. `.claude/rules/coding-standards.md` - types, naming, structure, error handling.
+2. `.claude/rules/code-quality.md` - the smells that predict defects; the is-a-finding / is-not-a-finding
    table. Do not raise style preferences as findings.
 3. {{#IF_UI}}`.claude/rules/frontend.md` **hard gate**: BLOCK any diff introducing a native `<select>`,
    a raw data `<table>`, hardcoded color or spacing values, inline styles bypassing tokens, or a raw
@@ -44,7 +44,7 @@ is a prompt artifact.)
 
 Group findings by severity. For each: file:line, one-sentence statement of the defect, and a concrete
 failure scenario (inputs or state → wrong output). A finding without a failure scenario is a
-suggestion, not a defect — label it as such.
+suggestion, not a defect - label it as such.
 
-Do not merge. Do not deploy. **Record the review run in the task file's session log** — a gate that is
+Do not merge. Do not deploy. **Record the review run in the task file's session log** - a gate that is
 not recorded there did not happen, and the orchestrator treats an unlogged "reviewed" as unverified.
