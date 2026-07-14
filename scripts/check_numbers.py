@@ -57,6 +57,7 @@ def canonical() -> dict[str, int]:
     return {
         "read_pct": pct(old["read_bytes"], new["read_bytes"]),
         "write_pct": pct(old["write_bytes"], new["write_bytes"]),
+        "read_files_pct": pct(old["read_files"], new["read_files"]),
         "tax_pct": round(scoped / (scoped + always) * 100),
         "unconditional_rules": len(tax["always_files"]),
         "scoped_rules": len(tax["scoped_files"]),
@@ -71,10 +72,16 @@ def canonical() -> dict[str, int]:
 
 # Checked in every document. These phrasings have exactly one meaning in this repo.
 CHECKS = [
-    ("read-path reduction",   r"(?:read|Bytes the model must read)[^\n|]*?[-−](\d\d)%", "read_pct"),
-    ("write-path reduction",  r"(?:write|Bytes the model must write)[^\n|]*?[-−](\d\d)%", "write_pct"),
+    # These live in markdown table rows, so the pattern has to cross the '|' cell separators. An
+    # earlier version excluded '|' and therefore matched nothing: the check looked green and was
+    # dead. Every pattern here is exercised by the self-test at the bottom of this file.
+    # "bytes" is load-bearing. "Read path (files read) ... -71%" is a DIFFERENT metric that is also
+    # correct, and an earlier pattern conflated the two and reported a false mismatch.
+    ("read-path reduction",   r"[Rr]ead path \(bytes[^\n]*?[-−](\d\d)%|[Bb]ytes the model must read[^\n]*?[-−](\d\d)%", "read_pct"),
+    ("write-path reduction",  r"[Ww]rite path \(bytes[^\n]*?[-−](\d\d)%|[Bb]ytes the model must write[^\n]*?[-−](\d\d)%", "write_pct"),
+    ("read-path files",       r"[Rr]ead path \(files[^\n]*?[-−](\d\d)%", "read_files_pct"),
     ("session tax",           rf"{NUM}% of (?:the )?rule content", "tax_pct"),
-    ("rule content kept out", r"[Rr]ule content kept out[^\n|]*?\|\s*\*?\*?(\d\d)%", "tax_pct"),
+    ("rule content kept out", r"[Rr]ule content kept out[^\n]*?\*\*(\d\d)%\*\*", "tax_pct"),
     ("unconditional rules",   rf"{NUM} unconditional rules?\b", "unconditional_rules"),
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
 ]
@@ -91,11 +98,43 @@ COUNT_CHECKS = [
 ]
 
 
+def self_test(c: dict[str, int]) -> list[str]:
+    """A pattern that matches nothing looks identical to a pattern that finds no problems: green,
+    and useless. One of these was dead for its whole life. So every pattern must prove it can still
+    fire, by matching a line built from the canonical values."""
+    lines = {
+        "read-path reduction":   "| Read path (bytes the model must pull into context) | 234,196 | 83,339 | -{read_pct}% |",
+        "write-path reduction":  "| Write path (bytes the model must author) | 95,064 | 14,595 | -{write_pct}% |",
+        "read-path files":       "| Read path (files read) | 24 | 7 | -{read_files_pct}% |",
+        "session tax":           "keeping {tax_pct}% of rule content out of the default session",
+        "rule content kept out": "| Rule content kept out of the default session | - | 49,394 of 74,697 B | **{tax_pct}%** |",
+        "unconditional rules":   "{unconditional_rules} unconditional rules stay loaded",
+        "path-scoped rules":     "{scoped_rules} path-scoped rules load on demand",
+        "agent count":           "{agents} agents, each with a model",
+        "rule count":            "{rules} rules - 6 always loaded",
+        "command count":         "{commands} slash commands, two of them gated",
+        "hook count":            "{hooks} blocking hooks",
+    }
+    dead = []
+    for name, pat, key in CHECKS + COUNT_CHECKS:
+        probe = lines[name].format(**c)
+        if not re.search(pat, probe, re.I):
+            dead.append(f"{name}: pattern never matches, so it can never fail")
+    return dead
+
+
 def main() -> int:
     c = canonical()
     print("  canonical (benchmark.py + the assets directory):")
     for k, v in c.items():
         print(f"    {k:<22} {v}")
+
+    dead = self_test(c)
+    if dead:
+        print("\n  DEAD CHECKS - these would pass on any input:")
+        for d in dead:
+            print(f"    {d}")
+        return 1
 
     bad = 0
     print("\n  documents:")
@@ -103,6 +142,9 @@ def main() -> int:
         if SKIP_PARTS & set(p.parts):
             continue
         text = p.read_text(encoding="utf-8")
+        # Blank out inline code spans. A figure in backticks is a quotation - a changelog entry
+        # naming the wrong number it fixed, for instance - not a claim the repo is making.
+        text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
         rel = p.relative_to(ROOT).as_posix()
         active = CHECKS + (COUNT_CHECKS if rel in COUNT_FILES else [])
         for name, pat, key in active:

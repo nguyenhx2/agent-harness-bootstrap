@@ -13,7 +13,7 @@ Fixes diagrams that did not render, including in the specs this skill generates 
 
 - Mermaid diagrams failed with "Unable to render rich display" on GitHub. A label containing an angle-bracket placeholder, such as `<name>` or `<actor>`, is parsed as an HTML tag: the renderer drops the text, and GitHub fails the whole block. This affected `docs/FLOWS.md` and, more seriously, six `spec-builder` section templates - so every spec set generated from them shipped broken diagrams. Placeholders in mermaid labels are now uppercase words with no angle brackets.
 - `spec-builder/assets/specs/09-integration-interface.md` used `--|"text"|` for an edge, which is not a valid mermaid link. It is now a bidirectional arrow.
-- `docs/FLOWS.md` claimed four unconditional rules, seven path-scoped, and 77% of rule content kept out of the session. The real figures are 6, 8 and 66%.
+- `docs/FLOWS.md` carried a stale rule breakdown (`four unconditional, seven path-scoped, 77% kept out of the session`). The real figures are 6, 8 and 66%.
 - The CHANGELOG said 13 commands. There are 14.
 
 **Added**
