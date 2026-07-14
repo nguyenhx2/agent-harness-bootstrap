@@ -1,0 +1,370 @@
+{
+  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR. Flags: ui, db, ai, audit, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
+  "files": [
+    {
+      "src": "claude/agents/ba-analyst.md",
+      "dest": ".claude/agents/ba-analyst.md"
+    },
+    {
+      "src": "claude/agents/brainstormer.md",
+      "dest": ".claude/agents/brainstormer.md"
+    },
+    {
+      "src": "claude/agents/code-reviewer.md",
+      "dest": ".claude/agents/code-reviewer.md"
+    },
+    {
+      "src": "claude/agents/data-modeler.md",
+      "dest": ".claude/agents/data-modeler.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/agents/db-engineer.md",
+      "dest": ".claude/agents/db-engineer.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/agents/db-seeder.md",
+      "dest": ".claude/agents/db-seeder.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/agents/debugger.md",
+      "dest": ".claude/agents/debugger.md"
+    },
+    {
+      "src": "claude/agents/devops.md",
+      "dest": ".claude/agents/devops.md"
+    },
+    {
+      "src": "claude/agents/history-tracker.md",
+      "dest": ".claude/agents/history-tracker.md"
+    },
+    {
+      "src": "claude/agents/merge-manager.md",
+      "dest": ".claude/agents/merge-manager.md"
+    },
+    {
+      "src": "claude/agents/orchestrator.md",
+      "dest": ".claude/agents/orchestrator.md"
+    },
+    {
+      "src": "claude/agents/qa-test.md",
+      "dest": ".claude/agents/qa-test.md"
+    },
+    {
+      "src": "claude/agents/security-reviewer.md",
+      "dest": ".claude/agents/security-reviewer.md"
+    },
+    {
+      "src": "claude/agents/spec-guardian.md",
+      "dest": ".claude/agents/spec-guardian.md"
+    },
+    {
+      "src": "claude/agents/tech-researcher.md",
+      "dest": ".claude/agents/tech-researcher.md"
+    },
+    {
+      "src": "claude/rules/00-overview.md",
+      "dest": ".claude/rules/00-overview.md"
+    },
+    {
+      "src": "claude/rules/agent-guardrails.md",
+      "dest": ".claude/rules/agent-guardrails.md"
+    },
+    {
+      "src": "claude/rules/code-quality.md",
+      "dest": ".claude/rules/code-quality.md"
+    },
+    {
+      "src": "claude/rules/conventional-commits.md",
+      "dest": ".claude/rules/conventional-commits.md"
+    },
+    {
+      "src": "claude/rules/data-model.md",
+      "dest": ".claude/rules/data-model.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/rules/docs-workflow.md",
+      "dest": ".claude/rules/docs-workflow.md"
+    },
+    {
+      "src": "claude/rules/frontend.md",
+      "dest": ".claude/rules/frontend.md",
+      "when": [
+        "ui"
+      ]
+    },
+    {
+      "src": "claude/rules/performance.md",
+      "dest": ".claude/rules/performance.md"
+    },
+    {
+      "src": "claude/rules/security-privacy.md",
+      "dest": ".claude/rules/security-privacy.md"
+    },
+    {
+      "src": "claude/rules/task-tracking.md",
+      "dest": ".claude/rules/task-tracking.md"
+    },
+    {
+      "src": "claude/rules/testing.md",
+      "dest": ".claude/rules/testing.md"
+    },
+    {
+      "src": "claude/commands/brainstorm.md",
+      "dest": ".claude/commands/brainstorm.md"
+    },
+    {
+      "src": "claude/commands/db-migration.md",
+      "dest": ".claude/commands/db-migration.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/commands/deploy.md",
+      "dest": ".claude/commands/deploy.md"
+    },
+    {
+      "src": "claude/commands/implement-fr.md",
+      "dest": ".claude/commands/implement-fr.md"
+    },
+    {
+      "src": "claude/commands/new-adr.md",
+      "dest": ".claude/commands/new-adr.md"
+    },
+    {
+      "src": "claude/commands/new-spec-section.md",
+      "dest": ".claude/commands/new-spec-section.md"
+    },
+    {
+      "src": "claude/commands/new-task.md",
+      "dest": ".claude/commands/new-task.md"
+    },
+    {
+      "src": "claude/commands/review-changes.md",
+      "dest": ".claude/commands/review-changes.md"
+    },
+    {
+      "src": "claude/commands/scaffold-feature.md",
+      "dest": ".claude/commands/scaffold-feature.md"
+    },
+    {
+      "src": "claude/commands/secret-scan.md",
+      "dest": ".claude/commands/secret-scan.md"
+    },
+    {
+      "src": "claude/commands/seed-db.md",
+      "dest": ".claude/commands/seed-db.md",
+      "when": [
+        "db"
+      ]
+    },
+    {
+      "src": "claude/commands/sync-context.md",
+      "dest": ".claude/commands/sync-context.md"
+    },
+    {
+      "src": "claude/commands/task-resume.md",
+      "dest": ".claude/commands/task-resume.md"
+    },
+    {
+      "src": "claude/commands/test.md",
+      "dest": ".claude/commands/test.md"
+    },
+    {
+      "src": "claude/hooks/agent-history.ps1",
+      "dest": ".claude/hooks/agent-history.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/check-commit-msg.ps1",
+      "dest": ".claude/hooks/check-commit-msg.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-main-commit.ps1",
+      "dest": ".claude/hooks/guard-main-commit.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/protect-adr.ps1",
+      "dest": ".claude/hooks/protect-adr.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/protect-secrets.ps1",
+      "dest": ".claude/hooks/protect-secrets.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/specs-reminder.ps1",
+      "dest": ".claude/hooks/specs-reminder.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/agent-history.sh",
+      "dest": ".claude/hooks/agent-history.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/check-commit-msg.sh",
+      "dest": ".claude/hooks/check-commit-msg.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-main-commit.sh",
+      "dest": ".claude/hooks/guard-main-commit.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/protect-adr.sh",
+      "dest": ".claude/hooks/protect-adr.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/protect-secrets.sh",
+      "dest": ".claude/hooks/protect-secrets.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/specs-reminder.sh",
+      "dest": ".claude/hooks/specs-reminder.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/settings.json",
+      "dest": ".claude/settings.json"
+    },
+    {
+      "src": "docs/README.md",
+      "dest": "docs/README.md"
+    },
+    {
+      "src": "docs/master-plan.md",
+      "dest": "docs/tasks/master-plan.md"
+    },
+    {
+      "src": "docs/tasks-pending-README.md",
+      "dest": "docs/tasks/pending/README.md"
+    },
+    {
+      "src": "docs/templates/TASK.md",
+      "dest": "docs/templates/TASK.md"
+    },
+    {
+      "src": "docs/templates/PRD.md",
+      "dest": "docs/templates/PRD.md"
+    },
+    {
+      "src": "docs/templates/ADR.md",
+      "dest": "docs/templates/ADR.md"
+    },
+    {
+      "src": "docs/context/business-rules.md",
+      "dest": "docs/context/business-rules.md"
+    },
+    {
+      "src": "docs/context/glossary.md",
+      "dest": "docs/context/glossary.md"
+    },
+    {
+      "src": "docs/context/known-issues.md",
+      "dest": "docs/context/known-issues.md"
+    },
+    {
+      "src": "docs/context/tool-changelog.md",
+      "dest": "docs/context/tool-changelog.md"
+    },
+    {
+      "src": "root/AGENTS.md",
+      "dest": "AGENTS.md"
+    },
+    {
+      "src": "root/CLAUDE.md",
+      "dest": "CLAUDE.md"
+    },
+    {
+      "src": "env/env.example",
+      "dest": ".env.example"
+    },
+    {
+      "src": "audit/FINDING.md",
+      "dest": "docs/templates/FINDING.md",
+      "when": [
+        "audit"
+      ]
+    },
+    {
+      "src": "audit/commands/security-scan.md",
+      "dest": ".claude/commands/security-scan.md",
+      "when": [
+        "audit"
+      ]
+    },
+    {
+      "src": "audit/commands/triage-findings.md",
+      "dest": ".claude/commands/triage-findings.md",
+      "when": [
+        "audit"
+      ]
+    },
+    {
+      "src": "audit/hooks/protect-repos.ps1",
+      "dest": ".claude/hooks/protect-repos.ps1",
+      "when": [
+        "audit",
+        "windows"
+      ]
+    },
+    {
+      "src": "audit/hooks/protect-repos.sh",
+      "dest": ".claude/hooks/protect-repos.sh",
+      "when": [
+        "audit",
+        "posix"
+      ],
+      "exec": true
+    }
+  ]
+}

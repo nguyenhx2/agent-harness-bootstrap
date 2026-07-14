@@ -1,0 +1,18 @@
+{
+  "files": [
+    {"src": "specs/README.md",                          "dest": "docs/specs/README.md",                          "subst": true},
+    {"src": "specs/01-overview.md",                     "dest": "docs/specs/01-overview.md",                     "subst": true},
+    {"src": "specs/02-stakeholders.md",                 "dest": "docs/specs/02-stakeholders.md",                 "subst": true},
+    {"src": "specs/03-glossary.md",                     "dest": "docs/specs/03-glossary.md",                     "subst": true},
+    {"src": "specs/04-business-flows.md",               "dest": "docs/specs/04-business-flows.md",               "subst": true},
+    {"src": "specs/05-functional-requirements.md",      "dest": "docs/specs/05-functional-requirements.md",      "subst": true},
+    {"src": "specs/06-access-control.md",               "dest": "docs/specs/06-access-control.md",               "subst": true},
+    {"src": "specs/07-non-functional-requirements.md",  "dest": "docs/specs/07-non-functional-requirements.md",  "subst": true},
+    {"src": "specs/08-data-model.md",                   "dest": "docs/specs/08-data-model.md",                   "subst": true},
+    {"src": "specs/09-integration-interface.md",        "dest": "docs/specs/09-integration-interface.md",        "subst": true},
+    {"src": "specs/10-ui-ux-wireframes.md",             "dest": "docs/specs/10-ui-ux-wireframes.md",             "subst": true},
+    {"src": "specs/11-assumptions-constraints.md",      "dest": "docs/specs/11-assumptions-constraints.md",      "subst": true},
+    {"src": "specs/12-technical-feasibility.md",        "dest": "docs/specs/12-technical-feasibility.md",        "subst": true},
+    {"src": "specs/13-revision-history.md",             "dest": "docs/specs/13-revision-history.md",             "subst": true}
+  ]
+}
