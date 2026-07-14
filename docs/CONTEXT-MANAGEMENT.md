@@ -1,18 +1,18 @@
 # Context management: state on disk, not in the model
 
-The mechanism this repository is actually built on, and the one it explains least: **agent state is
-anchored to physical files, not to the model's context window.** Every durable fact about a mission -
-what the task is, what has been decided, what has run, what passed, what is blocked, who owns it -
-exists as committed markdown before it exists as a claim in a conversation. That is why a compaction,
-a session end, a killed process, or a dead IDE costs this harness a conversation and not a mission.
+Agent state in this harness is anchored to physical files, not to the model's context window. Every
+durable fact about a mission - what the task is, what has been decided, what has run, what passed,
+what is blocked, who owns it - exists as committed markdown before it exists as a claim in a
+conversation. That is why a compaction, a session end, a killed process, or a dead IDE costs this
+harness a conversation and not a mission.
 
-This document explains the design, names the files that implement it, and is honest about the places
-where the guarantee stops.
+This document covers the memory hierarchy, the files that implement it, the resume protocol, the
+ranking of enforced against advisory controls, and the limits of each.
 
 ## The framing this builds on
 
 Alberto Arena, in [CLAUDE.md is RAM, not disk](https://albertoarena.it/posts/claude-md-is-ram-not-disk/),
-gives the clearest available metaphor for context budgeting. His argument, fairly stated:
+gives a metaphor for context budgeting:
 
 - `CLAUDE.md` is **always-loaded working memory**. It is consumed on every turn, in every session. It
   is RAM.
@@ -24,9 +24,8 @@ gives the clearest available metaphor for context budgeting. His argument, fairl
   He puts the onset of degradation "somewhere around line two hundred".
 - Nested `CLAUDE.md` files scope rules to a folder, so folder-specific detail does not tax the root.
 
-That is correct and this repo follows it. `harness-bootstrap/assets/root/CLAUDE.md` is a nine-line
-Claude-specific surface on top of a single `@AGENTS.md` import, and `AGENTS.md` carries an explicit
-budget comment:
+This repo follows it. `harness-bootstrap/assets/root/CLAUDE.md` is a nine-line Claude-specific surface
+on top of a single `@AGENTS.md` import, and `AGENTS.md` carries an explicit budget comment:
 
 > `Keep AGENTS.md and CLAUDE.md under about 200 lines combined: instruction adherence drops on longer
 > files. Detail belongs in .claude/rules/, which is read on demand, not here.`
@@ -35,31 +34,27 @@ Same number, same reason.
 
 ## Where this repo goes further
 
-Arena's metaphor is about **size**: what is worth loading every turn. This repo pushes it to
+Arena's metaphor is about **size**: what is worth loading every turn. This repo extends it to
 **durability**: what survives when the window does not.
 
-The sharper claim, and the one this document defends:
-
-> **RAM is not just expensive. RAM is volatile. Anything that exists only in the model's context is
-> already lost - you just have not noticed yet.**
-
-Compaction will summarise it and drop the specifics. A session end discards it. A crashed agent takes
-its working memory with it. An IDE that dies takes the whole window at once. None of these are exotic.
-`.claude/rules/task-tracking.md` treats them as routine and says so:
+RAM is not just expensive, it is volatile. Anything that exists only in the model's context is
+already lost. Compaction summarises it and drops the specifics. A session end discards it. A crashed
+agent takes its working memory with it. An IDE that dies takes the whole window at once.
+`.claude/rules/task-tracking.md` treats these as routine:
 
 > `Context loss is routine; treat recovery as routine too.`
 
-So the design question is not only *what do we load every turn*. It is:
+So the design question is not only *what loads every turn*. It is:
 
 > **What is written down such that a fresh agent, with an empty context, can pick the work up exactly
 > where it stopped?**
 
-Everything below is the answer to that question.
+Everything below answers that question.
 
-## 1. The memory hierarchy, as this repo implements it
+## 1. The memory hierarchy
 
-Four tiers, not two. The two tiers Arena names are both RAM; the interesting half of this harness is
-the two below them.
+Four tiers, not two. The two tiers Arena names are both RAM; the two below them are where the state
+of the work actually lives.
 
 <img src="assets/memory-hierarchy.svg" alt="The four memory tiers: always-RAM, lazy-RAM, disk, and archive, with what each costs and what survives compaction">
 
@@ -70,7 +65,7 @@ the two below them.
 | **Disk** (the state of the work) | `docs/tasks/master-plan.md` (the board) and `docs/tasks/active/TASK-NNN.md` (goal, scope, acceptance criteria, decisions and blockers, session log) | On demand, by an explicit `Read` | A few hundred bytes read once per session | **Nothing.** It is committed markdown in git. This is the tier that survives everything |
 | **Archive** (append-only) | `.claude/state/history/` - one markdown file per finished subagent run, holding the prompt it was given and its final response | Never, unless read | Zero, until someone asks | Nothing. It is written by a hook after the fact, so no amount of context loss can erase it |
 
-### Always-RAM: the six that earn it
+### Always-RAM: the six unconditional rules
 
 `.claude/rules/00-overview.md` states the loading contract:
 
@@ -79,18 +74,15 @@ the two below them.
 > and both questions arise before any file is touched. Keep them short.`
 
 The six are `00-overview.md`, `agent-guardrails.md`, `model-policy.md`, `ai-governance.md`,
-`task-tracking.md`, and `conventional-commits.md`. Note what they have in common: none of them can be
-path-scoped even in principle. `conventional-commits.md` governs commit *messages*, and a message is
-not a file, so no glob can ever match it - which is exactly why that file is deliberately kept under
-25 lines. `model-policy.md` and `ai-governance.md` decide what may be sent to which model *before* any
-file is opened, so scoping them to a file that has not been read yet is incoherent.
+`task-tracking.md`, and `conventional-commits.md`. None of them can be path-scoped even in principle:
 
-`task-tracking.md` earns its slot for the reason stated in its own first line:
-
-> `Loaded in every session, deliberately: an agent that forgets where state lives will invent it.`
-
-That is the whole hierarchy in one sentence. The tier that tells the agent where disk *is* has to live
-in RAM, or the agent hallucinates it.
+- `conventional-commits.md` governs commit *messages*, and a message is not a file, so no glob can
+  ever match it. That is why the file is deliberately kept under 25 lines.
+- `model-policy.md` and `ai-governance.md` decide what may be sent to which model *before* any file
+  is opened, so scoping them to a file that has not been read yet is incoherent.
+- `task-tracking.md` earns its slot for the reason stated in its own first line: *"Loaded in every
+  session, deliberately: an agent that forgets where state lives will invent it."* The tier that
+  tells the agent where disk is has to live in RAM.
 
 ### Lazy-RAM: the 66%
 
@@ -108,12 +100,12 @@ paths:
 path-scoped rules at 49,394 bytes. **66% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
-nothing but frontmatter", and it is Arena's test applied mechanically: *every time* is unconditional,
+nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,
 *sometimes* gets a glob.
 
-### Disk: where the mission actually lives
+### Disk: where the mission state lives
 
-Two files, and they are the point of the whole design.
+Two files:
 
 - **`docs/tasks/master-plan.md`** - the board. One row per task: ID, title, owner, deps, priority,
   phase, status. It is the only thing that allocates task IDs (`task-control.md`: *"the board allocates
@@ -123,14 +115,16 @@ Two files, and they are the point of the whole design.
   blockers section, and the **session log**: an append-only table of `| Date | Who | What was done |
   Result |`.
 
-Status is deliberately duplicated - once in the task file's frontmatter, once in the board row - and
+Status is deliberately duplicated, once in the task file's frontmatter and once in the board row.
 `task-control.md` requires that both be written in the same step, and that the board row be read back
 afterwards, because *"a write nobody confirmed is a wish"*.
 
 The five states are defined exactly once, in the frontmatter comment of `docs/templates/TASK.md`:
 `Planned | Active | Blocked | Pending | Done`. Every other file links to that definition instead of
-restating it. The one counter-intuitive rule is worth repeating because it exists purely to serve
-crash recovery: **a `Planned` task file lives in `active/`, not `pending/`.** From `task-control.md`:
+restating it.
+
+One rule exists purely to serve crash recovery: **a `Planned` task file lives in `active/`, not
+`pending/`.** From `task-control.md`:
 
 > `The orchestrator's session-start scan reads docs/tasks/active/ - that directory means "on the work
 > queue", not "being worked right now". Filing a newly-registered task under pending/ would hide it
@@ -141,7 +135,7 @@ The directory layout is not filing. It is the index that the resume protocol sca
 These files are **committed**, and they ship in the same PR as the work they describe
 (`task-control.md`, Phase 3, step 4). That is what makes them survive a machine, not just a session.
 
-### Archive: the append-only record nobody had to remember to write
+### Archive: the append-only run record
 
 `.claude/hooks/agent-history.sh` (and its `.ps1` twin) is registered in `settings.json` on the
 **`SubagentStop`** event with matcher `*`. Every time any subagent finishes, the hook reads that
@@ -161,16 +155,16 @@ The `history-tracker` agent (`haiku`, `effort: low`, `maxTurns: 10`) exists sole
 archive, and its instructions are pointed: *"do not fill gaps with plausible reconstruction - if the
 archive does not say, the answer is 'the archive does not say'."*
 
-**The honest limit:** `.claude/state/` is **gitignored**. The archive survives compaction, session end,
-and process death - it is on the disk of the machine that ran the agent. It does not survive a fresh
-clone on a different machine. `model-policy.md` states this exactly: *"the run archive under
+**The limit:** `.claude/state/` is **gitignored**. The archive survives compaction, session end, and
+process death, because it is on the disk of the machine that ran the agent. It does not survive a
+fresh clone on a different machine. `model-policy.md` states this exactly: *"the run archive under
 .claude/state/history/ is on disk and usually backed up even though it is gitignored"*. Committed task
 files are the durable tier; the archive is the forensic one.
 
-### A side effect worth naming: disk is what keeps RAM cacheable
+### Byte-stability: why disk is what keeps RAM cacheable
 
-`reference/cost-model.md` gives a rule that looks like a caching tip and is really a restatement of
-this whole architecture:
+`reference/cost-model.md` gives a rule that looks like a caching tip and is a restatement of this
+architecture:
 
 > **Agent bodies, rule files, and CLAUDE.md must be byte-stable across runs.**
 >
@@ -180,23 +174,21 @@ this whole architecture:
 Prompt caching is a prefix match over `tools` -> `system` -> `messages`. A single `Generated:
 2026-07-14` line at the top of an agent file cold-misses that agent's cache on every future run. So
 the discipline that makes state durable (write it to `docs/tasks/`) is the same discipline that makes
-the RAM tier 10x cheaper (keep the system prompt byte-identical). They are not two rules. They are one
-rule seen from two ends.
+the RAM tier 10x cheaper (keep the system prompt byte-identical). They are one rule seen from two
+ends.
 
-## 2. Why conversation memory is not a substitute
+## 2. Why conversation memory is not the record
 
-`.claude/rules/task-tracking.md` opens with the flat assertion:
+`.claude/rules/task-tracking.md` opens with the assertion:
 
 > `The conversation is not the record. Context gets compacted, sessions end, agents are replaced
 > mid-flight. What survives is what is written down.`
 
-It is worth spelling out *why* that has to be a rule, because the failure it prevents is not "the agent
-forgets". The failure is worse: **the agent remembers, and the memory is worthless as evidence.**
-
-Consider an agent that ran the test suite, saw it green, and did not write that down. It now holds a
-true belief about the world. But the belief lives in a context window that the orchestrator cannot
-read, that compaction will summarise into "tests were run", and that a crash will delete. Nobody
-downstream can verify it. So the harness rules that it did not happen:
+The failure this prevents is not "the agent forgets". It is that the agent remembers and the memory
+is worthless as evidence. An agent that ran the test suite, saw it green, and did not write that down
+holds a true belief in a context window that the orchestrator cannot read, that compaction will
+summarise into "tests were run", and that a crash will delete. Nobody downstream can verify it. So
+the harness rules that it did not happen:
 
 > `A gate counts as passed only when the task file's session log records the run. A claim in a chat
 > message, a PR description, or an agent's final report is a claim, not a fact. Verify against git
@@ -208,27 +200,25 @@ The orchestrator carries the same rule from the other side (`orchestrator.md`, s
 > `Do not take "done" on faith. An agent's "done" / "passed" / "merged" is a CLAIM to verify against
 > git and the task file, never a fact.`
 
-And `task-control.md` names the observed failure that motivated it: *"Orchestrators have reported 'all
+`task-control.md` names the observed failure that motivated it: *"Orchestrators have reported 'all
 gates green' over a log holding no reviewer rows at all."*
 
-This is invariant principle 5 in `AGENTS.md`, and note who it binds:
+This is invariant principle 5 in `AGENTS.md`, and it binds the agent to its own claims as well as to
+everyone else's:
 
 > `**Verify, do not trust.** An agent's "done", "passed", or "merged" is a claim, not a fact. Check it
 > against git and the task file before acting on it. **This includes your own claims.**`
 
-An agent's memory of its own work is not privileged. It is testimony, and testimony without an artifact
-is nothing. Writing it down is not bookkeeping overhead bolted onto the real work - it *is* how the
-work becomes real to anyone but the agent doing it.
+Writing it down is not bookkeeping bolted onto the real work. It is how the work becomes verifiable
+to anyone but the agent doing it.
 
 ## 3. The resume protocol
 
-This is the part nobody designs until it bites, so it is designed here.
-
 <img src="assets/crash-resume.svg" alt="The resume protocol: session-start scan of docs/tasks/active, rebuild from board and session log, verify against git, reconcile orphaned worktrees, then continue">
 
-### Session start: scan before you accept
+### Session start: scan before accepting a mission
 
-`orchestrator.md`, section 1, is unambiguous. **Before** accepting a new mission:
+`orchestrator.md`, section 1. **Before** accepting a new mission:
 
 ```
 grep -l "status: Active" docs/tasks/active/*.md
@@ -241,14 +231,14 @@ Then read `docs/tasks/master-plan.md`. And then:
 > state. **The task files, not conversation memory, are the source of truth** - this is what makes the
 > base survive compaction.`
 
-Unfinished work outranks a new mission. That ordering is the whole reason the scan comes first: an
-orchestrator that accepts the new brief before scanning has already forked the board.
+Unfinished work outranks a new mission, which is why the scan comes first: an orchestrator that
+accepts the new brief before scanning has already forked the board.
 
-### Rebuild from the files, not from what you remember
+### Rebuild from the files
 
-`/task-resume TASK-NNN` (`.claude/commands/task-resume.md`) is the command that does this, and its
-allowed-tools list is itself a control - `Bash(git status)`, `Bash(git diff:*)`, `Bash(git log:*)`,
-`Read`, `Grep`, `Edit`. It cannot commit. It cannot push. It reads and reconciles.
+`/task-resume TASK-NNN` (`.claude/commands/task-resume.md`) does this. Its allowed-tools list is
+itself a control: `Bash(git status)`, `Bash(git diff:*)`, `Bash(git log:*)`, `Read`, `Grep`, `Edit`.
+It cannot commit. It cannot push. It reads and reconciles.
 
 Its five steps:
 
@@ -261,21 +251,21 @@ Its five steps:
    drive it to completion or escalate it. Never stash, discard, or clobber it."*
 5. Continue, appending a session-log row after every meaningful unit of work.
 
-Run with no argument, it does not resume anything - it lists every unfinished task (`Planned`,
-`Active`, `Blocked`) with its board row, priority, and blockers. That is the "where was I" command.
+Run with no argument, it resumes nothing: it lists every unfinished task (`Planned`, `Active`,
+`Blocked`) with its board row, priority, and blockers.
 
-### Crash recovery: verify the corpse
+### Crash recovery
 
-`task-control.md` has a section on this and it is the most operationally hard-won part of the repo.
+From `task-control.md`:
 
-**Only one orchestrator may drive a project at a time.** A crashed instance can auto-resume later, so a
-replacement must **verify the previous one is actually terminated - not presume it dead** - before it
+**Only one orchestrator may drive a project at a time.** A crashed instance can auto-resume later, so
+a replacement must **verify the previous one is actually terminated, not presume it dead**, before it
 dispatches anything. Two live orchestrators mean duplicate dispatches and conflicting merges.
 
 **A silent stall counts as a crash.** From `orchestrator.md`: *"A silently stalled instance counts as
 crashed."* And from `task-control.md`: *"Going silent is a failure mode equal to crashing. Supervisors
 treat prolonged silence the same way: presume the instance crashed and resume it from file state -
-which works, by design."* That last clause is the entire thesis in five words.
+which works, by design."*
 
 **Reconciliation, mandatory before the first dispatch after a crash:**
 
@@ -291,14 +281,13 @@ which works, by design."* That last clause is the entire thesis in five words.
 > `Committed files and git state OVER any agent's final report. A status report can reference branches
 > or work that do not exist. Verify every claim against git facts.`
 
-### The MISSION-COMPLETE marker: telling "done" from "dead" by a file check
+### The MISSION-COMPLETE marker
 
-Here is the problem the marker solves. An orchestrator that finished its mission and is sitting idle
-produces exactly the same observable signal as an orchestrator that crashed: **silence**. A supervisor
-looking at silence cannot tell which it is, and both wrong answers are expensive - re-dispatching a
-finished mission duplicates work, and abandoning a crashed one loses it.
+An orchestrator that finished its mission and is sitting idle produces the same observable signal as
+an orchestrator that crashed: silence. Both wrong answers are expensive. Re-dispatching a finished
+mission duplicates work; abandoning a crashed one loses it.
 
-So close-out writes a durable, machine-checkable marker (`orchestrator.md`, section 6):
+Close-out therefore writes a durable, machine-checkable marker (`orchestrator.md`, section 6):
 
 1. Set the mission's status in `docs/tasks/master-plan.md` to a terminal state, **and read the row back
    to confirm the write landed.**
@@ -309,22 +298,18 @@ Then deliver the summary and **terminate**. The rule against lingering is explic
 after close-out: an idle instance is indistinguishable from a crashed one, and a lingering one invites
 a duplicate orchestrator to be spawned against the same board."*
 
-The disambiguation is then a `grep`, not a judgment (`task-control.md`):
+The disambiguation is then a `grep` rather than a judgment (`task-control.md`):
 
 - **No marker + silent = crashed mid-flight** -> resume from file state.
 - **Marker present + silent = finished** -> do NOT resume, do NOT re-dispatch. *"Nothing is in flight,
   and stopping that instance is cleanup, not interruption: all state already lives in committed files."*
 
-This is the pattern generalised: an ambiguity in the model's world is resolved by making the two cases
-differ **on disk**.
+An ambiguity in the model's world is resolved by making the two cases differ on disk.
 
-### "The IDE died mid-task. What now?"
-
-The concrete procedure, in order:
+### Procedure: the IDE died mid-task
 
 1. **Reopen. Do not re-brief.** Do not paste in what you think the agent was doing. That reintroduces
-   a remembered state as if it were a recorded one, which is the exact failure the design exists to
-   prevent.
+   a remembered state as if it were a recorded one, which is the failure the design exists to prevent.
 2. **Confirm the old process is gone.** A killed IDE window does not always mean a killed agent
    process. Verify termination; never assume it.
 3. **`/task-resume`** with no argument. It lists every unfinished task from `docs/tasks/active/`.
@@ -336,18 +321,17 @@ The concrete procedure, in order:
 6. **Log the incident** as a session-log row in the affected task file.
 7. **Continue.** The last session-log row is the resume point.
 
-If you want to know what the crashed agent was actually asked and what it last said, that is what
-`.claude/state/history/` is for, and `history-tracker` is the agent that reads it.
+For what the crashed agent was actually asked and what it last said, read `.claude/state/history/`.
+`history-tracker` is the agent that reads it.
 
-## 4. Reining the agents: control surfaces ranked by hardness
+## 4. Control surfaces, ranked by hardness
 
-The Vietnamese for this is *ghi cuong ngua* - reining a horse. You do not rein a horse by explaining
-your preferences to it. The distinction that matters is **enforced** versus **advisory**, and this repo
-is unusually blunt about which of its own controls are which.
+The distinction that matters is **enforced** versus **advisory**. This repo states which of its own
+controls are which.
 
 <img src="assets/control-layers.svg" alt="Control layers ranked by hardness: settings.json deny rules, PreToolUse hooks, tool allowlists, and maxTurns are enforced; rules, agent bodies, and effort are advisory">
 
-### Hard: enforced by the harness, the model does not get a vote
+### Enforced: the model does not get a vote
 
 | Control | Where | What it stops |
 |---|---|---|
@@ -356,9 +340,8 @@ is unusually blunt about which of its own controls are which.
 | `tools:` allowlist in agent frontmatter | e.g. `code-reviewer` and `security-reviewer` get `Read, Grep, Glob, Bash` | What the agent cannot **reach**. A reviewer with `Edit` has stopped being a reviewer, and the frontmatter is what makes that structural rather than aspirational |
 | `maxTurns` | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. `cost-model.md`: *"the cost of a stuck agent is unbounded"* |
 
-These are not claims. `eval/guardrail_eval.py` scaffolds a harness and fires 15 known-bad payloads at
-it: **15/15 blocked**. Every block is a shell script and an exit code, which is why the eval's header
-can say what it says:
+`eval/guardrail_eval.py` scaffolds a harness and fires 15 known-bad payloads at it: **15/15 blocked**.
+Every block is a shell script and an exit code, which is what the eval's header describes:
 
 > `A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an accepted
 > ADR. It cannot ship an AI-attribution trailer. Not because it knows better, but because the hook
@@ -366,84 +349,78 @@ can say what it says:
 
 Swap Opus for Haiku and the result is byte-identical. **The safety floor is model-independent.**
 
-### Soft: advisory, and named as such
+### Advisory
 
-- **Rules in `.claude/rules/`.** These are context, not configuration. `docs/ASSESSMENT.md` quotes
-  Claude Code's own documentation rather than hedging: rules *"shape Claude's behaviour but are not a
-  hard enforcement layer"*. A rule is a very good way to make an agent do the right thing. It is not a
-  way to make it impossible to do the wrong one.
+- **Rules in `.claude/rules/`.** These are context, not configuration. Claude Code's own documentation
+  says rules *"shape Claude's behaviour but are not a hard enforcement layer"*. A rule is a good way
+  to make an agent do the right thing. It is not a way to make the wrong thing impossible.
 - **The agent body / system prompt.** Same category. It is instruction, and instruction can be
   outweighed, forgotten after compaction, or simply not followed.
-- **`effort:`** is not a control at all. It is a **throttle**. It sets how hard the model pulls, not
-  where it is allowed to go. `cost-model.md`: *"Do not starve a judgment seat to save money."* Lowering
-  `effort` on an agent you do not trust makes it a worse agent, not a safer one.
+- **`effort:`** is a **throttle**, not a control. It sets how hard the model pulls, not where it is
+  allowed to go. `cost-model.md`: *"Do not starve a judgment seat to save money."* Lowering `effort`
+  on an agent you do not trust makes it a worse agent, not a safer one.
 
-`agent-guardrails.md` builds this into a four-layer model and puts rules at layer 3 of 4, with the
-concession stated outright: *"Rules are layer 3 - they are not the only layer, and they are not a
-substitute for the other three."*
+`agent-guardrails.md` builds this into a four-layer model and puts rules at layer 3 of 4: *"Rules are
+layer 3 - they are not the only layer, and they are not a substitute for the other three."*
 
-### The key move: a soft control becomes hard when you can express it as a file the harness checks
+### Turning an advisory control into an enforced one
 
-"Never commit to main" appears twice in this repo, deliberately. Once as prose in `AGENTS.md` (soft),
-and once as `.claude/hooks/guard-main-commit.sh`, which parses the `Bash` tool call, resolves the
-target directory from any `cd` or `git -C`, checks the effective branch, and **exits 2** (hard). The
-rule and the hook say the same thing. Only one of them is enforced, and the other one exists so the
-agent knows *why* before it hits the wall.
+A soft control becomes hard when it can be expressed as a file the harness checks.
 
-The migration path is always the same: **find the tool call the violation is shaped like, and intercept
-it.** `docs/ASSESSMENT.md` walks exactly this move for data classification. The rule
-(`model-policy.md`) says which model may process which data class. That was advisory. The fix was not
-to write a better rule - it was to notice that Restricted data lives at *known paths*, and that
-`permissions.deny` on `Read(<those paths>)` means **the agent never obtains the data at all**, and
-therefore cannot leak it to any model on any provider, regardless of which model is driving or whether
-it read the rule. Advisory became deterministic by changing what it was expressed as.
+"Never commit to main" appears twice in this repo, deliberately. Once as prose in `AGENTS.md`
+(advisory), and once as `.claude/hooks/guard-main-commit.sh`, which parses the `Bash` tool call,
+resolves the target directory from any `cd` or `git -C`, checks the effective branch, and **exits 2**
+(enforced). The rule and the hook say the same thing; only one of them is enforced, and the other one
+exists so the agent knows why before it hits the wall.
 
-### And the ones that could not be made hard, named honestly
+The migration path is always the same: find the tool call the violation is shaped like, and intercept
+it. `docs/ASSESSMENT.md` walks this move for data classification. The rule (`model-policy.md`) says
+which model may process which data class, which was advisory. The fix was not a better rule: Restricted
+data lives at *known paths*, and `permissions.deny` on `Read(<those paths>)` means the agent never
+obtains the data at all, and therefore cannot leak it to any model on any provider, regardless of which
+model is driving or whether it read the rule.
 
-`docs/ASSESSMENT.md` refuses to overclaim, and this document will not either:
+### What could not be made hard
 
 - **Model routing is still advisory.** Nothing prevents an agent from putting Confidential-but-readable
-  text into a prompt to a model the policy table does not permit. The reason is precise and worth
-  understanding, because it generalises: *"There is no tool call shaped like 'sent this text to that
-  provider', so there is nothing for a hook to intercept."* A control surface needs a surface. Where
-  there is no interceptable event, there is no hook, and claiming a deny rule enforces it would be
-  theatre.
+  text into a prompt to a model the policy table does not permit. The reason generalises: *"There is no
+  tool call shaped like 'sent this text to that provider', so there is nothing for a hook to
+  intercept."* A control surface needs a surface. Where there is no interceptable event, there is no
+  hook.
 - **Data the org cannot locate.** If Restricted material has no nameable path, the deny list cannot
-  cover it and the classification table is advice. The intake now forces that admission rather than
-  letting it pass silently - *"but an admission is not a control."*
+  cover it and the classification table is advice. The intake forces that admission rather than letting
+  it pass silently - *"but an admission is not a control."*
 
-The honest summary, from `ASSESSMENT.md`: **this repo enforces model sovereignty at the data boundary,
-and governs it by rule everywhere else.**
+From `ASSESSMENT.md`: **this repo enforces model sovereignty at the data boundary, and governs it by
+rule everywhere else.**
 
-### The whole architecture, with the model drawn as what it is: a layer
+### The model as a layer
 
-The memory hierarchy of section 1 and the control ranking above are two views of the same stack. Put
-them together and the design's central claim becomes a picture rather than an argument.
+The memory hierarchy of section 1 and the control ranking above are two views of the same stack.
 
 <img src="assets/harness-architecture.svg" alt="Harness reference architecture in seven layers, bottom-up: the work, the enforcement plane, the state plane, the context plane, the policy plane, the model slot, and orchestration - with every layer below the model slot deterministic and model-agnostic">
 
 Read it bottom-up. The work is at the bottom, and everything above it exists to protect it. The
 enforcement plane is the thickest band because it is the only one that does not negotiate: shell
 scripts and glob matching, no model consulted, `15/15`. Above that, the state plane is markdown in
-git; the context plane is the volatile window this whole document is about; the policy plane is
-advice. Only then does the **model** appear - in a slot, near the top, with the seat-tier bindings
-(`judgment -> opus`, `implementation -> sonnet`, `mechanical -> haiku`) drawn as replaceable contents
-rather than as structure.
+git; the context plane is the volatile window this document is about; the policy plane is advice. Only
+then does the **model** appear, in a slot near the top, with the seat-tier bindings (`judgment ->
+opus`, `implementation -> sonnet`, `mechanical -> haiku`) drawn as replaceable contents rather than as
+structure.
 
-That is the point of drawing it this way. **Every layer beneath the slot is model-agnostic.** Swap the
-tier bindings and the deny list, the hooks, the tool grants, the `maxTurns`, the board, the task files
-and the run archive are all byte-for-byte what they were. The safety floor and the durable state do not
-sit *on top of* a model choice; they sit *underneath* it.
+**Every layer beneath the slot is model-agnostic.** Swap the tier bindings and the deny list, the
+hooks, the tool grants, the `maxTurns`, the board, the task files and the run archive are all
+byte-for-byte what they were. The safety floor and the durable state sit underneath the model choice,
+not on top of it.
 
-And the diagram carries the caveat with it, because an architecture diagram that overstates portability
-is the most expensive kind of lie this repo could tell. `docs/ASSESSMENT.md` Gap 2, restated on the
-drawing itself: **model tier is swappable; model vendor is not.** The `model:` frontmatter field accepts
-`opus | sonnet | haiku | fable` and nothing else, so re-pointing this roster at a self-hosted or
-third-party model is a **port**, not a config change - there is no execution adapter in this repo. Nor
-is the tier table yet a *generator*: it states the binding, but each agent file still names its own
-`model:` directly, so a tier swap today is a table edit **and** a sweep of the agent frontmatter.
-Making the tier the declared thing and generating `model:` from it at scaffold time is listed as
-outstanding work, and it is not done.
+The diagram carries the caveat from `docs/ASSESSMENT.md` Gap 2 on the drawing itself: **model tier is
+swappable; model vendor is not.** The `model:` frontmatter field accepts `opus | sonnet | haiku |
+fable` and nothing else, so re-pointing this roster at a self-hosted or third-party model is a **port**,
+not a config change: there is no execution adapter in this repo. The tier table is not yet a
+*generator* either. It states the binding, but each agent file still names its own `model:` directly,
+so a tier swap today is a table edit **and** a sweep of the agent frontmatter. Making the tier the
+declared thing and generating `model:` from it at scaffold time is listed as outstanding work, and it
+is not done.
 
 ## 5. A worked failure scenario
 
@@ -472,20 +449,20 @@ three rows to the session log. It is midway through a fourth change when the IDE
 
 A fresh orchestrator opens with an empty context. It scans `docs/tasks/active/` for `status: Active`
 and finds `TASK-014` before it will accept any new work. It confirms the old process is dead, runs
-`/task-resume TASK-014`, and reads the board row and then the task file end to end - the goal, the
+`/task-resume TASK-014`, and reads the board row and then the task file end to end: the goal, the
 acceptance criteria, what was decided and why, and the three session-log rows. It runs `git status`,
 `git diff`, `git log`, and `git worktree list`: the worktree is intact, two commits are on the branch,
 and there is one uncommitted hunk. It logs an incident row in the session log, adopts the uncommitted
 work, and continues from the acceptance criterion the log says was next.
 
-Nothing was re-derived. No decision was made twice. The mission lost 40 minutes of *conversation* and
-zero minutes of *work*.
+Nothing was re-derived. No decision was made twice. The mission lost 40 minutes of conversation and
+zero minutes of work.
 
-**And the point:** none of that worked because anything clever happened at crash time. Nothing happened
-at crash time - the process simply stopped. It worked because the agent had been **writing as it
-went**: a session-log row after every meaningful unit of work, a status flip in both places at once, a
-commit per green test. Crash recovery is not a feature you add. It is a property you get for free, and
-only, if the state was already on disk before you needed it.
+None of that worked because anything clever happened at crash time. Nothing happened at crash time;
+the process simply stopped. It worked because the agent had been writing as it went: a session-log row
+after every meaningful unit of work, a status flip in both places at once, a commit per green test.
+Crash recovery is not a feature you add. It is a property you get for free, and only, if the state was
+already on disk before you needed it.
 
 ## Sources
 

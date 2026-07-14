@@ -33,6 +33,17 @@ jobs:
       - name: Cost model - roster profiles must compute
         run: python benchmark/model_cost.py
 
+      # GitHub renders mermaid server-side and shows "Unable to render rich display" on a parse
+      # error, naming neither the file nor the line. The only way to know is to render it. A
+      # semicolon inside a message shipped once and broke two diagrams silently.
+      - name: Every mermaid diagram must actually render
+        run: python scripts/check_mermaid.py
+
+      # "No invented numbers" is a contributing rule. A rule nobody checks drifts: the session-tax
+      # figure was once wrong in two files at the same time. This one is checked.
+      - name: Figures in the docs must match what the scripts print
+        run: python scripts/check_numbers.py
+
   scaffold-matrix:
     name: scaffold (${{ matrix.flavor }})
     runs-on: ${{ matrix.os }}
