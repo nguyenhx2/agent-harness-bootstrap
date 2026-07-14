@@ -36,8 +36,8 @@ tags: [specs, ui, ux, {{PROJECT_SLUG}}]
 
 ```mermaid
 flowchart TD
-  L["<landing>"] --> A["SCR-01 <screen>"]
-  A --> B["SCR-02 <screen>"]
+  L["LANDING"] --> A["SCR-01 SCREEN"]
+  A --> B["SCR-02 SCREEN"]
   B --> A
 ```
 

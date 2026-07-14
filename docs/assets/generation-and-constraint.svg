@@ -1,0 +1,253 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1452" viewBox="0 0 880 1452" role="img" aria-label="Two panels. Part A, generation: three sources - the codebase in brownfield, the specs in greenfield, and the human at intake - each derive specific artifacts. The codebase analysis produces the Inventory Report, whose module map gives one dev agent per module, whose conventions give the three project-specific rules, whose risky operations give the deny list and the hooks, and whose glob sets give the path frontmatter that makes rules lazy-load. The specs give FR clusters, one dev agent per feature domain, and the db, ui and ai flags. The human answers only what code cannot decide. All three converge into vars.json, which drives scaffold.py, a deterministic funnel that copies real files, substitutes variables, resolves flag blocks, never overwrites, and exits non-zero on an unresolved variable. It emits the agents, the rules, the commands, the hooks with settings.json, and the task board. The model authors only what cannot be templated. Part B, mutual constraint: a green enforcement band of hooks, deny list and maxTurns encloses a closed ring in which the orchestrator dispatches but cannot build, spec-guardian locks the contract, the dev agents write code but only inside their module paths, the reviewers gate them with no Edit and no Write, and the task board holds the orchestrator to account. Governance decides which model may touch a class of data before dispatch, and the rules are drawn soft and dashed because they are advisory." font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>How the harness is built, and how it holds itself</title>
+
+  <rect x="0" y="0" width="880" height="1452" rx="10" fill="#23272B"/>
+
+  <text x="24" y="32" font-size="17" font-weight="700" fill="#F8F9FA">How the harness is built, and how it holds itself</text>
+  <text x="24" y="54" font-size="13" fill="#ADB5BD">Part A - generation: nothing is invented.   Part B - constraint: nothing is trusted.</text>
+
+  <!-- ============================ PART A ============================ -->
+  <text x="24" y="82" font-size="15" font-weight="700" fill="#F8F9FA">PART A   GENERATION - where every generated file comes from</text>
+  <text x="24" y="102" font-size="13" fill="#ADB5BD">Every generated thing traces to the codebase, to the specs, or to an answer you gave.</text>
+
+  <!-- SOURCE 1 - the codebase -->
+  <rect x="24" y="114" width="486" height="142" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <rect x="24" y="114" width="8" height="142" rx="4" fill="#5A189A"/>
+  <text x="42" y="136" font-size="14" font-weight="700" fill="#F8F9FA">1   THE CODEBASE   -   brownfield</text>
+  <text x="42" y="158" font-size="13" fill="#F8F9FA">codebase analysis, read-only, produces the Inventory Report you confirm</text>
+  <text x="42" y="182" font-size="13" font-weight="700" fill="#F8F9FA">module map</text>
+  <text x="150" y="182" font-size="13" fill="#F8F9FA">-&gt;  one dev agent per module, scoped to real paths</text>
+  <text x="42" y="202" font-size="13" font-weight="700" fill="#F8F9FA">conventions</text>
+  <text x="150" y="202" font-size="13" fill="#F8F9FA">-&gt;  tech-stack, coding-standards, git-workflow</text>
+  <text x="42" y="222" font-size="13" font-weight="700" fill="#F8F9FA">risky ops</text>
+  <text x="150" y="222" font-size="13" fill="#F8F9FA">-&gt;  the settings.json deny list, and which hooks</text>
+  <text x="42" y="242" font-size="13" font-weight="700" fill="#F8F9FA">glob sets</text>
+  <text x="150" y="242" font-size="13" fill="#F8F9FA">-&gt;  the paths: frontmatter, so rules lazy-load</text>
+
+  <!-- SOURCE 2 - the specs -->
+  <rect x="24" y="268" width="486" height="118" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <rect x="24" y="268" width="8" height="118" rx="4" fill="#5A189A"/>
+  <text x="42" y="290" font-size="14" font-weight="700" fill="#F8F9FA">2   THE SPECS   -   greenfield</text>
+  <text x="42" y="314" font-size="13" font-weight="700" fill="#F8F9FA">FR clusters</text>
+  <text x="150" y="314" font-size="13" fill="#F8F9FA">-&gt;  one dev agent per feature domain</text>
+  <text x="42" y="334" font-size="13" font-weight="700" fill="#F8F9FA">data model</text>
+  <text x="150" y="334" font-size="13" fill="#F8F9FA">-&gt;  flag db  -&gt;  data-modeler, db-engineer, db-seeder</text>
+  <text x="42" y="354" font-size="13" font-weight="700" fill="#F8F9FA">UI present</text>
+  <text x="150" y="354" font-size="13" fill="#F8F9FA">-&gt;  flag ui  -&gt;  the frontend-ui-dev seat</text>
+  <text x="42" y="374" font-size="13" font-weight="700" fill="#F8F9FA">LLM in it</text>
+  <text x="150" y="374" font-size="13" fill="#F8F9FA">-&gt;  flag ai  -&gt;  the prompt-injection clauses</text>
+
+  <!-- SOURCE 3 - the human -->
+  <rect x="24" y="398" width="486" height="96" rx="8" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <rect x="24" y="398" width="8" height="96" rx="4" fill="#A8DADC"/>
+  <text x="42" y="420" font-size="14" font-weight="700" fill="#A8DADC">3   THE HUMAN   -   intake</text>
+  <text x="42" y="442" font-size="13" fill="#A8DADC">answers only what the code cannot decide:</text>
+  <text x="42" y="464" font-size="13" fill="#A8DADC">data classification, gated actions, licences,</text>
+  <text x="42" y="484" font-size="13" fill="#A8DADC">commit identity, dev OS (flag windows or posix)</text>
+
+  <!-- converge into vars.json -->
+  <polyline points="510,185 522,185 522,193 528,193" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polyline points="510,327 522,327 522,193" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polyline points="510,446 522,446 522,193" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="534,193 525,188 525,198" fill="#CED4DA"/>
+
+  <!-- vars.json -->
+  <rect x="534" y="150" width="322" height="86" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="548" y="172" font-size="14" font-weight="700" fill="#F8F9FA">vars.json</text>
+  <text x="548" y="192" font-size="13" fill="#F8F9FA">the vars, and the flags:</text>
+  <text x="548" y="212" font-size="13" fill="#F8F9FA">ui, db, ai, audit, and exactly one</text>
+  <text x="548" y="230" font-size="13" fill="#F8F9FA">of windows or posix</text>
+
+  <line x1="695" y1="236" x2="695" y2="256" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="695,262 690,253 700,253" fill="#CED4DA"/>
+
+  <!-- scaffold.py - the funnel -->
+  <rect x="534" y="262" width="322" height="176" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="4"/>
+  <text x="548" y="286" font-size="14" font-weight="700" fill="#D8F3DC">scaffold.py   -   DETERMINISTIC</text>
+  <text x="548" y="306" font-size="13" font-weight="700" fill="#D8F3DC">the one funnel every file passes</text>
+  <text x="548" y="328" font-size="13" fill="#D8F3DC">reads assets/manifest.json</text>
+  <text x="548" y="348" font-size="13" fill="#D8F3DC">copies REAL FILES, substitutes {{VAR}}</text>
+  <text x="548" y="368" font-size="13" fill="#D8F3DC">resolves the IF_flag blocks</text>
+  <text x="548" y="388" font-size="13" fill="#D8F3DC">never overwrites - it reports</text>
+  <text x="548" y="406" font-size="13" fill="#D8F3DC">ADDED / KEPT / CONFLICT</text>
+  <rect x="548" y="414" width="250" height="20" rx="4" fill="#9D0208" stroke="#370617" stroke-width="1.5"/>
+  <text x="673" y="429" font-size="13" font-weight="700" fill="#FFBA08" text-anchor="middle">exit 1 on an unresolved variable</text>
+
+  <!-- funnel out to the artifact bus -->
+  <line x1="695" y1="438" x2="695" y2="514" stroke="#CED4DA" stroke-width="2"/>
+  <line x1="104" y1="514" x2="776" y2="514" stroke="#CED4DA" stroke-width="2"/>
+  <line x1="104" y1="514" x2="104" y2="530" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="104,536 99,527 109,527" fill="#CED4DA"/>
+  <line x1="272" y1="514" x2="272" y2="530" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="272,536 267,527 277,527" fill="#CED4DA"/>
+  <line x1="440" y1="514" x2="440" y2="530" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="440,536 435,527 445,527" fill="#CED4DA"/>
+  <line x1="608" y1="514" x2="608" y2="530" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="608,536 603,527 613,527" fill="#CED4DA"/>
+  <line x1="776" y1="514" x2="776" y2="530" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="776,536 771,527 781,527" fill="#CED4DA"/>
+
+  <!-- the four artifact groups, plus the board -->
+  <rect x="24" y="536" width="160" height="100" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="36" y="558" font-size="13" font-weight="700" fill="#F8F9FA">.claude/agents/</text>
+  <text x="36" y="580" font-size="13" fill="#F8F9FA">15 agents, 3 of them</text>
+  <text x="36" y="598" font-size="13" fill="#F8F9FA">gated by flag db</text>
+  <text x="36" y="616" font-size="13" fill="#F8F9FA">model, effort, tools</text>
+
+  <rect x="192" y="536" width="160" height="100" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="204" y="558" font-size="13" font-weight="700" fill="#F8F9FA">.claude/rules/</text>
+  <text x="204" y="580" font-size="13" fill="#F8F9FA">14 rules</text>
+  <text x="204" y="598" font-size="13" fill="#F8F9FA">6 unconditional</text>
+  <text x="204" y="616" font-size="13" fill="#F8F9FA">8 path-scoped, lazy</text>
+
+  <rect x="360" y="536" width="160" height="100" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="372" y="558" font-size="13" font-weight="700" fill="#F8F9FA">.claude/commands/</text>
+  <text x="372" y="580" font-size="13" fill="#F8F9FA">14 slash commands</text>
+  <text x="372" y="598" font-size="13" fill="#F8F9FA">2 of them gated</text>
+  <text x="372" y="616" font-size="13" fill="#F8F9FA">by flag db</text>
+
+  <rect x="528" y="536" width="160" height="100" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="540" y="558" font-size="13" font-weight="700" fill="#F8F9FA">.claude/hooks/ and</text>
+  <text x="540" y="580" font-size="13" font-weight="700" fill="#F8F9FA">settings.json</text>
+  <text x="540" y="598" font-size="13" fill="#F8F9FA">6 hooks, and the</text>
+  <text x="540" y="616" font-size="13" fill="#F8F9FA">deny list</text>
+
+  <rect x="696" y="536" width="160" height="100" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="708" y="558" font-size="13" font-weight="700" fill="#F8F9FA">docs/tasks/</text>
+  <text x="708" y="580" font-size="13" fill="#F8F9FA">the board, and one</text>
+  <text x="708" y="598" font-size="13" fill="#F8F9FA">file per task, with</text>
+  <text x="708" y="616" font-size="13" fill="#F8F9FA">its session log</text>
+
+  <!-- the invariant -->
+  <rect x="24" y="650" width="832" height="52" rx="8" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="440" y="674" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">The model authors only what cannot be templated: the routing table, each dev agent's scope,</text>
+  <text x="440" y="694" font-size="13" fill="#E0AAFF" text-anchor="middle">and the 3 project-specific rules. Everything else is a file copy.</text>
+
+  <!-- ============================ PART B ============================ -->
+  <text x="24" y="742" font-size="15" font-weight="700" fill="#F8F9FA">PART B   MUTUAL CONSTRAINT - each one is held by another</text>
+  <text x="24" y="764" font-size="13" fill="#ADB5BD">Not a hierarchy. A closed loop, inside a band none of them can open.</text>
+
+  <!-- the hard band -->
+  <rect x="24" y="780" width="832" height="560" rx="10" fill="#2D6A4F" stroke="#081C15" stroke-width="5"/>
+  <text x="42" y="806" font-size="14" font-weight="700" fill="#D8F3DC">HARD - shell scripts and glob rules. No model gets a vote, not even the orchestrator.</text>
+
+  <rect x="42" y="816" width="262" height="48" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="54" y="834" font-size="13" font-weight="700" fill="#D8F3DC">HOOKS - PreToolUse</text>
+  <rect x="228" y="820" width="64" height="18" rx="4" fill="#9D0208" stroke="#370617" stroke-width="1.5"/>
+  <text x="260" y="834" font-size="13" font-weight="700" fill="#FFBA08" text-anchor="middle">exit 2</text>
+  <text x="54" y="854" font-size="13" fill="#D8F3DC">the tool call never happens</text>
+
+  <rect x="314" y="816" width="262" height="48" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="326" y="834" font-size="13" font-weight="700" fill="#D8F3DC">DENY LIST - permissions.deny</text>
+  <text x="326" y="854" font-size="13" fill="#D8F3DC">what no agent can even see</text>
+
+  <rect x="586" y="816" width="254" height="48" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="598" y="834" font-size="13" font-weight="700" fill="#D8F3DC">maxTurns - the circuit breaker</text>
+  <text x="598" y="854" font-size="13" fill="#D8F3DC">debugger 30, code-reviewer 25</text>
+
+  <!-- the band presses inward on everything inside it -->
+  <polygon points="200,876 194,864 206,864" fill="#D8F3DC"/>
+  <polygon points="440,876 434,864 446,864" fill="#D8F3DC"/>
+  <polygon points="680,876 674,864 686,864" fill="#D8F3DC"/>
+  <polygon points="200,1322 194,1334 206,1334" fill="#D8F3DC"/>
+  <polygon points="440,1322 434,1334 446,1334" fill="#D8F3DC"/>
+  <polygon points="680,1322 674,1334 686,1334" fill="#D8F3DC"/>
+  <polygon points="48,1100 34,1093 34,1107" fill="#D8F3DC"/>
+  <polygon points="832,1100 846,1093 846,1107" fill="#D8F3DC"/>
+
+  <!-- the ring lives here -->
+  <rect x="48" y="876" width="784" height="446" rx="8" fill="#23272B" stroke="#081C15" stroke-width="2"/>
+
+  <!-- ring arrows -->
+  <polyline points="80,1160 62,1160 62,930 324,930" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="330,930 321,925 321,935" fill="#CED4DA"/>
+  <text x="72" y="922" font-size="13" font-weight="700" fill="#F8F9FA">verified, not trusted</text>
+
+  <polyline points="280,1000 310,1000 310,960 324,960" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="330,960 321,955 321,965" fill="#CED4DA"/>
+
+  <polyline points="550,940 570,940 570,1020 584,1020" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="590,1020 581,1015 581,1025" fill="#CED4DA"/>
+
+  <line x1="700" y1="1064" x2="700" y2="1124" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="700,1130 695,1121 705,1121" fill="#CED4DA"/>
+
+  <polyline points="590,1200 570,1200 570,1250 556,1250" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="550,1250 559,1245 559,1255" fill="#CED4DA"/>
+
+  <polyline points="330,1250 310,1250 310,1190 286,1190" fill="none" stroke="#CED4DA" stroke-width="2"/>
+  <polygon points="280,1190 289,1185 289,1195" fill="#CED4DA"/>
+
+  <!-- the rules advise; they do not enforce. dashed on purpose. -->
+  <line x1="440" y1="1060" x2="440" y2="1010" stroke="#E0AAFF" stroke-width="2" stroke-dasharray="5 4"/>
+  <polygon points="440,1004 435,1013 445,1013" fill="#E0AAFF"/>
+  <line x1="440" y1="1140" x2="440" y2="1200" stroke="#E0AAFF" stroke-width="2" stroke-dasharray="5 4"/>
+  <polygon points="440,1206 435,1197 445,1197" fill="#E0AAFF"/>
+
+  <!-- ORCHESTRATOR -->
+  <rect x="330" y="896" width="220" height="108" rx="8" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="342" y="920" font-size="14" font-weight="700" fill="#E0AAFF">ORCHESTRATOR</text>
+  <text x="342" y="942" font-size="13" fill="#E0AAFF">dispatches every agent. Its</text>
+  <text x="342" y="960" font-size="13" fill="#E0AAFF">Write and Edit reach docs/</text>
+  <text x="342" y="978" font-size="13" fill="#E0AAFF">and .claude/ only. It routes;</text>
+  <text x="342" y="996" font-size="13" font-weight="700" fill="#E0AAFF">it does not build.</text>
+
+  <!-- SPEC-GUARDIAN -->
+  <rect x="590" y="980" width="220" height="84" rx="8" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="602" y="1002" font-size="14" font-weight="700" fill="#E0AAFF">SPEC-GUARDIAN</text>
+  <text x="602" y="1022" font-size="13" fill="#E0AAFF">checks every agent's output</text>
+  <text x="602" y="1040" font-size="13" fill="#E0AAFF">against the specs.</text>
+  <text x="602" y="1058" font-size="13" font-weight="700" fill="#E0AAFF">Read-only. No Bash.</text>
+
+  <!-- DEV AGENTS -->
+  <rect x="590" y="1130" width="220" height="84" rx="8" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="602" y="1152" font-size="14" font-weight="700" fill="#E0AAFF">DEV AGENTS</text>
+  <text x="602" y="1172" font-size="13" fill="#E0AAFF">write the code, but only</text>
+  <text x="602" y="1190" font-size="13" fill="#E0AAFF">inside their own module paths.</text>
+  <text x="602" y="1208" font-size="13" font-weight="700" fill="#E0AAFF">They cannot merge it.</text>
+
+  <!-- REVIEWERS -->
+  <rect x="330" y="1206" width="220" height="104" rx="8" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="342" y="1228" font-size="14" font-weight="700" fill="#E0AAFF">REVIEWERS   code + security</text>
+  <text x="342" y="1250" font-size="13" fill="#E0AAFF">gate the dev agents, and have</text>
+  <text x="342" y="1268" font-size="13" font-weight="700" fill="#E0AAFF">NO Edit, NO Write. A reviewer</text>
+  <text x="342" y="1286" font-size="13" fill="#E0AAFF">that could edit would have</text>
+  <text x="342" y="1304" font-size="13" fill="#E0AAFF">stopped being a reviewer.</text>
+
+  <!-- TASK BOARD -->
+  <rect x="80" y="1130" width="200" height="102" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="92" y="1152" font-size="14" font-weight="700" fill="#F8F9FA">TASK BOARD</text>
+  <text x="92" y="1172" font-size="13" fill="#F8F9FA">a gate is passed only</text>
+  <text x="92" y="1190" font-size="13" fill="#F8F9FA">when the session log</text>
+  <text x="92" y="1208" font-size="13" fill="#F8F9FA">records it. Done is a</text>
+  <text x="92" y="1226" font-size="13" font-weight="700" fill="#F8F9FA">claim, checked on git.</text>
+
+  <!-- GOVERNANCE -->
+  <rect x="80" y="980" width="200" height="84" rx="8" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="92" y="1002" font-size="14" font-weight="700" fill="#A8DADC">GOVERNANCE</text>
+  <text x="92" y="1022" font-size="13" fill="#A8DADC">model-policy: which model</text>
+  <text x="92" y="1040" font-size="13" fill="#A8DADC">may touch a data class,</text>
+  <text x="92" y="1058" font-size="13" font-weight="700" fill="#A8DADC">before any dispatch.</text>
+
+  <!-- RULES - soft, on purpose -->
+  <rect x="320" y="1060" width="240" height="80" rx="8" fill="#5A189A" stroke="#E0AAFF" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="334" y="1082" font-size="14" font-weight="700" fill="#E0AAFF">RULES   .claude/rules/</text>
+  <text x="334" y="1102" font-size="13" fill="#E0AAFF">advisory - a model can drift</text>
+  <text x="334" y="1122" font-size="13" fill="#E0AAFF">from them after a compaction.</text>
+
+  <!-- the closing idea -->
+  <rect x="24" y="1356" width="832" height="48" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="440" y="1385" font-size="15" font-weight="700" fill="#F8F9FA" text-anchor="middle">No agent is trusted, including the one doing the routing. Each is bounded by something it does not control.</text>
+
+  <!-- legend -->
+  <rect x="24" y="1420" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="48" y="1433" font-size="13" fill="#DEE2E6">deterministic - enforced</text>
+  <rect x="214" y="1420" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="238" y="1433" font-size="13" fill="#DEE2E6">model - advisory</text>
+  <rect x="352" y="1420" width="16" height="16" rx="3" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="376" y="1433" font-size="13" fill="#DEE2E6">human - your answer</text>
+  <rect x="512" y="1420" width="16" height="16" rx="3" fill="#9D0208" stroke="#370617" stroke-width="2"/>
+  <text x="536" y="1433" font-size="13" fill="#DEE2E6">blocked - exit non-zero</text>
+  <rect x="706" y="1420" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="730" y="1433" font-size="13" fill="#DEE2E6">artifact - a file</text>
+</svg>

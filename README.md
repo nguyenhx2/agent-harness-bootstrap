@@ -212,6 +212,20 @@ not measured - run `python benchmark/model_cost.py`.
 
 ---
 
+## How the harness is built, and how it holds itself
+
+<p align="center">
+  <img src="docs/assets/generation-and-constraint.svg" alt="Where the agents, rules, commands and hooks come from, and how they hold each other in check" width="820">
+</p>
+
+Nothing in your `.claude/` folder is invented. Each agent, rule, hook and deny entry traces back to
+something real: your code, your specs, or an answer you gave at intake, and `scaffold.py` copies the
+rest from files on disk. Once it runs, the pieces hold each other: the orchestrator dispatches every
+agent but cannot write product code, the reviewers gate the dev agents but cannot edit anything, the
+board records what actually happened, and the hooks stop all of them without asking.
+
+---
+
 ## The whole thing, in one picture
 
 <p align="center">

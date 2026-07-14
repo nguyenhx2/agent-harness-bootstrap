@@ -61,8 +61,8 @@ wrote once does not dominate anything.
 Three concrete cuts, in descending order of payoff:
 
 **Path-scope the rules.** A file in `.claude/rules/` with no `paths:` frontmatter loads at launch,
-into every session, at the same priority as `CLAUDE.md`. A roster with fourteen unconditional rules
-pays for all fourteen in every agent, forever - including `frontend.md` in the database agent and
+into every session, at the same priority as `CLAUDE.md`. A roster whose rules are all unconditional
+pays for every one of them in every agent, forever - including `frontend.md` in the database agent and
 `data-model.md` in the UI agent. Add `paths:` and the rule only enters context when Claude touches a
 matching file:
 

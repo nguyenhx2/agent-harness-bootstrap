@@ -19,9 +19,9 @@ tags: [specs, integration, {{PROJECT_SLUG}}]
 ```mermaid
 flowchart LR
   S["{{PROJECT_NAME}}"]
-  S -->|"<protocol, purpose>"| A["<external system A>"]
-  B["<external system B>"] -->|"<protocol, purpose>"| S
-  S <-->|"<protocol, purpose>"| C["<external system C>"]
+  S -->|"PROTOCOL, PURPOSE"| A["EXTERNAL SYSTEM A"]
+  B["EXTERNAL SYSTEM B"] -->|"PROTOCOL, PURPOSE"| S
+  S <-->|"PROTOCOL, PURPOSE"| C["EXTERNAL SYSTEM C"]
 ```
 
 ## Integration table

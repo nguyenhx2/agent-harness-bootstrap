@@ -191,6 +191,23 @@ Three points from the diagram:
   Only an unresolved `{{VAR}}` makes it exit non-zero, because a placeholder shipped into a live rule
   file matches nothing and fails silently.
 
+### 2a. Where each artifact comes from, and how the artifacts hold each other
+
+The flowchart above is the procedure. The picture below is the *derivation*: which source each
+generated file traces back to - the codebase, the specs, or an intake answer - and, once generated,
+how the pieces rein each other in. Read the top panel left to right, and the bottom panel as a ring.
+
+<p align="center">
+  <img src="assets/generation-and-constraint.svg" alt="Generation and mutual constraint: three sources converge into vars.json and scaffold.py, and the generated agents, rules, board and hooks then hold each other in check" width="820">
+</p>
+
+Two claims it makes that the flowchart above does not. First, the model authors only what cannot be
+templated: the routing table, each dev agent's scope, and the three project-specific rules
+(`tech-stack`, `coding-standards`, `git-workflow`). Everything else is a file copy. Second, no seat is
+trusted - the orchestrator routes but has no Write outside `docs/` and `.claude/`, the reviewers gate
+but hold no `Edit` or `Write`, the board records what the session log can prove, and the hooks bind
+every agent including the one dispatching them.
+
 ## 3. The scaffolder in detail
 
 `scripts/scaffold.py` is stdlib-only, has no dependencies, and is what makes the skill cheap: it
@@ -420,7 +437,7 @@ flowchart TD
         R2[/"agent-guardrails.md"/]
         R3[/"task-tracking.md"/]
         R4[/"conventional-commits.md<br/>governs commit MESSAGES, not files -<br/>no glob can ever scope it"/]
-        BODY[/"The agent's own body<br/>.claude/agents/<name>.md"/]
+        BODY[/"The agent's own body<br/>one file per agent under .claude/agents/"/]
         SCHEMA[/"Tool schemas - one per entry in tools:<br/>omitting tools: inherits EVERY tool,<br/>including every MCP server on the machine"/]
     end
 
@@ -463,8 +480,8 @@ flowchart TD
     class WINDOW mod
     class TOUCH hum```
 
-Four unconditional rules, seven path-scoped ones. On the shipped asset set that is 13,009 bytes always
-loaded against 43,279 bytes loaded on demand: **77% of the rule content is kept out of the default
+Six unconditional rules, eight path-scoped ones. On the shipped asset set that is 25,303 bytes always
+loaded against 49,394 bytes loaded on demand: **66% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 

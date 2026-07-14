@@ -18,8 +18,8 @@ tags: [specs, data-model, {{PROJECT_SLUG}}]
 
 ```mermaid
 erDiagram
-  ENTITY_A ||--o{ ENTITY_B : "<verb phrase>"
-  ENTITY_B }o--|| ENTITY_C : "<verb phrase>"
+  ENTITY_A ||--o{ ENTITY_B : "VERB PHRASE"
+  ENTITY_B }o--|| ENTITY_C : "VERB PHRASE"
 
   ENTITY_A {
     uuid id PK
@@ -85,11 +85,11 @@ erDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> DRAFT
-  DRAFT --> SUBMITTED : "<action, by role>"
-  SUBMITTED --> APPROVED : "<action, by role>"
-  SUBMITTED --> REJECTED : "<action, by role>"
+  DRAFT --> SUBMITTED : "ACTION, BY ROLE"
+  SUBMITTED --> APPROVED : "ACTION, BY ROLE"
+  SUBMITTED --> REJECTED : "ACTION, BY ROLE"
   APPROVED --> [*]
-  REJECTED --> DRAFT : "<action, by role>"
+  REJECTED --> DRAFT : "ACTION, BY ROLE"
 ```
 
 | From | To | Trigger | Allowed role | Rule |

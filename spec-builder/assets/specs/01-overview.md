@@ -71,9 +71,9 @@ tags: [specs, overview, {{PROJECT_SLUG}}]
 
 ```mermaid
 flowchart LR
-  A["<actor>"] --> S["{{PROJECT_NAME}}"]
-  S --> X["<external system>"]
-  S --> D[("<data store>")]
+  A["ACTOR"] --> S["{{PROJECT_NAME}}"]
+  S --> X["EXTERNAL SYSTEM"]
+  S --> D[("DATA STORE")]
 ```
 
 {{#IF_AI}}

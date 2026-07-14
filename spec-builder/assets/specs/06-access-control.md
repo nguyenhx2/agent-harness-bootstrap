@@ -79,8 +79,8 @@ tags: [specs, security, access-control, {{PROJECT_SLUG}}]
 
 ```mermaid
 flowchart TD
-  A["<role_admin>"] --> B["<role_manager>"]
-  B --> C["<role_user>"]
+  A["ROLE_ADMIN"] --> B["ROLE_MANAGER"]
+  B --> C["ROLE_USER"]
 ```
 
 ## Auditing

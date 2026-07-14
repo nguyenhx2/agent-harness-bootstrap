@@ -23,6 +23,32 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 BLOCK = re.compile(r"```mermaid\n(.*?)```", re.S)
 
 
+# A label containing a tag-shaped token - "<name>", "<slug>", "<T>" - is parsed as HTML by the
+# renderer. mermaid-cli silently EATS it: the diagram still renders, the text is just gone. GitHub's
+# sanitiser is stricter and fails the whole block with "Unable to render rich display", naming
+# neither the file nor the line. So this is checked before rendering, because rendering will not
+# catch it. <br/> is the one tag a label may legitimately carry.
+# The lookahead requires a letter or a slash right after the "<", so mermaid's own bidirectional
+# arrows (<-->, <==>, <-.->) are not mistaken for tags.
+TAGLIKE = re.compile(r"<(?!br\s*/?>)(?=[A-Za-z/])[^<>\n]{1,30}>")
+
+
+def lint(src: str) -> list[str]:
+    problems = []
+    for n, line in enumerate(src.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.startswith(("%%", "classDef", "class ", "style ")):
+            continue
+        for m in TAGLIKE.finditer(line):
+            problems.append(f"line {n}: '{m.group(0)}' is parsed as an HTML tag and the text is "
+                            f"dropped. Rewrite the label without angle brackets.")
+        # ';' ends a statement in mermaid, so one inside a message truncates the line.
+        if ";" in stripped and not stripped.startswith(("classDef", "class ", "style ")):
+            if re.match(r"\s*(Note (over|right of|left of)|[\w-]+\s*-?-?>>?)", line):
+                problems.append(f"line {n}: ';' ends a mermaid statement. Use a comma or a hyphen.")
+    return problems
+
+
 def render(src: str) -> tuple[bool, str]:
     with tempfile.TemporaryDirectory() as td:
         t = pathlib.Path(td)
@@ -63,8 +89,17 @@ def main() -> int:
         blocks = BLOCK.findall(f.read_text(encoding="utf-8"))
         for i, b in enumerate(blocks, 1):
             total += 1
-            ok, err = render(b)
             rel = f.relative_to(ROOT).as_posix()
+
+            issues = lint(b)
+            if issues:
+                failed += 1
+                print(f"  FAIL  {rel} block {i}:")
+                for p in issues:
+                    print(f"          {p}")
+                continue
+
+            ok, err = render(b)
             if ok:
                 print(f"  ok    {rel} block {i}")
             else:

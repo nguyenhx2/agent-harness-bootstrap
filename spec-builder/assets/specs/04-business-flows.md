@@ -30,12 +30,12 @@ tags: [specs, flows, {{PROJECT_SLUG}}]
 
 ```mermaid
 flowchart LR
-  Start(["<trigger event>"]) --> A["<step performed by actor>"]
-  A --> B{"<decision>"}
-  B -->|"<condition met>"| C["<happy path step>"]
-  B -->|"<condition not met>"| D["<exception step>"]
-  C --> End(["<successful outcome>"])
-  D --> End2(["<failure outcome>"])
+  Start(["TRIGGER EVENT"]) --> A["STEP PERFORMED BY ACTOR"]
+  A --> B{"DECISION"}
+  B -->|"CONDITION MET"| C["HAPPY PATH STEP"]
+  B -->|"CONDITION NOT MET"| D["EXCEPTION STEP"]
+  C --> End(["SUCCESSFUL OUTCOME"])
+  D --> End2(["FAILURE OUTCOME"])
 ```
 
 ### Steps
@@ -62,13 +62,13 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-  participant U as "<actor>"
+  participant U as "ACTOR"
   participant S as "{{PROJECT_NAME}}"
-  participant X as "<external system>"
-  U->>S: "<request>"
-  S->>X: "<call>"
-  X-->>S: "<response>"
-  S-->>U: "<result>"
+  participant X as "EXTERNAL SYSTEM"
+  U->>S: "REQUEST"
+  S->>X: "CALL"
+  X-->>S: "RESPONSE"
+  S-->>U: "RESULT"
 ```
 
 ## Process changes introduced by this system

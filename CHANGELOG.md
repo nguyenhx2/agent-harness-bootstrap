@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.0.1
+
+Fixes diagrams that did not render, including in the specs this skill generates for you.
+
+**Fixed**
+
+- Mermaid diagrams failed with "Unable to render rich display" on GitHub. A label containing an angle-bracket placeholder, such as `<name>` or `<actor>`, is parsed as an HTML tag: the renderer drops the text, and GitHub fails the whole block. This affected `docs/FLOWS.md` and, more seriously, six `spec-builder` section templates - so every spec set generated from them shipped broken diagrams. Placeholders in mermaid labels are now uppercase words with no angle brackets.
+- `spec-builder/assets/specs/09-integration-interface.md` used `--|"text"|` for an edge, which is not a valid mermaid link. It is now a bidirectional arrow.
+- `docs/FLOWS.md` claimed four unconditional rules, seven path-scoped, and 77% of rule content kept out of the session. The real figures are 6, 8 and 66%.
+- The CHANGELOG said 13 commands. There are 14.
+
+**Added**
+
+- `docs/assets/generation-and-constraint.svg` - where the agents, rules, commands and hooks come from, and how they hold each other in check. Nothing generated is invented: each artifact traces to the codebase, the specs, or a human answer.
+- `scripts/check_mermaid.py` now lints for the two failures that `mermaid-cli` renders happily but GitHub rejects: an angle-bracket token in a label, and a semicolon inside a message.
+- `scripts/check_numbers.py` derives the artifact counts from the assets directory and the percentages from `benchmark.py`, then fails on any document that contradicts them. It scans every document rather than a hand-maintained list, which is how the stale figures in `FLOWS.md` survived.
+
 ## v1.0.0
 
 First release. Two Claude Code skills: one writes the spec an agent can work from, the other builds
@@ -13,7 +30,7 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 14 rules, 13 commands, 6 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (15 agents, 14 rules, 14 commands, 6 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
