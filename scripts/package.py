@@ -94,25 +94,28 @@ def build(version: str) -> list[pathlib.Path]:
     stamp = f"{version}\n"
     written: list[pathlib.Path] = []
 
+    # Every path in an archive must sit UNDER a skill directory. These zips are extracted straight
+    # into ~/.claude/skills/, so a file at the archive root lands loose in the user's skills folder.
+    # Shipping a README.md or a LICENSE there is litter in a directory that is supposed to contain
+    # skills and nothing else.
     def add_skill(zf: zipfile.ZipFile, skill: str) -> None:
         for f in skill_files(skill):
             zf.write(f, f.relative_to(ROOT).as_posix())
         # VERSION goes INSIDE the skill dir, so an installed skill is self-identifying.
         zf.writestr(f"{skill}/VERSION", stamp)
+        # Licence travels with the skill, not beside it.
+        zf.write(ROOT / "LICENSE", f"{skill}/LICENSE")
 
     for skill in SKILLS:
         out = DIST / f"{skill}-v{version}.zip"
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
             add_skill(zf, skill)
-            zf.write(ROOT / "LICENSE", "LICENSE")
         written.append(out)
 
     bundle = DIST / f"claude-harness-bootstrap-v{version}.zip"
     with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as zf:
         for skill in SKILLS:
             add_skill(zf, skill)
-        for extra in ("LICENSE", "README.md", "CHANGELOG.md"):
-            zf.write(ROOT / extra, extra)
     written.append(bundle)
 
     # Unversioned aliases. GitHub's stable "latest" download URL is
@@ -165,19 +168,44 @@ def main() -> int:
         size = p.stat().st_size
         print(f"  {p.name:<48} {size:>9,} bytes")
 
-    # Prove the artifact is installable: the VERSION must be inside, at the skill root.
-    print("\nverifying each archive carries VERSION inside the skill dir:")
+    # Prove the artifact is installable. Two invariants, both checked rather than trusted:
+    #   1. VERSION is inside the skill dir, so the install is self-identifying.
+    #   2. NOTHING sits at the archive root. These extract into ~/.claude/skills/, so a root-level
+    #      file lands loose in the user's skills folder. This shipped once; it will not ship again.
+    print("\nverifying every archive:")
+    failed = False
     for p in written:
         if p.suffix != ".zip":
             continue
         with zipfile.ZipFile(p) as zf:
             names = zf.namelist()
+
+            loose = sorted({n for n in names if "/" not in n.rstrip("/")})
+            if loose:
+                print(f"  {p.name:<44} FAIL - loose at archive root: {loose}")
+                failed = True
+                continue
+
+            stray = sorted({n.split("/", 1)[0] for n in names} - set(SKILLS))
+            if stray:
+                print(f"  {p.name:<44} FAIL - unexpected top-level dirs: {stray}")
+                failed = True
+                continue
+
             for skill in SKILLS:
                 key = f"{skill}/VERSION"
-                if key in names:
-                    got = zf.read(key).decode().strip()
-                    ok = "ok" if got == version else f"MISMATCH ({got})"
-                    print(f"  {p.name:<48} {key:<28} {ok}")
+                if key not in names:
+                    continue
+                got = zf.read(key).decode().strip()
+                if got != version:
+                    print(f"  {p.name:<44} FAIL - {key} says {got}, expected {version}")
+                    failed = True
+
+            print(f"  {p.name:<44} ok - everything under a skill dir, VERSION correct")
+
+    if failed:
+        print("\npackaging FAILED its own checks. Nothing here is safe to release.", file=sys.stderr)
+        return 1
     return 0
 
 
