@@ -1,0 +1,12 @@
+# Shell hooks MUST be LF. A CRLF .sh file fails on Linux/macOS with a cryptic
+# "bad interpreter: /usr/bin/env bash^M" - the guardrail then silently never fires.
+*.sh            text eol=lf
+*.py            text eol=lf
+
+# PowerShell hooks are Windows-side; CRLF is fine and is what Windows tooling expects.
+*.ps1           text eol=crlf
+
+# Everything else: normalize in the repo, check out native.
+*.md            text
+*.json          text
+*.template      text
