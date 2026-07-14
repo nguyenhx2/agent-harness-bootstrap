@@ -1,0 +1,48 @@
+# Copyable scaffold for the project's root .env.example file (project-bootstrap).
+# Copy this content into a real `.env.example` at the repo root, then adapt the groups.
+# Placeholders only - never real secrets. Adapt the groups to the project's stack answers
+# (remove groups the stack does not use; add any the stack needs that are missing here).
+# Every var has a comment: what it is for, which service consumes it, where the real value lives.
+
+# ===== App =====
+# Public base URL of the web app. dev: .env.local / prod: platform variables
+APP_URL=http://localhost:3000
+NODE_ENV=development
+
+# ===== Database (e.g. PostgreSQL via Prisma) =====
+# Connection string. dev: local docker / prod: managed DB. NEVER commit real values.
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/appdb
+# Optional separate test DB used by integration tests
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/appdb_test
+
+# ===== Queue (e.g. Redis + BullMQ) =====
+REDIS_URL=redis://localhost:6379
+
+# ===== LLM gateway (e.g. OpenRouter) =====
+# API key - dev: .env.local / prod: platform variables. Choose no-logging routes for PII.
+LLM_GATEWAY_API_KEY=
+# Default model route (override per task in code)
+LLM_DEFAULT_MODEL=
+
+# ===== Vision/image extraction (optional - often just a vision-capable model on the LLM gateway) =====
+# Only needed if image inputs are supported; leave unset to disable the path
+VISION_MODEL=
+
+# ===== KMS / RAG (optional - e.g. AnythingLLM) =====
+KMS_BASE_URL=http://localhost:3001
+KMS_API_KEY=
+
+# ===== Object storage (S3-compatible) =====
+STORAGE_ENDPOINT=
+STORAGE_ACCESS_KEY=
+STORAGE_SECRET_KEY=
+STORAGE_BUCKET=
+
+# ===== Auth (mock login now, pluggable SSO later) =====
+AUTH_MODE=mock            # mock | azure-ad | google
+AZURE_AD_CLIENT_ID=
+AZURE_AD_TENANT_ID=
+GOOGLE_SSO_CLIENT_ID=
+
+# ===== Feature flags / misc =====
+LOG_LEVEL=info

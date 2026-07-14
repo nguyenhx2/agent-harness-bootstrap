@@ -53,8 +53,10 @@ def render(src: str) -> tuple[bool, str]:
 def main() -> int:
     args = sys.argv[1:]
     files = [ROOT / a for a in args] if args else sorted(ROOT.rglob("*.md"))
-    files = [f for f in files if ".git" not in f.parts and "node_modules" not in f.parts
-             and ".eval-workdir" not in f.parts]
+    # baseline/ is the superseded skill, vendored only so its byte counts can be recomputed.
+    # It is not maintained, so its diagrams are not this repo's problem.
+    skip = {".git", "node_modules", ".eval-workdir", "dist", "baseline"}
+    files = [f for f in files if not (skip & set(f.parts))]
 
     total = failed = 0
     for f in files:

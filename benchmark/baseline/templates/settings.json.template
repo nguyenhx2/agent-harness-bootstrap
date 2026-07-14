@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "//": "project-bootstrap template. Replace {{...}} placeholders from the intake answers and the codebase-analysis mapping tables. Adapt the deny list to the ACTUAL stack: keep only rules whose tools exist in the repo, add stack-specific destructive commands found during analysis. Hook 'command' lines assume PowerShell (Windows); on macOS/Linux use: bash .claude/hooks/<name>.sh (scripts in hooks-pack.md).",
+  "permissions": {
+    "allow": [
+      "Bash({{PKG_INSTALL_CMD}})",
+      "Bash({{LINT_CMD}})",
+      "Bash({{BUILD_CMD}})",
+      "Bash({{TEST_CMD}})",
+      "Bash({{TEST_CMD}}:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout -b:*)",
+      "Bash({{PLATFORM_CLI_READONLY}}:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm .env:*)",
+      "Bash(rm -f .env:*)",
+      "Bash({{DEPLOY_CMD}}:*)",
+      "Bash({{DB_RESET_CMD}}:*)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(.env.development)",
+      "Read(.env.production)",
+      "Read(.env.test)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-adr.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-main-commit.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/check-commit-msg.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-secrets.ps1"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/specs-reminder.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/agent-history.ps1"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -236,8 +236,9 @@ def pct(before: int, after: int) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     here = pathlib.Path(__file__).resolve().parent
-    ap.add_argument("--old", type=pathlib.Path,
-                    default=pathlib.Path.home() / ".claude/skills-backup-20260714/project-bootstrap")
+    # The baseline is vendored at benchmark/baseline/ so the "before" column is reproducible by
+    # anyone, not just on the machine that first measured it.
+    ap.add_argument("--old", type=pathlib.Path, default=here / "baseline")
     ap.add_argument("--new", type=pathlib.Path, default=here.parent / "harness-bootstrap")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
