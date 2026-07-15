@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - Overview</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --blue:#1D3557; --blue-hi:#A8DADC;
+    --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--white);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  #stage{
+    position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden;
+  }
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;padding:3% 5%;text-align:center}
+  .scene.on{opacity:1}
+  .fade{transition:opacity .5s ease}
+  h1{font-size:clamp(20px,3.4vw,40px);line-height:1.35;font-weight:700}
+  .green{color:var(--green-hi)} .red{color:var(--red)} .purple{color:var(--purple-hi)}
+  .dim{color:var(--dim)}
+  .brand{margin-top:22px;letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
+  .caption{position:absolute;left:0;right:0;bottom:5%;text-align:center;
+    font-size:clamp(13px,1.9vw,23px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .repo{width:26%;aspect-ratio:5/6;background:#1B1E27;border:2px solid var(--neutral);
+    border-radius:14px;display:flex;flex-direction:column;justify-content:center;gap:9px;padding:12px}
+  .repo .fl{height:9%;background:var(--neutral);opacity:.8;border-radius:5px}
+  .stagewrap{display:flex;align-items:center;gap:5%;width:100%;justify-content:center}
+  ul.problems{list-style:none;text-align:left;max-width:52%}
+  ul.problems li{display:flex;align-items:center;gap:12px;margin:14px 0;
+    font-size:clamp(12px,1.8vw,22px);opacity:0;transform:translateX(14px);
+    transition:opacity .45s,transform .45s}
+  ul.problems li.on{opacity:1;transform:none}
+  ul.problems li .dot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none}
+  .chip{border-radius:12px;padding:.7em 1.2em;font-size:clamp(13px,1.9vw,24px);
+    display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+  .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:var(--white)}
+  .chip.neutral{background:var(--neutral);border:2px solid var(--dim);color:var(--white)}
+  .row{display:flex;align-items:center;justify-content:center;gap:5%;width:100%;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .sub{color:var(--green-hi);font-size:clamp(11px,1.6vw,20px)}
+  .boundary{margin-top:5%;width:44%;min-height:20%;border:3px solid var(--green-hi);
+    background:#12211a;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    padding:16px;position:relative}
+  .boundary .lab{position:absolute;top:-1.7em;left:0;right:0;color:var(--green-hi);
+    font-size:clamp(10px,1.5vw,18px)}
+  .pill{border:2px solid var(--green-hi);color:var(--green-hi);border-radius:999px;
+    padding:.5em 1.2em;font-size:clamp(12px,1.7vw,22px)}
+  .pills{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin:22px 0}
+  .grow{animation:grow .5s ease both}
+  @keyframes grow{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="progress" id="prog"></div>
+
+  <!-- Scene 0: core message -->
+  <section class="scene fade" data-s="0">
+    <h1>Give an AI agent a repo it can <span class="green">actually understand</span>,<br>
+    and a harness it <span class="red">cannot escape</span>.</h1>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
+  <!-- Scene 1: the problem -->
+  <section class="scene fade" data-s="1">
+    <div class="stagewrap">
+      <div class="repo" id="repo">
+        <div class="fl"></div><div class="fl"></div><div class="fl"></div>
+        <div class="fl"></div><div class="fl"></div>
+      </div>
+      <ul class="problems" id="problems">
+        <li><span class="dot"></span>No standard to follow</li>
+        <li><span class="dot"></span>Hallucinates requirements</li>
+        <li><span class="dot"></span>Forgets everything on compaction</li>
+        <li><span class="dot"></span>One turn from reading .env or committing to main</li>
+        <li><span class="dot"></span>Quietly bills at the top model tier</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Scene 2: two skills build a harness -->
+  <section class="scene fade" data-s="2">
+    <h1 style="margin-bottom:5%">Two skills build a harness</h1>
+    <div class="row">
+      <div class="col"><span class="chip purple grow">spec-builder</span><span class="sub">writes the contract</span></div>
+      <div class="col"><span class="chip purple grow">harness-bootstrap</span><span class="sub">builds the boundary</span></div>
+    </div>
+    <div class="boundary grow">
+      <span class="lab">the harness the agent runs inside</span>
+      <span class="chip purple">agent</span>
+    </div>
+  </section>
+
+  <!-- Scene 3: payoff -->
+  <section class="scene fade" data-s="3">
+    <h1>A controlled, model-independent<br>agent system</h1>
+    <div class="pills">
+      <span class="pill">Claude Code</span>
+      <span class="pill">Cursor</span>
+      <span class="pill">Codex</span>
+    </div>
+    <div class="dim" style="font-size:clamp(12px,1.7vw,22px)">Ports with enforcement, not just advice</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  // timeline: [sceneIndex, durationMs, captionText, captionAtMs]
+  var TL=[
+    {s:0,d:5000,cap:null},
+    {s:1,d:8000,cap:'Drop an AI agent into a repo, and nothing constrains it.',capAt:600,reveal:true},
+    {s:2,d:7000,cap:'spec-builder writes the contract. harness-bootstrap builds the boundary.',capAt:400},
+    {s:3,d:6000,cap:'A controlled agent system that ports with enforcement.',capAt:400},
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+  var idx=-1;
+
+  function showScene(i){
+    scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)});
+  }
+  function revealProblems(){
+    var lis=document.querySelectorAll('#problems li');
+    lis.forEach(function(li,k){li.classList.remove('on');
+      setTimeout(function(){li.classList.add('on')},400+k*750);});
+  }
+  function step(i){
+    var t=TL[i];
+    showScene(t.s);
+    cap.classList.remove('on');
+    if(t.reveal) revealProblems();
+    if(t.cap){setTimeout(function(){cap.textContent=t.cap;cap.classList.add('on')},t.capAt||300);}
+    setTimeout(function(){cap.classList.remove('on')},t.d-500);
+  }
+  function loop(){
+    idx=(idx+1)%TL.length;
+    step(idx);
+    setTimeout(loop,TL[idx].d);
+  }
+  // progress bar across the whole loop
+  var start=performance.now();
+  function tick(now){
+    var e=((now-start)%total)/total;
+    prog.style.width=(e*100).toFixed(2)+'%';
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>

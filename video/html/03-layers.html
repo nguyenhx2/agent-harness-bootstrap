@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - Control Layers</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .title{position:absolute;top:5%;left:0;right:0;text-align:center;
+    font-size:clamp(18px,2.8vw,34px);font-weight:700}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;padding:8% 5% 4%;text-align:center;gap:12px}
+  .scene.on{opacity:1}
+  h2{font-size:clamp(15px,2.2vw,28px);font-weight:600}
+  .layers{display:flex;flex-direction:column;gap:12px;width:min(80%,760px)}
+  .layer{border:2.5px solid var(--green-hi);background:#12211a;border-radius:12px;
+    padding:.7em 1em;text-align:left;opacity:0;transform:translateY(12px);
+    transition:opacity .5s,transform .5s}
+  .layer.on{opacity:1;transform:none}
+  .layer .nm{color:var(--green-hi);font-weight:700;font-size:clamp(13px,1.9vw,23px)}
+  .layer .ds{color:var(--dim);font-size:clamp(10px,1.5vw,18px);margin-top:2px}
+  .chip{border-radius:12px;padding:.55em 1.1em;font-weight:700;
+    font-size:clamp(13px,1.9vw,24px);display:inline-flex;align-items:center;justify-content:center}
+  .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border:2px solid var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border:2px solid var(--dim);color:#fff}
+  .swap{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .arrow{color:var(--dim);font-size:clamp(16px,2.2vw,28px);line-height:1}
+  .sub{color:var(--dim);font-size:clamp(10px,1.4vw,18px)}
+  .insight{font-size:clamp(14px,2.1vw,26px)}
+  .byte{color:var(--green-hi);font-weight:700;font-size:clamp(13px,1.9vw,24px);
+    opacity:0;transition:opacity .5s}
+  .byte.on{opacity:1}
+  .pulse{animation:pulse 1s ease}
+  @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+  .row{display:flex;align-items:center;justify-content:center;gap:6%;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .pills{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .pill{border:2px solid var(--green-hi);color:var(--green-hi);border-radius:999px;
+    padding:.45em 1.1em;font-size:clamp(12px,1.6vw,22px)}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(12px,1.7vw,22px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .caption.green{color:var(--green-hi)}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="progress" id="prog"></div>
+  <div class="title">The control layers</div>
+
+  <!-- Scene 0: four layers -->
+  <section class="scene" data-s="0">
+    <h2>Four layers between the agent and damage</h2>
+    <div class="layers" id="layers">
+      <div class="layer"><div class="nm">settings deny list</div><div class="ds">cannot read .env, ~/.ssh, .npmrc</div></div>
+      <div class="layer"><div class="nm">blocking hooks</div><div class="ds">cannot commit to main, edit an Accepted ADR</div></div>
+      <div class="layer"><div class="nm">path-scoped rules</div><div class="ds">glob rules load only when a path matches</div></div>
+      <div class="layer"><div class="nm">review gates</div><div class="ds">code + security reviewers, no Edit or Write</div></div>
+    </div>
+  </section>
+
+  <!-- Scene 1: model independence -->
+  <section class="scene" data-s="1">
+    <div class="insight">The guardrails are shell scripts and glob rules</div>
+    <div class="byte" id="byte">byte-identical safety</div>
+    <div class="swap" style="margin-top:12px">
+      <span class="sub" id="swaplab">&nbsp;</span>
+      <span class="chip purple" id="model">Opus</span>
+      <span class="arrow">&#8595;</span>
+      <span class="chip green" id="result">15 / 15</span>
+      <span class="sub">guardrail eval</span>
+    </div>
+  </section>
+
+  <!-- Scene 2: state on disk + ports -->
+  <section class="scene" data-s="2">
+    <h2>State lives on disk, not in a context window</h2>
+    <div class="row">
+      <div class="col"><span class="chip purple fadein">RAM</span><span class="sub" style="color:var(--red)">compacts, lost</span></div>
+      <div class="col"><span class="chip neutral fadein">committed markdown</span><span class="sub" style="color:var(--green-hi)">survives</span></div>
+    </div>
+    <div class="pills">
+      <span class="pill">Claude Code</span><span class="pill">Cursor</span><span class="pill">Codex</span>
+    </div>
+    <div class="sub">Ports with enforcement, not just advice</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+  var TL=[
+    {s:0,d:8000,cap:'Four guardrail layers: deny list, hooks, path-scoped rules, review gates.',capAt:2800,reveal:true},
+    {s:1,d:9000,cap:'Swap Opus to Haiku: byte-identical result. Control does not depend on the model.',capAt:4200,swap:true},
+    {s:2,d:8000,cap:'Control does not depend on the model.',capAt:600,green:true},
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function revealLayers(){
+    var ls=document.querySelectorAll('#layers .layer');
+    ls.forEach(function(l,k){l.classList.remove('on');setTimeout(function(){l.classList.add('on')},400+k*600)});
+  }
+  function runSwap(){
+    q('model').textContent='Opus';q('swaplab').innerHTML='&nbsp;';q('byte').classList.remove('on');
+    setTimeout(function(){q('swaplab').textContent='swap every agent';q('swaplab').style.color='var(--purple-hi)';},2500);
+    setTimeout(function(){q('model').textContent='Haiku';q('model').classList.add('pulse');},3300);
+    setTimeout(function(){q('model').classList.remove('pulse');q('result').classList.add('pulse');},4200);
+    setTimeout(function(){q('result').classList.remove('pulse');q('byte').classList.add('on');},5300);
+  }
+  function step(i){
+    var t=TL[i];showScene(t.s);cap.classList.remove('on');cap.classList.toggle('green',!!t.green);
+    if(t.reveal) revealLayers();
+    if(t.swap) runSwap();
+    if(t.cap){setTimeout(function(){cap.textContent=t.cap;cap.classList.add('on')},t.capAt||300);}
+    setTimeout(function(){cap.classList.remove('on')},t.d-500);
+  }
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>

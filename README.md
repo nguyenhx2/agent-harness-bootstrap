@@ -57,6 +57,16 @@ what it does.**
 Green is deterministic and free. Purple costs tokens. The loop on the right runs the same on any model
 tier, because the gates around it are shell scripts rather than judgment.
 
+### See it in motion
+
+Three ~30s clips, each as an MP4 and a self-contained HTML animation ([`video/`](video/)):
+
+| Clip | Watch |
+|---|---|
+| **What it is and why** - the problem, the two skills, the payoff | [MP4](video/mp4/01-overview.mp4) · [HTML](video/html/01-overview.html) |
+| **The operating flow** - contract, scaffold, then the task loop | [MP4](video/mp4/02-flow.mp4) · [HTML](video/html/02-flow.html) |
+| **The control layers** - deny list, hooks, rules, review gates | [MP4](video/mp4/03-layers.mp4) · [HTML](video/html/03-layers.html) |
+
 ---
 
 ## Install

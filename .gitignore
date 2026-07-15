@@ -6,3 +6,15 @@ vars.json
 .diag/
 dist/
 notes.md
+
+# Video build workspace (Remotion project deps and render scratch)
+video/**/node_modules/
+video/**/out/
+video/.remotion/
+media/
+video/media/
+
+# Motion-skills installed for building the intro videos (build tool, not a deliverable)
+.agents/
+.claude/skills/explainer-video
+skills-lock.json

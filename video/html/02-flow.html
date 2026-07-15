@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - Operating Flow</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;
+    padding:4% 5%;text-align:center;gap:14px}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(20px,3.2vw,40px);font-weight:700}
+  h2{font-size:clamp(16px,2.4vw,30px);font-weight:600;margin-bottom:8px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .tag{border-radius:999px;padding:.4em 1em;font-size:clamp(10px,1.4vw,18px);border:2px solid}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:12px;padding:.6em 1em;font-size:clamp(12px,1.7vw,22px);font-weight:600;
+    display:inline-flex;align-items:center;text-align:center;justify-content:center}
+  .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border:2px solid var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border:2px solid var(--dim);color:#fff}
+  .chip.red{background:var(--red);border:2px solid var(--amber);color:#fff}
+  .row{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+  .arrow{color:var(--dim);font-size:clamp(18px,2.4vw,30px)}
+  .sub{color:var(--dim);font-size:clamp(10px,1.5vw,18px)}
+  .steps{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .steps .chip{opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s}
+  .steps .chip.on{opacity:1;transform:none}
+  .caption{position:absolute;left:0;right:0;bottom:5%;text-align:center;
+    font-size:clamp(12px,1.8vw,22px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .loop{position:relative;width:100%;max-width:760px;height:52%;margin-top:6px}
+  .node{position:absolute;transform:translate(-50%,-50%)}
+  #orch{left:50%;top:16%}
+  #dev{left:20%;top:64%}
+  #board{left:80%;top:64%}
+  #hooks{left:40%;top:96%}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .wire{stroke:var(--dim);stroke-width:2.5;fill:none;
+    stroke-dasharray:6 6;opacity:0;transition:opacity .4s}
+  .wire.on{opacity:1;animation:dash 1s linear infinite}
+  .wire.green{stroke:var(--green-hi);stroke-dasharray:none;animation:none}
+  @keyframes dash{to{stroke-dashoffset:-12}}
+  .wlabel{fill:var(--dim);font-size:12px}
+  .flash{animation:flash .8s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(157,2,8,.7)}100%{box-shadow:0 0 0 26px rgba(157,2,8,0)}}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="progress" id="prog"></div>
+
+  <!-- Scene 0: title + legend -->
+  <section class="scene" data-s="0">
+    <h1>The operating flow</h1>
+    <div class="legend">
+      <span class="tag g">green = free / deterministic</span>
+      <span class="tag p">purple = billed tokens</span>
+      <span class="tag r">red = blocked</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: spec-builder -> contract -->
+  <section class="scene" data-s="1">
+    <div class="row">
+      <span class="chip purple fadein">spec-builder</span>
+      <span class="arrow">&#8594;</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <span class="chip neutral fadein">docs/specs/</span>
+        <span class="sub">the contract</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2: harness-bootstrap steps -->
+  <section class="scene" data-s="2">
+    <span class="chip purple fadein">harness-bootstrap</span>
+    <div class="steps" id="steps">
+      <span class="chip purple">reads your code</span>
+      <span class="chip purple">picks a scoped roster</span>
+      <span class="chip green">scaffolds in ~0.2s</span>
+      <span class="chip green">wires orchestration</span>
+    </div>
+  </section>
+
+  <!-- Scene 3: the task loop -->
+  <section class="scene" data-s="3">
+    <h2>Then the task loop runs</h2>
+    <div class="loop">
+      <svg class="wires" viewBox="0 0 760 300" preserveAspectRatio="none">
+        <path id="w-dispatch" class="wire" d="M355,50 L165,180"/>
+        <path id="w-record"   class="wire" d="M240,192 L560,192"/>
+        <path id="w-bad"      class="wire" d="M160,215 L300,285"/>
+        <path id="w-resume"   class="wire green" d="M600,215 Q430,300 175,215"/>
+        <text x="235" y="120" class="wlabel">dispatches</text>
+        <text x="360" y="182" class="wlabel">records</text>
+      </svg>
+      <div class="node" id="orch"><span class="chip purple">orchestrator</span></div>
+      <div class="node" id="dev"><span class="chip purple">scoped specialists</span></div>
+      <div class="node" id="board"><span class="chip neutral">task board on disk</span></div>
+      <div class="node" id="hooks"><span class="chip red">hooks BLOCK</span></div>
+    </div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+  var TL=[
+    {s:0,d:4500,cap:null},
+    {s:1,d:5500,cap:'spec-builder elicits, then writes the spec set - the contract.',capAt:500},
+    {s:2,d:6500,cap:'harness-bootstrap reads your code and scaffolds the harness in ~0.2s.',capAt:400,steps:true},
+    {s:3,d:11000,cap:null,loop:true},
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function runSteps(){
+    var cs=document.querySelectorAll('#steps .chip');
+    cs.forEach(function(c){c.classList.remove('on');
+      setTimeout(function(){c.classList.add('on')},500+[].indexOf.call(cs,c)*550);});
+  }
+  function clearWires(){['w-dispatch','w-record','w-bad','w-resume'].forEach(function(id){q(id).classList.remove('on')});
+    q('hooks').style.opacity=0;q('dev').firstChild.textContent='scoped specialists';}
+  function runLoop(){
+    clearWires();
+    q('hooks').style.opacity=0;
+    setTimeout(function(){q('w-dispatch').classList.add('on');
+      cap.textContent='An orchestrator dispatches scoped specialist agents.';cap.classList.add('on');},500);
+    setTimeout(function(){q('w-record').classList.add('on')},1600);
+    setTimeout(function(){
+      q('hooks').style.opacity=1;q('w-bad').classList.add('on');
+      q('hooks').firstChild.classList.add('flash');
+      cap.textContent='Hooks block bad actions before they happen.';},3200);
+    setTimeout(function(){q('hooks').firstChild.classList.remove('flash')},4200);
+    setTimeout(function(){
+      q('dev').firstChild.textContent='fresh agent';
+      q('w-dispatch').classList.remove('on');q('w-record').classList.remove('on');
+      q('w-bad').classList.remove('on');q('hooks').style.opacity=0;
+      q('w-resume').classList.add('on');
+      cap.textContent='The board survives a crash - a fresh agent resumes where it stopped.';},6000);
+    setTimeout(function(){cap.classList.remove('on')},10200);
+  }
+  function step(i){
+    var t=TL[i];showScene(t.s);cap.classList.remove('on');
+    if(t.steps) runSteps();
+    if(t.loop){runLoop();return;}
+    if(t.cap){setTimeout(function(){cap.textContent=t.cap;cap.classList.add('on')},t.capAt||300);}
+    setTimeout(function(){cap.classList.remove('on')},t.d-500);
+  }
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>
