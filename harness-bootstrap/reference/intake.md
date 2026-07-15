@@ -25,6 +25,14 @@ and the effort profile.
 3. Do specs already exist? If not, offer to run the `spec-builder` skill first - the rest of the
    bootstrap is better with FRs in hand.
 
+**Target AI tools.** Detect which tools the repo already uses - `.claude/` or `CLAUDE.md` (Claude
+Code, always the primary), `.cursor/` or `.cursorrules` (Cursor), `.codex/` (Codex), and a shared
+`AGENTS.md` (Cursor and Codex both read it). Present the detection as the default, then ask (multi-
+select) which tools the harness must run in. The answer sets whether step 8 ports the scaffolded
+harness with `scripts/port.py --tool cursor|codex|all`. Detection only pre-fills the default: a team
+may want Cursor support before any `.cursor/` exists. This drives the port step, not a scaffold
+variable.
+
 ## Batch B - tech stack
 
 4. Language / framework (or "TBD via ADR" placeholders).
@@ -138,6 +146,7 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
 | 2 docs language | no var - sets the language of authored `docs/` prose only |
 | 3 specs exist | `{{FR_LIST}}` (from the specs, if any); otherwise the `spec-builder` handoff |
+| target AI tools (Batch A) | no var - drives whether step 8 ports to Cursor / Codex via `port.py` |
 | 4 language/framework | `{{SOURCE_GLOBS}}` shape; `tech-stack.md` body |
 | 5 database + ORM | flag `db`, `{{ORM}}`, `{{DB_GLOBS}}` |
 | 6 providers / hosting | flag `ai` (if LLM output reaches users), `{{HOSTING}}` |

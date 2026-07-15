@@ -9,7 +9,7 @@ backed by a file or a runnable script in this repo is marked as not delivered.
 |---|---|---|
 | Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
 | Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 15 known-bad payloads at it: 15/15 blocked. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. |
-| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -64%, write path -85%). Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
+| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -63%, write path -85%). Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
 | Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
 | Governance: model sovereignty | Enforced for data at rest; advisory beyond it | Gap 1 below. Partially closed. |
@@ -111,7 +111,7 @@ anywhere in the repo.
 ## What the repo supports today
 
 1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 15/15.
-2. **The harness itself is cheap to install and cheap to carry.** Measured: 64% less to read, 85%
+2. **The harness itself is cheap to install and cheap to carry.** Measured: 63% less to read, 85%
    less to author, 66% of rule content kept out of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the

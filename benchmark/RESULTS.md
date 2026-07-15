@@ -6,7 +6,7 @@
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 83,339 | -64% |
+| Read path (bytes the model must pull into context) | 234,196 | 85,641 | -63% |
 | Read path (files read) | 24 | 7 | -71% |
 | Write path (bytes the model must author) | 95,064 | 14,595 | -85% |
 | Rule content kept out of the default session | - | 66% | - |
@@ -43,8 +43,8 @@ The old skill kept its hooks, commands, rules and templates as fenced code block
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 7 | 83,339 | ~23,150 |
-| **Reduction** | **-71%** | **-64%** | **-64%** |
+| harness-bootstrap | 7 | 85,641 | ~23,800 |
+| **Reduction** | **-71%** | **-63%** | **-63%** |
 
 The new skill reads `SKILL.md` plus six reference docs. It never reads `assets/`: the scaffolder
 copies those files directly, so they never enter the context window at all.

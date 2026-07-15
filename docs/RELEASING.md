@@ -20,6 +20,9 @@ so the process does not have to be remembered.
    exists. `package.py` refuses to build otherwise; the preflight is the gate.
 6. **The eval must be green.** CI runs the guardrail eval and the scaffold matrix. Do not ship a
    harness whose guardrails do not block.
+7. **Every release carries its eval and benchmark.** The release attaches `eval-results.md` and
+   `benchmark-results.md`, captured from the tagged commit, so the "15/15" and the numbers are
+   provable per version. CI does this automatically on a tag.
 
 ## The note format
 

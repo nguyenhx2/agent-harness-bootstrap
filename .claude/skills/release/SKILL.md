@@ -75,6 +75,16 @@ Produces, under `dist/`: one `.zip` per skill, one bundle `.zip`, and `SHA256SUM
 carries a `VERSION` file **inside the skill directory**, so an installed skill is self-identifying.
 The script verifies this and prints it - read the output rather than assuming.
 
+Then capture the eval and benchmark for this exact version, so the proof ships with the release
+(`package.py` wipes `dist/`, so write these after it):
+
+```bash
+{ echo '# Guardrail eval'; echo '```'; python eval/guardrail_eval.py 2>&1; echo '```'; } > dist/eval-results.md
+{ echo '# Benchmark';      echo '```'; python benchmark/benchmark.py 2>&1; echo '```'; } > dist/benchmark-results.md
+```
+
+The CI release workflow does this automatically on a tag; do it by hand only for a manual release.
+
 **6. Tag and publish.** Write the notes to a file first; do not inline a multi-line body.
 
 ```bash
@@ -119,7 +129,8 @@ Then record it in `CHANGELOG.md` under **Removed**, with the reason.
 - [ ] `package.py --check` passes.
 - [ ] `guardrail_eval.py` is 15/15, `benchmark.py` exits 0, `port.py --self-test` is 5/5,
       `check_numbers.py` and `check_mermaid.py` pass.
-- [ ] `dist/` contains the per-skill zips, the bundle, and `SHA256SUMS`.
+- [ ] `dist/` contains the per-skill zips, the bundle, `SHA256SUMS`, and the captured
+      `eval-results.md` + `benchmark-results.md` for this version.
 - [ ] Each zip carries `VERSION` inside the skill directory (the packager prints this - check it).
 - [ ] `gh release view` lists the attached assets. A release with no assets is not done.
 - [ ] No em-dashes anywhere in the notes.

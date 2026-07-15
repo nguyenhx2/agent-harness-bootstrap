@@ -58,6 +58,10 @@ def canonical() -> dict[str, int]:
         "read_pct": pct(old["read_bytes"], new["read_bytes"]),
         "write_pct": pct(old["write_bytes"], new["write_bytes"]),
         "read_files_pct": pct(old["read_files"], new["read_files"]),
+        # Exact "after" byte figures, counted from disk. These drifted silently once (83,339 lingered
+        # in four files after the read path grew to 85,641) because only the percentages were guarded.
+        "read_bytes_after": new["read_bytes"],
+        "write_bytes_after": new["write_bytes"],
         "tax_pct": round(scoped / (scoped + always) * 100),
         "unconditional_rules": len(tax["always_files"]),
         "scoped_rules": len(tax["scoped_files"]),
@@ -97,6 +101,18 @@ COUNT_CHECKS = [
     ("hook count",    rf"{NUM} (?:blocking )?hooks", "hooks"),
 ]
 
+# The exact "after" byte figure that follows the known baseline constant in a before|after row. The
+# token columns are prefixed "~" and so are not captured; the detail-table rows do not carry the
+# baseline constant and so are covered by the summary rows instead.
+BYTE_CHECKS = [
+    ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
+    ("write-path after bytes", r"95,064\s*\|\s*([\d,]{4,})",  "write_bytes_after"),
+]
+
+
+def as_bytes(tok: str) -> int:
+    return int(tok.replace(",", ""))
+
 
 def self_test(c: dict[str, int]) -> list[str]:
     """A pattern that matches nothing looks identical to a pattern that finds no problems: green,
@@ -114,9 +130,11 @@ def self_test(c: dict[str, int]) -> list[str]:
         "rule count":            "{rules} rules - 6 always loaded",
         "command count":         "{commands} slash commands, two of them gated",
         "hook count":            "{hooks} blocking hooks",
+        "read-path after bytes":  "| Read path | 234,196 | {read_bytes_after} | -63% |",
+        "write-path after bytes": "| Write path | 95,064 | {write_bytes_after} | -85% |",
     }
     dead = []
-    for name, pat, key in CHECKS + COUNT_CHECKS:
+    for name, pat, key in CHECKS + COUNT_CHECKS + BYTE_CHECKS:
         probe = lines[name].format(**c)
         if not re.search(pat, probe, re.I):
             dead.append(f"{name}: pattern never matches, so it can never fail")
@@ -154,6 +172,13 @@ def main() -> int:
                 if got != c[key]:
                     line = text[:m.start()].count("\n") + 1
                     print(f"    MISMATCH  {rel}:{line}  {name}: says {got}, reality is {c[key]}")
+                    bad += 1
+        for name, pat, key in BYTE_CHECKS:
+            for m in re.finditer(pat, text):
+                got = as_bytes(next(g for g in m.groups() if g))
+                if got != c[key]:
+                    line = text[:m.start()].count("\n") + 1
+                    print(f"    MISMATCH  {rel}:{line}  {name}: says {got:,}, reality is {c[key]:,}")
                     bad += 1
 
     if bad:

@@ -70,7 +70,7 @@ artifacts, they are different tasks. Never bundle unrelated work into one task.
 
 ## Phase 3 - register and create the task file
 
-1. Create the task file from `docs/templates/TASK.md.template` via `/new-task`. Fill in title, goal,
+1. Create the task file from `docs/templates/TASK.md` via `/new-task`. Fill in title, goal,
    owner, deps, priority, phase, created date, acceptance criteria. Frontmatter starts at
    `status: Planned`.
 2. Add the row to the index table in `docs/tasks/master-plan.md`: TASK code, title, owner, deps,

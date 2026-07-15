@@ -363,7 +363,7 @@ Measured against the predecessor skill this replaces. Reproduce with `python ben
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 83,339 | **-64%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 85,641 | **-63%** |
 | Bytes the model must write as output | 95,064 | 14,595 | **-85%** |
 | Rule content kept out of the default session | - | 49,394 of 74,697 B | **66%** |
 | Scaffold time | - | ~0.2 s, 73 files | - |

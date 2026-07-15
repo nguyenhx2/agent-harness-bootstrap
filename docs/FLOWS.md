@@ -101,7 +101,7 @@ reconciliation queue, and it is why the scaffolder never overwrites a file the u
 
 ```mermaid
 flowchart TD
-    START(["User: set up the base for this repo"])
+    START(["User invokes /harness-bootstrap"])
     MODE{"Mode"}
 
     GF["Greenfield<br/>empty or near-empty repo"]
@@ -113,6 +113,7 @@ flowchart TD
     CONFIRM{"User confirms<br/>or corrects the report"}
 
     INTAKE["Intake questionnaire<br/>AskUserQuestion, max 4 per call.<br/>Brownfield: pre-fill from evidence, ask only<br/>what code cannot decide"]
+    TOOLS["Detect + confirm target tools<br/>scan for .cursor/ .codex/ AGENTS.md,<br/>then ask: Claude Code / Cursor / Codex"]
     PLAN{"One-screen setup plan:<br/>created / kept / modified,<br/>roster with model + effort.<br/>User confirms"}
 
     ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
@@ -134,6 +135,7 @@ flowchart TD
 
     GATE{"Quality gate<br/>structure / cost and context / safety /<br/>grounding / handoff"}
     SMOKE["Smoke-test the loop:<br/>real task file, master-plan row,<br/>session-log row, /task-resume"]
+    PORT["Port to the tools selected at intake<br/>port.py --tool cursor / codex / all:<br/>.cursor/rules + adapter, .codex/hooks.json"]
     DONE(["Harness runs under orchestration"])
 
     START --> MODE
@@ -148,7 +150,7 @@ flowchart TD
     CONFIRM -->|"corrections override findings"| ANALYZE
     CONFIRM -->|"confirmed"| INTAKE
 
-    INTAKE --> PLAN
+    INTAKE --> TOOLS --> PLAN
     PLAN -->|"changes requested"| INTAKE
     PLAN -->|"confirmed"| ROSTER
     ROSTER --> OS --> VARS
@@ -167,7 +169,7 @@ flowchart TD
 
     GAPFILL --> WIRE --> GATE
     GATE -->|"a check fails"| GAPFILL
-    GATE -->|"all green"| SMOKE --> DONE
+    GATE -->|"all green"| SMOKE --> PORT --> DONE
 
     classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
     classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
@@ -175,8 +177,8 @@ flowchart TD
     classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
     classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
 
-    class ANALYZE,INTAKE,ROSTER,OS,GAPFILL,WIRE,RECONCILE mod
-    class DRY,SCAFFOLD,SMOKE det
+    class ANALYZE,INTAKE,TOOLS,ROSTER,OS,GAPFILL,WIRE,RECONCILE mod
+    class DRY,SCAFFOLD,SMOKE,PORT det
     class START,MODE,CONFIRM,PLAN,GF,BF,AU,DONE hum
     class GATE,MISSINGVAR gate
     class INV,VARS,ADDED,KEPT,CONFLICT art

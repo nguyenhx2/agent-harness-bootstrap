@@ -164,5 +164,5 @@ day one instead of an empty board:
 - `docs/tasks/master-plan.md` gets a "Phase 1 - standardization" section.
 - One `TASK-NNN` row per gap. Owner = the agent that owns that concern. P0 for guardrail gaps, P1 for
   convention drift, P2 for nice-to-haves.
-- Create the task files for the P0 items immediately, from `docs/templates/TASK.md.template`. They
+- Create the task files for the P0 items immediately, from `docs/templates/TASK.md`. They
   start at status `Planned` - see [`task-control.md`](task-control.md).

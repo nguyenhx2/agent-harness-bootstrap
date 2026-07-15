@@ -59,6 +59,26 @@ jobs:
       - name: Build artifacts
         run: python scripts/package.py --version "${{ steps.v.outputs.version }}"
 
+      # Every release carries the eval and benchmark output for the exact commit it was cut from,
+      # so the "15/15" and the numbers are provable per version, not just at head. package.py wipes
+      # dist/ on build, so these are written AFTER it. They ship as release assets, not installables.
+      - name: Capture the eval and benchmark for this release
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          {
+            echo "# Guardrail eval - v$V"
+            echo '```'
+            python eval/guardrail_eval.py 2>&1
+            echo '```'
+          } > "dist/eval-results.md"
+          {
+            echo "# Benchmark - v$V"
+            echo '```'
+            python benchmark/benchmark.py 2>&1
+            echo '```'
+          } > "dist/benchmark-results.md"
+          echo "captured eval-results.md and benchmark-results.md"
+
       - name: Assert VERSION is inside every archive
         run: |
           python - <<'PY'
