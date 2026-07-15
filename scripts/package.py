@@ -5,7 +5,7 @@ Produces, under dist/:
 
     harness-bootstrap-v<X.Y.Z>.zip          one skill
     spec-builder-v<X.Y.Z>.zip               one skill
-    claude-harness-bootstrap-v<X.Y.Z>.zip   both skills
+    agent-harness-bootstrap-v<X.Y.Z>.zip   both skills
     SHA256SUMS
 
 Plus an unversioned alias of each, because GitHub's permanent download URL
@@ -32,7 +32,7 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILLS = ("harness-bootstrap", "spec-builder")
-BUNDLE = "claude-harness-bootstrap"
+BUNDLE = "agent-harness-bootstrap"
 DIST = ROOT / "dist"
 
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")

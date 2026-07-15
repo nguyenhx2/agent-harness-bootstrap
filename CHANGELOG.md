@@ -5,6 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.1.0
+
+Repository renamed, and concrete guidance for running the harness alongside other tools.
+
+**Changed**
+
+- The repository is now `agent-harness-bootstrap` (was `claude-harness-bootstrap`). The name drops the vendor, matching the porting guidance below. GitHub redirects the old URL; the installed skill directories (`harness-bootstrap`, `spec-builder`) are unchanged. The release bundle is now `agent-harness-bootstrap.zip`.
+
+**Added**
+
+- README: how to run the two skills without clashing with other installed skills - invoke `/harness-bootstrap` and `/spec-builder` by name, and rely on the scaffolder writing only into the target repo and never overwriting a file.
+- README: how to use the generated harness with Cursor and Codex. Codex reads the generated `AGENTS.md` natively; Cursor reads `AGENTS.md` and `.cursor/rules/*.mdc`, with a `paths:` to `globs:` mapping. The rules port; the hooks and deny list do not, so those tools get the guidance without the enforcement.
+
 ## v1.0.1
 
 Fixes diagrams that did not render, including in the specs this skill generates for you.
