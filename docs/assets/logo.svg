@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Agent Harness Bootstrap">
+  <!-- Harness boundary: green scoped frame that contains the agent -->
+  <rect x="36" y="36" width="184" height="184" rx="34" ry="34"
+        fill="none" stroke="#2D6A4F" stroke-width="13"/>
+
+  <!-- Reins: control lines tethering the agent to the boundary frame -->
+  <path d="M72 44 L128 96 L184 44"
+        fill="none" stroke="#52B788" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Agent: purple hexagon node held inside the harness -->
+  <polygon points="128,96 166.1,119 166.1,161 128,184 89.9,161 89.9,119"
+           fill="#5A189A" stroke="#2D6A4F" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- Agent core accent -->
+  <polygon points="128,116 148.8,128 148.8,152 128,164 107.2,152 107.2,128"
+           fill="none" stroke="#9D4EDD" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- Bit: the single hard control point where the reins meet the agent -->
+  <circle cx="128" cy="96" r="8" fill="#9D0208"/>
+</svg>

@@ -1,5 +1,6 @@
 ---
 name: spec-builder
+version: 1.2.0
 description: Build a complete BA specification set (13-section structure under docs/specs/) for any project from raw input - an idea, meeting notes, a transcript, an existing PRD, or legacy docs. Use when the user asks to "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "chuẩn hóa tài liệu BA", or wants requirement docs scaffolded for a new or existing project.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---

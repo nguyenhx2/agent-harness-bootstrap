@@ -1,5 +1,6 @@
 ---
 name: harness-bootstrap
+version: 1.2.0
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -39,6 +40,16 @@ parameterize every later step.
 what code cannot decide: docs language, commit identity, data sensitivity, gated actions. Then echo a
 one-screen setup plan - what will be created, kept, and modified, plus **the roster with each agent's
 model and effort** - and get confirmation before writing anything.
+
+**Detect the target tools first, then confirm them.** Before the plan, scan the repo for which AI
+coding tools it already uses, and present the finding as the default for a question - never assume:
+- `CLAUDE.md` or `.claude/` -> **Claude Code** (always the primary; the harness is generated for it).
+- `.cursor/`, `.cursorrules`, or `AGENTS.md` -> **Cursor** is in use.
+- `.codex/` or `AGENTS.md` -> **Codex** is in use (`AGENTS.md` is shared by both Cursor and Codex).
+
+Then ask, with `AskUserQuestion` (multi-select), which tools the harness must run in. The answer sets
+whether step 8 ports to Cursor, Codex, both, or neither. Detection only pre-fills the default; a team
+may want Cursor support even if no `.cursor/` exists yet.
 
 **2. Pick the roster** - [`reference/roster.md`](reference/roster.md). Tier 0 is unconditional
 (orchestrator, the two reviewers, spec-guardian, ≥1 dev agent). Choose the preset (S/M/L) that matches
@@ -101,6 +112,16 @@ this is still far cheaper than regenerating them - but say so, and fix Python.
 
 **7. Verify.** Run the quality gate below, then smoke-test the loop end to end: create one real task
 file, register it in master-plan, append a session-log row, and `/task-resume` it.
+
+**8. Port to the other tools selected in step 1.** If the intake selected Cursor or Codex, run the
+porter after scaffolding - `--tool cursor`, `--tool codex`, or `--tool all`:
+`python scripts/port.py --target <repo> --tool all`. It converts `.claude/rules/`
+into `.cursor/rules/*.mdc` (path-scoped rules become `globs:`, unconditional become `alwaysApply`),
+and wires the hooks into each tool's hook system: Codex's payload matches Claude Code's so the hooks
+register directly; Cursor gets a generated adapter that translates its payload and output. Two honest
+limits it prints: Codex routes file edits through `apply_patch` so `protect-adr` is best-effort there,
+and Cursor's `afterFileEdit` is observational so an ADR edit is flagged, not blocked, in Cursor. The
+rules and the Bash-based guards port exactly. `AGENTS.md` is already read natively by both tools.
 
 ## Quality gate
 

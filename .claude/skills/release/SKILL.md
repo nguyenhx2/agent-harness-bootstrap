@@ -27,6 +27,11 @@ git log $(git describe --tags --abbrev=0 2>/dev/null)..HEAD --oneline
 
 Ask the user to confirm the number before proceeding. Do not guess a MAJOR bump on their behalf.
 
+**Then bump the version inside each skill.** Set `version: X.Y.Z` in the frontmatter of every
+`SKILL.md` (`harness-bootstrap/SKILL.md`, `spec-builder/SKILL.md`). This is what makes an installed
+skill self-identifying even before the packager injects its `VERSION` file, and the preflight in
+step 3 fails the release if a `SKILL.md` version does not match the tag.
+
 **2. Write the CHANGELOG section.** Add `## vX.Y.Z` at the top of `CHANGELOG.md`, above the previous
 version. Group under **Added / Changed / Fixed / Removed** and use only the headings that apply.
 
@@ -45,15 +50,19 @@ Write it for someone deciding whether to upgrade:
 python scripts/package.py --version X.Y.Z --check
 ```
 
-It refuses on a non-semver version, a missing `## vX.Y.Z` CHANGELOG section, a missing `SKILL.md`, or
-a scaffolder with no manifest. If it fails, fix the cause - do not work around it.
+It refuses on a non-semver version, a missing `## vX.Y.Z` CHANGELOG section, a missing `SKILL.md`, a
+`SKILL.md` whose `version:` does not match the tag, or a scaffolder with no manifest. If it fails, fix
+the cause - do not work around it.
 
-**4. Prove the harness still works.** Both must exit 0. Do not ship a harness whose guardrails do
-not block.
+**4. Prove the harness still works.** All must exit 0. Do not ship a harness whose guardrails do not
+block, whose diagrams do not render, or whose figures contradict the scripts.
 
 ```bash
-python eval/guardrail_eval.py      # must be 15/15
-python benchmark/benchmark.py      # must exit 0
+python eval/guardrail_eval.py                       # must be 15/15
+python benchmark/benchmark.py                       # must exit 0
+python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 5/5
+python scripts/check_numbers.py                     # figures match the scripts
+python scripts/check_mermaid.py                     # every diagram renders (needs node)
 ```
 
 **5. Build the artifacts.**
@@ -105,9 +114,11 @@ Then record it in `CHANGELOG.md` under **Removed**, with the reason.
 ## Quality gate
 
 - [ ] Version is semver and the user confirmed the bump level.
+- [ ] `version:` in every `SKILL.md` frontmatter matches the tag.
 - [ ] `CHANGELOG.md` has a `## vX.Y.Z` section, grouped, with failure modes named on every Fixed item.
 - [ ] `package.py --check` passes.
-- [ ] `guardrail_eval.py` is 15/15 and `benchmark.py` exits 0.
+- [ ] `guardrail_eval.py` is 15/15, `benchmark.py` exits 0, `port.py --self-test` is 5/5,
+      `check_numbers.py` and `check_mermaid.py` pass.
 - [ ] `dist/` contains the per-skill zips, the bundle, and `SHA256SUMS`.
 - [ ] Each zip carries `VERSION` inside the skill directory (the packager prints this - check it).
 - [ ] `gh release view` lists the attached assets. A release with no assets is not done.

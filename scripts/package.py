@@ -59,9 +59,20 @@ def preflight(version: str) -> list[str]:
 
     for skill in SKILLS:
         base = ROOT / skill
-        if not (base / "SKILL.md").is_file():
+        skill_md = base / "SKILL.md"
+        if not skill_md.is_file():
             problems.append(f"{skill}/SKILL.md is missing")
             continue
+        # The version must be bumped inside the skill file itself, not only in the VERSION file the
+        # packager injects. A skill installed on its own then carries its release number in its
+        # frontmatter. This makes a forgotten bump fail the release instead of shipping a stale one.
+        fm = skill_md.read_text(encoding="utf-8")
+        m = re.search(r"^version:\s*(.+?)\s*$", fm, re.MULTILINE)
+        if not m:
+            problems.append(f"{skill}/SKILL.md has no 'version:' in its frontmatter")
+        elif m.group(1).lstrip("v") != version:
+            problems.append(
+                f"{skill}/SKILL.md version '{m.group(1)}' != release '{version}' - bump it")
         if not skill_files(skill):
             problems.append(f"{skill} has no files")
         if (base / "scripts/scaffold.py").is_file() and not (base / "assets/manifest.json").is_file():

@@ -11,8 +11,10 @@ so the process does not have to be remembered.
 2. **A release ships artifacts.** `python scripts/package.py --version X.Y.Z` builds them. A tag with
    no installable `.zip` is a bookmark, not a release.
 3. **The version is inside the package.** Each skill directory in the archive carries a `VERSION`
-   file, so a skill installed on disk is traceable to the release it came from. An unversioned skill
-   is an unknown build, and "which one is broken" becomes unanswerable.
+   file, and each `SKILL.md` carries a matching `version:` in its frontmatter, so a skill installed
+   on disk is traceable to the release it came from. The preflight fails if a `SKILL.md` version does
+   not match the tag. An unversioned skill is an unknown build, and "which one is broken" becomes
+   unanswerable.
 4. **`SHA256SUMS` ships with every release.** Anyone pulling an artifact can verify it.
 5. **CHANGELOG first, tag second.** `CHANGELOG.md` must contain a `## vX.Y.Z` section before the tag
    exists. `package.py` refuses to build otherwise; the preflight is the gate.
@@ -52,15 +54,18 @@ Rules for the prose:
 ## The procedure
 
 ```bash
-# 1. Write the CHANGELOG section for the new version.
-$EDITOR CHANGELOG.md
+# 1. Write the CHANGELOG section, and bump version: in every SKILL.md frontmatter.
+$EDITOR CHANGELOG.md harness-bootstrap/SKILL.md spec-builder/SKILL.md
 
-# 2. Preflight. Refuses on a missing changelog section, a bad semver, a dead manifest.
+# 2. Preflight. Refuses on a missing changelog section, a bad semver, a dead manifest,
+#    or a SKILL.md version that does not match the tag.
 python scripts/package.py --version X.Y.Z --check
 
-# 3. Prove the harness still works. Both must exit 0.
+# 3. Prove the harness still works. All must exit 0.
 python eval/guardrail_eval.py
 python benchmark/benchmark.py
+python harness-bootstrap/scripts/port.py --self-test
+python scripts/check_numbers.py
 
 # 4. Build the artifacts.
 python scripts/package.py --version X.Y.Z

@@ -20,7 +20,39 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-BLOCK = re.compile(r"```mermaid\n(.*?)```", re.S)
+
+
+def find_blocks(text: str) -> list[tuple[str, bool]]:
+    """Return (source, closing_on_own_line) for every ```mermaid block.
+
+    A closing fence must sit on a line by itself (CommonMark). mermaid-cli does not care - it splits
+    on the ``` wherever it is - but GitHub does: a fence glued to the last content line
+    (`    class A art` + ```` ``` ````) never closes the block, so GitHub pulls the following prose
+    into the diagram and fails to parse it. That exact bug shipped once and rendered fine locally.
+    """
+    lines = text.splitlines()
+    blocks: list[tuple[str, bool]] = []
+    i = 0
+    while i < len(lines):
+        if lines[i].rstrip() == "```mermaid":
+            body: list[str] = []
+            j, closing_ok = i + 1, False
+            while j < len(lines):
+                line = lines[j]
+                if re.match(r"^\s*```\s*$", line):          # proper closing fence, own line
+                    closing_ok = True
+                    break
+                if line.rstrip().endswith("```"):           # fence glued to content
+                    body.append(line.rstrip()[:-3])
+                    closing_ok = False
+                    break
+                body.append(line)
+                j += 1
+            blocks.append(("\n".join(body), closing_ok))
+            i = j + 1
+        else:
+            i += 1
+    return blocks
 
 
 # A label containing a tag-shaped token - "<name>", "<slug>", "<T>" - is parsed as HTML by the
@@ -86,10 +118,16 @@ def main() -> int:
 
     total = failed = 0
     for f in files:
-        blocks = BLOCK.findall(f.read_text(encoding="utf-8"))
-        for i, b in enumerate(blocks, 1):
+        blocks = find_blocks(f.read_text(encoding="utf-8"))
+        for i, (b, closing_ok) in enumerate(blocks, 1):
             total += 1
             rel = f.relative_to(ROOT).as_posix()
+
+            if not closing_ok:
+                failed += 1
+                print(f"  FAIL  {rel} block {i}: closing ``` is glued to the last line. Put it on "
+                      f"its own line, or GitHub will not close the block.")
+                continue
 
             issues = lint(b)
             if issues:

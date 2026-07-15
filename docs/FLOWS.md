@@ -33,7 +33,8 @@ flowchart LR
     class M mod
     class H hum
     class G gate
-    class A art```
+    class A art
+```
 
 Mermaid applies `classDef` to flowcharts only, not to sequence diagrams. The two sequence diagrams
 below therefore carry the same semantics in their prose and notes rather than in fills.
@@ -80,7 +81,8 @@ flowchart TD
     class SB,HB,NOSPEC mod
     class START,Q hum
     class SPECS,HARNESS art
-    class RUN det```
+    class RUN det
+```
 
 The dependency runs one way. `spec-builder` writes into a docs tree that `harness-bootstrap` creates,
 so on a repo with no docs tree at all, `harness-bootstrap` runs first and `spec-builder` fills the
@@ -177,7 +179,8 @@ flowchart TD
     class DRY,SCAFFOLD,SMOKE det
     class START,MODE,CONFIRM,PLAN,GF,BF,AU,DONE hum
     class GATE,MISSINGVAR gate
-    class INV,VARS,ADDED,KEPT,CONFLICT art```
+    class INV,VARS,ADDED,KEPT,CONFLICT art
+```
 
 Three points from the diagram:
 
@@ -272,7 +275,8 @@ flowchart TD
     class START hum
     class NOMAN,FAIL gate
     class SKIP,ADDED,KEPT,CONFLICT art
-    class QUEUE mod```
+    class QUEUE mod
+```
 
 The scaffolder refuses two decisions on purpose:
 
@@ -363,7 +367,8 @@ sequenceDiagram
     Note over Orch: Close-out: remove the worktree, delete the merged branch,<br/>prune, and sweep out-of-repo scratch (gated, enumerated).
     Orch->>Board: No Active or Blocked tasks left in scope:<br/>terminal phase + a final MISSION COMPLETE session-log row
     Orch-->>User: Summary. Then the instance terminates rather than idling.
-    Note over Orch,Board: Marker present + silent = finished, do NOT resume.<br/>No marker + silent = crashed, resume from file state.```
+    Note over Orch,Board: Marker present + silent = finished, do NOT resume.<br/>No marker + silent = crashed, resume from file state.
+```
 
 The files are the truth and an agent's report is a claim. A gate is passed when the task file's
 session log holds a row for it, not when an agent says "reviewed". Status lives in two places, the
@@ -414,7 +419,8 @@ sequenceDiagram
     opt The docs workspace exists
         SB->>HB: Seed docs/requirements/PRD-FR-NN-*.md, docs/context/glossary.md,<br/>docs/context/business-rules.md - linking back, not duplicating
     end
-    SB-->>HB: Handoff: the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.```
+    SB-->>HB: Handoff: the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.
+```
 
 The ordering is a discipline: the FR list is confirmed *before* anything else is written, and the
 sections are filled in order because each depends on the last. The traceability check at the end is
@@ -478,7 +484,8 @@ flowchart TD
     class L1,L2,L3,L4,L5,L6,L7 art
     class NEVER det
     class WINDOW mod
-    class TOUCH hum```
+    class TOUCH hum
+```
 
 Six unconditional rules, eight path-scoped ones. On the shipped asset set that is 25,303 bytes always
 loaded against 49,394 bytes loaded on demand: **66% of the rule content is kept out of the default

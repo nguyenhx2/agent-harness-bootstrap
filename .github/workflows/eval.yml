@@ -57,6 +57,11 @@ jobs:
       - name: Figures in the docs must match what the scripts print
         run: python scripts/check_numbers.py
 
+      # The Cursor/Codex porter's hook adapter must actually block, not just render. It scaffolds a
+      # harness, ports it, and fires sample Cursor payloads at the adapter.
+      - name: Port adapter must enforce (Cursor/Codex)
+        run: python harness-bootstrap/scripts/port.py --self-test
+
   scaffold-matrix:
     name: scaffold (${{ matrix.flavor }})
     runs-on: ${{ matrix.os }}

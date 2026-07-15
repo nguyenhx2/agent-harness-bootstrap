@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.2.0
+
+The guardrails now port to Cursor and Codex, not just the rules.
+
+**Added**
+
+- `harness-bootstrap/scripts/port.py` - ports a scaffolded harness to Cursor and Codex. `--tool cursor|codex|all`. It converts `.claude/rules/` to `.cursor/rules/*.mdc` (path-scoped `paths:` becomes `globs:`, unconditional becomes `alwaysApply`), registers the hooks in `.codex/hooks.json` directly (Codex's payload matches Claude Code's), and writes a `.cursor/hooks.json` plus an adapter that translates Cursor's payload and output.
+- The porter's adapter is unit-tested in CI (`port.py --self-test`): it denies a `.env` read and a commit to `main`, and allows `npm test`, through the Cursor hook path. 5/5.
+- README: separate install and setup instructions for Claude Code, Cursor, and Codex, and a mechanics table for what crosses over.
+
+**Changed**
+
+- Enforcement now ports. The prior README claimed Cursor and Codex get the rules without the guardrails; both tools have hook systems that block, so the hooks port too. Two honest limits remain, printed by the porter: Codex edits files through `apply_patch` so `protect-adr` is best-effort there, and Cursor's `afterFileEdit` is observational so an ADR edit is flagged rather than blocked.
+
 ## v1.1.0
 
 Repository renamed, and concrete guidance for running the harness alongside other tools.

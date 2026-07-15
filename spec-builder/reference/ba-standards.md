@@ -292,7 +292,8 @@ flowchart LR
 
   classDef judgment fill:#5A189A,color:#E0AAFF
   classDef deterministic fill:#2D6A4F,color:#D8F3DC
-  classDef artifact fill:#495057,color:#F8F9FA```
+  classDef artifact fill:#495057,color:#F8F9FA
+```
 
 ### 05 functional requirements to the dev-agent roster
 
