@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Agent Harness Bootstrap">
-  <!-- Harness boundary: green scoped frame that contains the agent -->
-  <rect x="36" y="36" width="184" height="184" rx="34" ry="34"
-        fill="none" stroke="#2D6A4F" stroke-width="13"/>
+  <!-- Harness boundary: the dark-blue scoped frame the agent runs inside -->
+  <rect x="34" y="34" width="188" height="188" rx="36" ry="36"
+        fill="none" stroke="#3E6E93" stroke-width="13"/>
 
-  <!-- Reins: control lines tethering the agent to the boundary frame -->
-  <path d="M72 44 L128 96 L184 44"
-        fill="none" stroke="#52B788" stroke-width="9"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Control tethers: the harness holds the agent from two anchor points -->
+  <path d="M64 64 L105 88" fill="none" stroke="#6FA0C0" stroke-width="9" stroke-linecap="round"/>
+  <path d="M192 64 L151 88" fill="none" stroke="#6FA0C0" stroke-width="9" stroke-linecap="round"/>
 
-  <!-- Agent: purple hexagon node held inside the harness -->
-  <polygon points="128,96 166.1,119 166.1,161 128,184 89.9,161 89.9,119"
-           fill="#5A189A" stroke="#2D6A4F" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Agent: the node held at the centre of the harness -->
+  <polygon points="105,88 151,88 174,128 151,168 105,168 82,128"
+           fill="#2C5F87" stroke="#1D3557" stroke-width="6" stroke-linejoin="round"/>
 
   <!-- Agent core accent -->
-  <polygon points="128,116 148.8,128 148.8,152 128,164 107.2,152 107.2,128"
-           fill="none" stroke="#9D4EDD" stroke-width="7" stroke-linejoin="round"/>
+  <polygon points="116,108 140,108 152,128 140,148 116,148 104,128"
+           fill="none" stroke="#7FB2D4" stroke-width="6.5" stroke-linejoin="round"/>
 
-  <!-- Bit: the single hard control point where the reins meet the agent -->
-  <circle cx="128" cy="96" r="8" fill="#9D0208"/>
+  <!-- Anchor points where the harness grips the agent -->
+  <circle cx="105" cy="88" r="7.5" fill="#A8DADC" stroke="#1D3557" stroke-width="2"/>
+  <circle cx="151" cy="88" r="7.5" fill="#A8DADC" stroke="#1D3557" stroke-width="2"/>
 </svg>

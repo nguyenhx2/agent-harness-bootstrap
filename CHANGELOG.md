@@ -5,6 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.3.0
+
+Intro videos, a tool-selection questionnaire in the docs, and drift caught at the source.
+
+**Added**
+
+- Three intro clips under `video/`, each as a 1080p MP4 (rendered with Manim) and a self-contained HTML animation: what it is and why, the operating flow, and the control layers. They play in the browser via a GitHub Pages gallery (`video/index.html`), so no download is needed. Linked from the README (English and Japanese). Content and colour grammar trace to `README.md` and `docs/FLOWS.md`.
+- `.claude/agents/docs-reconciler.md` - a local agent that reconciles the docs against the code, skills, and scripts, and fixes drift.
+- The target-tools questionnaire (detect `.cursor/` / `.codex/` / `AGENTS.md`, then ask which of Claude Code / Cursor / Codex to target) is now documented in the `intake.md` reference, matching the SKILL.md procedure.
+- Every release now attaches `eval-results.md` and `benchmark-results.md`, captured from the tagged commit, so the "15/15" and the numbers are provable per version.
+
+**Changed**
+
+- `docs/FLOWS.md` diagram 2 now shows the `/harness-bootstrap` invocation, the tool-selection questionnaire, and the Cursor/Codex port step, matching the current procedure. It previously opened with the stale phrase "set up the base".
+- Benchmark read-path figure updated to 85,641 bytes / -63% (was 83,339 / -64%): the read path grew as `SKILL.md` gained the port and questionnaire content.
+- The logo is redesigned in a dark-blue palette and reads as an agent node held inside the harness frame by two control anchors.
+
+**Fixed**
+
+- `check_numbers.py` guarded only the percentages, so the raw "after" byte figure had drifted silently across four files. It now also guards the exact after-read and after-write byte figures, counted from disk.
+- Two reference docs pointed at a stale `docs/templates/TASK.md.template` path; the shipped template has no `.template` suffix.
+
 ## v1.2.0
 
 The guardrails now port to Cursor and Codex, not just the rules.

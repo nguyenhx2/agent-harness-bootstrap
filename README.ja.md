@@ -58,13 +58,13 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 
 ### 動きで見る
 
-約30秒のクリップが3本、それぞれMP4と自己完結型のHTMLアニメーションで用意されています（[`video/`](video/)）。
+約30秒のクリップが3本、ブラウザ上でそのまま再生できます。**[ギャラリーを見る](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**（ダウンロード不要）。ソースは [`video/`](video/) にあります。
 
-| クリップ | 再生 |
+| クリップ | ブラウザで再生 |
 |---|---|
-| **何であり、なぜか** - 課題、2つのスキル、成果 | [MP4](video/mp4/01-overview.mp4) · [HTML](video/html/01-overview.html) |
-| **運用フロー** - 契約、スキャフォールド、そしてタスクループ | [MP4](video/mp4/02-flow.mp4) · [HTML](video/html/02-flow.html) |
-| **制御レイヤー** - 拒否リスト、フック、ルール、レビューゲート | [MP4](video/mp4/03-layers.mp4) · [HTML](video/html/03-layers.html) |
+| **何であり、なぜか** - 課題、2つのスキル、成果 | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/01-overview.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/01-overview.html) |
+| **運用フロー** - 契約、スキャフォールド、そしてタスクループ | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/02-flow.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/02-flow.html) |
+| **制御レイヤー** - 拒否リスト、フック、ルール、レビューゲート | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/03-layers.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/03-layers.html) |
 
 ---
 

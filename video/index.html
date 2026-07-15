@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - intro clips</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #0d1117; color: #e6edf3;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .sub { color: #9aa7b4; margin: 0 0 40px; }
+  .clip { margin: 0 0 48px; }
+  .clip h2 { font-size: 20px; margin: 0 0 4px; }
+  .clip p { color: #9aa7b4; margin: 0 0 14px; }
+  video {
+    width: 100%; border-radius: 12px; background: #12141a;
+    border: 1px solid #2c3440; display: block;
+  }
+  .links { margin-top: 12px; }
+  .links a {
+    display: inline-block; margin-right: 10px; padding: 7px 14px; border-radius: 8px;
+    text-decoration: none; color: #A8DADC; border: 1px solid #3E6E93;
+    font-size: 14px;
+  }
+  .links a:hover { background: #16202b; }
+  footer { color: #6b7684; font-size: 13px; border-top: 1px solid #2c3440; padding-top: 20px; }
+  footer a { color: #6FA0C0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Agent Harness Bootstrap</h1>
+  <p class="sub">Three short intro clips. They play here in the browser - no download needed.</p>
+
+  <div class="clip">
+    <h2>1. What it is and why</h2>
+    <p>An unconstrained agent hallucinates, forgets on compaction, and bills at the top tier. Two skills build a harness.</p>
+    <video src="mp4/01-overview.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/01-overview.html">Open the HTML animation</a>
+      <a href="mp4/01-overview.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h2>2. The operating flow</h2>
+    <p>spec-builder writes the contract; harness-bootstrap reads the code and scaffolds in ~0.2s; then the task loop runs.</p>
+    <video src="mp4/02-flow.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/02-flow.html">Open the HTML animation</a>
+      <a href="mp4/02-flow.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h2>3. The control layers</h2>
+    <p>Deny list, hooks, path-scoped rules, review gates. The guardrails are shell scripts, so Opus to Haiku is identical safety.</p>
+    <video src="mp4/03-layers.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/03-layers.html">Open the HTML animation</a>
+      <a href="mp4/03-layers.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <footer>
+    Part of <a href="https://github.com/nguyenhx2/agent-harness-bootstrap">agent-harness-bootstrap</a>.
+    Sources and how to regenerate: <a href="README.md">video/README.md</a>.
+  </footer>
+</div>
+</body>
+</html>

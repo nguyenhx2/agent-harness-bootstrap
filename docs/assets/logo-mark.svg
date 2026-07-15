@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Agent Harness Bootstrap mark">
   <!-- Harness boundary -->
-  <rect x="40" y="40" width="176" height="176" rx="40" ry="40"
-        fill="none" stroke="#2D6A4F" stroke-width="16"/>
+  <rect x="38" y="38" width="180" height="180" rx="38" ry="38"
+        fill="none" stroke="#3E6E93" stroke-width="16"/>
 
-  <!-- Reins converging to the control point -->
-  <path d="M84 62 L128 108 L172 62"
-        fill="none" stroke="#52B788" stroke-width="12"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Control tethers from two frame corners to the agent -->
+  <path d="M66 66 L104 92" fill="none" stroke="#6FA0C0" stroke-width="11" stroke-linecap="round"/>
+  <path d="M190 66 L152 92" fill="none" stroke="#6FA0C0" stroke-width="11" stroke-linecap="round"/>
 
-  <!-- Agent hexagon held inside -->
-  <polygon points="128,108 170,133 170,183 128,208 86,183 86,133"
-           fill="#5A189A" stroke="#2D6A4F" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Agent held at the centre -->
+  <polygon points="104,92 152,92 176,134 152,176 104,176 80,134"
+           fill="#2C5F87" stroke="#1D3557" stroke-width="8" stroke-linejoin="round"/>
 
-  <!-- Bit control point -->
-  <circle cx="128" cy="108" r="11" fill="#9D0208"/>
+  <!-- Anchor points -->
+  <circle cx="104" cy="92" r="9" fill="#A8DADC" stroke="#1D3557" stroke-width="2.5"/>
+  <circle cx="152" cy="92" r="9" fill="#A8DADC" stroke="#1D3557" stroke-width="2.5"/>
 </svg>

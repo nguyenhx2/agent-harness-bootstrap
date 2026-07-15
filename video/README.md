@@ -7,6 +7,9 @@ Manim) and a self-contained HTML animation. Core message across all three:
 
 Every claim is taken from `README.md` and `docs/FLOWS.md`. Nothing is invented.
 
+**Watch online** (plays in the browser, no download): <https://nguyenhx2.github.io/agent-harness-bootstrap/video/>
+The clips are served by GitHub Pages, and [`index.html`](index.html) is the gallery that embeds all six.
+
 ## The six files
 
 | Clip | MP4 (1080p) | HTML | What it says |
