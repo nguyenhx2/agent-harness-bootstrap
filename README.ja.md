@@ -153,7 +153,7 @@ unzip -o sb.zip -d ~/.claude/skills/ && rm sb.zip
 
 ```bash
 # a pinned version
-V=1.2.0
+V=1.3.0
 curl -fsSL "https://github.com/nguyenhx2/agent-harness-bootstrap/releases/download/v${V}/harness-bootstrap-v${V}.zip" -o hb.zip
 unzip -o hb.zip -d ~/.claude/skills/ && rm hb.zip
 ```
