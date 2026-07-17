@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - The Complete Solution</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --blue-hi:#A8DADC; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+    --pain-bg:#3A0D10; --fixed-bg:#0E2E22;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;
+    padding:3% 4% 12%;text-align:center;gap:10px;pointer-events:none}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(20px,3.2vw,40px);font-weight:700}
+  h2{font-size:clamp(15px,2.3vw,28px);font-weight:600}
+  .sub{color:var(--dim);font-size:clamp(10px,1.5vw,18px)}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .tag{border-radius:999px;padding:.35em .9em;font-size:clamp(9px,1.3vw,17px);border:2px solid}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:12px;padding:.5em .9em;font-size:clamp(10px,1.5vw,20px);font-weight:600;
+    display:inline-flex;align-items:center;text-align:center;justify-content:center;
+    border:2px solid transparent;line-height:1.25}
+  .chip.purple{background:var(--purple);border-color:var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border-color:var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border-color:var(--white);color:#fff}
+  .chip.red{background:var(--red);border-color:var(--amber);color:#fff}
+  .arrow{color:var(--dim);font-size:clamp(14px,2vw,26px);line-height:1}
+
+  /* --- pain / split layout --- */
+  .split{display:flex;width:100%;height:100%;align-items:center;gap:2%}
+  .paincol{flex:0 0 40%;display:flex;flex-direction:column;gap:2.2%;align-items:stretch}
+  .paincol .hdr{color:var(--dim);font-size:clamp(9px,1.3vw,16px);margin-bottom:2px}
+  .pain{display:flex;align-items:center;gap:10px}
+  .pain .chip{flex:1;background:var(--pain-bg);border-color:var(--red);color:var(--white);
+    font-weight:500;transition:background .5s,border-color .5s,color .5s}
+  .mark{width:1.6em;font-size:clamp(12px,1.6vw,22px);font-weight:700;color:var(--red);transition:color .4s}
+  .pain.fixed .chip{background:var(--fixed-bg);border-color:var(--green-hi);color:var(--green-hi)}
+  .pain.fixed .mark{color:var(--green-hi)}
+  .pain.fixed .mark::after{content:"\2713"}
+  .pain .mark::after{content:"\2715"}
+  .pain.fixed .mark{animation:pop .5s ease}
+  @keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .work{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+
+  /* centred pain intro */
+  .painstack{display:flex;flex-direction:column;gap:12px;align-items:center;width:min(56%,560px)}
+  .painstack .pain{width:100%}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:460px}
+  .notes{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .n1{color:var(--blue-hi);font-size:clamp(9px,1.3vw,16px)}
+  .n2{color:var(--dim);font-size:clamp(9px,1.3vw,16px)}
+  .n3{color:var(--amber);font-size:clamp(9px,1.3vw,16px)}
+  .mono{color:var(--green-hi);font-size:clamp(11px,1.5vw,20px);font-weight:600}
+  .foot{display:flex;gap:18px;justify-content:center;font-size:clamp(9px,1.2vw,15px)}
+  .foot .a{color:var(--green-hi)} .foot .b{color:var(--dim)}
+
+  /* --- loop --- */
+  .loop{position:relative;width:100%;max-width:760px;height:60%;margin-top:4px}
+  .node{position:absolute;transform:translate(-50%,-50%)}
+  #orch{left:50%;top:12%}
+  #agents{left:22%;top:52%}
+  #tboard{left:80%;top:52%}
+  #hooks{left:36%;top:92%}
+  #blk{left:62%;top:92%;color:var(--amber);font-size:clamp(10px,1.4vw,19px);font-weight:700;
+    white-space:nowrap;opacity:0;transition:opacity .4s}
+  #blk small{display:block;color:var(--dim);font-weight:400;font-size:.75em}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .wire{stroke:var(--dim);stroke-width:2.5;fill:none;stroke-dasharray:6 6;opacity:0;transition:opacity .4s}
+  .wire.on{opacity:1;animation:dash 1s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-12}}
+  .wlabel{fill:var(--dim);font-size:12px}
+  #hooks{opacity:0;transition:opacity .4s}
+  .flash{animation:flash .8s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(157,2,8,.75)}100%{box-shadow:0 0 0 26px rgba(157,2,8,0)}}
+
+  /* --- payoff --- */
+  .payoff{display:flex;flex-direction:column;gap:8px;width:min(58%,560px)}
+  .payoff .chip{opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s}
+  .payoff .chip.on{opacity:1;transform:none}
+  .evrow{display:flex;gap:14px;justify-content:center;margin-top:10px;opacity:0;transition:opacity .5s}
+  .evrow.on{opacity:1}
+  .ports{color:var(--dim);font-size:clamp(9px,1.2vw,16px);margin-top:8px;opacity:0;transition:opacity .5s}
+  .ports.on{opacity:1}
+
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(11px,1.7vw,21px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="progress" id="prog"></div>
+
+  <!-- Scene 0: title -->
+  <section class="scene" data-s="0">
+    <h1>The complete solution</h1>
+    <div class="sub">contract, then harness, then loop</div>
+    <div class="legend">
+      <span class="tag g">green = harness / deterministic</span>
+      <span class="tag p">purple = the model</span>
+      <span class="tag r">red = blocked</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: the pain, centred -->
+  <section class="scene" data-s="1">
+    <h2>An agent dropped in a real repo</h2>
+    <div class="painstack" style="margin-top:10px">
+      <div class="pain"><span class="chip">invents requirements that look mergeable</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">context compacts - the work vanishes</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">one bad turn reads .env or commits to main</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">no explicit model - the bill runs away</span><span class="mark"></span></div>
+    </div>
+  </section>
+
+  <!-- Scene 2: spec-builder (pain column + work) -->
+  <section class="scene" data-s="2">
+    <div class="split">
+      <div class="paincol" id="pc-a"></div>
+      <div class="work">
+        <span class="chip neutral fadein">idea / notes / transcript / legacy docs</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip purple fadein">spec-builder</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip neutral fadein">docs/specs/ - 13 sections</span>
+        <div class="notes">
+          <span class="n1">stable FR IDs + acceptance criteria</span>
+          <span class="n2">never invents a requirement:</span>
+          <span class="n3">unstated -&gt; AS-nn assumption / OI-nn open issue</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3: harness-bootstrap -->
+  <section class="scene" data-s="3">
+    <div class="split">
+      <div class="paincol" id="pc-b"></div>
+      <div class="work">
+        <span class="chip purple fadein">harness-bootstrap</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip purple fadein">reads your code FIRST</span>
+        <span class="arrow">&#8595;</span>
+        <span class="mono">.claude/</span>
+        <div class="grid2">
+          <span class="chip green">15 agents<br>model + effort</span>
+          <span class="chip green">14 rules<br>6 always, 8 scoped</span>
+          <span class="chip green">14 commands</span>
+          <span class="chip green">6 blocking hooks</span>
+        </div>
+        <span class="chip neutral">docs/tasks/ - a board that survives a crash</span>
+        <div class="foot"><span class="a">scaffold: ~0.2s</span><span class="b">reconciles, never overwrites</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 4: the delivery loop -->
+  <section class="scene" data-s="4">
+    <h2>The delivery loop runs inside it</h2>
+    <div class="loop">
+      <svg class="wires" viewBox="0 0 760 300" preserveAspectRatio="none">
+        <path id="w-dispatch" class="wire" d="M340,42 L185,140"/>
+        <path id="w-record"   class="wire" d="M270,156 L570,156"/>
+        <path id="w-bad"      class="wire" d="M172,180 L265,262"/>
+        <text x="205" y="105" class="wlabel">dispatches</text>
+        <text x="360" y="146" class="wlabel">records progress</text>
+      </svg>
+      <div class="node" id="orch"><span class="chip purple">orchestrator</span></div>
+      <div class="node" id="agents"><span class="chip purple">scoped specialist agents</span></div>
+      <div class="node" id="tboard"><span class="chip neutral">docs/tasks/ board<br>on disk</span></div>
+      <div class="node" id="hooks"><span class="chip red">hooks</span></div>
+      <div class="node" id="blk">BLOCKED<small>not "advised against"</small></div>
+    </div>
+  </section>
+
+  <!-- Scene 5: payoff -->
+  <section class="scene" data-s="5">
+    <h2>The payoff</h2>
+    <div class="payoff" id="payoff">
+      <span class="chip green">the contract exists</span>
+      <span class="chip green">the harness cannot be escaped</span>
+      <span class="chip green">state survives a crash</span>
+      <span class="chip green">the bill is chosen, not inherited</span>
+    </div>
+    <div class="evrow" id="evrow">
+      <span class="tag g">guardrail eval 15/15</span>
+      <span class="tag g">Opus -&gt; Haiku: byte-identical safety</span>
+    </div>
+    <div class="ports" id="ports">shell scripts + glob rules | ports to Claude Code, Cursor and Codex with enforcement</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var PAINS=[
+    'invents requirements that look mergeable',
+    'context compacts - the work vanishes',
+    'one bad turn reads .env or commits to main',
+    'no explicit model - the bill runs away'
+  ];
+  function q(id){return document.getElementById(id)}
+  function buildCol(el){
+    el.innerHTML='';
+    var h=document.createElement('div');h.className='hdr';h.textContent='the pain';el.appendChild(h);
+    PAINS.forEach(function(p){
+      var row=document.createElement('div');row.className='pain';
+      var c=document.createElement('span');c.className='chip';c.textContent=p;
+      var m=document.createElement('span');m.className='mark';
+      row.appendChild(c);row.appendChild(m);el.appendChild(row);
+    });
+  }
+  buildCol(q('pc-a'));buildCol(q('pc-b'));
+
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=q('cap'), prog=q('prog');
+  var timers=[];
+  function at(ms,fn){timers.push(setTimeout(fn,ms))}
+  function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function say(s){cap.textContent=s;cap.classList.add('on')}
+  function hush(){cap.classList.remove('on')}
+  function fixRows(colId,idxs){
+    var rows=q(colId).querySelectorAll('.pain');
+    idxs.forEach(function(i){rows[i].classList.add('fixed')});
+  }
+  function resetCol(colId){
+    q(colId).querySelectorAll('.pain').forEach(function(r){r.classList.remove('fixed')});
+  }
+
+  var TL=[
+    {s:0,d:4000,run:function(){}},
+    {s:1,d:9500,run:function(){
+      at(600,function(){say('Four failures, every time, in every real repo.')});
+      at(4300,function(){say('Plausible fiction, lost work, unsafe turns, an inherited bill.')});
+      at(9000,hush);
+    }},
+    {s:2,d:10000,run:function(){
+      resetCol('pc-a');
+      at(500,function(){say('Step 1: spec-builder turns raw input into a contract.')});
+      at(3800,function(){say('It never invents: anything unstated is flagged, not guessed.')});
+      at(7000,function(){fixRows('pc-a',[0]);say('Pain 1 resolved - no more plausible fiction.')});
+      at(9500,hush);
+    }},
+    {s:3,d:12000,run:function(){
+      resetCol('pc-b');fixRows('pc-b',[0]);
+      at(500,function(){say('Step 2: harness-bootstrap reads your code, then builds the harness.')});
+      at(4200,function(){say('Every agent gets an explicit model. Hooks block. The board is on disk.')});
+      at(8000,function(){fixRows('pc-b',[1])});
+      at(8600,function(){fixRows('pc-b',[2])});
+      at(9200,function(){fixRows('pc-b',[3]);
+        say('Pains 2, 3 and 4 resolved - by construction, not by good intentions.')});
+      at(11500,hush);
+    }},
+    {s:4,d:11500,run:function(){
+      ['w-dispatch','w-record','w-bad'].forEach(function(id){q(id).classList.remove('on')});
+      q('hooks').style.opacity=0;q('blk').style.opacity=0;
+      at(500,function(){q('w-dispatch').classList.add('on');
+        say('The orchestrator dispatches scoped specialists against the board.')});
+      at(3000,function(){q('w-record').classList.add('on');
+        say('The board on disk records progress as the agent works.')});
+      at(5800,function(){
+        q('hooks').style.opacity=1;q('w-bad').classList.add('on');
+        q('hooks').firstChild.classList.add('flash');
+        q('blk').style.opacity=1;
+        say('Hooks BLOCK the bad action. They do not advise against it.')});
+      at(6900,function(){q('hooks').firstChild.classList.remove('flash')});
+      at(11000,hush);
+    }},
+    {s:5,d:11000,run:function(){
+      var cs=q('payoff').querySelectorAll('.chip');
+      cs.forEach(function(c){c.classList.remove('on')});
+      q('evrow').classList.remove('on');q('ports').classList.remove('on');
+      cs.forEach(function(c,i){at(400+i*450,function(){c.classList.add('on')})});
+      at(2600,function(){say('Contract, enforcement, durable state, a chosen bill.')});
+      at(5200,function(){q('evrow').classList.add('on');
+        say('Guardrails are shell scripts and glob rules - so they are model-independent.')});
+      at(8000,function(){q('ports').classList.add('on')});
+      at(10400,hush);
+    }}
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+
+  var idx=-1;
+  function step(){
+    idx=(idx+1)%TL.length;
+    clearTimers();hush();
+    var t=TL[idx];showScene(t.s);t.run();
+    setTimeout(step,t.d);
+  }
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick)}
+  requestAnimationFrame(tick);
+  step();
+})();
+</script>
+</body>
+</html>

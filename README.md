@@ -15,30 +15,48 @@
 [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code)
 [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
-Dropping an AI agent into a real repository raises the same hard questions every team hits. This repo
-answers them with two skills that build a **harness**: a controlled boundary the agent works inside,
-fitted to your code.
+Two skills for **Claude Code**. `spec-builder` writes the spec an AI can build from. `harness-bootstrap`
+builds the `.claude/` harness it runs inside - agents, rules, guardrails and a task board, fitted to
+*your* repo. The result also ports to Cursor and Codex, guardrails included.
 
-**The problems it solves**
+**Start here:**
 
-- **You do not know what a good agent setup even looks like.** There is no standard for how agents,
-  rules, guardrails and tasks fit together. This generates one, shaped to your repo instead of a
-  blank `.claude/` you fill in by hand.
-- **You cannot get agents to run as a system.** One-off prompts do not compose. Here an orchestrator
-  dispatches scoped specialists against a task board, so multi-step work actually finishes.
-- **The agent invents what it was never told.** It hallucinates requirements, APIs, whole files, and
-  they look plausible enough to merge. `spec-builder` writes the contract first, with acceptance
-  criteria it can be checked against, and refuses to fill a gap with a guess.
-- **Context fills, compacts, and the work vanishes.** The window closes and the progress existed
-  nowhere else. Here the state lives in committed markdown the agent writes *as it works*, so a fresh
-  agent resumes exactly where the last one stopped.
-- **One bad turn does real damage.** It can read `.env`, commit to `main`, edit an accepted decision.
-  Telling it not to is advice it forgets after a compaction. Hooks and a deny list block those actions
-  without asking the model, so control does not depend on which model you run.
-- **Cost runs away quietly.** An agent with no model set bills mechanical work at the top tier. Every
-  agent here carries an explicit model, effort and tool budget.
-- **Every tool reinvents the setup.** The same harness ports to Cursor and Codex, guardrails included,
-  from one source of truth.
+```bash
+curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/agent-harness-bootstrap.zip -o skills.zip \
+  && unzip -o skills.zip -d ~/.claude/skills/ \
+  && rm skills.zip
+```
+
+```text
+/spec-builder           # write the contract first
+/harness-bootstrap      # build or update the .claude harness for this repo
+```
+
+Requires Python 3. Full [install](#install) (including Cursor and Codex) and [usage](#use-it) below.
+
+## Watch it in 60 seconds
+
+<p align="center">
+  <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
+    <img src="video/gif/04-solution.gif" alt="The complete solution: the pain points, spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff" width="860">
+  </a>
+</p>
+
+<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set with sound-free captions in the gallery</a></b> - six clips, no download.</p>
+
+## The problem, and what this does about it
+
+Dropping an AI agent into a real repository raises the same hard questions every team hits:
+
+| The problem | What this does about it |
+|---|---|
+| **You do not know what a good agent setup even looks like.** There is no standard for how agents, rules, guardrails and tasks fit together. | Generates one, shaped to your repo, instead of a blank `.claude/` you fill in by hand. |
+| **You cannot get agents to run as a system.** One-off prompts do not compose. | An orchestrator dispatches scoped specialists against a task board, so multi-step work actually finishes. |
+| **The agent invents what it was never told.** It hallucinates requirements, APIs, whole files, and they look plausible enough to merge. | `spec-builder` writes the contract first, with acceptance criteria it can be checked against, and refuses to fill a gap with a guess. |
+| **Context fills, compacts, and the work vanishes.** The window closes and the progress existed nowhere else. | State lives in committed markdown the agent writes *as it works*, so a fresh agent resumes exactly where the last one stopped. |
+| **One bad turn does real damage.** It can read `.env`, commit to `main`, edit an accepted decision. Telling it not to is advice it forgets after a compaction. | Hooks and a deny list block those actions without asking the model, so control does not depend on which model you run. |
+| **Cost runs away quietly.** An agent with no model set bills mechanical work at the top tier. | Every agent carries an explicit model, effort and tool budget. |
+| **Every tool reinvents the setup.** | The same harness ports to Cursor and Codex, guardrails included, from one source of truth. |
 
 ## Two skills
 
@@ -57,15 +75,19 @@ what it does.**
 Green is deterministic and free. Purple costs tokens. The loop on the right runs the same on any model
 tier, because the gates around it are shell scripts rather than judgment.
 
-### See it in motion
+### The rest of the clips
 
-Three ~30s clips that play in your browser - **[watch the gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**, no download. Sources in [`video/`](video/).
+Every clip plays in your browser - **[watch the gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**,
+no download. Sources in [`video/`](video/).
 
 | Clip | Play in browser |
 |---|---|
+| **The complete solution** - the pain, both skills, the loop, the payoff | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/04-solution.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/04-solution.html) |
 | **What it is and why** - the problem, the two skills, the payoff | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/01-overview.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/01-overview.html) |
 | **The operating flow** - contract, scaffold, then the task loop | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/02-flow.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/02-flow.html) |
 | **The control layers** - deny list, hooks, rules, review gates | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/03-layers.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/03-layers.html) |
+| **`spec-builder` in depth** - elicit, confirm the FR list, then fill | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/05-spec-builder.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/05-spec-builder.html) |
+| **`harness-bootstrap` in depth** - analyse, scaffold, wire | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/06-harness-bootstrap.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/06-harness-bootstrap.html) |
 
 ---
 
@@ -73,7 +95,7 @@ Three ~30s clips that play in your browser - **[watch the gallery](https://nguye
 
 The two skills run inside **Claude Code** - that is where you invoke `/harness-bootstrap` and
 `/spec-builder`. **Cursor** and **Codex** do not run the skills; they run the harness the skills
-produce, so their setup is one command against an already-scaffolded repo. Pick your tool below.
+produce, so their setup is one command against an already-scaffolded repo.
 
 ### Claude Code
 
@@ -282,9 +304,7 @@ rest from files on disk. Once it runs, the pieces hold each other: the orchestra
 agent but cannot write product code, the reviewers gate the dev agents but cannot edit anything, the
 board records what actually happened, and the hooks stop all of them without asking.
 
----
-
-## The whole thing, in one picture
+### The whole thing, in one picture
 
 <p align="center">
   <img src="docs/assets/harness-architecture.svg" alt="Harness layers, with the model drawn as a swappable layer" width="820">
@@ -366,6 +386,7 @@ invents a policy for your company.
 | [`ba-standards.md`](spec-builder/reference/ba-standards.md) | Which standards the 13 spec sections draw on |
 | [`RESULTS.md`](benchmark/RESULTS.md) | Benchmark numbers and their caveats |
 | [`RELEASING.md`](docs/RELEASING.md) | Semver, artifacts, note format |
+| [`video/README.md`](video/README.md) | The clip set, the palette, and how to regenerate it |
 
 ### Numbers
 

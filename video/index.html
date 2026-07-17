@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Harness Bootstrap - intro clips</title>
+<title>Agent Harness Bootstrap - explainer clips</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
@@ -15,9 +15,23 @@
   .wrap { max-width: 900px; margin: 0 auto; }
   h1 { font-size: 28px; margin: 0 0 6px; }
   .sub { color: #9aa7b4; margin: 0 0 40px; }
+  h2.group {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: #6b7684;
+    border-bottom: 1px solid #2c3440; padding-bottom: 8px; margin: 52px 0 28px;
+  }
   .clip { margin: 0 0 48px; }
-  .clip h2 { font-size: 20px; margin: 0 0 4px; }
+  .clip h3 { font-size: 20px; margin: 0 0 4px; }
   .clip p { color: #9aa7b4; margin: 0 0 14px; }
+  .clip.flagship {
+    border: 1px solid #3E6E93; border-radius: 14px; padding: 24px; background: #0f151c;
+    margin-bottom: 8px;
+  }
+  .badge {
+    display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
+    color: #52B788; border: 1px solid #2D6A4F; border-radius: 999px; padding: 2px 10px;
+    margin-bottom: 10px;
+  }
+  .dur { color: #6b7684; font-size: 13px; font-weight: normal; }
   video {
     width: 100%; border-radius: 12px; background: #12141a;
     border: 1px solid #2c3440; display: block;
@@ -29,17 +43,33 @@
     font-size: 14px;
   }
   .links a:hover { background: #16202b; }
-  footer { color: #6b7684; font-size: 13px; border-top: 1px solid #2c3440; padding-top: 20px; }
+  footer {
+    color: #6b7684; font-size: 13px; border-top: 1px solid #2c3440;
+    padding-top: 20px; margin-top: 56px;
+  }
   footer a { color: #6FA0C0; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Agent Harness Bootstrap</h1>
-  <p class="sub">Three short intro clips. They play here in the browser - no download needed.</p>
+  <p class="sub">Six explainer clips. They play here in the browser - no download needed. Every clip is captioned, so sound is not required.</p>
+
+  <div class="clip flagship">
+    <span class="badge">Start here</span>
+    <h3>The complete solution <span class="dur">~54s</span></h3>
+    <p>The whole product in one clip: the four pain points, then spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff. Each pain visibly flips from red to green as its fix lands.</p>
+    <video src="mp4/04-solution.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/04-solution.html">Open the HTML animation</a>
+      <a href="mp4/04-solution.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <h2 class="group">The short introductions</h2>
 
   <div class="clip">
-    <h2>1. What it is and why</h2>
+    <h3>1. What it is and why <span class="dur">~33s</span></h3>
     <p>An unconstrained agent hallucinates, forgets on compaction, and bills at the top tier. Two skills build a harness.</p>
     <video src="mp4/01-overview.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -49,7 +79,7 @@
   </div>
 
   <div class="clip">
-    <h2>2. The operating flow</h2>
+    <h3>2. The operating flow <span class="dur">~29s</span></h3>
     <p>spec-builder writes the contract; harness-bootstrap reads the code and scaffolds in ~0.2s; then the task loop runs.</p>
     <video src="mp4/02-flow.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -59,12 +89,34 @@
   </div>
 
   <div class="clip">
-    <h2>3. The control layers</h2>
+    <h3>3. The control layers <span class="dur">~31s</span></h3>
     <p>Deny list, hooks, path-scoped rules, review gates. The guardrails are shell scripts, so Opus to Haiku is identical safety.</p>
     <video src="mp4/03-layers.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
       <a href="html/03-layers.html">Open the HTML animation</a>
       <a href="mp4/03-layers.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <h2 class="group">The two skills, in depth</h2>
+
+  <div class="clip">
+    <h3>5. spec-builder in depth <span class="dur">~58s</span></h3>
+    <p>Raw input to a contract: elicit, confirm the FR list first, scaffold the 13 sections, fill them in order, then the traceability check. Nothing is invented - anything unstated becomes a flagged AS-nn or OI-nn. Mirrors diagram 5 in docs/FLOWS.md.</p>
+    <video src="mp4/05-spec-builder.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/05-spec-builder.html">Open the HTML animation</a>
+      <a href="mp4/05-spec-builder.mp4">Open the MP4</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h3>6. harness-bootstrap in depth <span class="dur">~59s</span></h3>
+    <p>Mode, then the mandatory codebase analysis and Inventory Report, intake and the tool questionnaire, a roster with explicit model and effort, the scaffold that reports ADDED / KEPT / CONFLICT and never clobbers, then orchestration wiring. Mirrors diagram 2 in docs/FLOWS.md.</p>
+    <video src="mp4/06-harness-bootstrap.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/06-harness-bootstrap.html">Open the HTML animation</a>
+      <a href="mp4/06-harness-bootstrap.mp4">Open the MP4</a>
     </div>
   </div>
 

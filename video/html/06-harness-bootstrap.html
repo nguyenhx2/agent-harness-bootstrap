@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - harness-bootstrap, end to end</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --blue-hi:#A8DADC; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .45s ease;
+    padding:3% 4% 12%;text-align:center;gap:12px;pointer-events:none}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(18px,2.9vw,38px);font-weight:700}
+  h2{font-size:clamp(13px,1.9vw,25px);font-weight:600;color:var(--blue-hi)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .tag{border-radius:999px;padding:.35em .9em;font-size:clamp(8px,1.1vw,15px);border:2px solid}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.b{color:var(--blue-hi);border-color:var(--blue-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:11px;padding:.55em .9em;font-size:clamp(9px,1.35vw,18px);font-weight:600;
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;border:2px solid}
+  .chip.purple{background:var(--purple);border-color:var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border-color:var(--green-hi);color:#fff}
+  .chip.blue{background:var(--blue);border-color:var(--blue-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border-color:var(--white);color:#fff}
+  .chip.art{background:var(--neutral);border-color:var(--amber);color:#fff}
+  .chip.red{background:var(--red);border-color:var(--amber);color:#fff}
+  .row{display:flex;align-items:flex-start;justify-content:center;gap:14px;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:31%}
+  .arrow{color:var(--dim);font-size:clamp(12px,1.7vw,24px);align-self:center}
+  .arrow.g{color:var(--green-hi)}
+  .arrow.a{color:var(--amber)}
+  .sub{color:var(--dim);font-size:clamp(7px,1.05vw,14px);line-height:1.45}
+  .sub.amber{color:var(--amber)}
+  .sub.blue{color:var(--blue-hi)}
+  .sub.wide{max-width:34ch}
+  .band{border:2px solid;border-radius:10px;padding:2.2% 2.4% 2.6%;width:96%;
+    display:flex;flex-direction:column;align-items:center;gap:14px}
+  .band.purple{border-color:var(--purple-hi);background:rgba(157,78,221,.13)}
+  .band.green{border-color:var(--green-hi);background:rgba(82,183,136,.11)}
+  .bandlabel{font-size:clamp(8px,1.1vw,15px);letter-spacing:.04em;margin-bottom:2px}
+  .bandlabel.p{color:var(--purple-hi)}
+  .bandlabel.g{color:var(--green-hi)}
+  .folder{border:2px solid var(--dim);border-radius:12px;width:min(46%,360px);
+    padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .folder .name{color:var(--dim);font-size:clamp(10px,1.4vw,19px)}
+  .folder .empty{color:var(--neutral);font-size:clamp(12px,1.8vw,24px)}
+  .qs{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;color:var(--dim);
+    font-size:clamp(8px,1.2vw,16px);margin-top:8px}
+  .qs span{opacity:0;transition:opacity .4s}
+  .qs.on span{opacity:1}
+  .qs.on span:nth-child(2){transition-delay:.15s}
+  .qs.on span:nth-child(3){transition-delay:.3s}
+  .qs.on span:nth-child(4){transition-delay:.45s}
+  .maps{display:flex;flex-direction:column;align-items:flex-start;gap:5px;
+    font-size:clamp(8px,1.15vw,15px);color:var(--white)}
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(9px,1.45vw,19px);color:var(--white);padding:0 6%;opacity:0;
+    transition:opacity .35s;line-height:1.4}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+  .pulse{animation:pl .8s ease}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(157,2,8,.75)}100%{box-shadow:0 0 0 24px rgba(157,2,8,0)}}
+  .grow{animation:gr .7s ease}
+  @keyframes gr{0%,100%{transform:none}50%{transform:scale(1.06)}}
+  .bands3{display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+  .bands3 .b{border:2px solid;border-radius:10px;flex:1;padding:6% 2%;
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .bands3 .b.p{border-color:var(--purple-hi);background:rgba(157,78,221,.13);color:var(--purple-hi)}
+  .bands3 .b.g{border-color:var(--green-hi);background:rgba(82,183,136,.11);color:var(--green-hi)}
+  .bands3 .lab{font-size:clamp(8px,1.1vw,15px);opacity:.85}
+  .bands3 .big{font-size:clamp(9px,1.3vw,18px);font-weight:600}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0;z-index:5}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="progress" id="prog"></div>
+
+  <!-- Scene 0: title + legend -->
+  <section class="scene" data-s="0">
+    <h1>harness-bootstrap, end to end</h1>
+    <div class="legend">
+      <span class="tag p">purple = the model, billed</span>
+      <span class="tag g">green = script, free</span>
+      <span class="tag b">blue = you</span>
+      <span class="tag r">red = guardrail</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: the problem -->
+  <section class="scene" data-s="1">
+    <div class="folder fadein">
+      <span class="name">.claude/</span>
+      <span class="empty">empty</span>
+    </div>
+    <div class="qs" id="qs">
+      <span>agents?</span><span>rules?</span><span>guardrails?</span><span>tasks?</span>
+    </div>
+  </section>
+
+  <!-- Scene 2: mode first -->
+  <section class="scene" data-s="2">
+    <h2>Mode first - and it is not about size</h2>
+    <div class="row" style="margin-top:10px">
+      <div class="col">
+        <span class="chip blue fadein">greenfield</span>
+        <span class="sub">empty or near-empty repo</span>
+      </div>
+      <div class="col">
+        <span class="chip blue fadein">brownfield</span>
+        <span class="sub">source exists, agents will modify it</span>
+      </div>
+      <div class="col">
+        <span class="chip blue fadein" id="audit">audit</span>
+        <span class="sub">agents analyze, a human applies every fix</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3: analysis + Inventory Report -->
+  <section class="scene" data-s="3">
+    <span class="bandlabel p">PURPLE - a model is required</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col" style="max-width:44%">
+          <span class="chip purple fadein">Codebase analysis - MANDATORY</span>
+          <span class="sub wide">stack, modules, data layer, integrations, conventions, risky ops, existing .claude/, git reality</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:40%">
+          <span class="chip neutral fadein">Inventory Report</span>
+          <div class="maps">
+            <span>modules &#8594; dev agents</span>
+            <span>conventions &#8594; rules</span>
+            <span>risky ops &#8594; deny + hooks</span>
+          </div>
+        </div>
+      </div>
+      <span class="arrow">&#8595;</span>
+      <div class="col" style="max-width:70%">
+        <span class="chip blue">You confirm or correct it</span>
+        <span class="sub amber">no file is generated before it is confirmed</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 4: intake + tools + plan -->
+  <section class="scene" data-s="4">
+    <span class="bandlabel p">PURPLE - a model is required</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col">
+          <span class="chip purple fadein">Intake questionnaire</span>
+          <span class="sub">AskUserQuestion, max 4 per call. Brownfield pre-fills from evidence and asks only what the code cannot decide</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip purple fadein">Detect + confirm tools</span>
+          <span class="sub">scan .cursor/ .codex/ AGENTS.md, then ask: Claude Code / Cursor / Codex</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip blue fadein">One-screen setup plan</span>
+          <span class="sub blue">created / kept / modified, roster with model + effort. You confirm</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 5: roster + OS + vars.json -->
+  <section class="scene" data-s="5">
+    <span class="bandlabel p">PURPLE - a model is required</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col">
+          <span class="chip purple fadein">Roster</span>
+          <span class="sub">Tier 0 unconditional, preset S / M / L, explicit model: AND effort: on every agent</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip purple fadein">Detect the dev OS</span>
+          <span class="sub">Windows to .ps1, macOS or Linux to .sh</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip neutral fadein">vars.json</span>
+          <span class="sub">vars + flags: ui, db, ai, audit, exactly one of windows / posix</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 6: scaffold -->
+  <section class="scene" data-s="6">
+    <span class="bandlabel g">GREEN - a script, deterministic and free</span>
+    <div class="band green">
+      <div class="row">
+        <span class="chip green fadein">scaffold.py --dry-run</span>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:40%">
+          <span class="chip green fadein">scaffold.py</span>
+          <span class="sub">a deterministic copy of assets/</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="chip neutral">ADDED</span><span class="sub">file did not exist</span></div>
+        <div class="col"><span class="chip neutral">KEPT</span><span class="sub">exists, byte-identical</span></div>
+        <div class="col"><span class="chip art">CONFLICT</span><span class="sub amber">exists and differs - not written</span></div>
+      </div>
+      <span class="arrow a">&#8595;</span>
+      <div class="row">
+        <span class="chip green">Reconcile by hand: keep / adapt / add / flag</span>
+        <span class="sub" style="color:var(--green-hi);align-self:center">exits 0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 7: unresolved var -->
+  <section class="scene" data-s="7">
+    <span class="bandlabel g">GREEN - a script, deterministic and free</span>
+    <div class="band green">
+      <div class="row">
+        <span class="chip green">scaffold.py --dry-run</span>
+        <span class="arrow">&#8594;</span>
+        <span class="chip green">scaffold.py</span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <span class="chip red fadein">unresolved &#123;&#123; VAR &#125;&#125;</span>
+        <span class="arrow a">&#8594;</span>
+        <span class="chip red" id="exit1">exit 1</span>
+      </div>
+      <span class="sub" style="margin-top:6px">a placeholder shipped into a live rule file matches nothing and fails silently</span>
+    </div>
+  </section>
+
+  <!-- Scene 8: gap-fill + wiring -->
+  <section class="scene" data-s="8">
+    <span class="bandlabel p">PURPLE again - what no template can know</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col" style="max-width:46%">
+          <span class="chip purple fadein">Model-authored gap-fill</span>
+          <span class="sub wide">orchestrator routing table, dev-agent scopes, tech-stack.md, coding-standards.md, git-workflow.md, settings.json allow / deny for the real stack, .env.example</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:46%">
+          <span class="chip purple fadein">Orchestration wiring</span>
+          <span class="sub wide">master-plan index table, Phase 1 seeded from the analysis gap list, AGENTS.md entry point, CLAUDE.md as a thin @AGENTS.md import</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 9: gate -> smoke -> port -> done -->
+  <section class="scene" data-s="9">
+    <div class="row">
+      <div class="col" style="max-width:34%">
+        <span class="chip red fadein">Quality gate</span>
+        <span class="sub">structure / cost and context / safety / grounding / handoff</span>
+      </div>
+      <div class="col" style="max-width:8%">
+        <span class="arrow g">&#8594;</span>
+        <span class="sub" style="color:var(--green-hi)">all green</span>
+      </div>
+      <span class="chip green fadein">Smoke-test the loop</span>
+      <span class="arrow">&#8594;</span>
+      <span class="chip green fadein">Port to your tools</span>
+    </div>
+    <span class="arrow g" style="margin-top:12px">&#8595;</span>
+    <span class="chip green" id="done" style="font-size:clamp(11px,1.7vw,23px);padding:.7em 1.4em">Harness runs under orchestration</span>
+  </section>
+
+  <!-- Scene 10: three-band recap -->
+  <section class="scene" data-s="10">
+    <h1 style="font-size:clamp(14px,2.2vw,29px)">Read it as three bands</h1>
+    <div class="bands3" style="margin-top:16px">
+      <div class="b p"><span class="lab">analyse + decide</span><span class="big">a model is required</span></div>
+      <span class="arrow">&#8594;</span>
+      <div class="b g"><span class="lab">scaffold</span><span class="big">a script, for free</span></div>
+      <span class="arrow">&#8594;</span>
+      <div class="b p"><span class="lab">gap-fill + wire</span><span class="big">what no template knows</span></div>
+    </div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+
+  // Each entry: scene index, duration (ms), and a list of [atMs, captionText].
+  var TL=[
+    {s:0,d:3000,caps:[]},
+    {s:1,d:6500,caps:[[600,'You do not know what a good agent setup even looks like.'],
+                      [3000,'No standard for how agents, rules, guardrails and tasks fit together - and a blank .claude/ you fill in by hand is not an answer.']],
+     fn:function(){var e=q('qs');e.classList.remove('on');setTimeout(function(){e.classList.add('on')},2400);}},
+    {s:2,d:6000,caps:[[600,'Greenfield, brownfield, audit - the mode is chosen before anything else.'],
+                      [3200,'If agents never modify the source, the mode is audit however much code exists.']],
+     fn:function(){var e=q('audit');e.classList.remove('grow');
+       setTimeout(function(){e.classList.add('grow')},3000);}},
+    {s:3,d:7000,caps:[[600,'Brownfield and audit: analysis is mandatory, and it produces the Inventory Report - mapping tables, not a generic template.'],
+                      [4200,'It gates everything - corrections override findings.']]},
+    {s:4,d:5000,caps:[[500,'Intake asks only what the code cannot decide - max 4 questions per call.'],
+                      [2600,'Target tools are detected and confirmed, then you confirm one setup plan.']]},
+    {s:5,d:4000,caps:[[500,'Every agent gets an explicit model and effort - and the decisions land in vars.json.']]},
+    {s:6,d:6500,caps:[[500,'Then a script does the bulk copying - deterministic, and free.'],
+                      [2800,'CONFLICT is a queue, not a failure - it skips, prints, exits 0, and never clobbers what you wrote.']]},
+    {s:7,d:4200,caps:[[700,'Only an unresolved placeholder exits 1 - and it fails loudly, on purpose.']],
+     fn:function(){var e=q('exit1');e.classList.remove('pulse');
+       setTimeout(function(){e.classList.add('pulse')},600);}},
+    {s:8,d:5800,caps:[[500,"The routing table, each agent's scope, the real deny commands - no template knows these."],
+                      [3000,'Then the model wires orchestration and seeds Phase 1 from the analysis gaps.']]},
+    {s:9,d:5800,caps:[[500,'A quality gate checks structure, cost, safety, grounding and handoff.'],
+                      [2600,'All green: the loop is smoke-tested and ported to the tools you selected.']],
+     fn:function(){var e=q('done');e.classList.remove('grow');
+       setTimeout(function(){e.classList.add('grow')},3600);}},
+    {s:10,d:4500,caps:[[600,'Purple to green to purple - pay the model only where a script cannot know the answer.']]}
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+  var timers=[];
+
+  function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+  function later(fn,ms){timers.push(setTimeout(fn,ms));}
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+
+  function step(i){
+    var t=TL[i];
+    clearTimers();
+    showScene(t.s);
+    cap.classList.remove('on');
+    if(t.fn) t.fn();
+    t.caps.forEach(function(c){
+      later(function(){cap.textContent=c[1];cap.classList.add('on');},c[0]);
+    });
+    later(function(){cap.classList.remove('on')},t.d-400);
+  }
+
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';
+    requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>

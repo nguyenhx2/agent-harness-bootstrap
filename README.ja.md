@@ -15,30 +15,48 @@
 [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code)
 [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
-AIエージェントを実際のリポジトリに投入すると、どのチームも同じ難問にぶつかります。このリポジトリは、
-**ハーネス**（エージェントがその内側で作業する、コードに合わせて仕立てられた制御された境界）を構築する2つの
-スキルで、その問いに答えます。
+**Claude Code** のための2つのスキル。`spec-builder` は、AIがそれをもとに構築できる仕様を書きます。
+`harness-bootstrap` は、AIがその内側で動く `.claude/` ハーネス - エージェント、ルール、ガードレール、タスクボード -
+を*あなたの*リポジトリに合わせて構築します。できあがったものは、ガードレールごと Cursor と Codex にも移植できます。
 
-**このプロジェクトが解決する問題**
+**まずはここから:**
 
-- **そもそも良いエージェント構成がどんなものか分からない。** エージェント、ルール、ガードレール、タスクが
-  どう組み合わさるべきか、標準は存在しません。本プロジェクトは、手作業で埋めていく空の `.claude/` ではなく、
-  あなたのリポジトリに合わせて仕立てた構成を生成します。
-- **エージェントをシステムとして動かせない。** 単発のプロンプトは組み合わさりません。ここではオーケストレーターが
-  タスクボードに対してスコープを絞ったスペシャリストをディスパッチするので、複数ステップの作業が実際に完了します。
-- **エージェントは教えられていないことを勝手に作り出す。** 要件、API、ファイルまるごとを幻覚し、
-  それらはマージしてしまいそうなほどもっともらしく見えます。`spec-builder` はまず契約を書き、
-  それに照らして検証できる受け入れ基準を伴い、推測でギャップを埋めることを拒みます。
-- **コンテキストが埋まり、圧縮され、作業が消える。** ウィンドウが閉じると、進捗はほかのどこにも存在しませんでした。
-  ここでは状態は、エージェントが*作業しながら*書く、コミットされたマークダウンに残るので、新しいエージェントが
-  前のエージェントが止まったちょうどその場所から再開します。
-- **たった一度の悪いターンが実害を与える。** `.env` を読み、`main` にコミットし、承認済みの決定を編集し得ます。
-  「するな」と伝えるのは、圧縮のあとに忘れられる助言に過ぎません。フックと拒否リストは、モデルに尋ねることなく
-  それらのアクションをブロックするので、制御はどのモデルを動かすかに依存しません。
-- **コストがひそかに膨れ上がる。** モデルを設定していないエージェントは、機械的な作業を最上位ティアで課金します。
-  ここではすべてのエージェントが、明示的なモデル、エフォート、ツールの予算を持ちます。
-- **どのツールも構成を作り直す。** 同じハーネスが、ガードレールごと、単一の信頼できる情報源から Cursor と Codex に
-  移植されます。
+```bash
+curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/agent-harness-bootstrap.zip -o skills.zip \
+  && unzip -o skills.zip -d ~/.claude/skills/ \
+  && rm skills.zip
+```
+
+```text
+/spec-builder           # write the contract first
+/harness-bootstrap      # build or update the .claude harness for this repo
+```
+
+Python 3 が必要です。詳しい[インストール](#インストール)（Cursor と Codex を含む）と[使い方](#使ってみる)は下にあります。
+
+## 60秒で見る
+
+<p align="center">
+  <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
+    <img src="video/gif/04-solution.gif" alt="完全なソリューション: 課題、契約を書く spec-builder、ハーネスを構築する harness-bootstrap、その内側で回るデリバリーループ、そして成果" width="860">
+  </a>
+</p>
+
+<p align="center"><i>プロダクト全体を1本のクリップで。</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">音声なしでも読めるキャプション付きの全編をギャラリーで見る</a></b> - クリップ6本、ダウンロード不要。</p>
+
+## 課題と、それに対して本プロジェクトが行うこと
+
+AIエージェントを実際のリポジトリに投入すると、どのチームも同じ難問にぶつかります。
+
+| 課題 | 本プロジェクトが行うこと |
+|---|---|
+| **そもそも良いエージェント構成がどんなものか分からない。** エージェント、ルール、ガードレール、タスクがどう組み合わさるべきか、標準は存在しません。 | 手作業で埋めていく空の `.claude/` ではなく、あなたのリポジトリに合わせて仕立てた構成を生成します。 |
+| **エージェントをシステムとして動かせない。** 単発のプロンプトは組み合わさりません。 | オーケストレーターがタスクボードに対してスコープを絞ったスペシャリストをディスパッチするので、複数ステップの作業が実際に完了します。 |
+| **エージェントは教えられていないことを勝手に作り出す。** 要件、API、ファイルまるごとを幻覚し、それらはマージしてしまいそうなほどもっともらしく見えます。 | `spec-builder` はまず契約を書き、それに照らして検証できる受け入れ基準を伴い、推測でギャップを埋めることを拒みます。 |
+| **コンテキストが埋まり、圧縮され、作業が消える。** ウィンドウが閉じると、進捗はほかのどこにも存在しませんでした。 | 状態は、エージェントが*作業しながら*書く、コミットされたマークダウンに残るので、新しいエージェントが前のエージェントが止まったちょうどその場所から再開します。 |
+| **たった一度の悪いターンが実害を与える。** `.env` を読み、`main` にコミットし、承認済みの決定を編集し得ます。「するな」と伝えるのは、圧縮のあとに忘れられる助言に過ぎません。 | フックと拒否リストは、モデルに尋ねることなくそれらのアクションをブロックするので、制御はどのモデルを動かすかに依存しません。 |
+| **コストがひそかに膨れ上がる。** モデルを設定していないエージェントは、機械的な作業を最上位ティアで課金します。 | すべてのエージェントが、明示的なモデル、エフォート、ツールの予算を持ちます。 |
+| **どのツールも構成を作り直す。** | 同じハーネスが、ガードレールごと、単一の信頼できる情報源から Cursor と Codex に移植されます。 |
 
 ## 2つのスキル
 
@@ -56,15 +74,18 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 緑は決定論的で無料です。紫はトークンを消費します。右側のループはどのモデルティアでも同じように動きます。
 それを取り囲むゲートが、判断ではなくシェルスクリプトだからです。
 
-### 動きで見る
+### 残りのクリップ
 
-約30秒のクリップが3本、ブラウザ上でそのまま再生できます。**[ギャラリーを見る](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**（ダウンロード不要）。ソースは [`video/`](video/) にあります。
+どのクリップもブラウザ上でそのまま再生できます。**[ギャラリーを見る](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**（ダウンロード不要）。ソースは [`video/`](video/) にあります。
 
 | クリップ | ブラウザで再生 |
 |---|---|
+| **完全なソリューション** - 課題、2つのスキル、ループ、成果 | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/04-solution.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/04-solution.html) |
 | **何であり、なぜか** - 課題、2つのスキル、成果 | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/01-overview.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/01-overview.html) |
 | **運用フロー** - 契約、スキャフォールド、そしてタスクループ | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/02-flow.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/02-flow.html) |
 | **制御レイヤー** - 拒否リスト、フック、ルール、レビューゲート | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/03-layers.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/03-layers.html) |
+| **`spec-builder` を詳しく** - ヒアリング、FR一覧の確認、そして肉付け | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/05-spec-builder.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/05-spec-builder.html) |
+| **`harness-bootstrap` を詳しく** - 解析、スキャフォールド、配線 | [MP4](https://nguyenhx2.github.io/agent-harness-bootstrap/video/mp4/06-harness-bootstrap.mp4) · [HTML](https://nguyenhx2.github.io/agent-harness-bootstrap/video/html/06-harness-bootstrap.html) |
 
 ---
 
@@ -72,7 +93,7 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 
 2つのスキルは **Claude Code** の内側で動きます - そこで `/harness-bootstrap` と `/spec-builder` を呼び出します。
 **Cursor** と **Codex** はスキルを実行しません。スキルが生成したハーネスを実行するので、そのセットアップは
-すでにスキャフォールドされたリポジトリに対する1コマンドです。下からお使いのツールを選んでください。
+すでにスキャフォールドされたリポジトリに対する1コマンドです。
 
 ### Claude Code
 
@@ -281,9 +302,7 @@ Opus は Sonnet の **1.67倍**であって5倍ではないので、ティアは
 すべてのエージェントをディスパッチしますが、プロダクトコードは書けません。レビュアーは開発エージェントをゲートしますが、
 何も編集できません。ボードは実際に起きたことを記録し、フックは尋ねることなくそれら全員を止めます。
 
----
-
-## 全体像を1枚の絵で
+### 全体像を1枚の絵で
 
 <p align="center">
   <img src="docs/assets/harness-architecture.svg" alt="Harness layers, with the model drawn as a swappable layer" width="820">
@@ -364,6 +383,7 @@ CI でユニットテストされています。`.env` の読み取りと `main`
 | [`ba-standards.md`](spec-builder/reference/ba-standards.md) | 13の仕様セクションがどの標準に依拠するか |
 | [`RESULTS.md`](benchmark/RESULTS.md) | ベンチマークの数字とその注意点 |
 | [`RELEASING.md`](docs/RELEASING.md) | Semver、成果物、ノートのフォーマット |
+| [`video/README.md`](video/README.md) | クリップ一式、パレット、そしてその再生成方法 |
 
 ### 数字
 
