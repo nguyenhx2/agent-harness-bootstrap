@@ -14,7 +14,7 @@
     --red:#c33c3c; --red-t:#fdeceb;
     --purple:#6d3fa8; --purple-t:#f2ebfc;
     --amber:#9a6b12; --amber-t:#fdf3e0;
-    --bar:52px; --strip:106px;
+    --bar:52px; --strip:26px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -62,8 +62,8 @@
     display:grid;place-items:center;padding:14px 20px;z-index:10;
   }
   .page{
-    position:relative;width:min(1200px,95vw);height:100%;background:var(--page);
-    border-radius:24px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:hidden;
+    position:relative;width:min(2400px,97vw);height:100%;background:var(--page);
+    border-radius:26px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:hidden;
   }
   .pagemark{position:absolute;top:20px;right:24px;z-index:5;display:flex;align-items:center;gap:8px;opacity:.85}
   .pagemark svg{width:22px;height:22px}
@@ -71,9 +71,8 @@
 
   .arrow{
     position:absolute;top:50%;transform:translateY(-50%);z-index:6;
-    width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
-    background:#fff;color:var(--brand);cursor:pointer;display:grid;place-items:center;
-    box-shadow:0 3px 10px rgba(0,0,0,.08);
+    width:40px;height:40px;border-radius:50%;border:0;
+    background:var(--tint);color:var(--brand);cursor:pointer;display:grid;place-items:center;
   }
   .arrow:hover{background:var(--tint)}
   .arrow svg{width:18px;height:18px}
@@ -104,10 +103,14 @@
   .sub{font-size:1.04em;color:var(--dim);margin:0 0 1.2em;max-width:76ch}
   .lead{font-size:1.18em;color:var(--ink);margin:0 0 1em;max-width:70ch}
 
-  table{width:100%;border-collapse:collapse;font-size:.86em}
-  th,td{text-align:left;padding:.62em .8em;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--brand);font-size:.78em;text-transform:uppercase;letter-spacing:.09em;font-weight:800}
-  tbody tr:nth-child(even){background:#fafaff}
+  /* No rules or borders anywhere: separation comes from fill and rhythm. */
+  table{width:100%;border-collapse:separate;border-spacing:0 .3em;font-size:.86em}
+  th,td{text-align:left;padding:.62em .9em;vertical-align:top}
+  th{color:var(--brand);font-size:.78em;text-transform:uppercase;letter-spacing:.09em;font-weight:800;padding-bottom:0}
+  tbody tr{background:var(--tint)}
+  tbody tr:nth-child(even){background:#f5f5fd}
+  tbody td:first-child{border-radius:10px 0 0 10px}
+  tbody td:last-child{border-radius:0 10px 10px 0}
   td strong{color:var(--ink);font-weight:750}
   .t-bad td:nth-child(2){color:var(--red)}
   .t-good td:nth-child(3){color:var(--green)}
@@ -118,27 +121,32 @@
 
   ul.big{list-style:none;padding:0;margin:0;display:grid;gap:.7em}
   ul.big li{
-    display:flex;gap:.85em;padding:.85em 1em;background:var(--tint);
-    border-radius:12px;border-left:4px solid var(--brand);
+    display:flex;gap:.9em;padding:.95em 1.15em;background:var(--tint);border-radius:14px;
   }
-  ul.big li .ic{flex:0 0 auto;width:1.4em;height:1.4em;margin-top:.1em;color:var(--brand)}
+  ul.big li .ic{
+    flex:0 0 auto;width:2em;height:2em;padding:.35em;border-radius:9px;
+    background:#fff;color:var(--brand);
+  }
   ul.big li b{display:block;color:var(--ink);margin-bottom:.15em;font-size:1.05em}
   ul.big li span{color:var(--dim);font-size:.95em}
-  ul.big li.red{background:var(--red-t);border-left-color:var(--red)} ul.big li.red .ic{color:var(--red)}
-  ul.big li.green{background:var(--green-t);border-left-color:var(--green)} ul.big li.green .ic{color:var(--green)}
-  ul.big li.purple{background:var(--purple-t);border-left-color:var(--purple)} ul.big li.purple .ic{color:var(--purple)}
+  ul.big li.red{background:var(--red-t)} ul.big li.red .ic{color:var(--red)}
+  ul.big li.green{background:var(--green-t)} ul.big li.green .ic{color:var(--green)}
+  ul.big li.purple{background:var(--purple-t)} ul.big li.purple .ic{color:var(--purple)}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:.9em}
-  .card{background:var(--tint);border-radius:14px;padding:1.15em;border-bottom:4px solid var(--brand)}
-  .card .ic{width:1.7em;height:1.7em;color:var(--brand);margin-bottom:.45em}
-  .card h3{margin:0 0 .25em;font-size:1.06em;color:var(--ink)}
+  .card{background:var(--tint);border-radius:18px;padding:1.25em}
+  .card .ic{
+    width:2.4em;height:2.4em;padding:.5em;border-radius:12px;background:#fff;
+    color:var(--brand);margin-bottom:.6em;
+  }
+  .card h3{margin:0 0 .25em;font-size:1.08em;color:var(--ink)}
   .card p{margin:0;color:var(--dim);font-size:.9em}
-  .card.g{background:var(--green-t);border-bottom-color:var(--green)} .card.g .ic{color:var(--green)}
-  .card.p{background:var(--purple-t);border-bottom-color:var(--purple)} .card.p .ic{color:var(--purple)}
-  .card.r{background:var(--red-t);border-bottom-color:var(--red)} .card.r .ic{color:var(--red)}
+  .card.g{background:var(--green-t)} .card.g .ic{color:var(--green)}
+  .card.p{background:var(--purple-t)} .card.p .ic{color:var(--purple)}
+  .card.r{background:var(--red-t)} .card.r .ic{color:var(--red)}
 
   .quote{
-    border-left:4px solid var(--brand);padding:.2em 0 .2em 1em;margin:0 0 .9em;
+    background:var(--tint);border-radius:18px;padding:.75em 1em;margin:0 0 .9em;
     font-size:1.5em;line-height:1.34;color:var(--ink);font-weight:700;letter-spacing:-.012em;
   }
   .kicker{color:var(--dim);font-size:1.02em;margin:0}
@@ -152,9 +160,15 @@
   .stat.r{background:var(--red-t)} .stat.r b{color:var(--red)}
   .stat.a{background:var(--amber-t)} .stat.a b{color:var(--amber)}
 
-  .note{margin-top:.9em;color:var(--faint);font-size:.83em;border-top:1px solid var(--line);padding-top:.6em}
+  .note{margin-top:.9em;color:var(--faint);font-size:.83em}
 
-  video{width:100%;max-height:46vh;object-fit:contain;border-radius:12px;background:#0b0b18;display:block}
+  /* em (not vh) so it shrinks with fit(), and an explicit aspect-ratio so the
+     box has a known height before the file loads - otherwise fit() measures a
+     collapsed video, scales up, and the slide overflows once it arrives. */
+  video{
+    width:100%;aspect-ratio:16/9;max-height:19em;height:auto;object-fit:contain;
+    border-radius:14px;background:#0b0b18;display:block;margin:0 auto;
+  }
   .vtabs{display:flex;flex-wrap:wrap;gap:.4em;margin:0 0 .7em}
   .vtabs button{
     background:var(--tint);border:0;color:var(--dim);
@@ -180,8 +194,8 @@
   /* ---------- animated layer diagrams ---------- */
   .lay{display:grid;gap:.5em;margin:.2em 0 0}
   .lay .row{
-    display:flex;align-items:center;gap:.9em;padding:.75em 1em;border-radius:12px;
-    background:var(--tint);border-left:5px solid var(--brand);
+    display:flex;align-items:center;gap:.9em;padding:.85em 1.15em;border-radius:14px;
+    background:var(--tint);
     opacity:0;transform:translateX(-18px);
     animation:slideIn .5s cubic-bezier(.22,1,.36,1) forwards;
   }
@@ -191,9 +205,9 @@
   }
   .lay .row .desc{flex:1;font-size:.88em;color:var(--dim)}
   .lay .row .meta{flex:0 0 auto;font-size:.78em;color:var(--faint);text-align:right;min-width:6em}
-  .lay .row.ram{background:var(--amber-t);border-left-color:var(--amber)}
+  .lay .row.ram{background:var(--amber-t)}
   .lay .row.ram .tag{color:var(--amber)}
-  .lay .row.disk{background:var(--green-t);border-left-color:var(--green)}
+  .lay .row.disk{background:var(--green-t)}
   .lay .row.disk .tag{color:var(--green)}
   /* the compaction sweep: RAM tiers ghost out, disk tiers stay solid */
   .lay .row.ram::after{
@@ -238,20 +252,21 @@
   /* security: nested rings */
   .rings{position:relative;display:grid;place-items:center;padding:.4em 0}
   .ring{
-    position:absolute;border-radius:18px;border:2.5px solid var(--brand);
-    display:grid;place-items:start center;color:var(--brand);font-weight:800;font-size:.72em;
-    padding-top:.35em;letter-spacing:.04em;text-transform:uppercase;
+    position:absolute;border-radius:20px;
+    display:grid;place-items:start center;font-weight:800;font-size:.72em;
+    padding-top:.5em;letter-spacing:.04em;text-transform:uppercase;
     opacity:0;animation:pop .5s cubic-bezier(.22,1,.36,1) forwards;
   }
-  .ring.r1{width:100%;height:15.5em;border-color:var(--red);color:var(--red);background:var(--red-t)}
-  .ring.r2{width:78%;height:12em;border-color:var(--amber);color:var(--amber);background:var(--amber-t)}
-  .ring.r3{width:56%;height:8.5em;border-color:var(--purple);color:var(--purple);background:var(--purple-t)}
-  .ring.r4{width:34%;height:5em;border-color:var(--green);color:var(--green);background:var(--green-t)}
+  /* Nested filled blocks, no outlines: each layer is a solid step inward. */
+  .ring.r1{width:100%;height:15.5em;color:var(--red);background:var(--red-t)}
+  .ring.r2{width:78%;height:12em;color:var(--amber);background:var(--amber-t)}
+  .ring.r3{width:56%;height:8.5em;color:var(--purple);background:var(--purple-t)}
+  .ring.r4{width:34%;height:5em;color:var(--green);background:var(--green-t)}
   /* The protected thing sits at the centre, inside the innermost ring. */
   .core{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-30%);
-    font-size:.8em;font-weight:800;color:var(--brand);
-    background:#fff;border-radius:8px;padding:.28em .7em;border:1px solid var(--line);
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-25%);
+    font-size:.8em;font-weight:800;color:#fff;
+    background:var(--brand);border-radius:10px;padding:.35em .8em;
   }
   .attack{
     position:absolute;top:-.2em;left:50%;width:11px;height:11px;border-radius:50%;
@@ -266,35 +281,11 @@
   }
   .blocked{
     position:absolute;top:2.4em;left:50%;transform:translateX(-50%);
-    font-size:.74em;font-weight:800;color:var(--red);background:#fff;border-radius:6px;
-    padding:.2em .6em;border:1px solid var(--red);opacity:0;
+    font-size:.74em;font-weight:800;color:#fff;background:var(--red);border-radius:8px;
+    padding:.25em .7em;opacity:0;
     animation:blink 3.4s ease-in-out infinite;
   }
   @keyframes blink{0%,36%{opacity:0}44%,66%{opacity:1}74%,100%{opacity:0}}
-
-  /* ---------- filmstrip ---------- */
-  .strip{
-    position:fixed;left:0;right:0;bottom:0;height:var(--strip);z-index:30;
-    display:flex;align-items:center;gap:10px;padding:10px 18px;overflow-x:auto;overflow-y:hidden;
-  }
-  .strip::-webkit-scrollbar{height:6px}
-  .strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:99px}
-  .film{
-    flex:0 0 auto;width:132px;height:80px;border-radius:10px;background:#fff;
-    border:3px solid transparent;cursor:pointer;padding:9px 10px;text-align:left;
-    display:flex;flex-direction:column;gap:4px;font:inherit;color:var(--ink);
-    transition:transform .16s, border-color .16s; overflow:hidden;
-  }
-  .film:hover{transform:translateY(-3px)}
-  .film.on{border-color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.3)}
-  .film .n{
-    font-size:9.5px;color:var(--faint);font-variant-numeric:tabular-nums;letter-spacing:.07em;
-    display:flex;align-items:center;gap:5px;
-  }
-  .film .t{font-size:11px;line-height:1.3;font-weight:700;color:var(--brand-d);
-    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  /* the icon rides beside the number so the label keeps the full height */
-  .film .ic{width:12px;height:12px;color:var(--brand-xl);flex:0 0 auto}
 
   /* ---------- overview ---------- */
   .ov{position:fixed;inset:0;z-index:60;background:rgba(20,19,60,.97);display:none;padding:64px 5vw 34px;overflow-y:auto}
@@ -398,8 +389,6 @@
     <button class="arrow r" id="btnNext"><svg><use href="#i-right"/></svg></button>
   </section>
 </main>
-
-<footer class="strip" id="strip"></footer>
 
 <div class="ov" id="ov">
   <button class="ibtn" id="btnClose" style="position:fixed;top:14px;right:20px"><svg><use href="#i-x"/></svg></button>
@@ -922,7 +911,7 @@ insertBefore('Enforced layers',    SEC_LAYERS);
    ENGINE
    ============================================================ */
 const deck=document.getElementById('deck'), ovEl=document.getElementById('ov'),
-      thumbsEl=document.getElementById('thumbs'), stripEl=document.getElementById('strip'),
+      thumbsEl=document.getElementById('thumbs'),
       counterEl=document.getElementById('counter');
 let lang = localStorage.getItem('ahb-lang') || 'en';
 let cur = 0, vidIdx = 0;
@@ -1015,24 +1004,25 @@ function slideHTML(s){
   return `<div class="wrap stag">${eyebrow}${title}${sub}${body}${note}</div>`;
 }
 
-/* Grow or shrink a slide so it uses the page instead of leaving it empty.
-   Scaling reflows the text, so the target is approached iteratively. */
+/* Grow a slide to use the page, without ever overflowing it.
+   A proportional guess oscillates: a bigger font makes cards wider, which drops
+   a grid column, which makes the block taller, which shrinks it again. So this
+   binary-searches for the largest scale that still fits and keeps only sizes
+   that were measured to fit. */
 function fit(el){
   const w = el.querySelector('.wrap');
   if(!w) return;
   const cs = getComputedStyle(el);
   const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   if(avail <= 0) return;
-  let s = 1;
-  for(let i=0;i<7;i++){
-    w.style.setProperty('--fit', s);
-    const h = w.scrollHeight;
-    if(!h) break;
-    const next = Math.max(0.7, Math.min(1.75, avail / h * s));
-    if(Math.abs(next - s) < 0.012){ s = next; break; }
-    s = next;
+  let lo = 0.62, hi = 1.85, best = 0.62;
+  for(let i=0;i<14;i++){
+    const mid = (lo + hi) / 2;
+    w.style.setProperty('--fit', mid);
+    if(w.scrollHeight <= avail){ best = mid; lo = mid; } else { hi = mid; }
+    if(hi - lo < 0.008) break;
   }
-  w.style.setProperty('--fit', s);
+  w.style.setProperty('--fit', best);
 }
 
 function render(dir){
@@ -1055,6 +1045,10 @@ function render(dir){
     });
   }
   fit(el);
+  // A late-loading asset can change the height after the first measurement.
+  const vid = el.querySelector('#vid');
+  if(vid) vid.addEventListener('loadedmetadata', ()=>fit(el), {once:true});
+
   counterEl.textContent = (cur+1) + ' ' + UI[lang].of + ' ' + S.length;
   document.getElementById('ovTitle').textContent = UI[lang].ov;
   document.documentElement.lang = lang==='ja'?'ja':lang==='vi'?'vi':'en';
@@ -1068,26 +1062,18 @@ function go(i, dir){
 }
 
 function marks(){
-  stripEl.querySelectorAll('.film').forEach((f,i)=>f.classList.toggle('on', i===cur));
   thumbsEl.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('on', i===cur));
-  const f = stripEl.querySelector('.film.on');
-  if(f) f.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
   const t = thumbsEl.querySelector('.thumb.on');
   if(t && ovEl.classList.contains('open')) t.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 function buildNav(){
-  stripEl.innerHTML = S.map((s,i)=>
-    `<button class="film ${i===cur?'on':''}" data-i="${i}">
-      <span class="n">${icon(s.icon,'ic')}${String(i+1).padStart(2,'0')}</span>
-      <span class="t">${L(s.nav)}</span></button>`).join('');
   thumbsEl.innerHTML = S.map((s,i)=>
     `<button class="thumb ${i===cur?'on':''}" data-i="${i}">
       <span class="n">${String(i+1).padStart(2,'0')}</span>
       <span class="t">${L(s.nav)}</span>${icon(s.icon,'ic')}</button>`).join('');
 }
 
-stripEl.addEventListener('click', e=>{ const b=e.target.closest('.film'); if(b) go(+b.dataset.i); });
 thumbsEl.addEventListener('click', e=>{ const b=e.target.closest('.thumb'); if(b){ go(+b.dataset.i); closeOv(); } });
 
 function openOv(){ ovEl.classList.add('open'); marks(); }
