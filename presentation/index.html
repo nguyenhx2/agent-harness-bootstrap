@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Harness Bootstrap - Presentation</title>
+<link rel="stylesheet" href="fonts/andadapro.css">
 <link rel="stylesheet" href="fonts/yomogi.css">
 <style>
   :root{
@@ -21,8 +22,8 @@
     /* ONE typeface for everything. Hierarchy comes from weight, size and
        tracking, never from swapping family. Mono appears only inside code,
        where a fixed advance width is part of the meaning. */
-    --sans:"Yomogi","Segoe UI",system-ui,-apple-system,"Noto Sans JP",
-           "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    --sans:"Andada Pro","Yomogi","Noto Serif JP","Hiragino Mincho ProN",
+           "Yu Mincho","Yu Gothic",Meiryo,Georgia,serif;
     --mono:var(--sans);   /* code keeps the notebook hand; the tint marks it, not the family */
   }
   *{box-sizing:border-box}
@@ -75,32 +76,39 @@
   .arrow.l{left:12px} .arrow.r{right:12px}
 
   .deck{position:absolute;inset:0}
-  .slide{position:absolute;inset:0;display:none;padding:44px 76px 34px;overflow:hidden}
-  .slide.active{display:flex;flex-direction:column;justify-content:center}
+  .slide{position:absolute;inset:0;display:none;overflow:hidden}
+  .slide svg:not([class]){width:1em;height:1em}   /* unclassed SVGs must never fall back to 300x150 */
+  .slide.active{display:block}
+  /* identical geometry on every page: header band, then body band */
+  .head{
+    position:absolute;left:4.2%;right:4.2%;top:5.5%;height:20%;
+    font-size:clamp(14px,1.25vw,25px);   /* viewport-only, never per-slide */
+    display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;
+  }
+  .body{
+    position:absolute;left:4.2%;right:4.2%;top:27%;bottom:5.5%;
+    font-size:calc(15px * var(--fit,1));
+    display:flex;flex-direction:column;justify-content:center;overflow:hidden;
+  }
   .slide.in-next{animation:inNext .44s cubic-bezier(.22,1,.36,1)}
   .slide.in-prev{animation:inPrev .44s cubic-bezier(.22,1,.36,1)}
   @keyframes inNext{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
   @keyframes inPrev{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
 
-  /* Content-sized, not height:100%. A fixed-height wrap makes scrollHeight
-     report the container rather than the content, so fit() could never
-     measure a true fit and every slide overflowed by a few pixels. */
-  .wrap{width:100%;font-size:calc(15px * var(--fit,1))}
+  .wrap{position:absolute;inset:0}
   .stag>*{opacity:0;animation:rise .5s cubic-bezier(.22,1,.36,1) forwards}
   @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
   /* ---------- structure: step -> heading -> subtitle -> body ---------- */
-  /* Fixed reading order: step label -> heading -> squiggle -> subtitle -> body */
-  .head{margin:0 0 .2em}
-  .body{margin:0}
+
   .step{
     display:inline-flex;align-items:center;gap:.5em;
     font-size:.72em;color:var(--brand);margin:0 0 .5em;font-weight:700;
     text-transform:uppercase;letter-spacing:.14em;
   }
   .step svg{width:1.35em;height:1.35em}
-  h1{font-size:2.85em;line-height:1.12;margin:0 0 .2em;letter-spacing:-.03em;font-weight:800}
-  h2{font-size:1.95em;line-height:1.18;margin:0 0 .12em;letter-spacing:-.025em;font-weight:800}
+  h1{font-size:2.7em;line-height:1.14;margin:0 0 .2em;letter-spacing:-.02em;font-weight:840}
+  h2{font-size:1.85em;line-height:1.2;margin:0 0 .12em;letter-spacing:-.015em;font-weight:840}
   .squig{display:block;width:9em;height:.5em;margin:.1em 0 .5em;color:var(--brand-xl)}
   .sub{font-size:1.02em;color:var(--dim);margin:0 0 .9em;max-width:82ch}
   .lead{font-size:1.16em;color:var(--ink);margin:0 0 .9em;max-width:72ch}
@@ -131,6 +139,8 @@
     background:#fff;color:var(--brand)}
   ul.big li b{display:block;color:var(--ink);margin-bottom:.12em;font-size:1.04em}
   ul.big li span{color:var(--dim);font-size:.94em}
+  ul.big li .tick{flex:0 0 auto;width:1.1em;height:1.1em;color:var(--brand-xl);opacity:.55;
+    align-self:flex-start;margin-top:.25em}
   ul.big li.red{background:var(--red-t)} ul.big li.red .ic{color:var(--red)}
   ul.big li.green{background:var(--green-t)} ul.big li.green .ic{color:var(--green)}
   ul.big li.purple{background:var(--purple-t)} ul.big li.purple .ic{color:var(--purple)}
@@ -142,8 +152,14 @@
     color:var(--brand);margin-bottom:.55em}
   .card h3{margin:0 0 .22em;font-size:1.06em;color:var(--ink)}
   .card p{margin:0;color:var(--dim);font-size:.89em}
-  .card .num{position:absolute;top:.85em;right:1.1em;font-size:1.15em;
-    color:var(--brand-xl);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  /* the number is circled by hand, the way you would ring a point in a notebook */
+  .card .num{
+    position:absolute;top:.6em;right:.75em;width:2.4em;height:2.4em;
+    display:grid;place-items:center;font-size:1em;color:var(--brand);
+    font-weight:800;font-variant-numeric:tabular-nums;
+  }
+  .card .num .ring{position:absolute;inset:0;width:100%;height:100%;color:var(--brand-xl);opacity:.85}
+
   .card.g{background:var(--green-t)} .card.g .ic{color:var(--green)}
   .card.p{background:var(--purple-t)} .card.p .ic{color:var(--purple)}
   .card.r{background:var(--red-t)} .card.r .ic{color:var(--red)}
@@ -230,6 +246,8 @@
     background:#e3e3f2;transform:translateX(-50%)}
   .pipe .conn::after{content:'';position:absolute;left:50%;top:0;width:7px;height:7px;border-radius:50%;
     background:var(--brand);transform:translate(-50%,0);animation:travel 2.6s ease-in-out infinite}
+  .pipe .conn .mark{position:absolute;left:calc(50% + 14px);top:-2px;width:26px;height:14px;
+    color:var(--brand-xl);opacity:.7}
   @keyframes travel{0%{top:-2px;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:14px;opacity:0}}
   .pipe .caption{text-align:center;font-size:.78em;color:var(--faint);letter-spacing:.01em}
 
@@ -311,6 +329,10 @@
   <symbol id="i-right" viewBox="0 0 24 24"><path class="d" style="stroke-width:2.6" d="m9 5.8 6.2 6.2L9 18.2"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path class="d" style="stroke-width:2.4" d="M18 6 6 18M6 6l12 12"/></symbol>
   <symbol id="i-gh" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></symbol>
+  <symbol id="s-ring" viewBox="0 0 60 60"><path d="M42 9c-9-5-22-4-29 3S6 32 12 41s21 12 31 7 15-18 11-28c-2-5-6-9-11-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="s-arrow" viewBox="0 0 80 40"><path d="M4 30c14-16 34-24 63-22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M56 2l12 6-9 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="s-star" viewBox="0 0 30 30"><path d="M15 3v24M4 9l22 12M26 9L4 21" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="s-bolt" viewBox="0 0 30 40"><path d="M18 3 6 22h9L11 37l14-20h-9z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></symbol>
   <symbol id="i-squig" viewBox="0 0 120 10" preserveAspectRatio="none">
     <path d="M2 6.5c8-5 16 3 24-1.2s16 3.4 24-.8 16 3.6 24-.6 16 3 22 1.4" fill="none"
       stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
@@ -800,12 +822,15 @@ function slideHTML(s){
   }
   if(s.kind==='bullets'){
     body = `<ul class="big">${s.items.map(i=>
-      `<li class="${s.cls||''}">${icon(s.icon,'ic')}<div><b>${L(i.t)}</b><span>${L(i.d)}</span></div></li>`).join('')}</ul>`;
+      `<li class="${s.cls||''}">${icon(s.icon,'ic')}<div><b>${L(i.t)}</b><span>${L(i.d)}</span></div>
+        <svg class="tick"><use href="#s-star"/></svg></li>`).join('')}</ul>`;
   }
   if(s.kind==='cards'){
     body = `<div class="cards">${s.cards.map(c=>
-      `<div class="card ${c.cls||''}">${c.n?`<span class="num">${c.n}</span>`:''}${icon(c.ic,'ic')}
-        <h3>${L(c.t)}</h3><p>${L(c.d)}</p></div>`).join('')}</div>`;
+      `<div class="card ${c.cls||''}">
+        ${c.n?`<span class="num">${icon('s-ring','ring')}${c.n}</span>`:''}
+        ${icon(c.ic,'ic')}<h3>${L(c.t)}</h3><p>${L(c.d)}</p>
+      </div>`).join('')}</div>`;
   }
   if(s.kind==='quotes'){
     body = `<div class="frame">${s.quotes.map(q=>`<p class="quote">“${L(q)}”</p>`).join('')}</div>`;
@@ -824,13 +849,13 @@ function slideHTML(s){
       `<div class="row ${r.cls}" style="animation-delay:${120+i*130}ms">
          <span class="tag">${L(r.tag)}</span><span class="desc">${L(r.d)}</span><span class="meta">${L(r.m)}</span>
        </div>`).join('') + `</div><div class="sweep" style="--sweepTo:10em"></div></div>
-       <p class="laylegend">${L(s.legend)}</p>`;
+       <p class="laylegend"><svg style="width:.9em;height:1.2em;vertical-align:-.2em;color:var(--red);margin-right:.35em"><use href="#s-bolt"/></svg>${L(s.legend)}</p>`;
   }
   if(s.kind==='pipe'){
     let d = 100;
     body = `<div class="pipe">` + s.levels.map((lv,i)=>{
       const nodes = lv.items.map(it=>{ d+=110; return `<span class="node ${lv.cls}" style="animation-delay:${d}ms">${L(it)}</span>`; }).join('');
-      return `${i?'<div class="conn"></div>':''}<div class="lvl">${nodes}</div><div class="caption">${L(lv.cap)}</div>`;
+      return `${i?'<div class="conn"><svg class="mark"><use href="#s-arrow"/></svg></div>':''}<div class="lvl">${nodes}</div><div class="caption">${L(lv.cap)}</div>`;
     }).join('') + `</div>`;
   }
   if(s.kind==='rings'){
@@ -852,20 +877,19 @@ function slideHTML(s){
 }
 
 function fit(el){
-  const w = el.querySelector('.wrap');
-  if(!w) return;
-  if(el.clientHeight <= 0) return;
-  // Measure the slide itself, not the wrap: a trailing margin on the last child is
-  // excluded from the wrap's scrollHeight but still pushes the slide over.
-  const overflows = () => el.scrollHeight > el.clientHeight + 1;
-  let lo = 0.58, hi = 1.7, best = 0.58;
+  const b = el.querySelector('.body');
+  if(!b || b.clientHeight <= 0) return;
+  // Only the body scales. The header band is fixed so headings stay identical
+  // in size and position on every slide.
+  const overflows = () => b.scrollHeight > b.clientHeight + 1;
+  let lo = 0.4, hi = 1.7, best = 0.4;
   for(let i=0;i<14;i++){
     const mid = (lo + hi) / 2;
-    w.style.setProperty('--fit', mid);
+    b.style.setProperty('--fit', mid);
     if(!overflows()){ best = mid; lo = mid; } else { hi = mid; }
     if(hi - lo < 0.008) break;
   }
-  w.style.setProperty('--fit', best);
+  b.style.setProperty('--fit', best);
 }
 
 function render(dir){
@@ -887,6 +911,9 @@ function render(dir){
   });
 
   fit(el);
+  // A webfont swapping in after the first measurement changes the metrics, so
+  // re-fit once the faces this slide needs have actually loaded.
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>fit(el));
   const vid = el.querySelector('#vid');
   if(vid) vid.addEventListener('loadedmetadata', ()=>fit(el), {once:true});
 
