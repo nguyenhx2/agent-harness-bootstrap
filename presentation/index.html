@@ -6,309 +6,262 @@
 <title>Agent Harness Bootstrap - Presentation</title>
 <style>
   :root{
-    /* Brand tone #35348f drives the whole surface. */
-    --brand:#35348f; --brand-d:#25246a; --brand-l:#5655c2; --brand-xl:#8f8ee6;
-    --tint:#eeeefc; --tint2:#e2e1fa;
-    --page:#ffffff; --ink:#191932; --dim:#5c5c7d; --faint:#8b8bab; --line:#e7e7f3;
-    --green:#1a7f52; --green-t:#e6f6ee;
-    --red:#c33c3c; --red-t:#fdeceb;
-    --purple:#6d3fa8; --purple-t:#f2ebfc;
-    --amber:#9a6b12; --amber-t:#fdf3e0;
-    --bar:52px; --strip:26px;
+    --brand:#35348f; --brand-d:#23225e; --brand-l:#5655c2; --brand-xl:#9d9cec;
+    --tint:#eeeefc; --tint2:#e0dffa;
+    --page:#fffefb; --ink:#1b1b33; --dim:#585779; --faint:#8f8eaa;
+    --mark:#fff2a8;                      /* highlighter yellow */
+    --mark2:#c9f7e0;                     /* highlighter mint   */
+    --mark3:#ffd9d6;                     /* highlighter coral  */
+    --green:#18794e; --green-t:#e4f7ed;
+    --red:#c0392f;   --red-t:#fdeae8;
+    --purple:#6b34a8;--purple-t:#f1e9fc;
+    --amber:#8a6410; --amber-t:#fdf3dc;
+    --bar:52px;
+    --sans:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",
+           Arial,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    --hand:"Segoe Print","Bradley Hand","Comic Sans MS","Yu Gothic",cursive;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0; background:var(--brand); color:var(--ink); overflow:hidden;
-    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
-      "Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
-  }
+  body{margin:0;background:var(--brand);color:var(--ink);overflow:hidden;font:16px/1.6 var(--sans)}
 
-  /* ---------- backdrop ---------- */
   .bg{position:fixed;inset:0;overflow:hidden;z-index:0}
-  .bg i{position:absolute;display:block;background:var(--brand-l);opacity:.5;border-radius:40px}
-  .bg i:nth-child(1){width:38vw;height:26vh;left:-6vw;top:8vh;border-radius:0 60px 60px 0}
-  .bg i:nth-child(2){width:26vw;height:34vh;right:-8vw;top:22vh;border-radius:60px 0 0 60px}
-  .bg i:nth-child(3){width:44vw;height:14vh;left:22vw;bottom:-4vh;opacity:.35}
-  .bg i:nth-child(4){width:12vw;height:12vw;left:12vw;top:-4vw;border-radius:50%;opacity:.35}
-  .bg i:nth-child(5){width:8vw;height:8vw;right:16vw;bottom:16vh;border-radius:50%;opacity:.3}
+  .bg i{position:absolute;display:block;background:var(--brand-l);opacity:.45;border-radius:44px}
+  .bg i:nth-child(1){width:36vw;height:26vh;left:-6vw;top:9vh;border-radius:0 64px 64px 0}
+  .bg i:nth-child(2){width:24vw;height:32vh;right:-7vw;top:24vh;border-radius:64px 0 0 64px}
+  .bg i:nth-child(3){width:40vw;height:13vh;left:24vw;bottom:-4vh;opacity:.32}
+  .bg i:nth-child(4){width:11vw;height:11vw;left:14vw;top:-4vw;border-radius:50%;opacity:.3}
 
-  /* ---------- top bar ---------- */
-  .bar{
-    position:fixed;top:0;left:0;right:0;height:var(--bar);z-index:30;
-    display:flex;align-items:center;gap:14px;padding:0 22px;color:#fff;
-  }
-  .brand{display:flex;align-items:center;gap:9px;font-weight:650;font-size:14px;letter-spacing:.2px}
+  .bar{position:fixed;top:0;left:0;right:0;height:var(--bar);z-index:30;
+    display:flex;align-items:center;gap:14px;padding:0 22px;color:#fff}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
   .brand svg{width:24px;height:24px}
   .spacer{flex:1}
-  .langs{display:flex;gap:3px;background:rgba(255,255,255,.14);border-radius:999px;padding:3px}
-  .langs button{
-    background:none;border:0;color:rgba(255,255,255,.72);font:inherit;font-size:12px;font-weight:700;
-    padding:5px 13px;border-radius:999px;cursor:pointer;letter-spacing:.5px;
-  }
-  .langs button:hover{color:#fff}
+  .langs{display:flex;gap:3px;background:rgba(255,255,255,.15);border-radius:999px;padding:3px}
+  .langs button{background:none;border:0;color:rgba(255,255,255,.75);font:inherit;font-size:12px;
+    font-weight:700;padding:5px 13px;border-radius:999px;cursor:pointer;letter-spacing:.5px}
   .langs button.on{background:#fff;color:var(--brand)}
-  .ibtn{
-    background:rgba(255,255,255,.14);border:0;color:#fff;width:32px;height:32px;
-    border-radius:9px;cursor:pointer;display:grid;place-items:center;
-  }
-  .ibtn:hover{background:rgba(255,255,255,.26)}
+  .ibtn{background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;
+    border-radius:9px;cursor:pointer;display:grid;place-items:center}
+  .ibtn:hover{background:rgba(255,255,255,.28)}
   .ibtn svg{width:16px;height:16px}
-  .count{color:rgba(255,255,255,.8);font-size:12.5px;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+  .count{color:rgba(255,255,255,.82);font-size:12.5px;font-variant-numeric:tabular-nums}
 
   /* ---------- the notebook page ---------- */
-  .stage{
-    position:absolute;left:0;right:0;top:var(--bar);bottom:var(--strip);
-    display:grid;place-items:center;padding:14px 20px;z-index:10;
-  }
+  .stage{position:absolute;left:0;right:0;top:var(--bar);bottom:26px;
+    display:grid;place-items:center;padding:12px 20px;z-index:10}
   .page{
     position:relative;width:min(2400px,97vw);height:100%;background:var(--page);
-    border-radius:26px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:hidden;
+    border-radius:26px;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;
+    /* paper: faint ruled lines + a margin rule, the way a notebook reads */
+    background-image:
+      linear-gradient(90deg, transparent 0 62px, #f3c9c9 62px 63px, transparent 63px),
+      repeating-linear-gradient(180deg, transparent 0 37px, #eef0f7 37px 38px);
+    background-position:0 0, 0 64px;
   }
-  .pagemark{position:absolute;top:20px;right:24px;z-index:5;display:flex;align-items:center;gap:8px;opacity:.85}
+  .pagemark{position:absolute;top:18px;right:24px;z-index:5;color:var(--brand-xl)}
   .pagemark svg{width:22px;height:22px}
-  .pagemark span{font-size:11.5px;font-weight:700;color:var(--brand);letter-spacing:.3px}
-
-  .arrow{
-    position:absolute;top:50%;transform:translateY(-50%);z-index:6;
-    width:40px;height:40px;border-radius:50%;border:0;
-    background:var(--tint);color:var(--brand);cursor:pointer;display:grid;place-items:center;
-  }
-  .arrow:hover{background:var(--tint)}
+  .arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:40px;height:40px;
+    border-radius:50%;border:0;background:var(--tint);color:var(--brand);cursor:pointer;
+    display:grid;place-items:center}
+  .arrow:hover{background:var(--tint2)}
   .arrow svg{width:18px;height:18px}
-  .arrow.l{left:10px} .arrow.r{right:10px}
+  .arrow.l{left:12px} .arrow.r{right:12px}
 
   .deck{position:absolute;inset:0}
-  .slide{position:absolute;inset:0;display:none;padding:52px 56px 34px;overflow:hidden}
-  .slide.active{display:flex;flex-direction:column;justify-content:center}
+  .slide{position:absolute;inset:0;display:none;padding:44px 76px 34px;overflow:hidden}
+  .slide.active{display:flex;flex-direction:column;justify-content:flex-start}
   .slide.in-next{animation:inNext .44s cubic-bezier(.22,1,.36,1)}
   .slide.in-prev{animation:inPrev .44s cubic-bezier(.22,1,.36,1)}
-  @keyframes inNext{from{opacity:0;transform:translateX(42px)}to{opacity:1;transform:none}}
-  @keyframes inPrev{from{opacity:0;transform:translateX(-42px)}to{opacity:1;transform:none}}
+  @keyframes inNext{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+  @keyframes inPrev{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
 
-  /* one root size drives everything so fit() can fill the page */
+  /* Content-sized, not height:100%. A fixed-height wrap makes scrollHeight
+     report the container rather than the content, so fit() could never
+     measure a true fit and every slide overflowed by a few pixels. */
   .wrap{width:100%;font-size:calc(17px * var(--fit,1))}
   .stag>*{opacity:0;animation:rise .5s cubic-bezier(.22,1,.36,1) forwards}
   @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
-  /* ---------- type ---------- */
-  .eyebrow{
-    display:inline-flex;align-items:center;gap:.5em;font-size:.74em;font-weight:800;
-    text-transform:uppercase;letter-spacing:.13em;color:var(--brand);margin:0 0 .8em;
-    background:var(--tint);padding:.4em .8em;border-radius:999px;
+  /* ---------- structure: step -> heading -> subtitle -> body ---------- */
+  /* Fixed reading order: step label -> heading -> squiggle -> subtitle -> body */
+  .head{margin:0 0 .2em}
+  .body{margin:0}
+  .step{
+    display:inline-flex;align-items:center;gap:.5em;font-family:var(--hand);
+    font-size:.85em;color:var(--brand);margin:0 0 .35em;font-weight:700;
   }
-  .eyebrow svg{width:1.2em;height:1.2em}
-  h1{font-size:3em;line-height:1.08;margin:0 0 .28em;letter-spacing:-.025em;font-weight:800}
-  h2{font-size:2.1em;line-height:1.14;margin:0 0 .2em;letter-spacing:-.022em;font-weight:800}
-  .sub{font-size:1.04em;color:var(--dim);margin:0 0 1.2em;max-width:76ch}
-  .lead{font-size:1.18em;color:var(--ink);margin:0 0 1em;max-width:70ch}
+  .step svg{width:1.35em;height:1.35em}
+  h1{font-size:3.1em;line-height:1.06;margin:0 0 .2em;letter-spacing:-.03em;font-weight:800}
+  h2{font-size:2.05em;line-height:1.12;margin:0 0 .12em;letter-spacing:-.025em;font-weight:800}
+  .squig{display:block;width:9em;height:.5em;margin:.1em 0 .5em;color:var(--brand-xl)}
+  .sub{font-size:1.02em;color:var(--dim);margin:0 0 .9em;max-width:82ch}
+  .lead{font-size:1.16em;color:var(--ink);margin:0 0 .9em;max-width:72ch}
 
-  /* No rules or borders anywhere: separation comes from fill and rhythm. */
+  /* highlighter, underline and circle: the marker vocabulary */
+  mark{background:linear-gradient(180deg,transparent 52%,var(--mark) 52%,var(--mark) 92%,transparent 92%);
+    color:inherit;padding:0 .1em;font-weight:700}
+  mark.m2{background:linear-gradient(180deg,transparent 52%,var(--mark2) 52%,var(--mark2) 92%,transparent 92%)}
+  mark.m3{background:linear-gradient(180deg,transparent 52%,var(--mark3) 52%,var(--mark3) 92%,transparent 92%)}
+  u.pen{text-decoration:none;background:no-repeat bottom/100% .18em
+    linear-gradient(90deg,var(--brand-xl),var(--brand-xl));padding-bottom:.08em}
+
   table{width:100%;border-collapse:separate;border-spacing:0 .3em;font-size:.86em}
-  th,td{text-align:left;padding:.62em .9em;vertical-align:top}
-  th{color:var(--brand);font-size:.78em;text-transform:uppercase;letter-spacing:.09em;font-weight:800;padding-bottom:0}
-  tbody tr{background:var(--tint)}
-  tbody tr:nth-child(even){background:#f5f5fd}
-  tbody td:first-child{border-radius:10px 0 0 10px}
-  tbody td:last-child{border-radius:0 10px 10px 0}
+  th,td{text-align:left;padding:.6em .9em;vertical-align:top}
+  th{color:var(--brand);font-size:.76em;text-transform:uppercase;letter-spacing:.09em;font-weight:800;padding-bottom:0}
+  tbody tr{background:#f6f6fd}
+  tbody td:first-child{border-radius:12px 0 0 12px}
+  tbody td:last-child{border-radius:0 12px 12px 0}
   td strong{color:var(--ink);font-weight:750}
   .t-bad td:nth-child(2){color:var(--red)}
   .t-good td:nth-child(3){color:var(--green)}
-  code{
-    background:var(--tint);border-radius:5px;padding:.1em .4em;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;color:var(--brand-d);
-  }
+  code{background:var(--tint);border-radius:5px;padding:.1em .4em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;color:var(--brand-d)}
 
-  ul.big{list-style:none;padding:0;margin:0;display:grid;gap:.7em}
-  ul.big li{
-    display:flex;gap:.9em;padding:.95em 1.15em;background:var(--tint);border-radius:14px;
-  }
-  ul.big li .ic{
-    flex:0 0 auto;width:2em;height:2em;padding:.35em;border-radius:9px;
-    background:#fff;color:var(--brand);
-  }
-  ul.big li b{display:block;color:var(--ink);margin-bottom:.15em;font-size:1.05em}
-  ul.big li span{color:var(--dim);font-size:.95em}
+  ul.big{list-style:none;padding:0;margin:0;display:grid;gap:.6em}
+  ul.big li{display:flex;gap:.9em;padding:.85em 1.1em;background:#f6f6fd;border-radius:16px}
+  ul.big li .ic{flex:0 0 auto;width:2.1em;height:2.1em;padding:.36em;border-radius:12px;
+    background:#fff;color:var(--brand)}
+  ul.big li b{display:block;color:var(--ink);margin-bottom:.12em;font-size:1.04em}
+  ul.big li span{color:var(--dim);font-size:.94em}
   ul.big li.red{background:var(--red-t)} ul.big li.red .ic{color:var(--red)}
   ul.big li.green{background:var(--green-t)} ul.big li.green .ic{color:var(--green)}
   ul.big li.purple{background:var(--purple-t)} ul.big li.purple .ic{color:var(--purple)}
+  ul.big li.amber{background:var(--amber-t)} ul.big li.amber .ic{color:var(--amber)}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:.9em}
-  .card{background:var(--tint);border-radius:18px;padding:1.25em}
-  .card .ic{
-    width:2.4em;height:2.4em;padding:.5em;border-radius:12px;background:#fff;
-    color:var(--brand);margin-bottom:.6em;
-  }
-  .card h3{margin:0 0 .25em;font-size:1.08em;color:var(--ink)}
-  .card p{margin:0;color:var(--dim);font-size:.9em}
+  .card{background:#f6f6fd;border-radius:20px;padding:1.2em;position:relative}
+  .card .ic{width:2.5em;height:2.5em;padding:.5em;border-radius:14px;background:#fff;
+    color:var(--brand);margin-bottom:.55em}
+  .card h3{margin:0 0 .22em;font-size:1.06em;color:var(--ink)}
+  .card p{margin:0;color:var(--dim);font-size:.89em}
+  .card .num{position:absolute;top:.9em;right:1.1em;font-family:var(--hand);
+    font-size:1.05em;color:var(--brand-xl);font-weight:700}
   .card.g{background:var(--green-t)} .card.g .ic{color:var(--green)}
   .card.p{background:var(--purple-t)} .card.p .ic{color:var(--purple)}
   .card.r{background:var(--red-t)} .card.r .ic{color:var(--red)}
+  .card.a{background:var(--amber-t)} .card.a .ic{color:var(--amber)}
 
-  .quote{
-    background:var(--tint);border-radius:18px;padding:.75em 1em;margin:0 0 .9em;
-    font-size:1.5em;line-height:1.34;color:var(--ink);font-weight:700;letter-spacing:-.012em;
-  }
-  .kicker{color:var(--dim);font-size:1.02em;margin:0}
-  .kicker b{color:var(--brand)}
+  /* marker frame: the "circled on the page" device from sketchnotes */
+  .frame{border-radius:22px;padding:1.1em 1.3em;background:#fff;
+    box-shadow:0 0 0 3px var(--mark) inset, 0 0 0 1px #e6e6f2}
+  .quote{font-size:1.42em;line-height:1.36;color:var(--ink);font-weight:700;margin:0}
+  .quote + .quote{margin-top:.7em;padding-top:.7em}
+  .qmark{font-family:var(--hand);color:var(--brand);font-size:.85em;margin:.5em 0 0}
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:.8em}
-  .stat{background:var(--tint);border-radius:14px;padding:1em;text-align:center}
-  .stat b{display:block;font-size:2.5em;line-height:1;color:var(--brand);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-  .stat span{display:block;margin-top:.45em;color:var(--dim);font-size:.8em;line-height:1.4}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:.75em}
+  .stat{background:#f6f6fd;border-radius:18px;padding:1em;text-align:center}
+  .stat b{display:block;font-size:2.4em;line-height:1;color:var(--brand);letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums}
+  .stat span{display:block;margin-top:.4em;color:var(--dim);font-size:.79em;line-height:1.35}
   .stat.g{background:var(--green-t)} .stat.g b{color:var(--green)}
   .stat.r{background:var(--red-t)} .stat.r b{color:var(--red)}
   .stat.a{background:var(--amber-t)} .stat.a b{color:var(--amber)}
 
-  .note{margin-top:.9em;color:var(--faint);font-size:.83em}
+  .note{margin-top:.7em;color:var(--faint);font-size:.82em;font-family:var(--hand)}
 
-  /* em (not vh) so it shrinks with fit(), and an explicit aspect-ratio so the
-     box has a known height before the file loads - otherwise fit() measures a
-     collapsed video, scales up, and the slide overflows once it arrives. */
-  video{
-    width:100%;aspect-ratio:16/9;max-height:19em;height:auto;object-fit:contain;
-    border-radius:14px;background:#0b0b18;display:block;margin:0 auto;
-  }
+  video{width:100%;aspect-ratio:16/9;max-height:19em;height:auto;object-fit:contain;
+    border-radius:16px;background:#0b0b18;display:block;margin:0 auto}
   .vtabs{display:flex;flex-wrap:wrap;gap:.4em;margin:0 0 .7em}
-  .vtabs button{
-    background:var(--tint);border:0;color:var(--dim);
-    padding:.42em .9em;border-radius:999px;font:inherit;font-size:.82em;cursor:pointer;
-  }
-  .vtabs button:hover{background:var(--tint2)}
+  .vtabs button{background:#f6f6fd;border:0;color:var(--dim);padding:.42em .9em;border-radius:999px;
+    font:inherit;font-size:.82em;cursor:pointer}
   .vtabs button.on{background:var(--brand);color:#fff}
 
   .cta{display:flex;flex-wrap:wrap;gap:.6em;margin-top:.4em}
-  .cta a{
-    display:inline-flex;align-items:center;gap:.5em;text-decoration:none;
-    background:var(--brand);color:#fff;padding:.65em 1.2em;border-radius:10px;font-weight:700;font-size:.94em;
-  }
+  .cta a{display:inline-flex;align-items:center;gap:.5em;text-decoration:none;background:var(--brand);
+    color:#fff;padding:.65em 1.2em;border-radius:12px;font-weight:700;font-size:.93em}
   .cta a.ghost{background:var(--tint);color:var(--brand)}
-  .cta a:hover{filter:brightness(1.08)}
   .cta a svg{width:1.05em;height:1.05em}
-  pre.cmd{
-    background:var(--ink);border-radius:12px;padding:.95em 1.1em;margin:0 0 1em;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;color:#e9e9ff;overflow-x:auto;
+  pre.cmd{background:var(--ink);border-radius:14px;padding:.9em 1.1em;margin:0 0 .9em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;
+    color:#eceafd;overflow-x:auto}
+  pre.cmd .c{color:var(--brand-xl)}
+
+  /* glossary term: dotted underline + hover note, so jargon is annotated */
+  .gl{border-bottom:2px dotted var(--brand-xl);cursor:help;position:relative;font-weight:700;color:var(--brand-d)}
+  .gl::after{
+    content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + .5em);transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:.6em .8em;border-radius:10px;font-size:.62em;font-weight:500;
+    line-height:1.45;width:24em;max-width:44vw;opacity:0;pointer-events:none;transition:opacity .15s;
+    z-index:20;font-family:var(--sans);
   }
-  pre.cmd .c{color:#8f8ee6}
+  .gl:hover::after,.gl:focus::after{opacity:1}
 
   /* ---------- animated layer diagrams ---------- */
-  .lay{display:grid;gap:.5em;margin:.2em 0 0}
-  .lay .row{
-    display:flex;align-items:center;gap:.9em;padding:.85em 1.15em;border-radius:14px;
-    background:var(--tint);
-    opacity:0;transform:translateX(-18px);
-    animation:slideIn .5s cubic-bezier(.22,1,.36,1) forwards;
-  }
+  .lay{display:grid;gap:.45em}
+  .lay .row{display:flex;align-items:center;gap:.9em;padding:.8em 1.1em;border-radius:16px;
+    background:#f6f6fd;position:relative;overflow:hidden;
+    opacity:0;transform:translateX(-16px);animation:slideIn .5s cubic-bezier(.22,1,.36,1) forwards}
   @keyframes slideIn{to{opacity:1;transform:none}}
-  .lay .row .tag{
-    flex:0 0 auto;min-width:7.4em;font-weight:800;font-size:.92em;color:var(--brand);
-  }
-  .lay .row .desc{flex:1;font-size:.88em;color:var(--dim)}
-  .lay .row .meta{flex:0 0 auto;font-size:.78em;color:var(--faint);text-align:right;min-width:6em}
-  .lay .row.ram{background:var(--amber-t)}
-  .lay .row.ram .tag{color:var(--amber)}
-  .lay .row.disk{background:var(--green-t)}
-  .lay .row.disk .tag{color:var(--green)}
-  /* the compaction sweep: RAM tiers ghost out, disk tiers stay solid */
-  .lay .row.ram::after{
-    content:'';position:absolute;inset:0;border-radius:12px;background:var(--page);
-    opacity:0;animation:ghost 4.6s ease-in-out infinite;
-  }
-  .lay .row{position:relative;overflow:hidden}
-  @keyframes ghost{0%,42%{opacity:0}56%,74%{opacity:.72}92%,100%{opacity:0}}
-  .sweep{
-    position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--red),transparent);
-    animation:sweepY 4.6s ease-in-out infinite;opacity:0;border-radius:2px;
-  }
-  @keyframes sweepY{0%,40%{opacity:0;transform:translateY(0)}48%{opacity:1}56%{opacity:1;transform:translateY(var(--sweepTo,120px))}64%,100%{opacity:0;transform:translateY(var(--sweepTo,120px))}}
+  .lay .row .tag{flex:0 0 auto;min-width:7.2em;font-weight:800;font-size:.92em;color:var(--brand)}
+  .lay .row .desc{flex:1;font-size:.87em;color:var(--dim)}
+  .lay .row .meta{flex:0 0 auto;font-size:.76em;color:var(--faint);text-align:right;min-width:6em}
+  .lay .row.ram{background:var(--amber-t)} .lay .row.ram .tag{color:var(--amber)}
+  .lay .row.disk{background:var(--green-t)} .lay .row.disk .tag{color:var(--green)}
+  .lay .row.ram::after{content:'';position:absolute;inset:0;border-radius:16px;background:var(--page);
+    opacity:0;animation:ghost 4.6s ease-in-out infinite}
+  @keyframes ghost{0%,42%{opacity:0}56%,74%{opacity:.74}92%,100%{opacity:0}}
   .laywrap{position:relative}
-  .laylegend{margin-top:.7em;font-size:.8em;color:var(--faint);display:flex;gap:1.2em;flex-wrap:wrap}
-  .laylegend b{color:var(--red);font-weight:700}
+  .sweep{position:absolute;left:0;right:0;height:3px;border-radius:2px;opacity:0;
+    background:linear-gradient(90deg,transparent,var(--red),transparent);
+    animation:sweepY 4.6s ease-in-out infinite}
+  @keyframes sweepY{0%,40%{opacity:0;transform:translateY(0)}48%{opacity:1}
+    56%{opacity:1;transform:translateY(var(--sweepTo,10em))}64%,100%{opacity:0;transform:translateY(var(--sweepTo,10em))}}
+  .laylegend{margin-top:.6em;font-size:.82em;color:var(--faint);font-family:var(--hand)}
 
-  /* orchestration pipeline */
-  .pipe{display:grid;gap:.75em}
-  .pipe .lvl{display:flex;gap:.6em;flex-wrap:wrap;justify-content:center}
-  .pipe .node{
-    padding:.6em 1em;border-radius:11px;background:var(--tint);color:var(--brand);
-    font-weight:750;font-size:.86em;opacity:0;transform:translateY(10px);
-    animation:pop .45s cubic-bezier(.22,1,.36,1) forwards;
-  }
+  .pipe{display:grid;gap:.5em}
+  .pipe .lvl{display:flex;gap:.55em;flex-wrap:wrap;justify-content:center}
+  .pipe .node{padding:.55em 1em;border-radius:14px;background:#f6f6fd;color:var(--brand);
+    font-weight:750;font-size:.85em;opacity:0;transform:translateY(10px);
+    animation:pop .45s cubic-bezier(.22,1,.36,1) forwards}
   @keyframes pop{to{opacity:1;transform:none}}
   .pipe .node.orch{background:var(--brand);color:#fff;font-size:.95em}
   .pipe .node.gate{background:var(--green-t);color:var(--green)}
   .pipe .node.dev{background:var(--purple-t);color:var(--purple)}
-  .pipe .conn{height:18px;position:relative}
-  .pipe .conn::before{
-    content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--line);transform:translateX(-50%);
-  }
-  .pipe .conn::after{
-    content:'';position:absolute;left:50%;top:0;width:7px;height:7px;border-radius:50%;
-    background:var(--brand);transform:translate(-50%,0);
-    animation:travel 2.6s ease-in-out infinite;
-  }
-  @keyframes travel{0%{top:-2px;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:16px;opacity:0}}
-  .pipe .caption{text-align:center;font-size:.82em;color:var(--faint)}
+  .pipe .conn{height:16px;position:relative}
+  .pipe .conn::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;
+    background:#e3e3f2;transform:translateX(-50%)}
+  .pipe .conn::after{content:'';position:absolute;left:50%;top:0;width:7px;height:7px;border-radius:50%;
+    background:var(--brand);transform:translate(-50%,0);animation:travel 2.6s ease-in-out infinite}
+  @keyframes travel{0%{top:-2px;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:14px;opacity:0}}
+  .pipe .caption{text-align:center;font-size:.8em;color:var(--faint);font-family:var(--hand)}
 
-  /* security: nested rings */
-  .rings{position:relative;display:grid;place-items:center;padding:.4em 0}
-  .ring{
-    position:absolute;border-radius:20px;
-    display:grid;place-items:start center;font-weight:800;font-size:.72em;
-    padding-top:.5em;letter-spacing:.04em;text-transform:uppercase;
-    opacity:0;animation:pop .5s cubic-bezier(.22,1,.36,1) forwards;
-  }
-  /* Nested filled blocks, no outlines: each layer is a solid step inward. */
-  .ring.r1{width:100%;height:15.5em;color:var(--red);background:var(--red-t)}
-  .ring.r2{width:78%;height:12em;color:var(--amber);background:var(--amber-t)}
-  .ring.r3{width:56%;height:8.5em;color:var(--purple);background:var(--purple-t)}
-  .ring.r4{width:34%;height:5em;color:var(--green);background:var(--green-t)}
-  /* The protected thing sits at the centre, inside the innermost ring. */
-  .core{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-25%);
-    font-size:.8em;font-weight:800;color:#fff;
-    background:var(--brand);border-radius:10px;padding:.35em .8em;
-  }
-  .attack{
-    position:absolute;top:-.2em;left:50%;width:11px;height:11px;border-radius:50%;
-    background:var(--red);transform:translateX(-50%);
-    animation:attack 3.4s ease-in-out infinite;
-  }
-  @keyframes attack{
-    0%{top:-1.2em;opacity:0} 12%{opacity:1}
-    30%{top:1.1em;opacity:1} 40%{top:1.1em;transform:translateX(-50%) scale(1.7);opacity:.9}
-    50%{top:1.1em;transform:translateX(-50%) scale(.6);opacity:0}
-    100%{top:1.1em;opacity:0}
-  }
-  .blocked{
-    position:absolute;top:2.4em;left:50%;transform:translateX(-50%);
-    font-size:.74em;font-weight:800;color:#fff;background:var(--red);border-radius:8px;
-    padding:.25em .7em;opacity:0;
-    animation:blink 3.4s ease-in-out infinite;
-  }
+  .rings{position:relative;display:grid;place-items:center}
+  .ring{position:absolute;border-radius:22px;display:grid;place-items:start center;font-weight:800;
+    font-size:.7em;padding-top:.5em;letter-spacing:.04em;text-transform:uppercase;
+    opacity:0;animation:pop .5s cubic-bezier(.22,1,.36,1) forwards}
+  .ring.r1{width:100%;height:14.5em;color:var(--red);background:var(--red-t)}
+  .ring.r2{width:77%;height:11.2em;color:var(--amber);background:var(--amber-t)}
+  .ring.r3{width:55%;height:8em;color:var(--purple);background:var(--purple-t)}
+  .ring.r4{width:33%;height:4.8em;color:var(--green);background:var(--green-t)}
+  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-25%);font-size:.78em;
+    font-weight:800;color:#fff;background:var(--brand);border-radius:12px;padding:.35em .8em}
+  .attack{position:absolute;top:-.2em;left:50%;width:11px;height:11px;border-radius:50%;
+    background:var(--red);transform:translateX(-50%);animation:attack 3.4s ease-in-out infinite}
+  @keyframes attack{0%{top:-1.2em;opacity:0}12%{opacity:1}30%{top:1.1em;opacity:1}
+    40%{top:1.1em;transform:translateX(-50%) scale(1.7);opacity:.9}
+    50%{top:1.1em;transform:translateX(-50%) scale(.6);opacity:0}100%{top:1.1em;opacity:0}}
+  .blocked{position:absolute;top:2.3em;left:50%;transform:translateX(-50%);font-size:.72em;
+    font-weight:800;color:#fff;background:var(--red);border-radius:9px;padding:.25em .7em;opacity:0;
+    animation:blink 3.4s ease-in-out infinite}
   @keyframes blink{0%,36%{opacity:0}44%,66%{opacity:1}74%,100%{opacity:0}}
 
   /* ---------- overview ---------- */
-  .ov{position:fixed;inset:0;z-index:60;background:rgba(20,19,60,.97);display:none;padding:64px 5vw 34px;overflow-y:auto}
+  .ov{position:fixed;inset:0;z-index:60;background:rgba(20,19,60,.97);display:none;
+    padding:64px 5vw 34px;overflow-y:auto}
   .ov.open{display:block;animation:fade .2s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .ov h4{margin:0 0 16px;font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--brand-xl)}
-  .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:1300px;margin:0 auto}
-  .thumb{
-    background:#fff;border:3px solid transparent;border-radius:11px;padding:13px;cursor:pointer;
-    text-align:left;font:inherit;min-height:96px;display:flex;flex-direction:column;gap:6px;
-    transition:transform .15s,border-color .15s;
-  }
+  .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:1400px;margin:0 auto}
+  .thumb{background:#fff;border:3px solid transparent;border-radius:14px;padding:13px;cursor:pointer;
+    text-align:left;font:inherit;min-height:92px;display:flex;flex-direction:column;gap:6px}
   .thumb:hover{transform:translateY(-3px)}
   .thumb.on{border-color:var(--brand-xl)}
-  .thumb .n{font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums;letter-spacing:.08em}
-  .thumb .t{font-size:13px;line-height:1.32;color:var(--brand-d);font-weight:700}
-  .thumb .ic{width:16px;height:16px;color:var(--brand);margin-top:auto}
+  .thumb .n{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:5px}
+  .thumb .n svg{width:12px;height:12px;color:var(--brand-xl)}
+  .thumb .t{font-size:13px;line-height:1.3;color:var(--brand-d);font-weight:700}
 
-  @media (max-width:820px){
-    :root{--strip:92px}
-    .slide{padding:44px 26px 26px}
-    .arrow{display:none}
-  }
+  @media (max-width:820px){ .slide{padding:38px 24px 24px} .arrow{display:none} }
   @media (prefers-reduced-motion:reduce){
     .slide.in-next,.slide.in-prev,.stag>*,.lay .row,.pipe .node,.ring{animation:none;opacity:1;transform:none}
     .sweep,.attack,.blocked,.lay .row.ram::after,.pipe .conn::after{animation:none;opacity:0}
@@ -317,65 +270,53 @@
 </head>
 <body>
 
+<!-- Doodle icon set: thick, round-capped, deliberately imperfect strokes -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="dg"><style>.d{fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}</style></g>
   <symbol id="i-logo" viewBox="0 0 256 256">
-    <rect x="34" y="34" width="188" height="188" rx="36" fill="none" stroke="currentColor" stroke-width="14"/>
-    <path d="M64 64 L105 88 M192 64 L151 88" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" opacity=".65"/>
-    <polygon points="105,88 151,88 174,128 151,168 105,168 82,128" fill="currentColor" opacity=".9"/>
-    <circle cx="105" cy="88" r="8" fill="currentColor"/><circle cx="151" cy="88" r="8" fill="currentColor"/>
+    <rect x="34" y="34" width="188" height="188" rx="40" fill="none" stroke="currentColor" stroke-width="15"/>
+    <path d="M64 64 L105 88 M192 64 L151 88" fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round" opacity=".6"/>
+    <polygon points="105,88 151,88 174,128 151,168 105,168 82,128" fill="currentColor" opacity=".92"/>
   </symbol>
-  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
-  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></symbol>
-  <symbol id="i-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 5a3 3 0 1 0-5.997.142 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
-    <path d="M12 5a3 3 0 1 1 5.997.142 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/></symbol>
-  <symbol id="i-flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/>
-    <path d="M6 9v3a3 3 0 0 0 3 3h6"/></symbol>
-  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1 1 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>
-    <path d="m9 12 2 2 4-4"/></symbol>
-  <symbol id="i-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/></symbol>
-  <symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></symbol>
-  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></symbol>
-  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 15l4-4 3 3 5-6"/></symbol>
-  <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></symbol>
-  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h6"/>
-    <path d="M8 13h8"/><path d="M8 17h5"/></symbol>
-  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
-  <symbol id="i-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
-  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
-  <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
-  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
-  <symbol id="i-gh" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></symbol>
+  <symbol id="i-puzzle" viewBox="0 0 24 24"><path class="d" d="M9 3.2c1.4-.5 2.6.4 2.5 1.7 0 .6-.3 1 .1 1.2.5.2 1-.3 1.8-.3 1.3 0 2.1 1.1 1.7 2.3-.2.7-.8.9-.6 1.4.2.4.9.2 1.6.5 1.2.5 1.4 2 .4 2.8-.5.4-1.1.3-1.3.8-.2.5.4.9.5 1.7.2 1.3-1 2.2-2.2 1.8-.6-.2-.9-.8-1.4-.6-.4.2-.3.9-.7 1.5-.7 1.1-2.3 1-2.9-.2-.3-.5 0-1.1-.5-1.3-.5-.2-.9.4-1.6.5-1.3.2-2.3-.9-1.9-2.1.2-.6.8-.9.6-1.4-.2-.5-.9-.3-1.5-.7C2.9 12.2 3 10.7 4 10c.5-.3 1.1-.2 1.3-.7.2-.5-.4-.9-.5-1.6C4.6 6.4 5.8 5.5 7 6c.6.2.8.8 1.3.6.5-.2.3-.9.7-1.5.3-.5.7-.8 1-.9z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path class="d" d="M12 3.2c4.9-.2 9 3.9 8.8 8.9-.2 4.6-4 8.1-8.6 8-4.8-.1-8.5-4.1-8.2-8.9.3-4.4 3.8-7.8 8-8z"/><path class="d" d="M12 7.2v5.1l3.3 2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path class="d" d="M3.4 7.6 12 3.3l8.6 4.3-8.5 4.2z"/><path class="d" d="M3.4 7.6v8.7L12 20.7l8.6-4.4V7.6"/><path class="d" d="M12 11.8v8.9"/></symbol>
+  <symbol id="i-brokenlock" viewBox="0 0 24 24"><path class="d" d="M4.4 10.6h15.2c.5 0 .8.4.8.9v8c0 .5-.4.9-.9.9H4.4c-.5 0-.8-.4-.8-.9v-8c0-.5.3-.9.8-.9z"/><path class="d" d="M7.6 10.4V7.6c0-2.3 1.9-4.2 4.3-4.1 1.7 0 3 .9 3.7 2.3"/><path class="d" d="m10.6 14.2 2.9 3.1M13.5 14.2l-2.9 3.1"/></symbol>
+  <symbol id="i-ghost" viewBox="0 0 24 24"><path class="d" d="M4.2 20.4V10c0-4.2 3.5-7.1 7.7-6.9 4 .2 7.1 3.2 7 7.2v10.1l-2.3-1.7-2.3 1.7-2.3-1.7-2.3 1.7-2.3-1.7z"/><path class="d" d="M9.4 10.2h.02M14.4 10.2h.02"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path class="d" d="m3.6 15.4 11.6-11.7c.5-.5 1.2-.4 1.7 0l3.3 3.4c.4.5.4 1.2 0 1.6L8.7 20.5c-.5.4-1.2.4-1.6 0l-3.4-3.4c-.5-.5-.5-1.2-.1-1.7z"/><path class="d" d="m8.4 10.6 1.8 1.8M11.4 7.6l1.8 1.9M14.4 4.7l1.8 1.8M5.5 13.5l1.8 1.9"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><path class="d" d="M5.2 4.4h13.4c.6 0 1 .5 1 1v13.2c0 .6-.5 1-1.1 1H5.2c-.5 0-1-.4-1-1V5.4c0-.5.4-1 1-1z"/><path class="d" d="M8.6 8.6h.02M15.4 8.6h.02M12 12h.02M8.6 15.4h.02M15.4 15.4h.02"/></symbol>
+  <symbol id="i-plug2" viewBox="0 0 24 24"><path class="d" d="M12 3.4v6.3"/><path class="d" d="M6.6 9.7h10.9c.4 0 .7.4.6.8l-.8 4.2c-.4 2.1-2.3 3.6-4.5 3.5-2-.1-3.7-1.6-4-3.6l-.8-4.1c-.1-.4.2-.8.6-.8z"/><path class="d" d="M12 17.4v3.2"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path class="d" d="M6.4 3.4h7.4l5 5v11.4c0 .6-.5 1-1 1H6.4c-.6 0-1-.5-1-1V4.4c0-.5.4-1 1-1z"/><path class="d" d="M13.6 3.6v5.1h5"/><path class="d" d="M8.6 13.2h6.6M8.6 16.4h4.4"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path class="d" d="M12 3.4c4.8 0 8.7 4 8.6 8.8-.1 4.6-3.9 8.3-8.6 8.2-4.8 0-8.6-4-8.5-8.7.1-4.6 3.9-8.3 8.5-8.3z"/><path class="d" d="M12 7.6c2.5 0 4.5 2 4.4 4.5 0 2.4-2.1 4.3-4.5 4.2-2.4 0-4.3-2.1-4.2-4.5 0-2.3 2-4.2 4.3-4.2z"/><path class="d" d="M12 11.3h.02"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path class="d" d="M12 3.3 20 6v6c0 4.4-3.3 7.6-8 9.1-4.7-1.5-8-4.7-8-9.1V6z"/><path class="d" d="m8.8 11.9 2.2 2.2 4.3-4.4"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><path class="d" d="M12 5.1c-.2-1.3-1.4-2.2-2.7-1.9-1.1.2-1.9 1.2-1.9 2.3-1.3.1-2.3 1.2-2.2 2.5 0 .5.2 1 .5 1.4-1.1.6-1.5 2-.9 3.1.3.5.7.9 1.3 1-.4 1.2.3 2.5 1.6 2.8.3.1.6.1.9 0 .2 1.3 1.5 2.2 2.8 1.9 1.1-.2 1.9-1.2 1.9-2.3"/><path class="d" d="M12 5.1c.2-1.3 1.4-2.2 2.7-1.9 1.1.2 1.9 1.2 1.9 2.3 1.3.1 2.3 1.2 2.2 2.5 0 .5-.2 1-.5 1.4 1.1.6 1.5 2 .9 3.1-.3.5-.7.9-1.3 1 .4 1.2-.3 2.5-1.6 2.8-.3.1-.6.1-.9 0-.2 1.3-1.5 2.2-2.8 1.9-1.1-.2-1.9-1.2-1.9-2.3V5.1z"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><path class="d" d="M4.4 3.6h4.2c.5 0 .9.4.9.9v4.1c0 .5-.4.9-.9.9H4.4c-.5 0-.9-.4-.9-.9V4.5c0-.5.4-.9.9-.9z"/><path class="d" d="M15.4 14.5h4.2c.5 0 .9.4.9.9v4.1c0 .5-.4.9-.9.9h-4.2c-.5 0-.9-.4-.9-.9v-4.1c0-.5.4-.9.9-.9z"/><path class="d" d="M6.6 9.6v4c0 1.6 1.3 2.9 2.9 2.9h5"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><path class="d" d="M9 3.6c3 0 5.5 2.4 5.4 5.4 0 2.9-2.5 5.3-5.5 5.2-3 0-5.4-2.5-5.3-5.4 0-2.9 2.4-5.2 5.4-5.2z"/><path class="d" d="M14.8 10.2c2.9.6 4.9 3.3 4.4 6.2-.5 2.8-3.2 4.7-6 4.2-1.9-.3-3.5-1.7-4.1-3.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path class="d" d="M12 3.4c4.8 0 8.7 4 8.6 8.8-.1 4.6-3.9 8.3-8.6 8.2-4.8 0-8.6-4-8.5-8.7.1-4.6 3.9-8.3 8.5-8.3z"/><path class="d" d="m10.2 8.4 5.4 3.7-5.4 3.6z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path class="d" d="M3.6 3.5v15.6c0 .7.6 1.3 1.3 1.3h15.5"/><path class="d" d="m7.4 15.4 3.7-3.9 2.9 2.9 5.2-6"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path class="d" d="M12 14.6 9.3 12c.5-1.4 1.2-2.7 2-3.9 2.4-3.5 5.7-4.9 9.4-4.7.3 3.7-1.1 7-4.5 9.5-1.2.9-2.6 1.5-4.2 1.7z"/><path class="d" d="M9.2 12H4.6s.6-3 2-3.9c1.6-1 4.9 0 4.9 0"/><path class="d" d="M4.6 16.4c-1.4 1.2-1.9 4.9-1.9 4.9s3.7-.5 4.9-1.9c.7-.8.7-2.1-.1-2.9-.8-.7-2.1-.7-2.9-.1z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path class="d" d="M10.4 3.9 2.1 18c-.4.7.1 1.6.9 1.6h17.9c.8 0 1.3-.9.9-1.6L13.6 3.9c-.4-.7-1.4-.7-1.8 0z"/><path class="d" d="M12 9.2v4.1M12 16.6h.02"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path class="d" d="M4.4 4.2h15.2c.5 0 .9.4.9.9v9.4c0 .5-.4.9-.9.9H9.2l-4.4 3.9v-3.9h-.4c-.5 0-.9-.4-.9-.9V5.1c0-.5.4-.9.9-.9z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path class="d" d="M12 3.4 3.5 7.6 12 11.8l8.5-4.2z"/><path class="d" d="m3.5 12.1 8.5 4.2 8.5-4.2M3.5 16.4l8.5 4.2 8.5-4.2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path class="d" d="M4.4 3.6h5v5.8h-5zM14.6 3.6h5v5.8h-5zM4.4 14.6h5v5.8h-5zM14.6 14.6h5v5.8h-5z"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path class="d" d="M8.4 3.6H5c-.8 0-1.4.6-1.4 1.4v3.4m16.8 0V5c0-.8-.6-1.4-1.4-1.4h-3.4m0 16.8H19c.8 0 1.4-.6 1.4-1.4v-3.4M3.6 15.6V19c0 .8.6 1.4 1.4 1.4h3.4"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path class="d" style="stroke-width:2.6" d="m15 18.2-6.2-6.2L15 5.8"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path class="d" style="stroke-width:2.6" d="m9 5.8 6.2 6.2L9 18.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path class="d" style="stroke-width:2.4" d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-gh" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.2.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5z"/></symbol>
+  <symbol id="i-squig" viewBox="0 0 120 10" preserveAspectRatio="none">
+    <path d="M2 6.5c8-5 16 3 24-1.2s16 3.4 24-.8 16 3.6 24-.6 16 3 22 1.4" fill="none"
+      stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
 </defs></svg>
 
-<div class="bg"><i></i><i></i><i></i><i></i><i></i></div>
+<div class="bg"><i></i><i></i><i></i><i></i></div>
 
 <header class="bar">
   <div class="brand"><svg><use href="#i-logo"/></svg><span>Agent Harness Bootstrap</span></div>
   <div class="spacer"></div>
   <span class="count" id="counter"></span>
   <div class="langs" id="langs">
-    <button data-l="en" class="on">EN</button>
-    <button data-l="vi">VI</button>
-    <button data-l="ja">JP</button>
+    <button data-l="en" class="on">EN</button><button data-l="vi">VI</button><button data-l="ja">JP</button>
   </div>
   <button class="ibtn" id="btnOv" title="All slides (O)"><svg><use href="#i-grid"/></svg></button>
   <button class="ibtn" id="btnFull" title="Fullscreen (F)"><svg><use href="#i-full"/></svg></button>
@@ -383,7 +324,7 @@
 
 <main class="stage">
   <section class="page" id="page">
-    <div class="pagemark"><svg style="color:var(--brand)"><use href="#i-logo"/></svg></div>
+    <div class="pagemark"><svg><use href="#i-logo"/></svg></div>
     <div class="deck" id="deck"></div>
     <button class="arrow l" id="btnPrev"><svg><use href="#i-left"/></svg></button>
     <button class="arrow r" id="btnNext"><svg><use href="#i-right"/></svg></button>
@@ -397,407 +338,382 @@
 </div>
 
 <script>
-const UI = {
-  en:{ov:"All slides", of:"of"},
-  vi:{ov:"Tất cả slide", of:"/"},
-  ja:{ov:"全スライド", of:"/"}
+const UI = { en:{ov:"All slides", of:"of"}, vi:{ov:"Tất cả slide", of:"/"}, ja:{ov:"全スライド", of:"/"} };
+
+/* Jargon gets annotated rather than assumed. Write {{g:key|label}} in any string. */
+const GLOSS = {
+  exit2:{en:"A hook is a shell script that runs before a tool call. Its exit status decides: 0 allows the call, 2 blocks it (the call never runs and stderr goes back to the model as the reason), anything else is a non-blocking error.",
+         vi:"Hook là một shell script chạy trước khi gọi tool. Mã thoát quyết định: 0 là cho phép, 2 là chặn (lời gọi không bao giờ chạy và stderr được trả về cho model làm lý do), số khác là lỗi không chặn.",
+         ja:"フックはツール呼び出しの前に走るシェルスクリプトです。終了コードが判断します: 0は許可、2は遮断（呼び出しは実行されず、stderrが理由としてモデルに返る）、その他は非遮断エラー。"},
+  hook:{en:"A script the tool runs automatically at a fixed moment, for example before every tool call (PreToolUse) or when a subagent finishes.",
+        vi:"Một script mà công cụ tự chạy tại một thời điểm cố định, ví dụ trước mỗi lời gọi tool (PreToolUse) hoặc khi một subagent kết thúc.",
+        ja:"ツールが決まったタイミングで自動実行するスクリプト。例えば各ツール呼び出しの前（PreToolUse）や、サブエージェント終了時。"},
+  compaction:{en:"When the conversation fills the context window, older turns are summarised and discarded to make room. Anything that lived only in those turns is gone.",
+              vi:"Khi hội thoại lấp đầy cửa sổ context, các lượt cũ bị tóm tắt và loại bỏ để lấy chỗ. Mọi thứ chỉ tồn tại trong các lượt đó sẽ mất.",
+              ja:"会話がコンテキストウィンドウを埋めると、古いターンが要約され破棄されて空きが作られます。そのターンにしか無かったものは失われます。"},
+  adr:{en:"Architecture Decision Record: a short document recording one technical decision and why it was made. Once Accepted it should not be quietly rewritten.",
+       vi:"Architecture Decision Record: tài liệu ngắn ghi lại một quyết định kỹ thuật và lý do. Khi đã Accepted thì không được lặng lẽ sửa lại.",
+       ja:"Architecture Decision Record: 1つの技術的決定とその理由を記録した短い文書。Accepted になった後に黙って書き換えてはいけません。"},
+  pathscoped:{en:"A rule file carrying a paths: glob. It only enters the context window when the agent touches a file matching that glob, instead of loading in every session.",
+              vi:"File rule có khai báo paths: dạng glob. Nó chỉ vào cửa sổ context khi agent chạm vào file khớp glob đó, thay vì nạp trong mọi phiên.",
+              ja:"paths: グロブを持つルールファイル。毎セッション読み込まれるのではなく、一致するファイルに触れた時だけコンテキストに入ります。"},
+  denylist:{en:"A list in settings.json of things the agent may never read or run, checked before the action reaches a tool call at all.",
+            vi:"Danh sách trong settings.json về những thứ agent không bao giờ được đọc hoặc chạy, kiểm tra trước khi hành động kịp tới lời gọi tool.",
+            ja:"settings.json 内の、エージェントが決して読めない/実行できないものの一覧。アクションがツール呼び出しに届く前に判定されます。"},
+  maxturns:{en:"A cap on how many turns one agent may take before it is stopped. The circuit breaker against an agent that gets stuck in a loop.",
+            vi:"Giới hạn số lượt một agent được phép thực hiện trước khi bị dừng. Cầu dao ngắt cho agent bị kẹt trong vòng lặp.",
+            ja:"1体のエージェントが停止されるまでに実行できるターン数の上限。ループに陥ったエージェントへのサーキットブレーカー。"},
+  brownfield:{en:"A repository that already contains code, as opposed to greenfield which starts empty. It requires reading and reconciling before anything is generated.",
+              vi:"Repository đã có sẵn code, ngược với greenfield là bắt đầu từ trống. Nó đòi hỏi phải đọc và đối chiếu trước khi sinh ra bất cứ thứ gì.",
+              ja:"既にコードがあるリポジトリ（空から始める greenfield の対義）。何かを生成する前に読み取りと突き合わせが必要です。"},
+  orchestrator:{en:"The single agent that plans, splits work into registered tasks, dispatches specialists and judges their results. The only entry point for multi-step work.",
+                vi:"Agent duy nhất lập kế hoạch, chia việc thành các task đã đăng ký, điều phối chuyên gia và đánh giá kết quả. Điểm vào duy nhất cho việc nhiều bước.",
+                ja:"計画し、作業を登録済みタスクに分割し、専門家を割り当て、結果を判断する唯一のエージェント。多段階作業の唯一の入口。"},
+  spec:{en:"A written requirements document with stable IDs and acceptance criteria, so a change can be checked against something instead of a memory of a conversation.",
+        vi:"Tài liệu yêu cầu được viết ra với ID ổn định và tiêu chí nghiệm thu, để một thay đổi có thể được đối chiếu thay vì dựa vào trí nhớ hội thoại.",
+        ja:"安定したIDと受入基準を持つ要件文書。変更を会話の記憶ではなく、対象に照らして検証できます。"}
 };
 
 const S = [
-/* 1 ---------------------------------------------------------------- */
+/* 1 */
 {icon:"i-logo", kind:"cover",
  title:{en:"Agent Harness Bootstrap", vi:"Agent Harness Bootstrap", ja:"Agent Harness Bootstrap"},
- sub:{
-  en:"Standardizing and building the operating foundation for AI coding agents",
-  vi:"Chuẩn hóa và xây dựng nền móng vận hành cho AI coding agents",
-  ja:"AIコーディングエージェントのための運用基盤の標準化と構築"},
- lead:{
-  en:"Give an AI agent a repo it can actually understand, and a harness it cannot escape.",
-  vi:"Trao cho AI agent một repository nó thực sự hiểu được, và một harness nó không thể thoát ra.",
-  ja:"AIエージェントに、本当に理解できるリポジトリと、抜け出せないハーネスを。"},
+ sub:{en:"Standardizing and building the operating foundation for AI coding agents",
+      vi:"Chuẩn hóa và xây dựng nền móng vận hành cho AI coding agents",
+      ja:"AIコーディングエージェントのための運用基盤の標準化と構築"},
+ lead:{en:"Give an AI agent a repo it can actually understand, and a <mark>harness it cannot escape</mark>.",
+       vi:"Trao cho AI agent một repository nó thực sự hiểu được, và một <mark>harness nó không thể thoát ra</mark>.",
+       ja:"AIエージェントに、本当に理解できるリポジトリと、<mark>抜け出せないハーネス</mark>を。"},
  nav:{en:"Cover", vi:"Trang bìa", ja:"表紙"}},
 
-/* 2 ---------------------------------------------------------------- */
-{icon:"i-alert", kind:"table",
- eyebrow:{en:"Why a harness", vi:"Tại sao cần harness", ja:"なぜハーネスが必要か"},
- title:{en:"AI coding today is improvised", vi:"AI coding hiện nay đang mang tính tự phát", ja:"今日のAIコーディングは場当たり的"},
- sub:{
-  en:"It works in a demo and breaks in a real project. Not because the model is weak, but because nothing around it is engineered.",
-  vi:"Nó chạy tốt khi demo và vỡ trận trong dự án thật. Không phải vì model yếu, mà vì mọi thứ xung quanh nó không được thiết kế.",
-  ja:"デモでは動き、実プロジェクトで壊れます。モデルが弱いからではなく、その周囲が設計されていないからです。"},
- cols:{en:["","Ad-hoc AI coding","With a harness"], vi:["","AI coding tự phát","Khi có harness"], ja:["","場当たり的なAIコーディング","ハーネスあり"]},
- rowClass:"t-bad t-good",
- rows:[
-  {en:["<strong>The instruction</strong>","A prompt someone typed, phrased their way","A written contract with stable IDs and acceptance criteria"],
-   vi:["<strong>Chỉ dẫn</strong>","Một prompt ai đó gõ ra, theo cách diễn đạt riêng","Một bản hợp đồng viết ra, có ID ổn định và tiêu chí nghiệm thu"],
-   ja:["<strong>指示</strong>","誰かが自分の言い回しで打ったプロンプト","安定したIDと受入基準を持つ、書かれた契約"]},
-  {en:["<strong>Who works</strong>","One generalist agent doing everything","Scoped specialists, dispatched by an orchestrator"],
-   vi:["<strong>Ai làm việc</strong>","Một agent đa năng làm tất cả","Các chuyên gia có phạm vi rõ ràng, được orchestrator điều phối"],
-   ja:["<strong>実行者</strong>","何でもこなす汎用エージェント1体","スコープを持つ専門家群をオーケストレーターが割り当て"]},
-  {en:["<strong>Memory</strong>","The context window. Compaction erases it","Committed markdown. Compaction cannot touch it"],
-   vi:["<strong>Bộ nhớ</strong>","Cửa sổ context. Compaction xóa sạch","Markdown đã commit. Compaction không đụng tới được"],
-   ja:["<strong>記憶</strong>","コンテキストウィンドウ。圧縮で消える","コミット済みMarkdown。圧縮では消せない"]},
-  {en:["<strong>Safety</strong>","“Please do not touch production”","Exit code 2. The tool call never happens"],
-   vi:["<strong>An toàn</strong>","“Làm ơn đừng đụng vào production”","Exit code 2. Lời gọi tool không bao giờ xảy ra"],
-   ja:["<strong>安全性</strong>","「本番には触らないでください」","終了コード2。ツール呼び出し自体が起きない"]},
-  {en:["<strong>Cost</strong>","Whatever the default model charges","An explicit model and effort budget per seat"],
-   vi:["<strong>Chi phí</strong>","Model mặc định tính bao nhiêu thì trả bấy nhiêu","Ngân sách model và effort tường minh cho từng vai trò"],
-   ja:["<strong>コスト</strong>","既定モデルの請求額なりゆき","席ごとに明示的なモデルとeffortの予算"]},
-  {en:["<strong>Reproducibility</strong>","Depends who asked, and how","Same repo, same contract, same structure"],
-   vi:["<strong>Khả năng tái lập</strong>","Phụ thuộc ai hỏi và hỏi thế nào","Cùng repo, cùng hợp đồng, cùng cấu trúc"],
-   ja:["<strong>再現性</strong>","誰がどう頼んだかに左右される","同じリポジトリ、同じ契約、同じ構造"]}],
- nav:{en:"Ad-hoc vs harness", vi:"Tự phát vs harness", ja:"場当たり的 vs ハーネス"}},
-
-/* 3 ---------------------------------------------------------------- */
-{icon:"i-layers", kind:"quote",
- eyebrow:{en:"The reframe", vi:"Định nghĩa lại vấn đề", ja:"問題の再定義"},
- quote:{
-  en:"The problem is not that the model is not smart enough. It is that nothing around the model is engineered. We treat the most powerful tool we have ever put in a repository as something you chat with, not something you operate.",
-  vi:"Vấn đề không phải là model chưa đủ thông minh. Vấn đề là mọi thứ xung quanh model đều không được thiết kế. Chúng ta đang đối xử với công cụ mạnh nhất từng đưa vào repository như một thứ để trò chuyện, chứ không phải một thứ để vận hành.",
-  ja:"問題はモデルが賢くないことではありません。モデルの周囲が何も設計されていないことです。私たちはリポジトリに投入した史上最も強力なツールを、運用する対象ではなく、雑談する相手として扱っています。"},
- kicker:{
-  en:"A <b>harness</b> is a controlled boundary the agent works inside: who does what, what it may read and touch, what it must write down, and what it simply cannot do.",
-  vi:"<b>Harness</b> là một ranh giới có kiểm soát mà agent làm việc bên trong: ai làm gì, được đọc và chạm vào cái gì, phải ghi lại cái gì, và tuyệt đối không được làm gì.",
-  ja:"<b>ハーネス</b>とは、エージェントがその内側で作業する制御された境界です。誰が何をするか、何を読み触れてよいか、何を書き残すべきか、そして何が絶対にできないか。"},
- nav:{en:"What is a harness", vi:"Harness là gì", ja:"ハーネスとは"}},
-
-/* 4 ---------------------------------------------------------------- */
-{icon:"i-alert", kind:"table",
- eyebrow:{en:"Obstacles · the machine side", vi:"Trở ngại · phía máy", ja:"障害 · マシン側"},
- title:{en:"What the agent gets wrong", vi:"Những gì agent làm sai", ja:"エージェントが誤ること"},
- cols:{en:["Obstacle","Why it bites in a real project"], vi:["Trở ngại","Vì sao nó gây đau trong dự án thật"], ja:["障害","実プロジェクトで痛む理由"]},
- rows:[
-  {en:["<strong>No standard for “good”</strong>","Every team invents its own setup. Nothing is comparable or transferable"],
-   vi:["<strong>Không có chuẩn cho “tốt”</strong>","Mỗi team tự nghĩ ra cách riêng. Không so sánh hay chuyển giao được"],
-   ja:["<strong>「良い」の基準がない</strong>","各チームが独自構成を発明。比較も引き継ぎもできない"]},
-  {en:["<strong>Agents do not compose</strong>","One-off prompts do not add up to delivered work. Multi-step tasks stall halfway"],
-   vi:["<strong>Các agent không ghép lại được</strong>","Prompt rời rạc không cộng thành kết quả. Việc nhiều bước tắc giữa chừng"],
-   ja:["<strong>エージェントが組み合わさらない</strong>","単発プロンプトは成果に積み上がらない。多段階作業が途中で止まる"]},
-  {en:["<strong>Hallucination</strong>","It invents requirements, APIs, whole files. They look plausible enough to merge"],
-   vi:["<strong>Ảo giác</strong>","Nó bịa ra yêu cầu, API, cả file. Trông đủ hợp lý để được merge"],
-   ja:["<strong>ハルシネーション</strong>","要件、API、ファイルごと捏造。マージしてしまうほど尤もらしい"]},
-  {en:["<strong>Context loss</strong>","The window fills, compacts, and progress that lived only there is gone"],
-   vi:["<strong>Mất context</strong>","Cửa sổ đầy, bị nén, và tiến độ chỉ tồn tại ở đó biến mất"],
-   ja:["<strong>コンテキスト消失</strong>","ウィンドウが埋まり圧縮され、そこにしかない進捗が消える"]},
-  {en:["<strong>Blast radius</strong>","It can read <code>.env</code>, commit to <code>main</code>, edit an accepted decision record"],
-   vi:["<strong>Bán kính thiệt hại</strong>","Nó có thể đọc <code>.env</code>, commit vào <code>main</code>, sửa một ADR đã duyệt"],
-   ja:["<strong>影響範囲</strong>","<code>.env</code>を読み、<code>main</code>にコミットし、承認済みADRを編集できる"]},
-  {en:["<strong>Cost opacity</strong>","An agent with no model set silently bills mechanical work at the top tier"],
-   vi:["<strong>Chi phí mờ mịt</strong>","Agent không set model sẽ âm thầm tính việc cơ học theo tier cao nhất"],
-   ja:["<strong>コストの不透明さ</strong>","モデル未設定のエージェントは機械的作業を最上位ティアで黙って課金"]},
-  {en:["<strong>Tool lock-in</strong>","The setup is rebuilt from scratch for Claude Code, Cursor, Codex"],
-   vi:["<strong>Phụ thuộc công cụ</strong>","Phải dựng lại từ đầu cho Claude Code, Cursor, Codex"],
-   ja:["<strong>ツールロックイン</strong>","Claude Code、Cursor、Codexごとに一から作り直し"]}],
- note:{
-  en:"Telling the agent not to do these things is advice. After a context compaction, it does not remember the advice.",
-  vi:"Dặn agent đừng làm những điều này chỉ là lời khuyên. Sau một lần compaction, nó không còn nhớ lời khuyên đó.",
-  ja:"「するな」と伝えるのは助言にすぎません。コンテキスト圧縮のあと、その助言は残っていません。"},
- nav:{en:"Machine-side risks", vi:"Rủi ro phía máy", ja:"マシン側のリスク"}},
-
-/* 5 ---------------------------------------------------------------- */
-{icon:"i-chat", kind:"bullets",
- eyebrow:{en:"Obstacles · the human side", vi:"Trở ngại · phía con người", ja:"障害 · 人間側"},
- title:{en:"The prompt problem nobody audits", vi:"Vấn đề prompt không ai kiểm toán", ja:"誰も監査しないプロンプト問題"},
- sub:{
-  en:"The instability does not only come from the model. It comes from us, and from natural language as an interface.",
-  vi:"Sự thiếu ổn định không chỉ đến từ model. Nó đến từ chính chúng ta, và từ ngôn ngữ tự nhiên với vai trò một giao diện.",
-  ja:"不安定さはモデルだけに由来しません。私たち自身と、インターフェースとしての自然言語に由来します。"},
- cls:"red",
- items:[
-  {t:{en:"Prompt style is not standardized", vi:"Phong cách prompt không được chuẩn hóa", ja:"プロンプトのスタイルが標準化されていない"},
-   d:{en:"Two engineers ask for the same feature two ways and get two different structures. Output varies by person, by day.",
-      vi:"Hai kỹ sư yêu cầu cùng một tính năng theo hai cách và nhận về hai cấu trúc khác nhau. Kết quả đổi theo từng người, từng ngày.",
-      ja:"2人のエンジニアが同じ機能を別々の言い方で頼み、別々の構造が返る。出力は人によって、日によって変わります。"}},
-  {t:{en:"Natural language is lossy and unstable", vi:"Ngôn ngữ tự nhiên vừa hao hụt vừa bất ổn", ja:"自然言語は劣化しやすく不安定"},
-   d:{en:"The same intent phrased differently produces different results. And how you asked is invisible: not in git, no diff, no review, no rollback.",
-      vi:"Cùng một ý định nhưng diễn đạt khác đi sẽ cho kết quả khác. Và cách bạn hỏi là vô hình: không nằm trong git, không có diff, không được review, không rollback được.",
-      ja:"同じ意図でも言い回しが変われば結果が変わる。しかも「どう頼んだか」は不可視です。gitになく、差分もレビューもロールバックもありません。"}},
-  {t:{en:"It does not transfer", vi:"Nó không chuyển giao được", ja:"引き継げない"},
-   d:{en:"A new member has no idea how to ask. The person who is “good with the AI” becomes a bottleneck, and their skill is tacit and unteachable.",
-      vi:"Thành viên mới không biết phải hỏi thế nào. Người “mát tay với AI” trở thành nút thắt cổ chai, và kỹ năng đó là ngầm ẩn, không dạy được.",
-      ja:"新メンバーは頼み方が分からない。「AIが上手い人」がボトルネックになり、その技能は暗黙知で教えられません。"}},
-  {t:{en:"Every hand-off re-translates", vi:"Mỗi lần bàn giao là một lần dịch lại", ja:"引き渡しのたびに翻訳し直される"},
-   d:{en:"Human prose in, model interpretation out, and that interpretation becomes the input to the next step. Ambiguity compounds at every boundary.",
-      vi:"Văn xuôi của người vào, diễn giải của model ra, rồi diễn giải đó lại thành đầu vào cho bước sau. Sự mơ hồ dồn tích qua từng ranh giới.",
-      ja:"人の散文が入り、モデルの解釈が出て、その解釈が次工程の入力になる。曖昧さは境界ごとに累積します。"}}],
- nav:{en:"The prompt problem", vi:"Vấn đề prompt", ja:"プロンプト問題"}},
-
-/* 6 ---------------------------------------------------------------- */
-{icon:"i-doc", kind:"quote",
- eyebrow:{en:"The insight", vi:"Nhận định then chốt", ja:"核心となる洞察"},
- quote:{
-  en:"When agents talk to each other through a harness, the interface stops being prose and becomes structure: a spec section with a stable ID, a task file with acceptance criteria, a session log row.",
-  vi:"Khi các agent nói chuyện với nhau qua một harness, giao diện giữa chúng thôi là văn xuôi và trở thành cấu trúc: một mục spec có ID ổn định, một task file có tiêu chí nghiệm thu, một dòng trong session log.",
-  ja:"エージェント同士がハーネスを介して対話するとき、その界面は散文ではなく構造になります。安定したIDを持つ仕様セクション、受入基準を持つタスクファイル、セッションログの一行です。"},
- kicker:{
-  en:"Natural language enters <b>once</b>, at the intake boundary, and becomes a written contract. From there every hand-off is file-mediated. <b>Structured input produces stable output.</b><br><br>We are not trying to make people write better prompts. We are trying to make the prompt stop being the interface.",
-  vi:"Ngôn ngữ tự nhiên chỉ đi vào <b>một lần duy nhất</b>, tại ranh giới tiếp nhận, rồi trở thành hợp đồng viết ra. Từ đó mọi bàn giao đều qua file. <b>Đầu vào có cấu trúc tạo ra đầu ra ổn định.</b><br><br>Chúng ta không cố làm cho con người viết prompt giỏi hơn. Chúng ta làm cho prompt thôi đóng vai trò giao diện.",
-  ja:"自然言語が入るのは<b>一度だけ</b>、受付の境界でです。そこで書かれた契約になります。以降の引き渡しはすべてファイル経由。<b>構造化された入力が安定した出力を生みます。</b><br><br>人により良いプロンプトを書かせようとしているのではありません。プロンプトがインターフェースであることをやめさせようとしているのです。"},
- nav:{en:"Structure over prose", vi:"Cấu trúc thay cho văn xuôi", ja:"散文より構造"}},
-
-/* 7 ---------------------------------------------------------------- */
-{icon:"i-layers", kind:"cards",
- eyebrow:{en:"The thesis", vi:"Luận điểm", ja:"主張"},
- title:{en:"It is a harness problem, not a model problem", vi:"Đây là bài toán harness, không phải bài toán model", ja:"これはモデルの問題ではなくハーネスの問題"},
- sub:{
-  en:"Models get cheaper and better every quarter. That is not where differentiation lives. Three mechanisms make the harness work.",
-  vi:"Model ngày càng rẻ và tốt hơn mỗi quý. Khác biệt không nằm ở đó. Ba cơ chế làm nên harness.",
-  ja:"モデルは四半期ごとに安く良くなります。差別化はそこにありません。ハーネスを成り立たせる3つの仕組みがあります。"},
+/* 2 */
+{icon:"i-alert", kind:"cards", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"Where the setup breaks", vi:"Nơi việc thiết lập đổ vỡ", ja:"セットアップが壊れる場所"},
+ sub:{en:"Before any solution, the three things every team hits when putting an agent on a real project.",
+      vi:"Trước mọi giải pháp, ba điều mọi team đều gặp khi đưa agent vào một dự án thật.",
+      ja:"解決策の前に、実プロジェクトにエージェントを載せると必ずぶつかる3点。"},
  cards:[
-  {ic:"i-brain", cls:"g", t:{en:"Context", vi:"Context", ja:"コンテキスト"},
-   d:{en:"How the system remembers. State lives on disk, so compaction is survivable by design.",
-      vi:"Hệ thống ghi nhớ thế nào. Trạng thái nằm trên đĩa, nên compaction là chuyện sống sót được theo thiết kế.",
-      ja:"システムがどう記憶するか。状態はディスク上にあり、圧縮を設計上生き延びます。"}},
-  {ic:"i-flow", cls:"p", t:{en:"Orchestration", vi:"Điều phối", ja:"オーケストレーション"},
-   d:{en:"How work is decomposed and driven. Registered tasks with owners and gates, not improvisation.",
-      vi:"Công việc được phân rã và dẫn dắt thế nào. Task có đăng ký, có chủ sở hữu và cổng kiểm soát, không ứng biến.",
-      ja:"作業をどう分解し推進するか。担当とゲートを持つ登録済みタスクであり、即興ではありません。"}},
-  {ic:"i-shield", cls:"r", t:{en:"Security", vi:"Bảo mật", ja:"セキュリティ"},
-   d:{en:"How damage is prevented. Layers the model does not get a vote on.",
-      vi:"Thiệt hại được ngăn thế nào. Những lớp mà model không có quyền bỏ phiếu.",
-      ja:"被害をどう防ぐか。モデルに投票権のない層です。"}}],
- nav:{en:"Three mechanisms", vi:"Ba cơ chế", ja:"3つの仕組み"}},
+  {ic:"i-puzzle", cls:"r", n:"01",
+   t:{en:"Off-the-shelf frameworks do not fit", vi:"Các bộ khung có sẵn không vừa", ja:"既製フレームワークは合わない"},
+   d:{en:"Agent scaffolds found on the internet are not built around your problem or your codebase. Every one needs customising before it is useful.",
+      vi:"Các bộ khung agent tìm thấy trên internet không bám sát bài toán hay codebase của bạn. Cái nào cũng phải customize lại mới dùng được.",
+      ja:"ネット上のエージェント雛形は、あなたの課題やコードベースに沿って作られていません。どれも使う前にカスタマイズが要ります。"}},
+  {ic:"i-clock", cls:"a", n:"02",
+   t:{en:"Prompting still eats the time", vi:"Prompting vẫn ngốn thời gian", ja:"プロンプト作りが時間を食う"},
+   d:{en:"Most of the effort goes into phrasing the request, and feeding the right context stays a constant headache.",
+      vi:"Phần lớn công sức đổ vào việc diễn đạt yêu cầu, và bài toán đưa đúng context luôn đau đầu.",
+      ja:"労力の大半は依頼の言い回しに費やされ、適切なコンテキストを渡す問題は常に頭痛の種です。"}},
+  {ic:"i-box", cls:"p", n:"03",
+   t:{en:"Context is finite, always", vi:"Context luôn có giới hạn", ja:"コンテキストは常に有限"},
+   d:{en:"An agent has a context limit however large the window grows. You cannot buy your way out of this with a bigger window.",
+      vi:"Agent luôn có giới hạn context dù cửa sổ có tăng lớn tới đâu. Không thể mua đường thoát bằng một cửa sổ to hơn.",
+      ja:"ウィンドウがどれだけ大きくなっても、エージェントには上限があります。大きな窓を買って解決はできません。"}}],
+ nav:{en:"Setup breaks", vi:"Thiết lập đổ vỡ", ja:"セットアップの破綻"}},
 
-/* 8 ---------------------------------------------------------------- */
-{icon:"i-doc", kind:"table",
- eyebrow:{en:"The system", vi:"Hệ thống", ja:"システム"},
+/* 3 */
+{icon:"i-alert", kind:"cards", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"Where control breaks", vi:"Nơi kiểm soát đổ vỡ", ja:"制御が壊れる場所"},
+ cards:[
+  {ic:"i-brokenlock", cls:"r", n:"04",
+   t:{en:"Security rules are not durable", vi:"Quy tắc bảo mật không bền vững", ja:"セキュリティ規則が持続しない"},
+   d:{en:"Rules written as instructions can simply be skipped. Anything that depends on the model choosing to obey is not a control.",
+      vi:"Quy tắc viết dưới dạng chỉ dẫn hoàn toàn có thể bị bỏ qua. Thứ gì phụ thuộc vào việc model chịu tuân thủ thì không phải một biện pháp kiểm soát.",
+      ja:"指示として書かれた規則は簡単に無視されます。モデルが従うことに依存するものは、統制ではありません。"}},
+  {ic:"i-ghost", cls:"p", n:"05",
+   t:{en:"Hallucination and overflow derail the process", vi:"Ảo giác và tràn context phá vỡ quy trình", ja:"幻覚とあふれが工程を狂わせる"},
+   d:{en:"The process is only as good as the memory behind it. Invented facts and an overflowing window break it in ways nobody notices until later.",
+      vi:"Quy trình chỉ tốt ngang bộ nhớ đứng sau nó. Thông tin bịa ra và cửa sổ bị vượt sẽ phá vỡ nó theo cách không ai nhận ra cho tới lúc muộn.",
+      ja:"工程は背後の記憶の質を超えません。捏造された事実とあふれたウィンドウは、後になるまで誰も気づかない形で工程を壊します。"}},
+  {ic:"i-dice", cls:"a", n:"06",
+   t:{en:"Different models, unstable output", vi:"Model khác nhau, đầu ra bất ổn", ja:"モデルが違えば出力も不安定"},
+   d:{en:"Projects run on different models. The more creative and capable the model, the less predictable its output. Quality has to hold regardless.",
+      vi:"Mỗi dự án dùng model khác nhau. Model càng sáng tạo và thông minh thì đầu ra càng khó lường. Chất lượng vẫn phải giữ được bất kể model nào.",
+      ja:"プロジェクトごとに使うモデルが違います。創造的で高性能なモデルほど出力は読みにくくなります。それでも品質は保たれねばなりません。"}}],
+ nav:{en:"Control breaks", vi:"Kiểm soát đổ vỡ", ja:"制御の破綻"}},
+
+/* 4 */
+{icon:"i-alert", kind:"cards", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"Where the project breaks", vi:"Nơi dự án đổ vỡ", ja:"プロジェクトが壊れる場所"},
+ cards:[
+  {ic:"i-ruler", cls:"p", n:"07",
+   t:{en:"Every project has its own standard", vi:"Mỗi dự án một tiêu chuẩn riêng", ja:"プロジェクトごとに基準が違う"},
+   d:{en:"Conventions, stack and risk differ per repository. How do you tailor a setup to each one instead of forcing a template on it?",
+      vi:"Quy ước, stack và rủi ro khác nhau ở từng repository. Làm sao may đo cho từng dự án thay vì ép một template lên nó?",
+      ja:"規約、スタック、リスクはリポジトリごとに違います。テンプレートを押し付けず、どう個別に仕立てるか。"}},
+  {ic:"i-plug2", cls:"r", n:"08",
+   t:{en:"A closed chat, a crash, a power cut", vi:"Đóng chat, sập app, mất điện", ja:"チャットを閉じた、落ちた、停電した"},
+   d:{en:"The window closes by accident or the machine dies. If the work lived only in that conversation, how do you recover it?",
+      vi:"Cửa sổ bị đóng nhầm hoặc máy hỏng. Nếu công việc chỉ tồn tại trong hội thoại đó, làm sao khôi phục?",
+      ja:"誤ってウィンドウを閉じた、マシンが落ちた。作業がその会話にしか無かったなら、どう復旧しますか。"}},
+  {ic:"i-doc", cls:"a", n:"09",
+   t:{en:"Writing specs an AI can use", vi:"Viết specs mà AI dùng được", ja:"AIが使える仕様の書き方"},
+   d:{en:"How do you write a {{g:spec|specification}}, or turn existing documents into one, so an agent can build from it and be checked against it?",
+      vi:"Làm sao viết {{g:spec|specs}}, hoặc chuyển tài liệu sẵn có thành specs, để agent xây dựng từ đó và bị đối chiếu lại với nó?",
+      ja:"エージェントがそれを元に構築し、それに照らして検証できる{{g:spec|仕様}}を、どう書くか、既存文書からどう変換するか。"}}],
+ nav:{en:"Project breaks", vi:"Dự án đổ vỡ", ja:"プロジェクトの破綻"}},
+
+/* 5 */
+{icon:"i-target", kind:"bullets", cls:"green",
+ step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"So what do we actually need to manage?", vi:"Vậy chúng ta thực sự cần quản lí điều gì?", ja:"では、実際に何を管理すべきか"},
+ sub:{en:"Four things. Everything in the second half of this talk exists to deliver one of them.",
+      vi:"Bốn điều. Mọi thứ ở nửa sau bài trình bày này tồn tại để phục vụ một trong bốn.",
+      ja:"4つです。この後半のすべては、このいずれかを実現するために存在します。"},
+ items:[
+  {t:{en:"Stability of the output", vi:"Tính ổn định của đầu ra", ja:"出力の安定性"},
+   d:{en:"The same repository and the same contract should produce the same shape of work, whoever asked and whichever model ran it.",
+      vi:"Cùng một repository và cùng một hợp đồng phải cho ra cùng một hình dạng công việc, bất kể ai yêu cầu và model nào chạy.",
+      ja:"同じリポジトリと同じ契約なら、誰が依頼しどのモデルが実行しても、同じ形の成果になるべきです。"}},
+  {t:{en:"Quality controlled by actively enforced gates", vi:"Chất lượng được kiểm soát qua các cổng cưỡng chế chủ động", ja:"能動的に強制されるゲートによる品質管理"},
+   d:{en:"Not a checklist someone remembers. Gates that run, that record that they ran, and that block the next step when they did not.",
+      vi:"Không phải một checklist ai đó nhớ ra. Là các cổng có chạy thật, có ghi lại rằng đã chạy, và chặn bước kế tiếp khi chưa chạy.",
+      ja:"誰かが覚えているチェックリストではなく、実際に走り、走った記録を残し、走っていなければ次を止めるゲート。"}},
+  {t:{en:"Rules that prevent, before the consequence", vi:"Quy tắc phòng tránh, trước khi hậu quả xảy ra", ja:"結果が出る前に防ぐ規則"},
+   d:{en:"Established up front and enforced at the moment of the action, not discovered in review after the secret is already in the history.",
+      vi:"Được thiết lập từ đầu và cưỡng chế ngay tại thời điểm hành động, không phải phát hiện khi review sau khi secret đã nằm trong lịch sử.",
+      ja:"事前に定め、行為のその瞬間に強制する。シークレットが履歴に入った後のレビューで気づくのでは遅い。"}},
+  {t:{en:"Active management of progress, context and security", vi:"Quản lí chủ động tiến độ, context và bảo mật", ja:"進捗・コンテキスト・セキュリティの能動的な管理"},
+   d:{en:"Mechanisms that run on their own, so nothing depends on a person or a model remembering to do it.",
+      vi:"Các cơ chế tự vận hành, để không điều gì phụ thuộc vào việc một người hay một model nhớ ra phải làm.",
+      ja:"自律的に動く仕組み。人やモデルが「やるのを覚えている」ことに依存させません。"}}],
+ nav:{en:"What to manage", vi:"Cần quản lí gì", ja:"何を管理するか"}},
+
+/* 6 */
+{icon:"i-target", kind:"quotes", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"The idea in two lines", vi:"Ý tưởng trong hai câu", ja:"2行で言うと"},
+ quotes:[
+  {en:"The best horse is not the one that runs fastest for a few minutes, but the one that holds its pace, keeps to the right course, and finishes the whole journey.",
+   vi:"Con ngựa tốt nhất không phải con chạy nhanh nhất trong vài phút, mà là con giữ được tốc độ, đi đúng hướng và hoàn thành cả hành trình.",
+   ja:"最良の馬とは、数分だけ最速で走る馬ではなく、速度を保ち、正しい方向へ進み、旅路を最後まで走り切る馬である。"},
+  {en:"Speed creates the advantage. Control is what gets us to the destination.",
+   vi:"Tốc độ tạo lợi thế. Khả năng kiểm soát mới đưa chúng ta đến đích.",
+   ja:"速さは優位を生む。目的地へ導くのは、制御である。"}],
+ nav:{en:"The idea", vi:"Ý tưởng", ja:"考え方"}},
+
+/* 7 */
+{icon:"i-layers", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
  title:{en:"Two skills generate one system", vi:"Hai skill sinh ra một hệ thống", ja:"2つのスキルが1つのシステムを生む"},
- cols:{en:["Skill","What it produces","The problem it retires"], vi:["Skill","Nó tạo ra gì","Vấn đề nó xóa bỏ"], ja:["スキル","生成するもの","解消する問題"]},
+ sub:{en:"One writes the contract the agent works from. The other builds the harness it works inside.",
+      vi:"Một cái viết ra hợp đồng để agent làm theo. Cái còn lại dựng harness để agent làm việc bên trong.",
+      ja:"一方はエージェントが従う契約を書き、他方はエージェントが内側で働くハーネスを構築します。"},
+ cols:{en:["Skill","What it produces","The problem it retires"], vi:["Skill","Nó tạo ra gì","Vấn đề nó xoá bỏ"], ja:["スキル","生成するもの","解消する課題"]},
  rows:[
-  {en:["<strong><code>spec-builder</code></strong>","The input an AI can understand: a 13-section spec set with stable IDs, acceptance criteria, a data model, mandatory security NFRs","The AI is guessing what to build"],
-   vi:["<strong><code>spec-builder</code></strong>","Đầu vào mà AI hiểu được: bộ spec 13 mục với ID ổn định, tiêu chí nghiệm thu, mô hình dữ liệu, NFR bảo mật bắt buộc","AI đang đoán xem phải xây cái gì"],
-   ja:["<strong><code>spec-builder</code></strong>","AIが理解できる入力: 安定ID、受入基準、データモデル、必須セキュリティNFRを備えた13セクションの仕様一式","AIが何を作るか推測している"]},
-  {en:["<strong><code>harness-bootstrap</code></strong>","The harness the AI runs inside: <code>.claude/</code> with agents, rules, hooks, a deny list, plus a task board","Nothing constrains what it does, nothing survives when it forgets"],
-   vi:["<strong><code>harness-bootstrap</code></strong>","Harness mà AI chạy bên trong: <code>.claude/</code> gồm agents, rules, hooks, deny list, kèm bảng task","Không gì ràng buộc nó, và không gì sống sót khi nó quên"],
-   ja:["<strong><code>harness-bootstrap</code></strong>","AIが内側で動くハーネス: エージェント、ルール、フック、拒否リストを持つ<code>.claude/</code>とタスクボード","行動を縛るものがなく、忘れた時に何も残らない"]}],
- note:{
-  en:"Three modes, chosen first: Greenfield · Brownfield · Audit. Brownfield runs a mandatory codebase analysis first, and existing files are reconciled, never clobbered: ADDED / KEPT / CONFLICT.",
-  vi:"Ba chế độ, chọn trước tiên: Greenfield · Brownfield · Audit. Brownfield bắt buộc phân tích codebase trước, và file sẵn có được đối chiếu chứ không bị ghi đè: ADDED / KEPT / CONFLICT.",
-  ja:"最初に選ぶ3つのモード: Greenfield · Brownfield · Audit。Brownfieldでは必ず先にコードベース解析を行い、既存ファイルは上書きせず突き合わせます: ADDED / KEPT / CONFLICT。"},
+  {en:["<strong><code>spec-builder</code></strong>","A 13-section {{g:spec|spec}} set with stable IDs, acceptance criteria, a data model and mandatory security NFRs","<mark class='m3'>09</mark> writing specs · <mark class='m3'>02</mark> prompting"],
+   vi:["<strong><code>spec-builder</code></strong>","Bộ {{g:spec|specs}} 13 mục với ID ổn định, tiêu chí nghiệm thu, mô hình dữ liệu và NFR bảo mật bắt buộc","<mark class='m3'>09</mark> viết specs · <mark class='m3'>02</mark> prompting"],
+   ja:["<strong><code>spec-builder</code></strong>","安定ID、受入基準、データモデル、必須セキュリティNFRを備えた13セクションの{{g:spec|仕様}}一式","<mark class='m3'>09</mark> 仕様作成 · <mark class='m3'>02</mark> プロンプト"]},
+  {en:["<strong><code>harness-bootstrap</code></strong>","<code>.claude/</code> with agents, path-scoped rules, {{g:hook|hooks}}, a {{g:denylist|deny list}}, and a task board on disk","<mark class='m3'>01</mark> fit · <mark class='m3'>04</mark> security · <mark class='m3'>08</mark> recovery"],
+   vi:["<strong><code>harness-bootstrap</code></strong>","<code>.claude/</code> gồm agents, rules theo path, {{g:hook|hooks}}, {{g:denylist|deny list}}, và bảng task nằm trên đĩa","<mark class='m3'>01</mark> vừa vặn · <mark class='m3'>04</mark> bảo mật · <mark class='m3'>08</mark> khôi phục"],
+   ja:["<strong><code>harness-bootstrap</code></strong>","エージェント、パススコープのルール、{{g:hook|フック}}、{{g:denylist|拒否リスト}}、ディスク上のタスクボードを含む<code>.claude/</code>","<mark class='m3'>01</mark> 適合 · <mark class='m3'>04</mark> 安全 · <mark class='m3'>08</mark> 復旧"]}],
+ note:{en:"Three modes, chosen first: Greenfield · {{g:brownfield|Brownfield}} · Audit. Existing files are reconciled, never clobbered.",
+       vi:"Ba chế độ, chọn trước tiên: Greenfield · {{g:brownfield|Brownfield}} · Audit. File sẵn có được đối chiếu, không bao giờ bị ghi đè.",
+       ja:"最初に選ぶ3モード: Greenfield · {{g:brownfield|Brownfield}} · Audit。既存ファイルは上書きせず突き合わせます。"},
  nav:{en:"Two skills", vi:"Hai skill", ja:"2つのスキル"}},
 
-/* 9 ---------------------------------------------------------------- */
-{icon:"i-brain", kind:"table",
- eyebrow:{en:"Mechanism 1 · Context", vi:"Cơ chế 1 · Context", ja:"仕組み1 · コンテキスト"},
- title:{en:"The context window is RAM. The work lives on disk.", vi:"Cửa sổ context là RAM. Công việc nằm trên đĩa.", ja:"コンテキストウィンドウはRAM。作業はディスクにある。"},
- cols:{en:["Tier","What lives there","Cost","After compaction"], vi:["Tầng","Cái gì nằm ở đó","Chi phí","Sau compaction"], ja:["階層","何が置かれるか","コスト","圧縮後"]},
- rows:[
-  {en:["<strong>Always-RAM</strong>","<code>CLAUDE.md</code>, 6 unconditional rules, agent body, tool schemas","~25,300 bytes, re-sent every turn","Survives, re-injected"],
-   vi:["<strong>Always-RAM</strong>","<code>CLAUDE.md</code>, 6 rule vô điều kiện, thân agent, schema tool","~25.300 byte, gửi lại mỗi lượt","Sống sót, được nạp lại"],
-   ja:["<strong>Always-RAM</strong>","<code>CLAUDE.md</code>、無条件の6ルール、エージェント本体、ツールスキーマ","約25,300バイト、毎ターン再送","残る、再注入される"]},
-  {en:["<strong>Lazy-RAM</strong>","The 8 path-scoped rules (<code>paths:</code> frontmatter)","~49,400 bytes most sessions never pay","Reloads on a matching file"],
-   vi:["<strong>Lazy-RAM</strong>","8 rule theo path (<code>paths:</code> frontmatter)","~49.400 byte mà đa số phiên không phải trả","Nạp lại khi chạm file khớp"],
-   ja:["<strong>Lazy-RAM</strong>","パススコープの8ルール（<code>paths:</code>）","約49,400バイト、多くのセッションで不要","一致ファイルに触れると再読込"]},
-  {en:["<strong>Disk</strong>","<code>master-plan.md</code> board + <code>TASK-NNN.md</code> with the session log","A few hundred bytes, read once","<strong>Nothing. Committed markdown in git</strong>"],
-   vi:["<strong>Disk</strong>","Bảng <code>master-plan.md</code> + <code>TASK-NNN.md</code> kèm session log","Vài trăm byte, đọc một lần","<strong>Không hề hấn. Markdown đã commit trong git</strong>"],
-   ja:["<strong>Disk</strong>","<code>master-plan.md</code>ボード + セッションログ付き<code>TASK-NNN.md</code>","数百バイト、一度読むだけ","<strong>無傷。git にコミット済みMarkdown</strong>"]},
-  {en:["<strong>Archive</strong>","<code>.claude/state/history/</code>, one file per finished subagent run","Zero until read","Nothing. Written by a hook after the fact"],
-   vi:["<strong>Archive</strong>","<code>.claude/state/history/</code>, mỗi lần subagent chạy xong một file","Bằng 0 cho tới khi đọc","Không hề hấn. Do hook ghi lại sau khi việc xong"],
-   ja:["<strong>Archive</strong>","<code>.claude/state/history/</code>、サブエージェント実行ごとに1ファイル","読むまでゼロ","無傷。フックが事後に書き込む"]}],
- nav:{en:"Memory hierarchy", vi:"Phân tầng bộ nhớ", ja:"メモリ階層"}},
+/* 8 */
+{icon:"i-layers", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+ title:{en:"Three mechanisms do the managing", vi:"Ba cơ chế đảm nhiệm việc quản lí", ja:"管理を担う3つの仕組み"},
+ sub:{en:"Each one answers a problem from the first half, and each is a layered structure rather than a rule.",
+      vi:"Mỗi cơ chế trả lời một vấn đề ở nửa đầu, và mỗi cơ chế là một cấu trúc phân tầng chứ không phải một quy tắc.",
+      ja:"それぞれが前半の課題に答え、いずれも規則ではなく階層構造です。"},
+ cards:[
+  {ic:"i-brain", cls:"g", n:"A",
+   t:{en:"Context", vi:"Context", ja:"コンテキスト"},
+   d:{en:"Four memory tiers. State lives on disk, so {{g:compaction|compaction}} and a crash are survivable by design.",
+      vi:"Bốn tầng bộ nhớ. Trạng thái nằm trên đĩa, nên {{g:compaction|compaction}} và sự cố đều sống sót được theo thiết kế.",
+      ja:"4つのメモリ階層。状態はディスク上にあり、{{g:compaction|圧縮}}もクラッシュも設計上生き延びます。"}},
+  {ic:"i-flow", cls:"p", n:"B",
+   t:{en:"Orchestration", vi:"Điều phối", ja:"オーケストレーション"},
+   d:{en:"Registered tasks with one owner, scoped specialists and gates that must record that they ran.",
+      vi:"Task được đăng ký với một chủ sở hữu, chuyên gia có phạm vi và các cổng buộc phải ghi lại rằng đã chạy.",
+      ja:"担当が1人の登録済みタスク、スコープを持つ専門家、実行を記録せねばならないゲート。"}},
+  {ic:"i-shield", cls:"r", n:"C",
+   t:{en:"Security", vi:"Bảo mật", ja:"セキュリティ"},
+   d:{en:"Four enforced layers the model does not get a vote on, checked before the action happens.",
+      vi:"Bốn lớp cưỡng chế mà model không có quyền bỏ phiếu, kiểm tra trước khi hành động xảy ra.",
+      ja:"モデルに投票権のない4つの強制層。行為が起きる前に判定されます。"}}],
+ nav:{en:"Three mechanisms", vi:"Ba cơ chế", ja:"3つの仕組み"}},
 
-/* 10 --------------------------------------------------------------- */
-{icon:"i-brain", kind:"bullets",
- eyebrow:{en:"Mechanism 1 · Context", vi:"Cơ chế 1 · Context", ja:"仕組み1 · コンテキスト"},
+/* 9 */
+{icon:"i-brain", kind:"ctxlayers", step:{en:"Mechanism A · Context", vi:"Cơ chế A · Context", ja:"仕組みA · コンテキスト"},
+ title:{en:"Four tiers, and only two survive", vi:"Bốn tầng, và chỉ hai tầng sống sót", ja:"4つの階層、生き残るのは2つだけ"},
+ sub:{en:"Watch what a {{g:compaction|compaction}} does to each tier. This answers problems 03, 05 and 08.",
+      vi:"Hãy xem một lần {{g:compaction|compaction}} làm gì với từng tầng. Đây là câu trả lời cho vấn đề 03, 05 và 08.",
+      ja:"{{g:compaction|圧縮}}が各階層に何をするかをご覧ください。課題03・05・08への答えです。"},
+ rows:[
+  {cls:"ram", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
+   d:{en:"CLAUDE.md, 6 unconditional rules, the agent body, tool schemas", vi:"CLAUDE.md, 6 rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件の6ルール、エージェント本体、ツールスキーマ"},
+   m:{en:"~25,300 B every turn", vi:"~25.300 B mỗi lượt", ja:"毎ターン約25,300B"}},
+  {cls:"ram", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
+   d:{en:"The 8 {{g:pathscoped|path-scoped}} rules, loaded only on a matching file", vi:"8 rule {{g:pathscoped|theo path}}, chỉ nạp khi chạm file khớp", ja:"{{g:pathscoped|パススコープ}}の8ルール、一致ファイル時のみ読込"},
+   m:{en:"~49,400 B on demand", vi:"~49.400 B theo yêu cầu", ja:"必要時に約49,400B"}},
+  {cls:"disk", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
+   d:{en:"The task board and one file per task, with the session log written as it works", vi:"Bảng task và mỗi task một file, kèm session log ghi ngay trong lúc làm", ja:"タスクボードとタスクごとのファイル、作業しながら書くセッションログ"},
+   m:{en:"committed to git", vi:"đã commit vào git", ja:"gitにコミット済み"}},
+  {cls:"disk", tag:{en:"Archive", vi:"Archive", ja:"Archive"},
+   d:{en:"One file per finished subagent run, written by a {{g:hook|hook}} after the fact", vi:"Mỗi lần subagent chạy xong một file, do {{g:hook|hook}} ghi lại sau đó", ja:"サブエージェント実行ごとに1ファイル、{{g:hook|フック}}が事後に記録"},
+   m:{en:"append-only", vi:"chỉ ghi thêm", ja:"追記専用"}}],
+ legend:{en:"The red sweep is a compaction. The two RAM tiers ghost out. The two disk tiers do not move.",
+         vi:"Vệt đỏ là một lần compaction. Hai tầng RAM mờ đi. Hai tầng đĩa không hề suy suyển.",
+         ja:"赤い走査線が圧縮です。RAMの2階層は薄くなり、ディスクの2階層は動きません。"},
+ nav:{en:"Context layers", vi:"Các tầng context", ja:"コンテキスト階層"}},
+
+/* 10 */
+{icon:"i-brain", kind:"bullets", cls:"green", step:{en:"Mechanism A · Context", vi:"Cơ chế A · Context", ja:"仕組みA · コンテキスト"},
  title:{en:"Why it is a mechanism, not a convention", vi:"Vì sao đây là cơ chế, không phải quy ước", ja:"なぜ慣習ではなく仕組みなのか"},
- cls:"green",
  items:[
   {t:{en:"The session log is written as the agent works", vi:"Session log được ghi ngay trong lúc agent làm việc", ja:"セッションログは作業しながら書かれる"},
    d:{en:"A report written at the end is lost with the crash that prevented it. An append-only log survives the crash.",
-      vi:"Báo cáo viết ở cuối sẽ mất cùng với chính sự cố đã ngăn nó được viết. Log chỉ ghi thêm thì sống sót qua sự cố.",
+      vi:"Báo cáo viết ở cuối sẽ mất cùng chính sự cố đã ngăn nó được viết. Log chỉ ghi thêm thì sống sót qua sự cố.",
       ja:"最後に書く報告は、それを妨げたクラッシュとともに失われます。追記専用ログはクラッシュを生き延びます。"}},
-  {t:{en:"Status is duplicated on purpose, and read back", vi:"Trạng thái được nhân đôi có chủ đích, và đọc lại để xác nhận", ja:"ステータスは意図的に二重化し、読み返す"},
-   d:{en:"Once in the task file frontmatter, once in the board row, both written in the same step. The rule: a write nobody confirmed is a wish.",
-      vi:"Một ở frontmatter của task file, một ở dòng trên bảng, cả hai ghi trong cùng một bước. Nguyên tắc: một thao tác ghi không ai xác nhận chỉ là một điều ước.",
-      ja:"タスクファイルのフロントマターとボード行の両方に、同じ手順で書く。原則: 誰も確認していない書き込みは願望にすぎない。"}},
-  {t:{en:"A Planned task lives in active/, not pending/", vi:"Task ở trạng thái Planned nằm trong active/, không phải pending/", ja:"Planned のタスクは pending/ ではなく active/ に置く"},
-   d:{en:"This looks wrong and is not. The resume scan reads active/, so filing new work under pending/ would hide it forever. The directory layout is the index the resume protocol scans.",
-      vi:"Nhìn thì có vẻ sai nhưng không. Quá trình resume quét active/, nên xếp việc mới vào pending/ sẽ giấu nó vĩnh viễn. Bố cục thư mục chính là chỉ mục mà giao thức resume quét.",
-      ja:"間違いに見えて正しい。再開スキャンは active/ を読むため、新規作業を pending/ に置くと永久に見つかりません。ディレクトリ構成こそ再開プロトコルが走査する索引です。"}}],
- nav:{en:"Context design rules", vi:"Nguyên tắc thiết kế context", ja:"コンテキスト設計原則"}},
+  {t:{en:"Status is duplicated on purpose, and read back", vi:"Trạng thái được nhân đôi có chủ đích, và đọc lại", ja:"ステータスは意図的に二重化し、読み返す"},
+   d:{en:"Once in the task file, once on the board, both written in the same step. The rule: <mark>a write nobody confirmed is a wish</mark>.",
+      vi:"Một ở task file, một trên bảng, cả hai ghi trong cùng một bước. Nguyên tắc: <mark>một thao tác ghi không ai xác nhận chỉ là một điều ước</mark>.",
+      ja:"タスクファイルとボードの両方に、同じ手順で書く。原則: <mark>誰も確認していない書き込みは願望にすぎない</mark>。"}},
+  {t:{en:"A crashed run is distinguishable from a finished one", vi:"Lần chạy bị sập phân biệt được với lần chạy hoàn tất", ja:"異常終了と完了は区別できる"},
+   d:{en:"Close-out writes a MISSION COMPLETE marker, so finished versus crashed is a file check rather than a guess. A silent stall counts as a crash.",
+      vi:"Khi kết thúc sẽ ghi dấu MISSION COMPLETE, nên hoàn tất hay đã sập là việc kiểm tra file chứ không phải phỏng đoán. Đứng im lặng lẽ cũng bị tính là sập.",
+      ja:"終了時に MISSION COMPLETE マーカーを書くため、完了か異常終了かは推測ではなくファイル確認です。無言の停止はクラッシュ扱い。"}}],
+ nav:{en:"Context rules", vi:"Nguyên tắc context", ja:"コンテキスト原則"}},
 
-/* 11 --------------------------------------------------------------- */
-{icon:"i-flow", kind:"bullets",
- eyebrow:{en:"Mechanism 1 · Context", vi:"Cơ chế 1 · Context", ja:"仕組み1 · コンテキスト"},
- title:{en:"The resume protocol", vi:"Giao thức resume", ja:"再開プロトコル"},
- sub:{
-  en:"The window closing is not an incident. It is the expected case, and the system is designed for it.",
-  vi:"Cửa sổ đóng lại không phải sự cố. Đó là trường hợp được dự liệu, và hệ thống được thiết kế cho nó.",
-  ja:"ウィンドウが閉じることは事故ではありません。想定される事象であり、システムはそれを前提に設計されています。"},
- items:[
-  {t:{en:"Scan before accepting a mission", vi:"Quét trước khi nhận nhiệm vụ mới", ja:"任務を受ける前にスキャンする"},
-   d:{en:"At session start, unfinished work is picked up before anything new is taken on.",
-      vi:"Đầu mỗi phiên, việc còn dang dở được nhặt lên trước khi nhận thêm việc mới.",
-      ja:"セッション開始時、新しい作業を引き受ける前に未完了の作業を拾い上げます。"}},
-  {t:{en:"Trust files over reports", vi:"Tin file hơn tin báo cáo", ja:"報告よりファイルを信じる"},
-   d:{en:"A written rule: committed files and git state over any agent's final report.",
-      vi:"Một nguyên tắc thành văn: file đã commit và trạng thái git đứng trên mọi báo cáo cuối của agent.",
-      ja:"明文化された規則: コミット済みファイルとgitの状態が、どのエージェントの最終報告より優先されます。"}},
-  {t:{en:"A MISSION COMPLETE marker", vi:"Dấu MISSION COMPLETE", ja:"MISSION COMPLETE マーカー"},
-   d:{en:"Distinguishes finished from crashed by a file check, not a guess. Marker and silence means done. No marker and silence means crashed, so resume. A silent stall counts as a crash.",
-      vi:"Phân biệt hoàn thành với sập bằng cách kiểm tra file, không phải phỏng đoán. Có dấu và im lặng nghĩa là xong. Không dấu và im lặng nghĩa là đã sập, nên phải resume. Đứng im lặng lẽ cũng bị tính là sập.",
-      ja:"完了と異常終了を推測ではなくファイル確認で区別します。マーカーがあって無言なら完了。マーカーがなく無言なら異常終了なので再開。無言の停止はクラッシュ扱いです。"}}],
- nav:{en:"Resume protocol", vi:"Giao thức resume", ja:"再開プロトコル"}},
+/* 11 */
+{icon:"i-flow", kind:"pipe", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
+ title:{en:"One entry point, scoped specialists, sequential gates", vi:"Một điểm vào, chuyên gia có phạm vi, các cổng tuần tự", ja:"単一の入口、スコープを持つ専門家、順序あるゲート"},
+ sub:{en:"This answers problems 06 and 07: the shape holds whichever model runs inside it.",
+      vi:"Đây là câu trả lời cho vấn đề 06 và 07: hình dạng quy trình giữ nguyên bất kể model nào chạy bên trong.",
+      ja:"課題06と07への答え: 内側でどのモデルが動いても、形は保たれます。"},
+ levels:[
+  {cls:"orch", items:[{en:"orchestrator", vi:"orchestrator", ja:"orchestrator"}],
+   cap:{en:"Analyze → Decompose → Register on the board", vi:"Phân tích → Phân rã → Đăng ký lên bảng", ja:"分析 → 分解 → ボードに登録"}},
+  {cls:"dev", items:[{en:"app-dev", vi:"app-dev", ja:"app-dev"},{en:"data-modeler", vi:"data-modeler", ja:"data-modeler"},{en:"frontend-ui-dev", vi:"frontend-ui-dev", ja:"frontend-ui-dev"}],
+   cap:{en:"Dispatched, each scoped to real module paths", vi:"Được điều phối, mỗi agent gắn với đường dẫn module thật", ja:"割り当て、各自が実在のモジュールパスに紐づく"}},
+  {cls:"gate", items:[{en:"qa-test", vi:"qa-test", ja:"qa-test"},{en:"code-reviewer", vi:"code-reviewer", ja:"code-reviewer"},{en:"security-reviewer", vi:"security-reviewer", ja:"security-reviewer"},{en:"/secret-scan", vi:"/secret-scan", ja:"/secret-scan"}],
+   cap:{en:"Gates. Reviewers hold no Edit or Write", vi:"Các cổng. Reviewer không có quyền Edit hay Write", ja:"ゲート。レビュアーは Edit も Write も持たない"}}],
+ note:{en:"A gate counts as passed only when the session log records the run. An agent saying “done” is a claim to verify.",
+       vi:"Một cổng chỉ được tính là đã qua khi session log ghi lại lần chạy. Agent nói “xong” là tuyên bố cần kiểm chứng.",
+       ja:"ゲートはセッションログに実行が記録されて初めて通過です。エージェントの「完了」は検証すべき主張です。"},
+ nav:{en:"Dispatch & gates", vi:"Điều phối & cổng", ja:"割り当てとゲート"}},
 
-/* 12 --------------------------------------------------------------- */
-{icon:"i-flow", kind:"table",
- eyebrow:{en:"Mechanism 2 · Orchestration", vi:"Cơ chế 2 · Điều phối", ja:"仕組み2 · オーケストレーション"},
+/* 12 */
+{icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
  title:{en:"Work is registered, not improvised", vi:"Công việc được đăng ký, không phải ứng biến", ja:"作業は登録される、即興ではない"},
- sub:{
-  en:"Five states, defined exactly once. Blocked wants to move and cannot. Pending could move and has been told not to.",
-  vi:"Năm trạng thái, định nghĩa đúng một lần. Blocked là muốn đi mà không đi được. Pending là có thể đi nhưng đã được yêu cầu dừng.",
-  ja:"5つの状態を一度だけ定義。Blocked は進みたいのに進めない。Pending は進めるが止めておくと決めたもの。"},
+ sub:{en:"Five states, defined exactly once. <mark class='m2'>Blocked</mark> wants to move and cannot. <mark class='m2'>Pending</mark> could move and has been told not to.",
+      vi:"Năm trạng thái, định nghĩa đúng một lần. <mark class='m2'>Blocked</mark> là muốn đi mà không đi được. <mark class='m2'>Pending</mark> là có thể đi nhưng đã được yêu cầu dừng.",
+      ja:"5つの状態を一度だけ定義。<mark class='m2'>Blocked</mark> は進みたいが進めない。<mark class='m2'>Pending</mark> は進めるが止めると決めたもの。"},
  cols:{en:["State","Meaning","Lives in"], vi:["Trạng thái","Ý nghĩa","Nằm ở"], ja:["状態","意味","置き場所"]},
  rows:[
-  {en:["<strong>Planned</strong>","Registered and scoped, not started","<code>docs/tasks/active/</code>"],
-   vi:["<strong>Planned</strong>","Đã đăng ký và định phạm vi, chưa bắt đầu","<code>docs/tasks/active/</code>"],
-   ja:["<strong>Planned</strong>","登録・スコープ済み、未着手","<code>docs/tasks/active/</code>"]},
-  {en:["<strong>Active</strong>","In progress. <strong>Exactly one owner</strong>","<code>docs/tasks/active/</code>"],
-   vi:["<strong>Active</strong>","Đang làm. <strong>Đúng một chủ sở hữu</strong>","<code>docs/tasks/active/</code>"],
-   ja:["<strong>Active</strong>","進行中。<strong>担当はちょうど1名</strong>","<code>docs/tasks/active/</code>"]},
-  {en:["<strong>Blocked</strong>","Started, cannot proceed. Reason and unblocker recorded","<code>docs/tasks/active/</code>"],
-   vi:["<strong>Blocked</strong>","Đã bắt đầu, không đi tiếp được. Ghi rõ lý do và ai gỡ","<code>docs/tasks/active/</code>"],
-   ja:["<strong>Blocked</strong>","着手済みだが進行不可。理由と解除者を記録","<code>docs/tasks/active/</code>"]},
-  {en:["<strong>Pending</strong>","Deliberately parked, a conscious decision to defer","<code>docs/tasks/pending/</code>"],
-   vi:["<strong>Pending</strong>","Cố ý gác lại, một quyết định hoãn có ý thức","<code>docs/tasks/pending/</code>"],
-   ja:["<strong>Pending</strong>","意図的に保留、先送りという明確な判断","<code>docs/tasks/pending/</code>"]},
-  {en:["<strong>Done</strong>","Complete, results recorded","<code>docs/tasks/done/</code>"],
-   vi:["<strong>Done</strong>","Hoàn tất, kết quả đã ghi lại","<code>docs/tasks/done/</code>"],
-   ja:["<strong>Done</strong>","完了、結果を記録済み","<code>docs/tasks/done/</code>"]}],
- nav:{en:"Task state machine", vi:"Máy trạng thái task", ja:"タスク状態機械"}},
+  {en:["<strong>Planned</strong>","Registered and scoped, not started","<code>tasks/active/</code>"],
+   vi:["<strong>Planned</strong>","Đã đăng ký và định phạm vi, chưa bắt đầu","<code>tasks/active/</code>"],
+   ja:["<strong>Planned</strong>","登録・スコープ済み、未着手","<code>tasks/active/</code>"]},
+  {en:["<strong>Active</strong>","In progress. Exactly one owner","<code>tasks/active/</code>"],
+   vi:["<strong>Active</strong>","Đang làm. Đúng một chủ sở hữu","<code>tasks/active/</code>"],
+   ja:["<strong>Active</strong>","進行中。担当はちょうど1名","<code>tasks/active/</code>"]},
+  {en:["<strong>Blocked</strong>","Started, cannot proceed. Reason recorded","<code>tasks/active/</code>"],
+   vi:["<strong>Blocked</strong>","Đã bắt đầu, không đi tiếp được. Ghi rõ lý do","<code>tasks/active/</code>"],
+   ja:["<strong>Blocked</strong>","着手済みだが進行不可。理由を記録","<code>tasks/active/</code>"]},
+  {en:["<strong>Pending</strong>","Deliberately parked","<code>tasks/pending/</code>"],
+   vi:["<strong>Pending</strong>","Cố ý gác lại","<code>tasks/pending/</code>"],
+   ja:["<strong>Pending</strong>","意図的に保留","<code>tasks/pending/</code>"]},
+  {en:["<strong>Done</strong>","Complete, results recorded","<code>tasks/done/</code>"],
+   vi:["<strong>Done</strong>","Hoàn tất, kết quả đã ghi","<code>tasks/done/</code>"],
+   ja:["<strong>Done</strong>","完了、結果を記録","<code>tasks/done/</code>"]}],
+ nav:{en:"Task states", vi:"Trạng thái task", ja:"タスク状態"}},
 
-/* 13 --------------------------------------------------------------- */
-{icon:"i-flow", kind:"bullets",
- eyebrow:{en:"Mechanism 2 · Orchestration", vi:"Cơ chế 2 · Điều phối", ja:"仕組み2 · オーケストレーション"},
- title:{en:"The orchestrator loop, and who gets dispatched", vi:"Vòng lặp của orchestrator, và ai được điều phối", ja:"オーケストレーターのループと割り当て"},
- cls:"purple",
- items:[
-  {t:{en:"Analyze → Decompose → Register → Drive → Close out", vi:"Phân tích → Phân rã → Đăng ký → Dẫn dắt → Kết thúc", ja:"分析 → 分解 → 登録 → 推進 → クローズ"},
-   d:{en:"Five phases. The board allocates task IDs, never the brief.",
-      vi:"Năm giai đoạn. Bảng công việc cấp phát task ID, không bao giờ là bản brief.",
-      ja:"5つのフェーズ。タスクIDを採番するのはボードであり、ブリーフではありません。"}},
-  {t:{en:"The orchestrator is the only entry point", vi:"Orchestrator là điểm vào duy nhất", ja:"オーケストレーターが唯一の入口"},
-   d:{en:"Specialists are dispatched, not driven by hand. Each dev agent is scoped to real module paths, so two agents do not collide on the same files.",
-      vi:"Các chuyên gia được điều phối, không phải điều khiển thủ công. Mỗi dev agent gắn với đường dẫn module thật, nên hai agent không giẫm chân lên cùng một file.",
-      ja:"専門家は割り当てられるもので、手作業で操るものではありません。各devエージェントは実在のモジュールパスに紐づき、同じファイルで衝突しません。"}},
-  {t:{en:"Separation of duty is structural", vi:"Phân tách nhiệm vụ mang tính cấu trúc", ja:"職務分離は構造的"},
-   d:{en:"Reviewers hold no Edit or Write. A reviewer that edits code has become a dev agent and lost its independence.",
-      vi:"Reviewer không có quyền Edit hay Write. Một reviewer mà sửa code thì đã thành dev agent và mất tính độc lập.",
-      ja:"レビュアーは Edit も Write も持ちません。コードを編集するレビュアーは dev エージェントになり、独立性を失います。"}}],
- nav:{en:"Orchestrator loop", vi:"Vòng lặp orchestrator", ja:"オーケストレーターのループ"}},
+/* 13 */
+{icon:"i-shield", kind:"rings", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
+ title:{en:"Defence in depth, and the model is inside", vi:"Phòng thủ theo chiều sâu, và model nằm bên trong", ja:"多層防御、そしてモデルはその内側にいる"},
+ sub:{en:"An action must pass every layer. This answers problem 04: none of it depends on the model choosing to obey.",
+      vi:"Một hành động phải vượt qua mọi lớp. Đây là câu trả lời cho vấn đề 04: không lớp nào phụ thuộc vào việc model chịu tuân thủ.",
+      ja:"アクションは全層を通過せねばなりません。課題04への答え: どの層もモデルの従順さに依存しません。"},
+ rings:[
+  {en:"1 · Deny list", vi:"1 · Deny list", ja:"1 · 拒否リスト"},
+  {en:"2 · Hooks, exit 2", vi:"2 · Hooks, exit 2", ja:"2 · フック、exit 2"},
+  {en:"3 · Tool allowlist", vi:"3 · Tool allowlist", ja:"3 · ツール許可リスト"},
+  {en:"4 · maxTurns", vi:"4 · maxTurns", ja:"4 · maxTurns"}],
+ core:{en:"your repo", vi:"repo của bạn", ja:"あなたのリポジトリ"},
+ blocked:{en:"BLOCKED", vi:"BỊ CHẶN", ja:"遮断"},
+ note:{en:"The {{g:denylist|deny list}} decides what it cannot see. The {{g:hook|hooks}} decide what it cannot do. The tool allowlist decides what it cannot reach. {{g:maxturns|maxTurns}} stops a loop.",
+       vi:"{{g:denylist|Deny list}} quyết định cái nó không được thấy. {{g:hook|Hooks}} quyết định cái nó không được làm. Tool allowlist quyết định cái nó không với tới. {{g:maxturns|maxTurns}} chặn vòng lặp.",
+       ja:"{{g:denylist|拒否リスト}}は見えないものを、{{g:hook|フック}}はできないことを、ツール許可リストは到達できないものを決めます。{{g:maxturns|maxTurns}}はループを止めます。"},
+ nav:{en:"Defence in depth", vi:"Phòng thủ chiều sâu", ja:"多層防御"}},
 
-/* 14 --------------------------------------------------------------- */
-{icon:"i-shield", kind:"quote",
- eyebrow:{en:"Mechanism 2 · Orchestration", vi:"Cơ chế 2 · Điều phối", ja:"仕組み2 · オーケストレーション"},
- pre:{en:"qa-test (tests green) → code-reviewer + security-reviewer (parallel) → /secret-scan → PR opened",
-      vi:"qa-test (test xanh) → code-reviewer + security-reviewer (song song) → /secret-scan → mở PR",
-      ja:"qa-test（テスト緑）→ code-reviewer + security-reviewer（並列）→ /secret-scan → PR 作成"},
- quote:{
-  en:"A gate counts as passed only when the task file's session log records the run. An agent saying “done” is a claim to verify, never a fact.",
-  vi:"Một cổng chỉ được tính là đã qua khi session log trong task file có ghi lại lần chạy đó. Agent nói “xong” là một tuyên bố cần kiểm chứng, không bao giờ là sự thật.",
-  ja:"ゲートは、タスクファイルのセッションログに実行が記録されて初めて通過とみなされます。エージェントの「完了」は検証すべき主張であり、事実ではありません。"},
- kicker:{
-  en:"Orchestrators have reported “all gates green” over a log containing no reviewer rows at all. This is the mechanism that makes an agent system auditable: <b>evidence in a file beats a status report.</b>",
-  vi:"Đã có orchestrator báo “tất cả cổng đều xanh” trên một log không hề có dòng nào của reviewer. Đây chính là cơ chế làm cho hệ thống agent có thể kiểm toán: <b>bằng chứng trong file thắng báo cáo trạng thái.</b>",
-  ja:"レビュアーの行が一つもないログの上で「全ゲート緑」と報告したオーケストレーターが実在します。これがエージェントシステムを監査可能にする仕組みです: <b>ファイル内の証拠がステータス報告に勝る。</b>"},
- nav:{en:"Quality gates", vi:"Cổng chất lượng", ja:"品質ゲート"}},
-
-/* 15 --------------------------------------------------------------- */
-{icon:"i-shield", kind:"table",
- eyebrow:{en:"Mechanism 3 · Security", vi:"Cơ chế 3 · Bảo mật", ja:"仕組み3 · セキュリティ"},
- title:{en:"Four enforced layers the model does not vote on", vi:"Bốn lớp cưỡng chế mà model không có quyền bỏ phiếu", ja:"モデルに投票権のない、強制される4層"},
- sub:{
-  en:"Most AI safety in codebases is advisory text a model may ignore after compaction. These are not.",
-  vi:"Phần lớn “an toàn AI” trong codebase chỉ là chữ khuyên nhủ mà model có thể bỏ qua sau compaction. Những lớp này thì không.",
-  ja:"コードベースにおける「AI安全性」の多くは、圧縮後にモデルが無視しうる助言テキストです。これらは違います。"},
- cols:{en:["Layer","Mechanism","What it stops"], vi:["Lớp","Cơ chế","Nó chặn cái gì"], ja:["層","仕組み","何を止めるか"]},
+/* 14 - the annotated jargon slide */
+{icon:"i-shield", kind:"table", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
+ title:{en:"What “exit code 2” actually means", vi:"“Exit code 2” thực sự nghĩa là gì", ja:"「exit code 2」の実際の意味"},
+ sub:{en:"A {{g:hook|hook}} is a shell script that runs <mark>before</mark> a tool call. When it finishes, its exit status decides what happens next.",
+      vi:"{{g:hook|Hook}} là một shell script chạy <mark>trước</mark> lời gọi tool. Khi nó kết thúc, mã thoát quyết định điều gì xảy ra tiếp theo.",
+      ja:"{{g:hook|フック}}はツール呼び出しの<mark>前</mark>に走るシェルスクリプトです。終了時、その終了コードが次に何が起きるかを決めます。"},
+ cols:{en:["Exit status","Meaning"], vi:["Mã thoát","Ý nghĩa"], ja:["終了コード","意味"]},
  rows:[
-  {en:["<strong>1. Deny list</strong>","<code>permissions.deny</code> in <code>settings.json</code>","What the agent cannot <strong>see</strong>. The action never reaches a tool call"],
-   vi:["<strong>1. Deny list</strong>","<code>permissions.deny</code> trong <code>settings.json</code>","Cái agent không được <strong>nhìn thấy</strong>. Hành động không bao giờ tới được lời gọi tool"],
-   ja:["<strong>1. 拒否リスト</strong>","<code>settings.json</code> の <code>permissions.deny</code>","エージェントが<strong>見られない</strong>もの。ツール呼び出しに到達しない"]},
-  {en:["<strong>2. PreToolUse hooks</strong>","Exit code 2: <code>protect-secrets</code>, <code>guard-main-commit</code>, <code>check-commit-msg</code>, <code>protect-adr</code>","What the agent cannot <strong>do</strong>: read a <code>.env</code>, commit to <code>main</code>, edit an Accepted ADR"],
-   vi:["<strong>2. PreToolUse hooks</strong>","Exit code 2: <code>protect-secrets</code>, <code>guard-main-commit</code>, <code>check-commit-msg</code>, <code>protect-adr</code>","Cái agent không được <strong>làm</strong>: đọc <code>.env</code>, commit vào <code>main</code>, sửa ADR đã duyệt"],
-   ja:["<strong>2. PreToolUse フック</strong>","終了コード2: <code>protect-secrets</code>, <code>guard-main-commit</code>, <code>check-commit-msg</code>, <code>protect-adr</code>","エージェントが<strong>できない</strong>こと: <code>.env</code>の読取、<code>main</code>へのコミット、承認済みADRの編集"]},
-  {en:["<strong>3. Tool allowlist</strong>","<code>tools:</code> in agent frontmatter","What the agent cannot <strong>reach</strong>. Least privilege per seat"],
-   vi:["<strong>3. Tool allowlist</strong>","<code>tools:</code> trong frontmatter của agent","Cái agent không <strong>với tới</strong> được. Đặc quyền tối thiểu cho từng vai trò"],
-   ja:["<strong>3. ツール許可リスト</strong>","エージェント frontmatter の <code>tools:</code>","エージェントが<strong>到達できない</strong>もの。席ごとの最小権限"]},
-  {en:["<strong>4. maxTurns</strong>","e.g. <code>history-tracker: maxTurns: 10</code>","The circuit breaker. The cost of a stuck agent is unbounded"],
-   vi:["<strong>4. maxTurns</strong>","ví dụ <code>history-tracker: maxTurns: 10</code>","Cầu dao ngắt. Chi phí của một agent bị kẹt là vô hạn"],
-   ja:["<strong>4. maxTurns</strong>","例: <code>history-tracker: maxTurns: 10</code>","サーキットブレーカー。詰まったエージェントのコストは青天井"]}],
- note:{
-  en:"Say the weakness yourself: the deny list is prefix matching and is defeated by re-ordering. It is a speed bump. The hooks are the gate.",
-  vi:"Hãy tự nói ra điểm yếu: deny list chỉ khớp tiền tố và bị vô hiệu khi đảo thứ tự. Nó là gờ giảm tốc. Hooks mới là cánh cổng.",
-  ja:"弱点は自分から述べましょう: 拒否リストは前方一致で、順序を入れ替えると破られます。あれは減速帯であり、ゲートはフックです。"},
- nav:{en:"Enforced layers", vi:"Các lớp cưỡng chế", ja:"強制される層"}},
+  {en:["<strong><code>0</code></strong>","<mark class='m2'>Allow.</mark> The tool call proceeds"],
+   vi:["<strong><code>0</code></strong>","<mark class='m2'>Cho phép.</mark> Lời gọi tool được tiếp tục"],
+   ja:["<strong><code>0</code></strong>","<mark class='m2'>許可。</mark> ツール呼び出しは実行されます"]},
+  {en:["<strong><code>2</code></strong>","<mark class='m3'>Block.</mark> The tool call is abandoned and never runs. stderr is sent back to the model as the reason"],
+   vi:["<strong><code>2</code></strong>","<mark class='m3'>Chặn.</mark> Lời gọi tool bị huỷ và không bao giờ chạy. stderr được trả về cho model làm lý do"],
+   ja:["<strong><code>2</code></strong>","<mark class='m3'>遮断。</mark> ツール呼び出しは破棄され実行されません。stderr が理由としてモデルに返ります"]},
+  {en:["<strong>other</strong>","Error, non-blocking"],
+   vi:["<strong>khác</strong>","Lỗi, không chặn"],
+   ja:["<strong>その他</strong>","エラー、遮断はしない"]}],
+ note:{en:"This is the whole trick. The model is never asked for consent, so the guarantee does not vary with the model.",
+       vi:"Đây chính là toàn bộ mấu chốt. Model không bao giờ được hỏi ý kiến, nên đảm bảo này không đổi theo model.",
+       ja:"これが全ての要点です。モデルの同意は求められないため、この保証はモデルによって変わりません。"},
+ nav:{en:"Exit code 2", vi:"Exit code 2", ja:"exit code 2"}},
 
-/* 16 --------------------------------------------------------------- */
-{icon:"i-shield", kind:"stats",
- eyebrow:{en:"Mechanism 3 · Security", vi:"Cơ chế 3 · Bảo mật", ja:"仕組み3 · セキュリティ"},
+/* 15 */
+{icon:"i-target", kind:"stats", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
  title:{en:"The safety floor is model-independent", vi:"Sàn an toàn không phụ thuộc model", ja:"安全性の下限はモデルに依存しない"},
+ sub:{en:"This is the answer to problem 06, and it is measured rather than claimed.",
+      vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
+      ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"15/15", cls:"g", l:{en:"payloads handled correctly (8 blocked, 7 allowed)", vi:"payload xử lý đúng (8 chặn, 7 cho qua)", ja:"正しく処理されたペイロード（8件遮断、7件許可）"}},
-  {v:"=", cls:"g", l:{en:"byte-identical result after swapping Opus for Haiku", vi:"kết quả giống hệt từng byte sau khi đổi Opus sang Haiku", ja:"OpusをHaikuに替えてもバイト単位で同一の結果"}},
-  {v:"5/5", cls:"g", l:{en:"Cursor / Codex port adapter self-test", vi:"self-test của adapter port sang Cursor / Codex", ja:"Cursor / Codex 移植アダプタの自己テスト"}}],
- quote:{
-  en:"A cheap model cannot commit a secret. It cannot commit straight to main. Not because it knows better, but because the hook exits 2 and the tool call never happens.",
-  vi:"Một model rẻ tiền không thể commit một secret. Nó không thể commit thẳng vào main. Không phải vì nó biết điều, mà vì hook thoát ra với mã 2 và lời gọi tool không bao giờ xảy ra.",
-  ja:"安価なモデルでもシークレットをコミットできません。mainに直接コミットもできません。分別があるからではなく、フックが2で終了し、ツール呼び出しが起きないからです。"},
- note:{
-  en:"The honest limit: this measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model. The eval does not measure that.",
-  vi:"Giới hạn trung thực: cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn. Bài eval không đo phần đó.",
-  ja:"正直な限界: これは下限を測るものであり、上限ではありません。安いモデルではコード品質とレビューの深さは実際に低下します。evalはそこを測りません。"},
+  {v:"15/15", cls:"g", l:{en:"known-bad and known-good payloads handled correctly", vi:"payload xấu và tốt đã biết đều xử lý đúng", ja:"既知の不正・正常ペイロードを正しく処理"}},
+  {v:"=", cls:"g", l:{en:"byte-identical result after swapping Opus for Haiku", vi:"kết quả giống hệt từng byte sau khi đổi Opus sang Haiku", ja:"OpusをHaikuに替えてもバイト単位で同一"}},
+  {v:"5/5", cls:"g", l:{en:"Cursor and Codex port adapter self-test", vi:"self-test adapter port sang Cursor và Codex", ja:"Cursor / Codex 移植アダプタの自己テスト"}}],
+ note:{en:"The honest limit: this measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
+       vi:"Giới hạn trung thực: cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
+       ja:"正直な限界: これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
  nav:{en:"15/15 proof", vi:"Bằng chứng 15/15", ja:"15/15 の証明"}},
 
-/* 17 --------------------------------------------------------------- */
-{icon:"i-coins", kind:"table",
- eyebrow:{en:"Cost", vi:"Chi phí", ja:"コスト"},
- title:{en:"The expensive setup is the one you get by not choosing", vi:"Cấu hình đắt nhất là cấu hình bạn nhận được khi không chọn gì", ja:"最も高い構成は、何も選ばなかったときの構成"},
- sub:{
-  en:"Every agent carries an explicit model and effort. An unset model inherits the caller's tier and bills mechanical work at Opus rates.",
-  vi:"Mỗi agent mang một model và effort tường minh. Không set model thì kế thừa tier của bên gọi và tính việc cơ học theo giá Opus.",
-  ja:"各エージェントは明示的なモデルとeffortを持ちます。未設定なら呼び出し元のティアを継承し、機械的作業をOpus料金で課金します。"},
- cols:{en:["Profile","USD / feature","vs default","Per 100 features"], vi:["Cấu hình","USD / tính năng","so với mặc định","Cho 100 tính năng"], ja:["プロファイル","USD / 機能","既定比","100機能あたり"]},
+/* 16 */
+{icon:"i-coins", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+ title:{en:"The expensive setup is the one you get by not choosing", vi:"Cấu hình đắt nhất là cấu hình bạn nhận khi không chọn gì", ja:"最も高い構成は、何も選ばなかった時の構成"},
+ sub:{en:"Every agent carries an explicit model and effort budget, so cost is a decision instead of a default.",
+      vi:"Mỗi agent mang một ngân sách model và effort tường minh, nên chi phí là một quyết định thay vì mặc định.",
+      ja:"各エージェントが明示的なモデルとeffort予算を持つため、コストは既定値ではなく判断になります。"},
+ cols:{en:["Profile","USD / feature","vs default","Per 100"], vi:["Cấu hình","USD / tính năng","so mặc định","Cho 100"], ja:["プロファイル","USD / 機能","既定比","100機能"]},
  rows:[
-  {en:["all-frontier (xhigh)","7.228","2.96x","723"], vi:["all-frontier (xhigh)","7,228","2,96x","723"], ja:["all-frontier (xhigh)","7.228","2.96倍","723"]},
-  {en:["all-opus, no effort tuning","3.614","1.48x","361"], vi:["all-opus, không tinh chỉnh effort","3,614","1,48x","361"], ja:["all-opus、effort調整なし","3.614","1.48倍","361"]},
-  {en:["<strong>DEFAULT roster</strong>","<strong>2.442</strong>","<strong>1.00x</strong>","<strong>244</strong>"], vi:["<strong>Roster MẶC ĐỊNH</strong>","<strong>2,442</strong>","<strong>1,00x</strong>","<strong>244</strong>"], ja:["<strong>既定ロスター</strong>","<strong>2.442</strong>","<strong>1.00倍</strong>","<strong>244</strong>"]},
-  {en:["economy (gates opus, rest haiku)","1.927","0.79x","193"], vi:["economy (cổng dùng opus, còn lại haiku)","1,927","0,79x","193"], ja:["economy（ゲートopus、他haiku）","1.927","0.79倍","193"]},
-  {en:["haiku-only (medium)","0.630","0.26x","63"], vi:["chỉ haiku (medium)","0,630","0,26x","63"], ja:["haikuのみ (medium)","0.630","0.26倍","63"]}],
- note:{
-  en:"The default roster costs 32% less than putting Opus at xhigh everywhere. Context is the other lever: 8 of 14 rules are path-scoped, keeping 66% of rule content out of the default session. Figures are MODELLED, not measured.",
-  vi:"Roster mặc định rẻ hơn 32% so với để Opus ở xhigh khắp nơi. Đòn bẩy còn lại là context: 8 trong 14 rule theo path, giữ 66% nội dung rule ra ngoài phiên mặc định. Các con số là MÔ HÌNH HÓA, không phải đo thực tế.",
-  ja:"既定ロスターは、全席Opusのxhighより32%安価です。もう一つのレバーはコンテキスト: 14ルール中8つがパススコープで、ルール内容の66%を既定セッションの外に保ちます。数値は実測ではなくモデル計算です。"},
- nav:{en:"Cost per feature", vi:"Chi phí mỗi tính năng", ja:"機能あたりコスト"}},
+  {en:["all-opus, no effort tuning","3.614","1.48x","361"], vi:["all-opus, không chỉnh effort","3,614","1,48x","361"], ja:["all-opus、effort調整なし","3.614","1.48倍","361"]},
+  {en:["<strong>DEFAULT roster</strong>","<strong><mark class='m2'>2.442</mark></strong>","<strong>1.00x</strong>","<strong>244</strong>"], vi:["<strong>Roster MẶC ĐỊNH</strong>","<strong><mark class='m2'>2,442</mark></strong>","<strong>1,00x</strong>","<strong>244</strong>"], ja:["<strong>既定ロスター</strong>","<strong><mark class='m2'>2.442</mark></strong>","<strong>1.00倍</strong>","<strong>244</strong>"]},
+  {en:["economy (gates opus, rest haiku)","1.927","0.79x","193"], vi:["economy (cổng opus, còn lại haiku)","1,927","0,79x","193"], ja:["economy（ゲートopus、他haiku）","1.927","0.79倍","193"]}],
+ note:{en:"The default roster costs 32% less than putting Opus at xhigh everywhere. Figures are MODELLED, not measured.",
+       vi:"Roster mặc định rẻ hơn 32% so với để Opus ở xhigh khắp nơi. Các con số là MÔ HÌNH HOÁ, không phải đo thực tế.",
+       ja:"既定ロスターは全席Opus xhighより32%安価。数値は実測ではなくモデル計算です。"},
+ nav:{en:"Cost", vi:"Chi phí", ja:"コスト"}},
 
-/* 18 --------------------------------------------------------------- */
-{icon:"i-plug", kind:"table",
- eyebrow:{en:"Portability", vi:"Khả năng chuyển đổi", ja:"移植性"},
+/* 17 */
+{icon:"i-plug2", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
  title:{en:"One harness, three tools, guardrails included", vi:"Một harness, ba công cụ, kèm cả guardrails", ja:"1つのハーネス、3つのツール、ガードレールごと"},
  cols:{en:["","Claude Code","Cursor","Codex"], vi:["","Claude Code","Cursor","Codex"], ja:["","Claude Code","Cursor","Codex"]},
  rows:[
-  {en:["<strong>Rules</strong>","<code>.claude/rules/*.md</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code> (native)"],
-   vi:["<strong>Rules</strong>","<code>.claude/rules/*.md</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code> (gốc)"],
-   ja:["<strong>ルール</strong>","<code>.claude/rules/*.md</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code>（ネイティブ）"]},
+  {en:["<strong>Rules</strong>","<code>.claude/rules/</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code>"],
+   vi:["<strong>Rules</strong>","<code>.claude/rules/</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code>"],
+   ja:["<strong>ルール</strong>","<code>.claude/rules/</code>","<code>.cursor/rules/*.mdc</code>","<code>AGENTS.md</code>"]},
   {en:["<strong>Enforcement</strong>","<code>settings.json</code> hooks","<code>.cursor/hooks.json</code> + adapter","<code>.codex/hooks.json</code>"],
    vi:["<strong>Cưỡng chế</strong>","hooks trong <code>settings.json</code>","<code>.cursor/hooks.json</code> + adapter","<code>.codex/hooks.json</code>"],
    ja:["<strong>強制</strong>","<code>settings.json</code> のフック","<code>.cursor/hooks.json</code> + アダプタ","<code>.codex/hooks.json</code>"]},
-  {en:["<strong>Blocks a secret read / commit to main</strong>","yes","yes","yes"],
-   vi:["<strong>Chặn đọc secret / commit vào main</strong>","có","có","có"],
-   ja:["<strong>シークレット読取 / mainコミットの遮断</strong>","可","可","可"]}],
- note:{
-  en:"One command: python scripts/port.py --target . --tool all. Two honest limits: Codex edits via apply_patch so protect-adr is best-effort there, and Cursor's afterFileEdit is observational, so an ADR edit is flagged rather than blocked.",
-  vi:"Một lệnh: python scripts/port.py --target . --tool all. Hai giới hạn trung thực: Codex sửa file qua apply_patch nên protect-adr chỉ ở mức nỗ lực tối đa, và afterFileEdit của Cursor chỉ quan sát, nên sửa ADR bị gắn cờ chứ không bị chặn.",
-  ja:"コマンドは1つ: python scripts/port.py --target . --tool all。正直な限界が2点: Codexは apply_patch 経由で編集するため protect-adr はベストエフォート、Cursorの afterFileEdit は観測のみのため、ADR編集は遮断ではなく報告になります。"},
+  {en:["<strong>Blocks a secret read or a commit to main</strong>","<mark class='m2'>yes</mark>","<mark class='m2'>yes</mark>","<mark class='m2'>yes</mark>"],
+   vi:["<strong>Chặn đọc secret hoặc commit vào main</strong>","<mark class='m2'>có</mark>","<mark class='m2'>có</mark>","<mark class='m2'>có</mark>"],
+   ja:["<strong>シークレット読取・mainコミットの遮断</strong>","<mark class='m2'>可</mark>","<mark class='m2'>可</mark>","<mark class='m2'>可</mark>"]}],
+ note:{en:"Two honest limits: Codex edits via apply_patch so the {{g:adr|ADR}} guard is best-effort there, and Cursor's afterFileEdit only observes, so an ADR edit is flagged rather than blocked.",
+       vi:"Hai giới hạn trung thực: Codex sửa file qua apply_patch nên guard {{g:adr|ADR}} chỉ ở mức nỗ lực tối đa, và afterFileEdit của Cursor chỉ quan sát, nên sửa ADR bị gắn cờ chứ không bị chặn.",
+       ja:"正直な限界が2点: Codexは apply_patch 経由で編集するため{{g:adr|ADR}}ガードはベストエフォート、Cursorの afterFileEdit は観測のみでADR編集は報告止まりです。"},
  nav:{en:"Cursor & Codex", vi:"Cursor & Codex", ja:"Cursor と Codex"}},
 
-/* 19 --------------------------------------------------------------- */
-{icon:"i-play", kind:"video",
- eyebrow:{en:"See it run", vi:"Xem nó chạy", ja:"動作を見る"},
+/* 18 */
+{icon:"i-play", kind:"video", step:{en:"See it run", vi:"Xem nó chạy", ja:"動作を見る"},
  title:{en:"The harness in motion", vi:"Harness khi vận hành", ja:"動作するハーネス"},
- sub:{
-  en:"Every clip is captioned, so sound is not required.",
-  vi:"Mọi clip đều có phụ đề, nên không cần bật tiếng.",
-  ja:"すべてのクリップに字幕があるため、音声は不要です。"},
+ sub:{en:"Every clip is captioned, so sound is not required.",
+      vi:"Mọi clip đều có phụ đề, nên không cần bật tiếng.",
+      ja:"すべてのクリップに字幕があるため、音声は不要です。"},
  clips:[
   {f:"04-solution", t:{en:"The complete solution", vi:"Giải pháp hoàn chỉnh", ja:"完全なソリューション"}},
   {f:"01-overview", t:{en:"What it is and why", vi:"Là gì và vì sao", ja:"何であり、なぜか"}},
@@ -807,137 +723,72 @@ const S = [
   {f:"06-harness-bootstrap", t:{en:"harness-bootstrap in depth", vi:"harness-bootstrap chi tiết", ja:"harness-bootstrap を詳しく"}}],
  nav:{en:"Videos", vi:"Video", ja:"動画"}},
 
-/* 20 --------------------------------------------------------------- */
-{icon:"i-chart", kind:"stats",
- eyebrow:{en:"Proof", vi:"Bằng chứng", ja:"証拠"},
+/* 19 */
+{icon:"i-chart", kind:"stats", step:{en:"Proof", vi:"Bằng chứng", ja:"証拠"},
  title:{en:"Every number comes from a script in the repo", vi:"Mọi con số đều đến từ một script trong repo", ja:"すべての数値はリポジトリ内のスクリプト由来"},
+ sub:{en:"You can re-run all of them, and CI fails if any figure in the docs stops matching.",
+      vi:"Bạn có thể chạy lại tất cả, và CI sẽ fail nếu bất kỳ con số nào trong tài liệu không còn khớp.",
+      ja:"すべて再実行できます。文書中の数値が一致しなくなればCIが失敗します。"},
  stats:[
-  {v:"-63%", l:{en:"bytes the model must read to bootstrap (234,196 → 85,641)", vi:"byte model phải đọc để bootstrap (234.196 → 85.641)", ja:"ブートストラップで読む必要のあるバイト数 (234,196 → 85,641)"}},
-  {v:"-85%", l:{en:"bytes the model must author (95,064 → 14,595)", vi:"byte model phải tự viết ra (95.064 → 14.595)", ja:"モデルが書く必要のあるバイト数 (95,064 → 14,595)"}},
-  {v:"-71%", cls:"a", l:{en:"files read (24 → 7)", vi:"số file phải đọc (24 → 7)", ja:"読み込むファイル数 (24 → 7)"}},
-  {v:"66%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule được giữ ngoài phiên mặc định", ja:"ルール内容のうち既定セッション外に保たれる割合"}},
-  {v:"~0.2s", cls:"g", l:{en:"to scaffold 73 paths, idempotent on re-run", vi:"để scaffold 73 đường dẫn, chạy lại vẫn bất biến", ja:"73パスのscaffold時間、再実行しても冪等"}},
-  {v:"$2.44", cls:"a", l:{en:"modelled cost per feature, 32% below all-opus-xhigh", vi:"chi phí mô hình hóa mỗi tính năng, thấp hơn 32% so với all-opus-xhigh", ja:"機能あたりモデル計算コスト、all-opus-xhigh比32%減"}}],
- note:{
-  en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars/token. CI enforces the guardrail eval, a scaffold matrix on Linux and Windows, a diagram render check, and a check that every figure in the docs matches what the scripts print, so the numbers cannot silently drift.",
-  vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HÓA ở mức 3,6 ký tự/token. CI bắt buộc chạy guardrail eval, ma trận scaffold trên Linux và Windows, kiểm tra render sơ đồ, và kiểm tra mọi con số trong tài liệu khớp với script in ra, nên các con số không thể trôi đi âm thầm.",
-  ja:"バイト数はディスクから数えた正確な値です。トークンとコストは3.6文字/トークンでのモデル計算値です。CIはガードレールeval、LinuxとWindowsでのscaffoldマトリクス、図のレンダリング検査、そして文書中の全数値がスクリプト出力と一致するかの検査を強制するため、数値が黙って乖離することはありません。"},
- nav:{en:"Proof & results", vi:"Bằng chứng & kết quả", ja:"証拠と結果"}},
+  {v:"-63%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
+  {v:"-85%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
+  {v:"66%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
+  {v:"~0.2s", cls:"g", l:{en:"to scaffold 73 paths, idempotent on re-run", vi:"để scaffold 73 đường dẫn, chạy lại vẫn bất biến", ja:"73パスのscaffold、再実行しても冪等"}},
+  {v:"15", cls:"a", l:{en:"agents, 14 rules, 14 commands, 6 hooks", vi:"agents, 14 rules, 14 commands, 6 hooks", ja:"エージェント、14ルール、14コマンド、6フック"}},
+  {v:"$2.44", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
+ note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
+       vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",
+       ja:"バイト数はディスクから数えた正確な値。トークンとコストは3.6文字/トークンでのモデル計算値です。"},
+ nav:{en:"Proof", vi:"Bằng chứng", ja:"証拠"}},
 
-/* 21 --------------------------------------------------------------- */
-{icon:"i-rocket", kind:"close",
- eyebrow:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"},
+/* 20 */
+{icon:"i-rocket", kind:"close", step:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"},
  title:{en:"Two commands, and your repo is agent-ready", vi:"Hai câu lệnh, và repo của bạn sẵn sàng cho agent", ja:"2つのコマンドで、リポジトリはエージェント対応に"},
- sub:{
-  en:"Context survives. Work is registered and gated. Damage is blocked by exit codes.",
-  vi:"Context sống sót. Công việc được đăng ký và kiểm soát qua cổng. Thiệt hại bị chặn bằng exit code.",
-  ja:"コンテキストは残る。作業は登録されゲートを通る。被害は終了コードで遮断される。"},
+ sub:{en:"Context survives. Work is registered and gated. Damage is blocked before it happens.",
+      vi:"Context sống sót. Công việc được đăng ký và qua cổng. Thiệt hại bị chặn trước khi xảy ra.",
+      ja:"コンテキストは残る。作業は登録されゲートを通る。被害は起きる前に遮断される。"},
  nav:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"}}
 ];
 
-/* ---- animated layer slides, spliced in beside their detail tables ---- */
-const CTX_LAYERS = {
-  icon:"i-brain", kind:"ctxlayers",
-  eyebrow:{en:"Mechanism 1 · Context", vi:"Cơ chế 1 · Context", ja:"仕組み1 · コンテキスト"},
-  title:{en:"Four tiers, and only two survive", vi:"Bốn tầng, và chỉ hai tầng sống sót", ja:"4つの階層、生き残るのは2つだけ"},
-  sub:{en:"Watch what a context compaction does to each tier.",
-       vi:"Hãy xem một lần compaction làm gì với từng tầng.",
-       ja:"コンテキスト圧縮が各階層に何をするかをご覧ください。"},
-  rows:[
-   {cls:"ram", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
-    d:{en:"CLAUDE.md, 6 unconditional rules, agent body, tool schemas", vi:"CLAUDE.md, 6 rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件の6ルール、エージェント本体、ツールスキーマ"},
-    m:{en:"~25,300 B every turn", vi:"~25.300 B mỗi lượt", ja:"毎ターン約25,300B"}},
-   {cls:"ram", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
-    d:{en:"The 8 path-scoped rules, loaded only on a matching file", vi:"8 rule theo path, chỉ nạp khi chạm file khớp", ja:"パススコープの8ルール、一致ファイル時のみ読込"},
-    m:{en:"~49,400 B on demand", vi:"~49.400 B theo yêu cầu", ja:"必要時に約49,400B"}},
-   {cls:"disk", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
-    d:{en:"master-plan.md board + TASK-NNN.md with the session log", vi:"Bảng master-plan.md + TASK-NNN.md kèm session log", ja:"master-plan.mdボード + セッションログ付きTASK-NNN.md"},
-    m:{en:"committed to git", vi:"đã commit vào git", ja:"gitにコミット済み"}},
-   {cls:"disk", tag:{en:"Archive", vi:"Archive", ja:"Archive"},
-    d:{en:"One file per finished subagent run, written by a hook", vi:"Mỗi lần subagent chạy xong một file, do hook ghi", ja:"サブエージェント実行ごとに1ファイル、フックが記録"},
-    m:{en:"append-only", vi:"chỉ ghi thêm", ja:"追記専用"}}],
-  legend:{en:"The red sweep is a compaction. The two RAM tiers ghost out. The two disk tiers do not move.",
-          vi:"Vệt đỏ là một lần compaction. Hai tầng RAM mờ đi. Hai tầng đĩa không hề suy suyển.",
-          ja:"赤い走査線が圧縮です。RAMの2階層は薄くなり、ディスクの2階層は動きません。"},
-  nav:{en:"Context layers", vi:"Các tầng context", ja:"コンテキスト階層"}
-};
-
-const ORCH_LAYERS = {
-  icon:"i-flow", kind:"pipe",
-  eyebrow:{en:"Mechanism 2 · Orchestration", vi:"Cơ chế 2 · Điều phối", ja:"仕組み2 · オーケストレーション"},
-  title:{en:"One entry point, scoped specialists, sequential gates", vi:"Một điểm vào, các chuyên gia có phạm vi, các cổng tuần tự", ja:"単一の入口、スコープを持つ専門家、順序ある品質ゲート"},
-  levels:[
-    {cls:"orch", items:[{en:"orchestrator", vi:"orchestrator", ja:"orchestrator"}],
-     cap:{en:"Analyze → Decompose → Register on the board", vi:"Phân tích → Phân rã → Đăng ký lên bảng", ja:"分析 → 分解 → ボードに登録"}},
-    {cls:"dev", items:[{en:"app-dev", vi:"app-dev", ja:"app-dev"},{en:"data-modeler", vi:"data-modeler", ja:"data-modeler"},{en:"frontend-ui-dev", vi:"frontend-ui-dev", ja:"frontend-ui-dev"}],
-     cap:{en:"Dispatched, each scoped to real module paths", vi:"Được điều phối, mỗi agent gắn với đường dẫn module thật", ja:"割り当て、各自が実在のモジュールパスに紐づく"}},
-    {cls:"gate", items:[{en:"qa-test", vi:"qa-test", ja:"qa-test"},{en:"code-reviewer", vi:"code-reviewer", ja:"code-reviewer"},{en:"security-reviewer", vi:"security-reviewer", ja:"security-reviewer"},{en:"/secret-scan", vi:"/secret-scan", ja:"/secret-scan"}],
-     cap:{en:"Gates. Reviewers hold no Edit or Write", vi:"Các cổng. Reviewer không có quyền Edit hay Write", ja:"ゲート。レビュアーは Edit も Write も持たない"}}],
-  note:{en:"A gate counts as passed only when the task file's session log records the run. An agent saying “done” is a claim to verify.",
-        vi:"Một cổng chỉ được tính là đã qua khi session log trong task file ghi lại lần chạy đó. Agent nói “xong” là tuyên bố cần kiểm chứng.",
-        ja:"ゲートは、タスクファイルのセッションログに実行が記録されて初めて通過です。エージェントの「完了」は検証すべき主張です。"},
-  nav:{en:"Dispatch & gates", vi:"Điều phối & cổng", ja:"割り当てとゲート"}
-};
-
-const SEC_LAYERS = {
-  icon:"i-shield", kind:"rings",
-  eyebrow:{en:"Mechanism 3 · Security", vi:"Cơ chế 3 · Bảo mật", ja:"仕組み3 · セキュリティ"},
-  title:{en:"Defence in depth, and the model is inside", vi:"Phòng thủ theo chiều sâu, và model nằm bên trong", ja:"多層防御、そしてモデルはその内側にいる"},
-  sub:{en:"An action has to pass every layer. Most never reach the second.",
-       vi:"Một hành động phải vượt qua mọi lớp. Phần lớn không bao giờ tới được lớp thứ hai.",
-       ja:"アクションは全層を通過せねばなりません。多くは第2層にすら届きません。"},
-  rings:[
-   {en:"1 · Deny list", vi:"1 · Deny list", ja:"1 · 拒否リスト"},
-   {en:"2 · PreToolUse hooks, exit 2", vi:"2 · PreToolUse hooks, exit 2", ja:"2 · PreToolUse フック、exit 2"},
-   {en:"3 · Tool allowlist", vi:"3 · Tool allowlist", ja:"3 · ツール許可リスト"},
-   {en:"4 · maxTurns", vi:"4 · maxTurns", ja:"4 · maxTurns"}],
-  core:{en:"your repo", vi:"repo của bạn", ja:"あなたのリポジトリ"},
-  blocked:{en:"BLOCKED", vi:"BỊ CHẶN", ja:"遮断"},
-  note:{en:"Exit code 2 is the whole trick: a PreToolUse hook is a shell script that runs before the tool call, and exiting with status 2 means “refuse”. The call is abandoned and the reason goes back to the model. It is never asked for consent.",
-        vi:"Exit code 2 chính là mấu chốt: PreToolUse hook là một shell script chạy trước lời gọi tool, và thoát ra với mã 2 nghĩa là “từ chối”. Lời gọi bị huỷ và lý do được trả về cho model. Model không bao giờ được hỏi ý kiến.",
-        ja:"要はexit code 2です。PreToolUseフックはツール呼び出し前に走るシェルスクリプトで、終了コード2は「拒否」を意味します。呼び出しは破棄され、理由がモデルに返ります。モデルの同意は求められません。"},
-  nav:{en:"Defence in depth", vi:"Phòng thủ chiều sâu", ja:"多層防御"}
-};
-
-function insertBefore(navEn, slide){
-  const i = S.findIndex(s => s.nav && s.nav.en === navEn);
-  if(i >= 0) S.splice(i, 0, slide); else S.push(slide);
-}
-insertBefore('Memory hierarchy',   CTX_LAYERS);
-insertBefore('Task state machine', ORCH_LAYERS);
-insertBefore('Enforced layers',    SEC_LAYERS);
-
-/* ============================================================
-   ENGINE
-   ============================================================ */
+/* ============================================================ ENGINE */
 const deck=document.getElementById('deck'), ovEl=document.getElementById('ov'),
-      thumbsEl=document.getElementById('thumbs'),
-      counterEl=document.getElementById('counter');
+      thumbsEl=document.getElementById('thumbs'), counterEl=document.getElementById('counter');
 let lang = localStorage.getItem('ahb-lang') || 'en';
 let cur = 0, vidIdx = 0;
-const L = o => (o && (o[lang] ?? o.en)) || '';
 const icon = (id, cls) => `<svg class="${cls||''}"><use href="#${id}"/></svg>`;
 
+// {{g:key|label}} becomes an annotated term with a hover note
+function ann(s){
+  return String(s).replace(/\{\{g:(\w+)\|([^}]*)\}\}/g, (m,k,label)=>{
+    const d = GLOSS[k] ? (GLOSS[k][lang] || GLOSS[k].en) : '';
+    return `<span class="gl" tabindex="0" data-tip="${d.replace(/"/g,'&quot;')}">${label}</span>`;
+  });
+}
+const L = o => ann((o && (o[lang] ?? o.en)) || '');
+
+const SQUIG = `<svg class="squig"><use href="#i-squig"/></svg>`;
+
 function slideHTML(s){
-  const eyebrow = s.eyebrow ? `<p class="eyebrow">${icon(s.icon)}${L(s.eyebrow)}</p>` : '';
-  const title = s.title ? `<h2>${L(s.title)}</h2>` : '';
+  const step = s.step ? `<p class="step">${icon(s.icon)}${L(s.step)}</p>` : '';
+  const title = s.title ? `<h2>${L(s.title)}</h2>${SQUIG}` : '';
   const sub = s.sub ? `<p class="sub">${L(s.sub)}</p>` : '';
   const note = s.note ? `<p class="note">${L(s.note)}</p>` : '';
   let body = '';
 
   if(s.kind==='cover'){
-    return `<div class="wrap stag">
-      <p class="eyebrow">${icon('i-logo')}github.com/nguyenhx2/agent-harness-bootstrap</p>
-      <h1>${L(s.title)}</h1><p class="sub">${L(s.sub)}</p><p class="lead">${L(s.lead)}</p>
+    return `<div class="wrap stag"><div class="head">
+      <p class="step">${icon('i-logo')}github.com/nguyenhx2/agent-harness-bootstrap</p>
+      <h1>${L(s.title)}</h1>${SQUIG}<p class="sub">${L(s.sub)}</p></div>
+      <div class="body"><p class="lead">${L(s.lead)}</p>
       <div class="cta">
         <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
         <a class="ghost" href="../video/" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
-      </div></div>`;
+      </div></div></div>`;
   }
   if(s.kind==='table'){
-    const cols = L(s.cols);
+    const cols = (s.cols[lang] ?? s.cols.en);
     body = `<table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`
-      + s.rows.map(r=>`<tr class="${s.rowClass||''}">${L(r).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')
+      + s.rows.map(r=>`<tr class="${s.rowClass||''}">${(r[lang]??r.en).map(c=>`<td>${ann(c)}</td>`).join('')}</tr>`).join('')
       + `</tbody></table>`;
   }
   if(s.kind==='bullets'){
@@ -946,80 +797,65 @@ function slideHTML(s){
   }
   if(s.kind==='cards'){
     body = `<div class="cards">${s.cards.map(c=>
-      `<div class="card ${c.cls||''}">${icon(c.ic,'ic')}<h3>${L(c.t)}</h3><p>${L(c.d)}</p></div>`).join('')}</div>`;
+      `<div class="card ${c.cls||''}">${c.n?`<span class="num">${c.n}</span>`:''}${icon(c.ic,'ic')}
+        <h3>${L(c.t)}</h3><p>${L(c.d)}</p></div>`).join('')}</div>`;
   }
-  if(s.kind==='quote'){
-    const pre = s.pre ? `<pre class="cmd">${L(s.pre)}</pre>` : '';
-    body = `${pre}<p class="quote">${L(s.quote)}</p><p class="kicker">${L(s.kicker)}</p>`;
+  if(s.kind==='quotes'){
+    body = `<div class="frame">${s.quotes.map(q=>`<p class="quote">“${L(q)}”</p>`).join('')}</div>`;
   }
   if(s.kind==='stats'){
     body = `<div class="stats">${s.stats.map(x=>
-      `<div class="stat ${x.cls||''}"><b>${x.v}</b><span>${L(x.l)}</span></div>`).join('')}</div>`
-      + (s.quote ? `<p class="quote" style="margin-top:1em">${L(s.quote)}</p>` : '');
+      `<div class="stat ${x.cls||''}"><b>${x.v}</b><span>${L(x.l)}</span></div>`).join('')}</div>`;
   }
   if(s.kind==='video'){
     body = `<div class="vtabs" id="vtabs">${s.clips.map((c,i)=>
         `<button data-v="${i}" class="${i===vidIdx?'on':''}">${L(c.t)}</button>`).join('')}</div>
-      <video id="vid" src="../video/mp4/${s.clips[vidIdx].f}.mp4"
-             controls autoplay muted loop playsinline preload="auto"></video>`;
+      <video id="vid" src="../video/mp4/${s.clips[vidIdx].f}.mp4" controls autoplay muted loop playsinline preload="auto"></video>`;
   }
   if(s.kind==='ctxlayers'){
-    const rows = s.rows.map((r,i)=>
+    body = `<div class="laywrap"><div class="lay">` + s.rows.map((r,i)=>
       `<div class="row ${r.cls}" style="animation-delay:${120+i*130}ms">
-         <span class="tag">${L(r.tag)}</span>
-         <span class="desc">${L(r.d)}</span>
-         <span class="meta">${L(r.m)}</span>
-       </div>`).join('');
-    body = `<div class="laywrap"><div class="lay">${rows}</div><div class="sweep" style="--sweepTo:11em"></div></div>
-            <p class="laylegend">${L(s.legend)}</p>`;
+         <span class="tag">${L(r.tag)}</span><span class="desc">${L(r.d)}</span><span class="meta">${L(r.m)}</span>
+       </div>`).join('') + `</div><div class="sweep" style="--sweepTo:10em"></div></div>
+       <p class="laylegend">${L(s.legend)}</p>`;
   }
   if(s.kind==='pipe'){
     let d = 100;
     body = `<div class="pipe">` + s.levels.map((lv,i)=>{
       const nodes = lv.items.map(it=>{ d+=110; return `<span class="node ${lv.cls}" style="animation-delay:${d}ms">${L(it)}</span>`; }).join('');
-      const conn = i ? `<div class="conn"></div>` : '';
-      return `${conn}<div class="lvl">${nodes}</div><div class="caption">${L(lv.cap)}</div>`;
+      return `${i?'<div class="conn"></div>':''}<div class="lvl">${nodes}</div><div class="caption">${L(lv.cap)}</div>`;
     }).join('') + `</div>`;
   }
   if(s.kind==='rings'){
-    const rings = s.rings.map((r,i)=>
-      `<div class="ring r${i+1}" style="animation-delay:${140+i*150}ms">${L(r)}</div>`).join('');
-    body = `<div class="rings" style="height:16em">
-      ${rings}<div class="attack"></div><div class="blocked">${L(s.blocked)}</div>
-      <div class="core">${L(s.core)}</div></div>`;
+    body = `<div class="rings" style="height:15em">`
+      + s.rings.map((r,i)=>`<div class="ring r${i+1}" style="animation-delay:${140+i*150}ms">${L(r)}</div>`).join('')
+      + `<div class="attack"></div><div class="blocked">${L(s.blocked)}</div>
+         <div class="core">${L(s.core)}</div></div>`;
   }
   if(s.kind==='close'){
     const c1 = lang==='vi'?'viết hợp đồng trước':lang==='ja'?'先に契約を書く':'write the contract first';
     const c2 = lang==='vi'?'dựng harness cho repo này':lang==='ja'?'このリポジトリのハーネスを構築':'build the harness for this repo';
-    body = `<pre class="cmd"><span class="c"># ${c1}</span>
-/spec-builder
-
-<span class="c"># ${c2}</span>
-/harness-bootstrap</pre>
+    body = `<pre class="cmd"><span class="c"># ${c1}</span>\n/spec-builder\n\n<span class="c"># ${c2}</span>\n/harness-bootstrap</pre>
       <div class="cta">
         <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
         <a class="ghost" href="../video/" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
       </div>`;
   }
-  return `<div class="wrap stag">${eyebrow}${title}${sub}${body}${note}</div>`;
+  return `<div class="wrap stag"><div class="head">${step}${title}${sub}</div><div class="body">${body}${note}</div></div>`;
 }
 
-/* Grow a slide to use the page, without ever overflowing it.
-   A proportional guess oscillates: a bigger font makes cards wider, which drops
-   a grid column, which makes the block taller, which shrinks it again. So this
-   binary-searches for the largest scale that still fits and keeps only sizes
-   that were measured to fit. */
 function fit(el){
   const w = el.querySelector('.wrap');
   if(!w) return;
-  const cs = getComputedStyle(el);
-  const avail = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  if(avail <= 0) return;
-  let lo = 0.62, hi = 1.85, best = 0.62;
+  if(el.clientHeight <= 0) return;
+  // Measure the slide itself, not the wrap: a trailing margin on the last child is
+  // excluded from the wrap's scrollHeight but still pushes the slide over.
+  const overflows = () => el.scrollHeight > el.clientHeight + 1;
+  let lo = 0.62, hi = 2.45, best = 0.62;
   for(let i=0;i<14;i++){
     const mid = (lo + hi) / 2;
     w.style.setProperty('--fit', mid);
-    if(w.scrollHeight <= avail){ best = mid; lo = mid; } else { hi = mid; }
+    if(!overflows()){ best = mid; lo = mid; } else { hi = mid; }
     if(hi - lo < 0.008) break;
   }
   w.style.setProperty('--fit', best);
@@ -1031,21 +867,19 @@ function render(dir){
   el.className = 'slide active ' + (dir==='prev' ? 'in-prev' : 'in-next');
   el.innerHTML = slideHTML(S[cur]);
   deck.appendChild(el);
-  el.querySelectorAll('.stag > *').forEach((c,i)=>{ c.style.animationDelay = (60 + i*70) + 'ms'; });
+  el.querySelectorAll('.stag > *').forEach((c,i)=>{ c.style.animationDelay = (60 + i*80) + 'ms'; });
 
   const vt = el.querySelector('#vtabs');
-  if(vt){
-    vt.addEventListener('click', e=>{
-      const b = e.target.closest('button'); if(!b) return;
-      vidIdx = +b.dataset.v;
-      vt.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
-      const v = el.querySelector('#vid');
-      v.src = '../video/mp4/' + S[cur].clips[vidIdx].f + '.mp4';
-      v.load(); v.play().catch(()=>{});
-    });
-  }
+  if(vt) vt.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    vidIdx = +b.dataset.v;
+    vt.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    const v = el.querySelector('#vid');
+    v.src = '../video/mp4/' + S[cur].clips[vidIdx].f + '.mp4';
+    v.load(); v.play().catch(()=>{});
+  });
+
   fit(el);
-  // A late-loading asset can change the height after the first measurement.
   const vid = el.querySelector('#vid');
   if(vid) vid.addEventListener('loadedmetadata', ()=>fit(el), {once:true});
 
@@ -1060,20 +894,17 @@ function go(i, dir){
   const d = dir || (n > cur ? 'next' : 'prev');
   cur = n; render(d); marks();
 }
-
 function marks(){
   thumbsEl.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('on', i===cur));
   const t = thumbsEl.querySelector('.thumb.on');
   if(t && ovEl.classList.contains('open')) t.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
-
 function buildNav(){
   thumbsEl.innerHTML = S.map((s,i)=>
     `<button class="thumb ${i===cur?'on':''}" data-i="${i}">
-      <span class="n">${String(i+1).padStart(2,'0')}</span>
-      <span class="t">${L(s.nav)}</span>${icon(s.icon,'ic')}</button>`).join('');
+      <span class="n">${icon(s.icon)}${String(i+1).padStart(2,'0')}</span>
+      <span class="t">${(s.nav[lang]??s.nav.en)}</span></button>`).join('');
 }
-
 thumbsEl.addEventListener('click', e=>{ const b=e.target.closest('.thumb'); if(b){ go(+b.dataset.i); closeOv(); } });
 
 function openOv(){ ovEl.classList.add('open'); marks(); }
@@ -1086,25 +917,21 @@ document.getElementById('btnFull').onclick = ()=>{
   if(document.fullscreenElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen().catch(()=>{});
 };
-
 document.getElementById('langs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   lang = b.dataset.l; localStorage.setItem('ahb-lang', lang);
   document.querySelectorAll('#langs button').forEach(x=>x.classList.toggle('on', x===b));
   render('next'); buildNav(); marks();
 });
-
 function ovCols(){
   const t = getComputedStyle(thumbsEl).gridTemplateColumns;
   return Math.max(1, t.split(' ').filter(Boolean).length);
 }
-
 document.addEventListener('keydown', e=>{
   const open = ovEl.classList.contains('open');
   if(e.key==='Escape'){ closeOv(); return; }
   if(e.key==='Enter' && open){ closeOv(); return; }
   switch(e.key){
-    // Arrows drive the deck whether or not the overview is open.
     case 'ArrowRight': case 'PageDown': case ' ': e.preventDefault(); go(cur+1,'next'); break;
     case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(cur-1,'prev'); break;
     case 'ArrowDown': if(open){ e.preventDefault(); go(cur+ovCols(),'next'); } break;
@@ -1115,21 +942,18 @@ document.addEventListener('keydown', e=>{
     case 'f': case 'F': document.getElementById('btnFull').click(); break;
   }
 });
-
 let x0=null;
-deck.addEventListener('touchstart', e=>{ x0 = e.changedTouches[0].clientX; }, {passive:true});
+deck.addEventListener('touchstart', e=>{ x0=e.changedTouches[0].clientX; }, {passive:true});
 deck.addEventListener('touchend', e=>{
   if(x0===null) return;
   const dx = e.changedTouches[0].clientX - x0;
   if(Math.abs(dx) > 55) go(cur + (dx<0?1:-1), dx<0?'next':'prev');
   x0=null;
 }, {passive:true});
-
 addEventListener('resize', ()=>{ const el = deck.querySelector('.slide'); if(el) fit(el); });
 
 document.querySelectorAll('#langs button').forEach(b=>b.classList.toggle('on', b.dataset.l===lang));
-const start = parseInt((location.hash||'').replace('#','')) || 1;
-cur = Math.max(0, Math.min(S.length-1, start-1));
+cur = Math.max(0, Math.min(S.length-1, (parseInt((location.hash||'').replace('#',''))||1) - 1));
 buildNav(); render('next'); marks();
 </script>
 </body>
