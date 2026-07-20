@@ -184,6 +184,11 @@
   /* marker frame: the "circled on the page" device from sketchnotes */
   .frame{border-radius:22px;padding:1.1em 1.3em;background:#fff;
     box-shadow:0 0 0 3px var(--mark) inset, 0 0 0 1px #e6e6f2}
+  .chips{display:flex;flex-wrap:wrap;gap:.55em;margin:0 0 1.2em}
+  .chip{display:inline-flex;align-items:center;gap:.5em;background:#f6f6fd;
+    border-radius:999px;padding:.5em .95em;font-size:.9em;color:var(--dim)}
+  .chip svg{width:1.25em;height:1.25em;color:var(--brand);flex:0 0 auto}
+  .chip b{color:var(--brand);font-weight:800}
   .coverwrap{display:grid;grid-template-columns:1.62fr .74fr;gap:2.2em;align-items:center}
   .coverwrap > div{display:flex;flex-direction:column;justify-content:center}
   .coverwrap .art{width:100%;height:auto;max-height:20em;object-fit:contain}
@@ -490,6 +495,11 @@ const S = [
  sub:{en:"Standardizing and building the operating foundation for AI coding agents",
       vi:"Chuẩn hóa và xây dựng nền móng vận hành cho AI coding agents",
       ja:"AIコーディングエージェントのための運用基盤の標準化と構築"},
+ chips:[
+  {ic:"i-flow",   t:{en:"<b>15</b> scoped agents", vi:"<b>15</b> agent có phạm vi", ja:"<b>15</b> のスコープ付きエージェント"}},
+  {ic:"i-doc",    t:{en:"<b>14</b> path-scoped rules", vi:"<b>14</b> rule theo path", ja:"<b>14</b> のパススコープ・ルール"}},
+  {ic:"i-shield", t:{en:"<b>6</b> blocking hooks", vi:"<b>6</b> hook chặn thật", ja:"<b>6</b> つの遮断フック"}},
+  {ic:"i-brain",  t:{en:"a task board on disk", vi:"bảng task nằm trên đĩa", ja:"ディスク上のタスクボード"}}],
  lead:{en:"Give an AI agent a repo it can actually understand, and a <mark>harness it cannot escape</mark>.",
        vi:"Trao cho AI agent một repository nó thực sự hiểu được, và một <mark>harness nó không thể thoát ra</mark>.",
        ja:"AIエージェントに、本当に理解できるリポジトリと、<mark>抜け出せないハーネス</mark>を。"},
@@ -893,6 +903,8 @@ function slideHTML(s){
       <h1>${L(s.title)}</h1>${SQUIG}<p class="sub">${L(s.sub)}</p></div>
       <div class="body"><div class="coverwrap">
         <div>
+          <div class="chips">${s.chips.map(c=>
+            `<span class="chip">${icon(c.ic)}${L(c.t)}</span>`).join('')}</div>
           <p class="lead">${L(s.lead)}</p>
           <div class="cta">
             <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
