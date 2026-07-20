@@ -156,7 +156,14 @@
   ul.big li.amber{background:var(--amber-t)} ul.big li.amber .ic{color:var(--amber)}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:.9em}
-  .card{background:#f6f6fd;border-radius:20px;padding:1.2em;position:relative;justify-content:center}
+  .card{background:#f6f6fd;border-radius:20px;padding:1.2em;position:relative;justify-content:center;overflow:hidden}
+  /* the icon is the card's artwork: large, tilted, sitting behind the words */
+  .card .bgart{
+    position:absolute;right:-.35em;bottom:-.55em;width:6.2em;height:6.2em;
+    transform:rotate(-13deg);opacity:.13;color:currentColor;pointer-events:none;
+  }
+  .card.g .bgart{color:var(--green)} .card.p .bgart{color:var(--purple)}
+  .card.r .bgart{color:var(--red)} .card.a .bgart{color:var(--amber)}
   .card .ic{width:2.5em;height:2.5em;padding:.5em;border-radius:14px;background:#fff;
     color:var(--brand);margin-bottom:.55em}
   .card h3{margin:0 0 .22em;font-size:1.06em;color:var(--ink)}
@@ -177,11 +184,12 @@
   /* marker frame: the "circled on the page" device from sketchnotes */
   .frame{border-radius:22px;padding:1.1em 1.3em;background:#fff;
     box-shadow:0 0 0 3px var(--mark) inset, 0 0 0 1px #e6e6f2}
-  .coverwrap{display:grid;grid-template-columns:1.78fr .58fr;gap:2.2em;align-items:center}
-  .coverwrap .art{width:100%;height:auto;max-height:17em;color:var(--brand);opacity:.9}
+  .coverwrap{display:grid;grid-template-columns:1.62fr .74fr;gap:2.2em;align-items:center}
+  .coverwrap > div{display:flex;flex-direction:column;justify-content:center}
+  .coverwrap .art{width:100%;height:auto;max-height:20em;object-fit:contain}
   .quotesplit{display:grid;grid-template-columns:1fr auto 1fr;gap:1.6em;align-items:center}
   .quotesplit .qart{display:grid;place-items:center}
-  .quotesplit .art{width:11em;height:auto;color:var(--brand-xl)}
+  .quotesplit .art{width:9.5em;height:auto;max-height:11em;object-fit:contain}
   @media (max-width:1100px){
     .coverwrap,.quotesplit{grid-template-columns:1fr}
     .quotesplit .art{width:8em}
@@ -237,21 +245,27 @@
     background:#f6f6fd;position:relative;overflow:hidden;
     opacity:0;transform:translateX(-16px);animation:slideIn .5s cubic-bezier(.22,1,.36,1) forwards}
   @keyframes slideIn{to{opacity:1;transform:none}}
+  .lay .row .tic{flex:0 0 auto;width:1.9em;height:1.9em;padding:.34em;border-radius:10px;
+    background:#fff;color:var(--brand)}
+  .lay .row.ram .tic{color:var(--amber)} .lay .row.disk .tic{color:var(--green)}
   .lay .row .tag{flex:0 0 auto;min-width:7.2em;font-weight:800;font-size:.92em;color:var(--brand)}
   .lay .row .desc{flex:1;font-size:.87em;color:var(--dim)}
   .lay .row .meta{flex:0 0 auto;font-size:.76em;color:var(--faint);text-align:right;min-width:6em}
   .lay .row.ram{background:var(--amber-t)} .lay .row.ram .tag{color:var(--amber)}
   .lay .row.disk{background:var(--green-t)} .lay .row.disk .tag{color:var(--green)}
-  /* the volatile tiers are struck through by hand, once, and stay struck */
-  .lay .row.ram::after{content:'';position:absolute;inset:0;border-radius:16px;background:var(--page);
-    opacity:0;animation:ghost .7s ease-out forwards;animation-delay:1.5s}
-  @keyframes ghost{to{opacity:.55}}
-  .lay .row .strike{position:absolute;left:1.5%;width:97%;top:50%;height:1.5em;
-    transform:translateY(-50%);color:var(--red);pointer-events:none;z-index:2}
-  .lay .row .strike path{fill:none;stroke:currentColor;stroke-width:3.4;stroke-linecap:round;
-    vector-effect:non-scaling-stroke;stroke-dasharray:420;stroke-dashoffset:420;
-    animation:draw .5s ease-out forwards}
-  @keyframes draw{to{stroke-dashoffset:0}}
+  /* One soft brush sweep across the two volatile tiers. They stay legible;
+     the wash only says these are the ones a compaction takes. */
+  .lay .brush{
+    position:absolute;left:-1%;width:102%;top:-2%;height:54%;pointer-events:none;z-index:3;
+    color:var(--red);filter:blur(7px);opacity:0;
+    animation:sweepIn 1.1s cubic-bezier(.3,.9,.4,1) forwards;animation-delay:1.35s;
+  }
+  .lay .brush svg{width:100%;height:100%;fill:currentColor}
+  @keyframes sweepIn{
+    0%{opacity:0;clip-path:inset(0 100% 0 0)}
+    100%{opacity:.32;clip-path:inset(0 0 0 0)}
+  }
+  .lay .row.ram{opacity:1}
   .laywrap{position:relative}
 
   .pipe{display:grid;gap:.5em}
@@ -390,6 +404,10 @@
       <path d="M199 70c-14 5-28 9-43 10" stroke-dasharray="1 7" opacity=".8"/>
     </g>
     <circle cx="191" cy="51" r="2.6" fill="currentColor"/>
+  </symbol>
+  <symbol id="s-brush" viewBox="0 0 600 120" preserveAspectRatio="none">
+    <path d="M6 74c62-26 128-34 196-24 54 8 106 24 162 22 44-2 86-16 130-32 22-8 44-14 66-16-18 14-38 26-60 36-52 24-110 34-168 32-58-2-114-16-172-20-56-4-110 2-160 22z"/>
+    <path d="M18 46c70-20 142-22 212-8 48 10 96 24 146 22 40-2 78-14 116-28-14 16-32 28-52 38-46 22-98 30-150 28-56-2-110-16-166-22-36-4-72-4-106 4z" opacity=".65"/>
   </symbol>
   <symbol id="s-ring" viewBox="0 0 60 60"><path d="M42 9c-9-5-22-4-29 3S6 32 12 41s21 12 31 7 15-18 11-28c-2-5-6-9-11-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
   <symbol id="s-arrow" viewBox="0 0 80 40"><path d="M4 30c14-16 34-24 63-22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M56 2l12 6-9 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -631,16 +649,16 @@ const S = [
       vi:"Hãy xem một lần {{g:compaction|compaction}} làm gì với từng tầng. Đây là câu trả lời cho vấn đề 03, 05 và 08.",
       ja:"{{g:compaction|圧縮}}が各階層に何をするかをご覧ください。課題03・05・08への答えです。"},
  rows:[
-  {cls:"ram", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
+  {cls:"ram", ic:"i-clock", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
    d:{en:"CLAUDE.md, 6 unconditional rules, the agent body, tool schemas", vi:"CLAUDE.md, 6 rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件の6ルール、エージェント本体、ツールスキーマ"},
    m:{en:"~25,300 B every turn", vi:"~25.300 B mỗi lượt", ja:"毎ターン約25,300B"}},
-  {cls:"ram", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
+  {cls:"ram", ic:"i-box", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
    d:{en:"The 8 {{g:pathscoped|path-scoped}} rules, loaded only on a matching file", vi:"8 rule {{g:pathscoped|theo path}}, chỉ nạp khi chạm file khớp", ja:"{{g:pathscoped|パススコープ}}の8ルール、一致ファイル時のみ読込"},
    m:{en:"~49,400 B on demand", vi:"~49.400 B theo yêu cầu", ja:"必要時に約49,400B"}},
-  {cls:"disk", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
+  {cls:"disk", ic:"i-doc", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
    d:{en:"The task board and one file per task, with the session log written as it works", vi:"Bảng task và mỗi task một file, kèm session log ghi ngay trong lúc làm", ja:"タスクボードとタスクごとのファイル、作業しながら書くセッションログ"},
    m:{en:"committed to git", vi:"đã commit vào git", ja:"gitにコミット済み"}},
-  {cls:"disk", tag:{en:"Archive", vi:"Archive", ja:"Archive"},
+  {cls:"disk", ic:"i-layers", tag:{en:"Archive", vi:"Archive", ja:"Archive"},
    d:{en:"One file per finished subagent run, written by a {{g:hook|hook}} after the fact", vi:"Mỗi lần subagent chạy xong một file, do {{g:hook|hook}} ghi lại sau đó", ja:"サブエージェント実行ごとに1ファイル、{{g:hook|フック}}が事後に記録"},
    m:{en:"append-only", vi:"chỉ ghi thêm", ja:"追記専用"}}],
  nav:{en:"Context layers", vi:"Các tầng context", ja:"コンテキスト階層"}},
@@ -881,7 +899,7 @@ function slideHTML(s){
             <a class="ghost" href="../video/" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
           </div>
         </div>
-        <svg class="art"><use href="#art-harness"/></svg>
+        <img class="art" src="img/cover-control.svg" alt="">
       </div></div></div>`;
   }
   if(s.kind==='table'){
@@ -898,6 +916,7 @@ function slideHTML(s){
   if(s.kind==='cards'){
     body = `<div class="cards">${s.cards.map(c=>
       `<div class="card ${c.cls||''}">
+        ${icon(c.ic,'bgart')}
         ${c.n?`<span class="num">${icon('s-ring','ring')}${c.n}</span>`:''}
         ${icon(c.ic,'ic')}<h3>${L(c.t)}</h3><p>${L(c.d)}</p>
       </div>`).join('')}</div>`;
@@ -905,7 +924,7 @@ function slideHTML(s){
   if(s.kind==='quotes'){
     body = `<div class="frame quotesplit">
       <p class="quote">“${L(s.quotes[0])}”</p>
-      <div class="qart"><svg class="art"><use href="#art-horse"/></svg></div>
+      <div class="qart"><img class="art" src="img/quote-finish.svg" alt=""></div>
       <p class="quote">“${L(s.quotes[1])}”</p>
     </div>`;
   }
@@ -922,11 +941,11 @@ function slideHTML(s){
   if(s.kind==='ctxlayers'){
     body = `<div class="laywrap"><div class="lay">` + s.rows.map((r,i)=>
       `<div class="row ${r.cls}" style="animation-delay:${120+i*130}ms">
+         ${icon(r.ic,'tic')}
          <span class="tag">${L(r.tag)}</span><span class="desc">${L(r.d)}</span><span class="meta">${L(r.m)}</span>
-         ${r.cls==='ram'?`<svg class="strike" viewBox="0 0 400 24" preserveAspectRatio="none"
-            style="animation-delay:${1200+i*260}ms"><path d="M5 16C72 5 132 20 198 11S331 5 395 15"
-            style="animation-delay:${1200+i*260}ms"/></svg>`:''}
-       </div>`).join('') + `</div></div>
+       </div>`).join('')
+      + `<div class="brush"><svg viewBox="0 0 600 120" preserveAspectRatio="none"><use href="#s-brush"/></svg></div>`
+      + `</div></div>
 `;
   }
   if(s.kind==='pipe'){
