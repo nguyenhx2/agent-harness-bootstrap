@@ -192,9 +192,9 @@
   .coverwrap{display:grid;grid-template-columns:1.62fr .74fr;gap:2.2em;align-items:center}
   .coverwrap > div{display:flex;flex-direction:column;justify-content:center}
   .coverwrap .art{width:100%;height:auto;max-height:20em;object-fit:contain}
-  .quotesplit{display:grid;grid-template-columns:1fr auto 1fr;gap:1.6em;align-items:center}
+  .quotesplit{display:grid;grid-template-columns:1fr auto 1fr;gap:1.4em;align-items:center}
   .quotesplit .qart{display:grid;place-items:center}
-  .quotesplit .art{width:9.5em;height:auto;max-height:11em;object-fit:contain}
+  .quotesplit .art{width:11.5em;height:auto;max-height:13em;object-fit:contain}
   @media (max-width:1100px){
     .coverwrap,.quotesplit{grid-template-columns:1fr}
     .quotesplit .art{width:8em}
@@ -936,7 +936,7 @@ function slideHTML(s){
   if(s.kind==='quotes'){
     body = `<div class="frame quotesplit">
       <p class="quote">“${L(s.quotes[0])}”</p>
-      <div class="qart"><img class="art" src="img/quote-finish.svg" alt=""></div>
+      <div class="qart"><img class="art" src="img/quote-horse.png" alt=""></div>
       <p class="quote">“${L(s.quotes[1])}”</p>
     </div>`;
   }
