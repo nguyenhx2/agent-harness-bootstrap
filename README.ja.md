@@ -77,6 +77,7 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 ### 残りのクリップ
 
 どのクリップもブラウザ上でそのまま再生できます。**[ギャラリーを見る](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**（ダウンロード不要）。ソースは [`video/`](video/) にあります。
+**[スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)**（EN / VI / JP）もあります。
 
 | クリップ | ブラウザで再生 |
 |---|---|

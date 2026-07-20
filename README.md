@@ -78,7 +78,8 @@ tier, because the gates around it are shell scripts rather than judgment.
 ### The rest of the clips
 
 Every clip plays in your browser - **[watch the gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**,
-no download. Sources in [`video/`](video/).
+no download. Sources in [`video/`](video/). There is also a
+**[slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)** (EN / VI / JP).
 
 | Clip | Play in browser |
 |---|---|
