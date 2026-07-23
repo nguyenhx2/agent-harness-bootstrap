@@ -829,28 +829,6 @@ const S = [
    d:{en:"Stops a loop before it runs away", vi:"Chặn vòng lặp trước khi mất kiểm soát", ja:"暴走前にループを止める"}}],
  nav:{en:"Defence in depth", vi:"Phòng thủ chiều sâu", ja:"多層防御"}},
 
-/* 14 - the annotated jargon slide */
-{icon:"i-shield", kind:"table", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
- title:{en:"What “exit code 2” actually means", vi:"“Exit code 2” thực sự nghĩa là gì", ja:"「exit code 2」の実際の意味"},
- sub:{en:"A {{g:hook|hook}} is a shell script that runs <mark>before</mark> a tool call. When it finishes, its exit status decides what happens next.",
-      vi:"{{g:hook|Hook}} là một shell script chạy <mark>trước</mark> lời gọi tool. Khi nó kết thúc, mã thoát quyết định điều gì xảy ra tiếp theo.",
-      ja:"{{g:hook|フック}}はツール呼び出しの<mark>前</mark>に走るシェルスクリプトです。終了時、その終了コードが次に何が起きるかを決めます。"},
- cols:{en:["Exit status","Meaning"], vi:["Mã thoát","Ý nghĩa"], ja:["終了コード","意味"]},
- rows:[
-  {en:["<strong><code>0</code></strong>","<mark class='m2'>Allow.</mark> The tool call proceeds"],
-   vi:["<strong><code>0</code></strong>","<mark class='m2'>Cho phép.</mark> Lời gọi tool được tiếp tục"],
-   ja:["<strong><code>0</code></strong>","<mark class='m2'>許可。</mark> ツール呼び出しは実行されます"]},
-  {en:["<strong><code>2</code></strong>","<mark class='m3'>Block.</mark> The tool call is abandoned and never runs. stderr is sent back to the model as the reason"],
-   vi:["<strong><code>2</code></strong>","<mark class='m3'>Chặn.</mark> Lời gọi tool bị huỷ và không bao giờ chạy. stderr được trả về cho model làm lý do"],
-   ja:["<strong><code>2</code></strong>","<mark class='m3'>遮断。</mark> ツール呼び出しは破棄され実行されません。stderr が理由としてモデルに返ります"]},
-  {en:["<strong>other</strong>","Error, non-blocking"],
-   vi:["<strong>khác</strong>","Lỗi, không chặn"],
-   ja:["<strong>その他</strong>","エラー、遮断はしない"]}],
- note:{en:"The model is never asked for consent, so the guarantee does not vary with the model.",
-       vi:"Model không bao giờ được hỏi ý kiến, nên đảm bảo này không đổi theo model.",
-       ja:"モデルの同意は求められないため、この保証はモデルによって変わりません。"},
- nav:{en:"Exit code 2", vi:"Exit code 2", ja:"exit code 2"}},
-
 /* 14b - the deny list */
 {icon:"i-shield", kind:"bullets", cls:"red", step:{en:"Mechanism C \u00b7 Security", vi:"C\u01a1 ch\u1ebf C \u00b7 B\u1ea3o m\u1eadt", ja:"\u4ed5\u7d44\u307fC \u00b7 \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3"},
  title:{en:"Layer 1: the deny list decides what it cannot see", vi:"L\u1edbp 1: deny list quy\u1ebft \u0111\u1ecbnh c\u00e1i n\u00f3 kh\u00f4ng \u0111\u01b0\u1ee3c th\u1ea5y", ja:"\u7b2c1\u5c64: \u62d2\u5426\u30ea\u30b9\u30c8\u304c\u300c\u898b\u3089\u308c\u306a\u3044\u3082\u306e\u300d\u3092\u6c7a\u3081\u308b"},
@@ -874,6 +852,28 @@ const S = [
        vi:"Gi\u1edbi h\u1ea1n trung th\u1ef1c: \u0111\u00e2y l\u00e0 kh\u1edbp ti\u1ec1n t\u1ed1, c\u00f3 th\u1ec3 l\u00e1ch b\u1eb1ng \u0111\u1ea3o th\u1ee9 t\u1ef1. N\u00f3 l\u00e0 g\u1edd gi\u1ea3m t\u1ed1c. Hooks m\u1edbi l\u00e0 c\u00e1nh c\u1ed5ng.",
        ja:"\u6b63\u76f4\u306a\u9650\u754c: \u3053\u308c\u306f\u524d\u65b9\u4e00\u81f4\u3067\u3001\u9806\u5e8f\u3092\u5165\u308c\u66ff\u3048\u308b\u3068\u7834\u308c\u307e\u3059\u3002\u6e1b\u901f\u5e2f\u3067\u3042\u308a\u3001\u30b2\u30fc\u30c8\u306f\u30d5\u30c3\u30af\u3067\u3059\u3002"},
  nav:{en:"Deny list", vi:"Deny list", ja:"\u62d2\u5426\u30ea\u30b9\u30c8"}},
+
+/* 15b - layer 2: hooks, exit code 2 */
+{icon:"i-shield", kind:"table", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
+ title:{en:"Layer 2: a hook that exits 2 decides what it cannot do", vi:"Lớp 2: một hook thoát mã 2 quyết định cái nó không được làm", ja:"第2層: exit 2 のフックが「できないこと」を決める"},
+ sub:{en:"A {{g:hook|hook}} is a shell script that runs <mark>before</mark> a tool call. When it finishes, its exit status decides what happens next.",
+      vi:"{{g:hook|Hook}} là một shell script chạy <mark>trước</mark> lời gọi tool. Khi nó kết thúc, mã thoát quyết định điều gì xảy ra tiếp theo.",
+      ja:"{{g:hook|フック}}はツール呼び出しの<mark>前</mark>に走るシェルスクリプトです。終了時、その終了コードが次に何が起きるかを決めます。"},
+ cols:{en:["Exit status","Meaning"], vi:["Mã thoát","Ý nghĩa"], ja:["終了コード","意味"]},
+ rows:[
+  {en:["<strong><code>0</code></strong>","<mark class='m2'>Allow.</mark> The tool call proceeds"],
+   vi:["<strong><code>0</code></strong>","<mark class='m2'>Cho phép.</mark> Lời gọi tool được tiếp tục"],
+   ja:["<strong><code>0</code></strong>","<mark class='m2'>許可。</mark> ツール呼び出しは実行されます"]},
+  {en:["<strong><code>2</code></strong>","<mark class='m3'>Block.</mark> The tool call is abandoned and never runs. stderr is sent back to the model as the reason"],
+   vi:["<strong><code>2</code></strong>","<mark class='m3'>Chặn.</mark> Lời gọi tool bị huỷ và không bao giờ chạy. stderr được trả về cho model làm lý do"],
+   ja:["<strong><code>2</code></strong>","<mark class='m3'>遮断。</mark> ツール呼び出しは破棄され実行されません。stderr が理由としてモデルに返ります"]},
+  {en:["<strong>other</strong>","Error, non-blocking"],
+   vi:["<strong>khác</strong>","Lỗi, không chặn"],
+   ja:["<strong>その他</strong>","エラー、遮断はしない"]}],
+ note:{en:"The model is never asked for consent, so the guarantee does not vary with the model.",
+       vi:"Model không bao giờ được hỏi ý kiến, nên đảm bảo này không đổi theo model.",
+       ja:"モデルの同意は求められないため、この保証はモデルによって変わりません。"},
+ nav:{en:"Exit code 2", vi:"Exit code 2", ja:"exit code 2"}},
 
 /* 15c - tool allowlist */
 {icon:"i-shield", kind:"table", step:{en:"Mechanism C \u00b7 Security", vi:"C\u01a1 ch\u1ebf C \u00b7 B\u1ea3o m\u1eadt", ja:"\u4ed5\u7d44\u307fC \u00b7 \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3"},
