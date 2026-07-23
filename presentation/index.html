@@ -221,15 +221,9 @@
     font:inherit;font-size:.82em;cursor:pointer}
   .vtabs button.on{background:var(--brand);color:#fff}
 
-  .qrwrap{display:grid;grid-template-columns:auto 1fr;gap:2.4em;align-items:center;justify-content:center;max-width:44em;margin:0 auto}
-  .qrcard{background:#fff;border-radius:20px;padding:1.1em;box-shadow:0 8px 28px rgba(53,52,143,.14)}
-  .qrcard img{width:15em;height:15em;display:block;image-rendering:crisp-edges}
-  .qrside{display:flex;flex-direction:column;gap:1em}
-  .qrcap{font-size:1.5em;font-weight:800;line-height:1.25;color:var(--ink);margin:0}
-  .qrlink{display:inline-flex;align-items:center;gap:.55em;text-decoration:none;background:#f6f6fd;
-    color:var(--brand);border-radius:12px;padding:.7em 1em;font-size:.9em;font-weight:700;word-break:break-all}
-  .qrlink svg{width:1.1em;height:1.1em;flex:0 0 auto}
-  @media (max-width:1000px){ .qrwrap{grid-template-columns:1fr;text-align:center;justify-items:center} }
+  .qrwrap{display:grid;place-items:center}
+  .qrcard{background:#fff;border-radius:22px;padding:1.2em;box-shadow:0 10px 32px rgba(53,52,143,.16)}
+  .qrcard img{width:17em;height:17em;display:block;image-rendering:pixelated}
   .cta{display:flex;flex-wrap:wrap;gap:.6em;margin-top:.4em}
   .cta a{display:inline-flex;align-items:center;gap:.5em;text-decoration:none;background:var(--brand);
     color:#fff;padding:.65em 1.2em;border-radius:12px;font-weight:700;font-size:.93em}
@@ -946,15 +940,13 @@ const S = [
  nav:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"}},
 
 /* 23 - post-seminar survey */
-{icon:"i-chat", kind:"qr", step:{en:"Thank you", vi:"Cảm ơn", ja:"ありがとうございました"},
- title:{en:"Your feedback shapes the next one", vi:"Phản hồi của bạn định hình buổi tiếp theo", ja:"あなたのフィードバックが次に活きます"},
- sub:{en:"A two-minute survey on the AI Development Life Cycle seminar. Scan the code, or open the link.",
-      vi:"Khảo sát hai phút về buổi seminar AI Development Life Cycle. Quét mã, hoặc mở đường link.",
-      ja:"AI Development Life Cycle セミナーに関する2分のアンケートです。コードをスキャンするか、リンクを開いてください。"},
+{icon:"i-chat", kind:"qr", step:{en:"Thank you", vi:"Thank you", ja:"Thank you"},
+ title:{en:"Post-seminar survey", vi:"Post-seminar survey", ja:"Post-seminar survey"},
+ sub:{en:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback.",
+      vi:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback.",
+      ja:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback."},
  qr:"img/survey-qr.png",
- url:"https://forms.cloud.microsoft/r/3k4MHtGvG9?origin=QRCode",
- cta:{en:"Khảo sát sau Seminar AI Development Life Cycle", vi:"Khảo sát sau Seminar AI Development Life Cycle", ja:"Khảo sát sau Seminar AI Development Life Cycle"},
- nav:{en:"Survey", vi:"Khảo sát", ja:"アンケート"}}
+ nav:{en:"Survey", vi:"Survey", ja:"Survey"}}
 
 ];
 
@@ -1065,10 +1057,6 @@ function slideHTML(s){
   if(s.kind==='qr'){
     body = `<div class="qrwrap">
       <div class="qrcard"><img src="${s.qr}" alt="Survey QR code"></div>
-      <div class="qrside">
-        <p class="qrcap">${L(s.cta)}</p>
-        <a class="qrlink" href="${s.url}" target="_blank" rel="noopener">${icon('i-play')}${s.url.replace(/^https:\/\//,'')}</a>
-      </div>
     </div>`;
   }
   if(s.kind==='close'){
