@@ -32,3 +32,9 @@ repository is public, so serving them here redistributes them. Confirm
 permission from the author, or replace them: `cover-control.svg` and
 `quote-finish.svg` remain in this folder as unDraw fallbacks that are free for
 commercial use without attribution.
+
+## survey-qr.png
+
+The QR code cropped from the seminar's post-session survey card, supplied by the
+repository owner. Flattened to pure black and white and verified to decode to
+https://forms.cloud.microsoft/r/3k4MHtGvG9 (a Microsoft Forms survey).
