@@ -18,3 +18,4 @@ video/media/
 .agents/
 .claude/skills/explainer-video
 skills-lock.json
+presentation/*.pdf
