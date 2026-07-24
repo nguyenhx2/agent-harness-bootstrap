@@ -354,7 +354,60 @@
   .thumb .cap .t{font-size:12px;line-height:1.25;color:var(--brand-d);font-weight:700;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  @media (max-width:820px){ .slide{padding:38px 24px 24px} .arrow{display:none} }
+  /* ---------- mobile: each slide becomes a vertically-flowing scroll card ----------
+     The landscape design pins the header and fits the body to a fixed box. On a
+     narrow portrait screen that crams and clips content, so mobile switches to a
+     natural top-to-bottom flow that scrolls, with no per-slide font scaling. */
+  @media (max-width:820px){
+    html,body{overflow:auto;height:auto;-webkit-text-size-adjust:100%}
+    .bg{display:none}
+    .bar{position:sticky;height:auto;min-height:var(--bar);flex-wrap:nowrap;gap:8px;padding:8px 12px}
+    .brand span{display:none}
+    .count{font-size:11px;white-space:nowrap}
+    .langs button{padding:5px 10px;font-size:11px}
+    .ibtn{width:30px;height:30px}
+
+    .stage{position:static;display:block;padding:10px 10px 26px}
+    .page{width:100%;height:auto;min-height:calc(100vh - var(--bar) - 40px);
+      border-radius:16px;background-image:none;overflow:visible}
+    .pagemark{display:none}
+    .deck{position:static}
+
+    .slide{position:static;display:none;padding:20px 18px 30px;overflow:visible;inset:auto}
+    .slide.active{display:block}
+    /* header and body flow inline, stacked, no absolute pinning */
+    .head{position:static;left:auto;right:auto;top:auto;height:auto;
+      font-size:15px;display:block;margin:0 0 16px}
+    .body{position:static;left:auto;right:auto;top:auto;bottom:auto;
+      font-size:15px;display:block;overflow:visible;gap:0}
+    .wrap{font-size:15px}
+    h1{font-size:2em;line-height:1.14} h2{font-size:1.55em;line-height:1.2}
+    .sub{font-size:1em}
+
+    /* undo the desktop stretch-to-fill so blocks size to content */
+    .body>.cards,.body>ul.big,.body>.stats,.body>.lay,.body>.laywrap,
+    .body>.pipe,.body>.coverwrap,.body>.frame{flex:none}
+    .card{display:block;justify-content:flex-start}
+    .lay{height:auto}
+    .laywrap{display:block}
+
+    /* one column for everything that was a grid of cards or stats */
+    .cards{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .ringcols{grid-template-columns:repeat(2,1fr)}
+    .coverwrap,.quote2col,.quotesplit{grid-template-columns:1fr;text-align:left}
+    .coverwrap .art,.quote2col .qmain img{max-height:none;width:100%}
+    .rings{min-height:15em;margin:.5em 0}
+    .qrcard img{width:min(72vw,15em);height:auto}
+
+    .arrow{position:fixed;top:auto;bottom:14px;transform:none;z-index:40;
+      width:44px;height:44px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+    .arrow.l{left:14px} .arrow.r{right:14px}
+    video{max-height:none}
+
+    .ov{padding:56px 12px 30px}
+    .thumbs{grid-template-columns:repeat(2,1fr);gap:10px}
+  }
   @media (prefers-reduced-motion:reduce){
     .slide.in-next,.slide.in-prev,.stag>*,.lay .row,.pipe .node,.ring{animation:none;opacity:1;transform:none}
     .attack,.blocked,.pipe .conn::after{animation:none;opacity:0}
@@ -1174,6 +1227,8 @@ function slideHTML(s){
 function fit(el){
   const b = el.querySelector('.body');
   if(!b || b.clientHeight <= 0) return;
+  // Mobile uses natural top-to-bottom flow and page scroll, not box-fit scaling.
+  if(innerWidth <= 820){ b.style.removeProperty('--fit'); return; }
   // Only the body scales. The header band is fixed so headings stay identical
   // in size and position on every slide.
   const overflows = () => b.scrollHeight > b.clientHeight + 1;
