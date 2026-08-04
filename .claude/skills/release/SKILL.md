@@ -61,7 +61,7 @@ the cause - do not work around it.
 block, whose diagrams do not render, or whose figures contradict the scripts.
 
 ```bash
-python eval/guardrail_eval.py                       # must be 21/21
+python eval/guardrail_eval.py                       # must be 25/25
 python benchmark/benchmark.py                       # must exit 0
 python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 5/5
 python scripts/check_numbers.py                     # figures match the scripts

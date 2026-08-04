@@ -6,8 +6,8 @@
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 97,190 | -59% |
-| Read path (files read) | 24 | 8 | -67% |
+| Read path (bytes the model must pull into context) | 234,196 | 107,311 | -54% |
+| Read path (files read) | 24 | 9 | -62% |
 | Write path (bytes the model must author) | 95,064 | 13,881 | -85% |
 | Rule content kept out of the default session | - | 67% | - |
 | Scaffold time | - | ~0.2s | - |
@@ -43,8 +43,8 @@ The old skill kept its hooks, commands, rules and templates as fenced code block
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 8 | 97,190 | ~27,000 |
-| **Reduction** | **-67%** | **-59%** | **-59%** |
+| harness-bootstrap | 9 | 107,311 | ~30,000 |
+| **Reduction** | **-62%** | **-54%** | **-54%** |
 
 The new skill reads `SKILL.md` plus seven reference docs. It never reads `assets/`: the scaffolder
 copies those files directly, so they never enter the context window at all.
@@ -88,7 +88,7 @@ file is touched.
 
 | | |
 |---|---|
-| First run | **~0.2s** (varies 0.15-0.30s across runs), 84 paths created, exit 0 |
+| First run | **~0.2s** (varies 0.15-0.30s across runs), 86 paths created, exit 0 |
 | Re-run (idempotency) | reports `KEPT`, 0 conflicts, nothing clobbered |
 | Unresolved `{{VAR}}` | exits non-zero, rather than shipping a placeholder into a rule |
 

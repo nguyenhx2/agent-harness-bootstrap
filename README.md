@@ -9,7 +9,7 @@
 <p align="center">by <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <b>English</b> · <a href="README.ja.md">日本語</a></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 22/22](https://img.shields.io/badge/guardrail%20eval-22%2F22-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 25/25](https://img.shields.io/badge/guardrail%20eval-25%2F25-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
 
@@ -43,7 +43,7 @@ actions before they happen, and leaves a written trail so a fresh session can re
   edit by hand.
 - The guardrails are shell scripts and exit codes, not the model's judgment. Swap every agent from
   Opus to Haiku and the safety floor is byte-identical - `python eval/guardrail_eval.py` proves it,
-  22/22.
+  25/25.
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
@@ -85,7 +85,7 @@ Codex instead of Claude Code:** see [`docs/tools/`](docs/tools/) -
   agents/     15 agents, each with an explicit model, effort, tool grant, and turn limit
   rules/      15 rules - 6 always loaded, 9 that load only when you touch a matching file
   commands/   20 slash commands, including the six tuning commands below
-  hooks/      8 hooks that block a dangerous action before it happens
+  hooks/      9 hooks that block a dangerous action before it happens (one advisory-only, and says why)
   settings.json
 docs/
   tasks/      the board: one row per task, a session log the agent writes AS IT WORKS
@@ -159,10 +159,10 @@ removed - only rescoped.
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 97,190 | **-59%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 107,311 | **-54%** |
 | Bytes the model must write as output | 95,064 | 13,881 | **-85%** |
 | Rule content kept out of the default session | - | 51,785 of 77,452 B | **67%** |
-| Guardrail eval | - | **22/22** | - |
+| Guardrail eval | - | **25/25** | - |
 
 ---
 
