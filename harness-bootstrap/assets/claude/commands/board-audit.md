@@ -1,11 +1,17 @@
 ---
 description: Find orphaned, stale, and loop-suspect work - Active tasks nobody is driving, finished subagent runs nobody logged, worktrees and branches the board does not know about.
-allowed-tools: Read, Grep, Glob, Bash(git worktree list), Bash(git branch:*), Bash(git log:*), Bash(ls:*)
+allowed-tools: Read, Grep, Glob, Bash(git worktree list), Bash(git branch:*), Bash(git log:*), Bash(ls:*), Bash(python:*), Bash(python3:*)
 ---
 
 Audit the board against reality. Read-only: report, never fix silently.
 
-Run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTION`:
+Run `python .claude/scripts/board-check.py` FIRST, before any sweep below. It validates every
+task file's frontmatter enums (`status`, `attempts`, `priority`, `human_gate`) and detects
+dependency cycles in `deps:` chains, stdlib only. A non-zero exit means the board itself is
+malformed - report its findings list verbatim before continuing, because the sweeps below assume
+well-formed frontmatter and are unreliable against a board that fails this check.
+
+Then run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTION`:
 
 1. **Stale Active.** Every `docs/tasks/active/*.md` with `status: Active` whose last session-log
    row is older than the rest of the board's activity, or whose owner has no `.claude/state/history/`
