@@ -1,17 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Agent Harness Bootstrap mark">
-  <!-- Harness boundary -->
-  <rect x="38" y="38" width="180" height="180" rx="38" ry="38"
-        fill="none" stroke="#3E6E93" stroke-width="16"/>
+  <defs>
+    <linearGradient id="shm-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240">
+      <stop offset="0" stop-color="#2A4A9F"/>
+      <stop offset="0.45" stop-color="#1D3557"/>
+      <stop offset="1" stop-color="#101B33"/>
+    </linearGradient>
+    <linearGradient id="shm-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240">
+      <stop offset="0" stop-color="#6FB8F5"/>
+      <stop offset="1" stop-color="#35348F"/>
+    </linearGradient>
+    <radialGradient id="shm-iris" gradientUnits="userSpaceOnUse" cx="122" cy="122" r="40">
+      <stop offset="0" stop-color="#6FB8F5"/>
+      <stop offset="0.6" stop-color="#3B6FE0"/>
+      <stop offset="1" stop-color="#35348F"/>
+    </radialGradient>
+  </defs>
 
-  <!-- Control tethers from two frame corners to the agent -->
-  <path d="M66 66 L104 92" fill="none" stroke="#6FA0C0" stroke-width="11" stroke-linecap="round"/>
-  <path d="M190 66 L152 92" fill="none" stroke="#6FA0C0" stroke-width="11" stroke-linecap="round"/>
+  <!-- Small-size mark: the shield, the eye, one graph crown. Fewer, bigger elements. -->
+  <path d="M128 16
+           C 156 32 186 40 212 44
+           C 214 98 212 136 203 165
+           C 192 202 165 226 128 244
+           C 91 226 64 202 53 165
+           C 44 136 42 98 44 44
+           C 70 40 100 32 128 16 Z"
+        fill="url(#shm-body)" stroke="url(#shm-rim)" stroke-width="9" stroke-linejoin="round"/>
 
-  <!-- Agent held at the centre -->
-  <polygon points="104,92 152,92 176,134 152,176 104,176 80,134"
-           fill="#2C5F87" stroke="#1D3557" stroke-width="8" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="7" stroke-linecap="round" opacity="0.9" fill="none">
+    <path d="M128 62 L128 102"/>
+    <path d="M86 80 L112 108"/>
+    <path d="M170 80 L144 108"/>
+  </g>
+  <circle cx="128" cy="60" r="13" fill="#8FD0FF"/>
+  <polygon points="86,68 96,73.5 96,84.5 86,90 76,84.5 76,73.5" fill="#5A8FE8"/>
+  <polygon points="170,68 180,73.5 180,84.5 170,90 160,84.5 160,73.5" fill="#5A8FE8"/>
 
-  <!-- Anchor points -->
-  <circle cx="104" cy="92" r="9" fill="#A8DADC" stroke="#1D3557" stroke-width="2.5"/>
-  <circle cx="152" cy="92" r="9" fill="#A8DADC" stroke="#1D3557" stroke-width="2.5"/>
+  <path d="M56 138 Q128 86 200 138 Q128 190 56 138 Z" fill="#EAF4FC"/>
+  <circle cx="128" cy="136" r="31" fill="url(#shm-iris)"/>
+  <circle cx="128" cy="136" r="13" fill="#101B33"/>
+  <circle cx="137" cy="126" r="6" fill="#EAF4FC"/>
 </svg>

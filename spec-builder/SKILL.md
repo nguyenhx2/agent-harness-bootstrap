@@ -1,6 +1,6 @@
 ---
 name: spec-builder
-version: 1.5.0
+version: 1.6.0
 description: Build a complete BA specification set (13-section structure under docs/specs/) for any project from raw input - an idea, meeting notes, a transcript, an existing PRD, or legacy docs. Use when the user asks to "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "chuẩn hóa tài liệu BA", or wants requirement docs scaffolded for a new or existing project.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---
@@ -132,6 +132,32 @@ rules themselves - those come from intake). 12 is what you draw the Phase 1 back
 unlike the others, harness-bootstrap has no automated step that reads it.
 Without the specs, `spec-guardian` has nothing to guard and requirement drift is undetectable.
 Full derivation and integration map: [`reference/ba-standards.md`](reference/ba-standards.md).
+
+### Living specs: /spec-ingest and /spec-retract
+
+The spec set is not write-once. Two commands ship with this skill (installed to
+`.claude/commands/` by the scaffold step, alongside the sections) and carry the update discipline:
+
+- **`/spec-ingest <source>`** - fold a new source (notes, transcript, legacy doc) into the
+  existing sections: statement-by-statement diff, conflicts surfaced never overwritten, new IDs
+  appended never renumbered, one revision-history row per ingest, and the ripples applied - the
+  glossary copy, the owning dev agent's FR list, the traceability graph.
+- **`/spec-retract <source|ID|claim>`** - the reverse: trace everything a bad source or wrong
+  claim touched, convert unsupported statements to `OI-nn` open issues instead of deleting them,
+  mark withdrawn IDs in place (numbers never come back), block affected tasks with a
+  `human_gate`, and rebuild the graph.
+
+Both record to `docs/context/tool-changelog.md`. Versioning is the revision history plus git - no
+side channel.
+
+### The specs graph
+
+When the spec set is complete (and after any later spec edit), if the repo already carries the
+harness scripts (`.claude/scripts/docs-graph.py` from harness-bootstrap), run:
+`python .claude/scripts/docs-graph.py` then `python .claude/scripts/graph-html.py`. The result is
+`docs/context/specs-graph.html` - a self-contained interactive graph of how the sections,
+requirements, ADRs, and tasks reference each other, with orphan IDs called out. If the harness is
+not installed yet, note that the graph arrives with harness-bootstrap's verify step and move on.
 
 ## Composes with harness-bootstrap
 

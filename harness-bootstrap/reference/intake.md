@@ -57,8 +57,8 @@ before any `.cursor/` exists.
 
 9. **[CONFIRM - `git remote -v` + `git config user.name`/`user.email`]** **Git platform and commit
    identity.** Platform: GitHub / GitLab, cloud or self-hosted (ask which!) / Bitbucket / none yet -
-   drives the CLI (`gh`/`glab`), PR-vs-MR terminology everywhere including command NAMES (`/review-mr`
-   vs `/review-pr`), and the CI file. Self-hosted GitLab: also capture the instance hostname and that CI
+   drives the CLI (`gh`/`glab`), the PR-vs-MR wording inside `/review-changes` and every doc (the
+   command name itself never varies), and the CI file. Self-hosted GitLab: also capture the instance hostname and that CI
    secrets are masked + protected. Identity: name/email registered on THAT platform - confirm it, a
    wrong email means misattributed commits.
 10. **[CONFIRM - `git symbolic-ref`/remote HEAD + `git log`; chat for the scope list]** **Default
@@ -74,15 +74,17 @@ before any `.cursor/` exists.
     **Test agent** - a dedicated `qa-test` agent (unit + e2e)? Which frameworks (default Vitest +
     Playwright; pytest etc. per stack), and the test/lint/build commands as actually run. If declined,
     skip the agent and `/test` but keep `rules/testing.md`.
-12. **[AQ, 3 options, "TDD + DDD (Recommended)" first]** **Development methodology** - how should the
+12. **[AQ, 3 options, "DDD (Recommended)" first]** **Development methodology** - how should the
     dev seats be disciplined?
-    - **TDD + DDD (Recommended)** (flags `tdd` + `ddd`) - red/green/refactor AND `rules/ddd.md`: the
-      spec glossary becomes the ubiquitous language, each dev agent's scope is a bounded context,
-      aggregate-root discipline applies. The two compose; this is the shipped posture.
-    - **TDD only** (flag `tdd`) - the tests-first contract without the domain-modeling discipline; for
-      projects with no meaningful domain layer (scripts, pipelines, pure infra).
-    - **DDD only** (flag `ddd`) - domain discipline with tests in the same change, not required first;
-      choose deliberately, it weakens the red/green proof.
+    - **DDD (Recommended)** (flag `ddd`) - `rules/ddd.md`: the spec glossary becomes the ubiquitous
+      language, each dev agent's scope is a bounded context, aggregate-root discipline applies.
+      Tests ship in the same change as the implementation, proving the acceptance criteria - they
+      are not required to come first, which keeps delivery speed.
+    - **TDD** (flag `tdd`) - red/green/refactor, tests strictly first. Stronger proof discipline,
+      measurably slower delivery; pick it when correctness pressure outweighs pace.
+    - **TDD + DDD** (both flags) - both disciplines at once. The strictest and slowest posture; the
+      two can pull against each other (test-first pacing vs model-first design), so choose this
+      deliberately, not as a default.
 13. **[AQ, two sub-parts, one call]** **Data sensitivity and AI product.** Does the system handle PII or
     regulated data (drives how strict `security-privacy.md`, the `/secret-scan` PII patterns, and the
     synthetic-data rule must be)? Is it an AI product, LLM-generated output shown to users (sets the `ai`
@@ -198,10 +200,11 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 24 gated actions + incident path | `{{GATED_ACTIONS}}`, `{{INCIDENT_CONTACT}}` |
 | - dependency manifests (from analysis) | `{{DEP_MANIFEST_GLOBS}}` |
 | - deploy command (from analysis or Q6) | `{{DEPLOY_CMD}}` |
+| - glossary seed rows (from spec section 03 when spec-builder hands off; `-` if none) | `{{GLOSSARY_SEED}}` |
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
 
 Flags are exactly: `ui`, `db`, `ai`, `audit`, `tdd`, `ddd`, `deploy_ask`, and exactly one of
-`windows` / `posix`. `tdd` and `ddd` are BOTH on by default; drop one only when the user explicitly picks a single methodology.
+`windows` / `posix`. `ddd` is the default methodology; `tdd` is opt-in (alone or combined) - never assume it.
 
 ### Restricted data paths (asked whenever any class above is Restricted)
 

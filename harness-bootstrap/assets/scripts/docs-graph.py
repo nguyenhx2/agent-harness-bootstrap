@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Build the DOCS knowledge graph: which documents define which IDs, and who references whom.
+
+This is the documentation twin of code-graph.py, with a different purpose: the code graph maps
+runtime dependency (what breaks if I change this module); the docs graph maps TRACEABILITY (which
+spec section, requirement, ADR, and task talk about the same thing). Stdlib only.
+
+Outputs, from the repo root:
+  .claude/state/docs-graph.json    machine-readable: docs, ids, reference edges
+  docs/context/docs-graph.md       agent-readable: mermaid graph + orphan/traceability table
+
+An edge A -> B means document A mentions an ID that document B defines (defines = B holds the
+ID's heading, table row, or the majority of its occurrences). IDs with no references and
+references to IDs nobody defines are both reported - they are the traceability failures.
+
+Usage:
+  python .claude/scripts/docs-graph.py             # build from cwd
+  python .claude/scripts/docs-graph.py --check     # exit 1 on orphans/undefined references
+"""
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import pathlib
+import re
+import sys
+from collections import defaultdict
+
+DOC_DIRS = ("docs",)
+SKIP_PARTS = {"node_modules", ".git", "context"}  # context/ holds generated graphs - never self-scan
+ID_RE = re.compile(
+    r"\b(FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|R)-\d{1,5}\b")
+DEFINING_HINT = re.compile(r"^\s*(?:#{1,6}\s.*|\|\s*)?\b(?P<id>(?:FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|R)-\d{1,5})\b")
+
+
+def doc_files(root: pathlib.Path) -> list[pathlib.Path]:
+    out = []
+    for d in DOC_DIRS:
+        base = root / d
+        if not base.exists():
+            continue
+        for p in sorted(base.rglob("*.md")):
+            if not (set(p.relative_to(root).parts) & SKIP_PARTS):
+                out.append(p)
+    return out
+
+
+def build(root: pathlib.Path) -> dict:
+    files = doc_files(root)
+    mentions: dict[str, dict[str, int]] = defaultdict(dict)   # id -> {doc: count}
+    definers: dict[str, str] = {}                              # id -> doc that defines it
+    define_score: dict[str, dict[str, int]] = defaultdict(dict)
+
+    for f in files:
+        rel = f.relative_to(root).as_posix()
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        ids = ID_RE.findall(text)  # findall returns the prefix group; re-scan for full IDs
+        for m in ID_RE.finditer(text):
+            full = m.group(0)
+            mentions[full][rel] = mentions[full].get(rel, 0) + 1
+        for line in text.splitlines():
+            dm = DEFINING_HINT.match(line)
+            if dm and (line.lstrip().startswith("#") or line.lstrip().startswith("|")):
+                full = dm.group("id")
+                define_score[full][rel] = define_score[full].get(rel, 0) + 2
+
+    for full, docs in mentions.items():
+        scored = {d: docs[d] + define_score.get(full, {}).get(d, 0) for d in docs}
+        definers[full] = max(scored, key=lambda d: (scored[d], -len(d)))
+
+    edges: dict[tuple[str, str], int] = defaultdict(int)
+    for full, docs in mentions.items():
+        home = definers[full]
+        for d in docs:
+            if d != home:
+                edges[(d, home)] += 1
+
+    orphans = sorted(full for full, docs in mentions.items()
+                     if len(docs) == 1 and sum(docs.values()) <= 1)
+
+    return {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "docs": sorted({d for docs in mentions.values() for d in docs} | {f.relative_to(root).as_posix() for f in files}),
+        "ids": {full: {"defined_in": definers[full], "mentioned_in": sorted(docs)}
+                for full, docs in sorted(mentions.items())},
+        "edges": [{"from": a, "to": b, "refs": n} for (a, b), n in sorted(edges.items())],
+        "orphan_ids": orphans,
+    }
+
+
+def write_outputs(root: pathlib.Path, graph: dict) -> None:
+    state = root / ".claude" / "state"
+    state.mkdir(parents=True, exist_ok=True)
+    (state / "docs-graph.json").write_text(json.dumps(graph, indent=2) + "\n", encoding="utf-8")
+
+    def nid(m: str) -> str:
+        return re.sub(r"[^A-Za-z0-9_]", "_", m)
+
+    linked = {e["from"] for e in graph["edges"]} | {e["to"] for e in graph["edges"]}
+    lines = [
+        "# Docs graph", "",
+        f"Generated {graph['generated_at']} by `.claude/scripts/docs-graph.py`. Do not edit by",
+        "hand - regenerate with `/docs-graph`. Purpose: traceability, not dependency - an edge",
+        "means these documents talk about the same requirement, decision, or task.", "",
+        "```mermaid", "flowchart LR",
+    ]
+    for d in sorted(linked):
+        label = d.split("/")[-1]
+        lines.append(f'  {nid(d)}["{label}"]')
+    for e in graph["edges"]:
+        lines.append(f'  {nid(e["from"])} -->|{e["refs"]}| {nid(e["to"])}')
+    lines += ["```", ""]
+    if graph["orphan_ids"]:
+        lines += ["## Orphan IDs (mentioned once, referenced nowhere)", ""]
+        lines += [f"- `{i}` (only in `{graph['ids'][i]['defined_in']}`)" for i in graph["orphan_ids"]]
+        lines += ["", "An orphan requirement is either unstarted work or a dead reference - triage it.", ""]
+    ctx = root / "docs" / "context"
+    ctx.mkdir(parents=True, exist_ok=True)
+    (ctx / "docs-graph.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--target", type=pathlib.Path, default=pathlib.Path("."))
+    ap.add_argument("--check", action="store_true", help="exit 1 if orphan IDs exist")
+    args = ap.parse_args()
+    root = args.target.resolve()
+    graph = build(root)
+    write_outputs(root, graph)
+    print(f"docs-graph: {len(graph['docs'])} docs, {len(graph['ids'])} IDs, "
+          f"{len(graph['edges'])} edges, {len(graph['orphan_ids'])} orphan(s) "
+          f"-> .claude/state/docs-graph.json + docs/context/docs-graph.md")
+    if args.check and graph["orphan_ids"]:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

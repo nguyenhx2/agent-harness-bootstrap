@@ -71,6 +71,11 @@ def canonical() -> dict[str, int]:
         "commands": len(list((ASSETS / "commands").glob("*.md"))),
         "hooks": len({p.stem for p in (ASSETS / "hooks").glob("*.*")
                       if p.suffix in (".sh", ".ps1")}),
+        # The eval case count, derived from the eval file itself - the "N/N" badge in the deck and
+        # the intro videos bakes it, and it drifted twice before this check existed.
+        "eval_cases": len(re.findall(r'^\s*\("[^"]+",\s*"[\w-]+",\s*[02],',
+                                     (ROOT / "eval/guardrail_eval.py").read_text(encoding="utf-8"),
+                                     re.M)),
     }
 
 
@@ -104,6 +109,21 @@ COUNT_CHECKS = [
 # The exact "after" byte figure that follows the known baseline constant in a before|after row. The
 # token columns are prefixed "~" and so are not captured; the detail-table rows do not carry the
 # baseline constant and so are covered by the summary rows instead.
+# The presentation deck and the intro-video sources bake several counts as display text. They are
+# not markdown, so the .md walk never sees them - and they drifted on every release until this list
+# existed. English phrasings only: every baked stat has an EN variant, and the VI/JA strings are
+# edited in the same pass.
+MEDIA_FILES = ["presentation/index.html"]
+MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py"]
+MEDIA_CHECKS = [
+    ("media command count", r"(\d+) commands\b", "commands"),
+    ("media hook count",    r"(\d+) (?:blocking )?hooks\b", "hooks"),
+    ("media agent count",   r"(\d+) agents\b", "agents"),
+]
+# "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
+# far from the canonical count (a video timestamp, a score in an example) is not either.
+EVAL_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
+
 BYTE_CHECKS = [
     ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
     ("write-path after bytes", r"95,064\s*\|\s*([\d,]{4,})",  "write_bytes_after"),
@@ -130,11 +150,14 @@ def self_test(c: dict[str, int]) -> list[str]:
         "rule count":            "{rules} rules - 6 always loaded",
         "command count":         "{commands} slash commands, two of them gated",
         "hook count":            "{hooks} blocking hooks",
+        "media command count":    "{commands} commands",
+        "media hook count":       "{hooks} blocking hooks",
+        "media agent count":      "{agents} agents",
         "read-path after bytes":  "| Read path | 234,196 | {read_bytes_after} | -63% |",
         "write-path after bytes": "| Write path | 95,064 | {write_bytes_after} | -85% |",
     }
     dead = []
-    for name, pat, key in CHECKS + COUNT_CHECKS + BYTE_CHECKS:
+    for name, pat, key in CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS:
         probe = lines[name].format(**c)
         if not re.search(pat, probe, re.I):
             dead.append(f"{name}: pattern never matches, so it can never fail")
@@ -164,6 +187,19 @@ def main() -> int:
         # naming the wrong number it fixed, for instance - not a claim the repo is making.
         text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
         rel = p.relative_to(ROOT).as_posix()
+        # Eval badge in prose: "26/26" near eval-ish words is a claim about the suite. This drifted
+        # across fifteen files at once while only the media files were scanned.
+        for m in EVAL_PAIR.finditer(text):
+            a, b = int(m.group(1)), int(m.group(2))
+            ctx = text[max(0, m.start() - 120):m.start() + 60].lower()
+            if a == b and a != c["eval_cases"] and a != 2 * c["eval_cases"] \
+                    and re.search(r"eval|guardrail|payload", ctx) \
+                    and not re.search(r"adapter|port|self-test", ctx) \
+                    and not re.search(r"->|→|\bwas\b|from", ctx):
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
+                      f"{c['eval_cases']}/{c['eval_cases']}")
+                bad += 1
         active = CHECKS + (COUNT_CHECKS if rel in COUNT_FILES else [])
         for name, pat, key in active:
             for m in re.finditer(pat, text, re.I):
@@ -180,6 +216,32 @@ def main() -> int:
                     line = text[:m.start()].count("\n") + 1
                     print(f"    MISMATCH  {rel}:{line}  {name}: says {got:,}, reality is {c[key]:,}")
                     bad += 1
+
+    media_paths = [ROOT / f for f in MEDIA_FILES if (ROOT / f).exists()]
+    for g in MEDIA_GLOBS:
+        media_paths.extend(sorted(ROOT.glob(g)))
+    for p in media_paths:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        rel = p.relative_to(ROOT).as_posix()
+        for name, pat, key in MEDIA_CHECKS:
+            for m in re.finditer(pat, text):
+                got = as_int(m.group(1))
+                if got != c[key]:
+                    line = text[:m.start()].count("\n") + 1
+                    print(f"    MISMATCH  {rel}:{line}  {name}: says {got}, reality is {c[key]}")
+                    bad += 1
+        for m in EVAL_PAIR.finditer(text):
+            a, b = int(m.group(1)), int(m.group(2))
+            # Only a pair sitting near the words eval/guardrail/payload is the eval badge; "5/5"
+            # next to "adapter" is the port self-test, and equal pairs elsewhere are not claims.
+            ctx = text[max(0, m.start() - 120):m.start() + 40].lower()
+            if a == b and a != c["eval_cases"] \
+                    and re.search(r"eval|guardrail|payload|ペイロード", ctx) \
+                    and "adapter" not in ctx and "5/5" != m.group(0):
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
+                      f"{c['eval_cases']}/{c['eval_cases']}")
+                bad += 1
 
     if bad:
         print(f"\n  {bad} figure(s) contradict reality. Fix the doc, or the code if the doc is right.")

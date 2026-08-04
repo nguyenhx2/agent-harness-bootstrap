@@ -40,12 +40,15 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 
 class Flow(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ---- title card -----------------------------------------------
         t = title_text("The operating flow", fs=46, color=WHITE)
@@ -141,6 +144,10 @@ class Flow(Scene):
         self.play(FadeOut(crash), GrowFromCenter(fresh), run_time=0.5)
         self.play(Create(resume), run_time=0.6)
         caption(self, "The board survives the crash - a fresh agent resumes where it stopped.", hold=2.2, y=-3.5, size=23)
-        self.wait(1.0)
-        self.play(FadeOut(VGroup(head, board, fresh, resume)), run_time=0.7)
+        self.wait(0.4)
+        self.play(FadeOut(VGroup(head, board, fresh, resume)), run_time=0.6)
+
+        # ---- brand end card ---------------------------------------------
+        card = logo_reveal(self)
         self.wait(0.2)
+        self.play(FadeOut(card), run_time=0.5)

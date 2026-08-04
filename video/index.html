@@ -13,7 +13,9 @@
     padding: 48px 20px 80px;
   }
   .wrap { max-width: 900px; margin: 0 auto; }
-  h1 { font-size: 28px; margin: 0 0 6px; }
+  .brandrow { display: flex; align-items: center; gap: 14px; margin: 0 0 6px; }
+  .brandrow img { width: 40px; height: 40px; flex: none; }
+  h1 { font-size: 28px; margin: 0; }
   .sub { color: #9aa7b4; margin: 0 0 40px; }
   h2.group {
     font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: #6b7684;
@@ -52,12 +54,15 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Agent Harness Bootstrap</h1>
+  <div class="brandrow">
+    <img src="../docs/assets/logo.svg" alt="Agent Harness Bootstrap logo" width="40" height="40">
+    <h1>Agent Harness Bootstrap</h1>
+  </div>
   <p class="sub">Six explainer clips. They play here in the browser - no download needed. Every clip is captioned, so sound is not required.</p>
 
   <div class="clip flagship">
     <span class="badge">Start here</span>
-    <h3>The complete solution <span class="dur">~54s</span></h3>
+    <h3>The complete solution <span class="dur">~55s</span></h3>
     <p>The whole product in one clip: the four pain points, then spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff. Each pain visibly flips from red to green as its fix lands.</p>
     <video src="mp4/04-solution.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -69,7 +74,7 @@
   <h2 class="group">The short introductions</h2>
 
   <div class="clip">
-    <h3>1. What it is and why <span class="dur">~33s</span></h3>
+    <h3>1. What it is and why <span class="dur">~34s</span></h3>
     <p>An unconstrained agent hallucinates, forgets on compaction, and bills at the top tier. Two skills build a harness.</p>
     <video src="mp4/01-overview.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -79,7 +84,7 @@
   </div>
 
   <div class="clip">
-    <h3>2. The operating flow <span class="dur">~29s</span></h3>
+    <h3>2. The operating flow <span class="dur">~31s</span></h3>
     <p>spec-builder writes the contract; harness-bootstrap reads the code and scaffolds in ~0.2s; then the task loop runs.</p>
     <video src="mp4/02-flow.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -89,8 +94,8 @@
   </div>
 
   <div class="clip">
-    <h3>3. The control layers <span class="dur">~31s</span></h3>
-    <p>Deny list, hooks, path-scoped rules, review gates. The guardrails are shell scripts, so Opus to Haiku is identical safety.</p>
+    <h3>3. The control layers <span class="dur">~32s</span></h3>
+    <p>Deny list, hooks, the spawn boundary, path-scoped rules, review gates. The guardrails are shell scripts, so Opus to Haiku is identical safety.</p>
     <video src="mp4/03-layers.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
       <a href="html/03-layers.html">Open the HTML animation</a>
@@ -111,8 +116,8 @@
   </div>
 
   <div class="clip">
-    <h3>6. harness-bootstrap in depth <span class="dur">~59s</span></h3>
-    <p>Mode, then the mandatory codebase analysis and Inventory Report, intake and the tool questionnaire, a roster with explicit model and effort, the scaffold that reports ADDED / KEPT / CONFLICT and never clobbers, then orchestration wiring. Mirrors diagram 2 in docs/FLOWS.md.</p>
+    <h3>6. harness-bootstrap in depth <span class="dur">~68s</span></h3>
+    <p>Mode, then the mandatory codebase analysis and Inventory Report, intake and the tool questionnaire, a roster with explicit model and effort, skill discovery, the scaffold that reports ADDED / KEPT / CONFLICT and never clobbers, orchestration wiring, and building both knowledge graphs with their HTML exports. Mirrors diagram 2 in docs/FLOWS.md.</p>
     <video src="mp4/06-harness-bootstrap.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
       <a href="html/06-harness-bootstrap.html">Open the HTML animation</a>

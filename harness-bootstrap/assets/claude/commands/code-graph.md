@@ -18,8 +18,10 @@ What exists:
 Procedure:
 
 1. Check first: `python .claude/scripts/code-graph.py --check`. Up to date: say so, stop.
-2. Rebuild: `python .claude/scripts/code-graph.py`. This rewrites both outputs and clears the
-   stale log. Show the module/edge counts from its output.
+2. Rebuild with the recorded engine (builtin: `python .claude/scripts/code-graph.py`; external:
+   the MCP tool, writing the same files). This rewrites both outputs and clears the stale log.
+   Show the module/edge counts. Then refresh the HTML exports:
+   `python .claude/scripts/graph-html.py`.
 3. Read the regenerated `docs/context/code-graph.md` and report anything structural that CHANGED
    since the last build (`git diff docs/context/code-graph.md`): a new cross-module edge, a module
    whose fan-in jumped, a module that appeared or vanished. A new surprise edge is either a missing
@@ -33,6 +35,21 @@ How agents use it (this is the point of the graph):
   cross-module edits as ever - the graph shows why the refusal matters.
 - `/board-audit` treats a stale graph as a finding.
 
-Limits, stated honestly: edges come from static regex import extraction (stdlib only, no install).
-A richer index - a GitNexus or codegraph MCP server, an LSP - can replace the extraction, but keep
-writing the same two output files: the file contract, not the extractor, is what agents depend on.
+Two graphs, two purposes: this command maps DEPENDENCY (what breaks if I change this module);
+`/docs-graph` maps TRACEABILITY (which documents talk about the same requirement). Run both;
+`graph-html.py` exports both as self-contained interactive HTML
+(`docs/context/harness-graph.html` + `docs/context/specs-graph.html`).
+
+Engine choice - ask the user once and record it in `docs/context/tool-changelog.md`:
+
+- **builtin** (default): the stdlib regex extractor in `.claude/scripts/code-graph.py`. Zero
+  install, runs anywhere the harness runs, best-effort static edges.
+- **GitNexus / codegraph**: if a GitNexus or codegraph MCP server (or comparable code-index tool)
+  is available in this session, it may replace the extraction - richer call-level edges, real
+  symbol resolution. The contract does not change: whatever engine runs, it must write the same
+  `.claude/state/code-graph.json` shape and `docs/context/code-graph.md`, because the files, not
+  the extractor, are what agents and hooks depend on. If the tool is unavailable mid-project, the
+  builtin engine takes back over on the next `/code-graph` run - degraded edges, same files.
+
+Limits, stated honestly: builtin edges are static regex extraction - a missing edge is absence of
+evidence, not evidence of isolation. An external engine narrows that gap; it does not remove it.

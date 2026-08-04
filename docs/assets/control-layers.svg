@@ -14,7 +14,7 @@
   <!-- HARD 2 - hooks -->
   <rect x="42" y="118" width="796" height="420" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="62" y="142" font-size="14" font-weight="700" fill="#D8F3DC">HARD 2   PreToolUse hooks, exit 2   -&gt;   what it cannot DO</text>
-  <text x="62" y="160" font-size="13" fill="#D8F3DC">Blocks: commit to main, bad commit message, edit to an Accepted ADR, read of .env.   eval 15/15, model-independent.</text>
+  <text x="62" y="160" font-size="13" fill="#D8F3DC">Blocks: commit to main, bad commit message, edit to an Accepted ADR, read of .env.   eval 26/26, model-independent.</text>
 
   <!-- HARD 3 - tools -->
   <rect x="64" y="166" width="752" height="358" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>

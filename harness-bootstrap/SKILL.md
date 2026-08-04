@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.5.0
+version: 1.6.0
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -83,6 +83,9 @@ seats after bootstrap; the wire re-reviews content and records to `docs/context/
 **3. Detect the dev OS.** This gates the hook flavor and the settings registration; get it wrong and the
 guardrails never fire, silently. Windows → `.ps1` hooks. macOS/Linux → `.sh`. Mixed-OS team: pick the
 majority and record the gap in `.claude/hooks/README.md`. Set the `windows` or `posix` flag accordingly.
+Only hooks carry the flavor split: everything in `.claude/scripts/` is Python invoked as `python`,
+flavor-neutral by construction - never generate an OS-specific variant of a script that stdlib
+Python already makes portable.
 
 **4. Run the scaffolder.** Write `vars.json` from the intake answers, then:
 
@@ -95,14 +98,15 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 ```json
 {
   "vars":  { "PROJECT_NAME": "...", "DEFAULT_BRANCH": "main", "PR_OR_MR": "PR", "...": "..." },
-  "flags": ["posix", "ui", "db", "ai", "tdd", "ddd"]
+  "flags": ["posix", "ui", "db", "ai", "ddd"]
 }
 ```
 
 Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `ai`, `audit`, `tdd`,
-`ddd`, `deploy_ask`, and exactly one of `windows` / `posix`. Methodology: `tdd` AND `ddd` are both on
-by default - red/green/refactor plus `rules/ddd.md`'s bounded-context discipline compose; drop one
-only when intake explicitly picked a single methodology. `deploy_ask` moves `{{DEPLOY_CMD}}` from `permissions.deny` to
+`ddd`, `deploy_ask`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default -
+`rules/ddd.md`'s bounded-context discipline, with tests shipping in the same change as the
+implementation. `tdd` (tests strictly first) is opt-in, alone or combined - it buys proof
+discipline at a real cost in delivery speed, so intake asks rather than assumes. `deploy_ask` moves `{{DEPLOY_CMD}}` from `permissions.deny` to
 `permissions.ask` - set it only when intake's control-level question chose agent-initiated deploys.
 
 The scaffolder **never overwrites an existing file**. It reports `ADDED` / `KEPT` (already identical) /
@@ -133,16 +137,24 @@ this is still far cheaper than regenerating them - but say so, and fix Python.
 - `AGENTS.md` names the orchestrator as the entry point for multi-step work and states the standard
   feature flow. `CLAUDE.md` is a thin `@AGENTS.md` import plus the Claude-specific bits - do not
   maintain two copies.
-- Task lifecycle: [`reference/task-control.md`](reference/task-control.md). The orchestrator and
-  `task-tracking.md` LINK to it; they do not restate it.
+- Task lifecycle: [`reference/task-control.md`](reference/task-control.md). The orchestrator cites
+  it by name for the attempt and escalation discipline; `task-tracking.md` carries only the
+  session-log cadence. Neither duplicates the full lifecycle - this reference stays the single
+  source.
 
 **7. Verify.** Run every checkable item in the quality gate below as an actual **`Bash`** tool call and
 show its output in the response - never report a check as passed without having run it. Then smoke-test
 the loop end to end: create one real task file, register it in master-plan, append a session-log row,
-and `/task-resume` it. Finally, build the initial code graph - `python .claude/scripts/code-graph.py`
-run via `Bash` from the repo root - so the orchestrator's first dispatch already has the module map
-(`docs/context/code-graph.md`); on a greenfield repo with no source yet, note that `/code-graph`
-should be run after the first module lands.
+and `/task-resume` it, then validate the board you just
+created: `python .claude/scripts/board-check.py` must exit 0 (it is what `/board-audit` runs first).
+Finally, build BOTH knowledge graphs and their HTML exports - this is exactly what the installed
+`/code-graph` and `/docs-graph` commands do, so run them (or their scripts directly:
+`python .claude/scripts/code-graph.py`, `python .claude/scripts/docs-graph.py`, then
+`python .claude/scripts/graph-html.py`). The result is the two interactive files the user opens in
+a browser: `docs/context/harness-graph.html` (agents, hooks, rules, commands, settings, modules,
+and the docs that bind them) and `docs/context/specs-graph.html` (document-to-document
+traceability). On a greenfield repo with no source yet, the code graph waits for the first module;
+the docs graph works as soon as specs exist.
 
 **8. Port to the other tools selected in step 1.** If the intake selected Cursor or Codex, run the
 porter after scaffolding - `--tool cursor`, `--tool codex`, or `--tool all`:
@@ -157,7 +169,8 @@ rules and the Bash-based guards port exactly. `AGENTS.md` is already read native
 ## Quality gate
 
 **Structure**
-- [ ] `.claude/` has `settings.json`, `rules/`, `agents/`, `commands/`, `hooks/` (+README), and `docs/`
+- [ ] `.claude/` has `settings.json`, `rules/`, `agents/`, `commands/`, `hooks/` (+README),
+      `scripts/` (code-graph, docs-graph, graph-html, board-check), and `docs/`
       has `README.md`, `specs/`, `requirements/`, `architecture/`, `tasks/` (master-plan + active +
       pending + done), `context/`, `templates/`.
 - [ ] Every path referenced by an agent, command, or rule exists. No references to agents that were not

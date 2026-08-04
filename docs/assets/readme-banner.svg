@@ -1,4 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Agent Harness Bootstrap">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" width="1600" height="400" role="img" aria-label="Agent Harness Bootstrap - a governed multi-agent harness for Claude Code">
+  <defs>
+    <linearGradient id="bn-edge" gradientUnits="userSpaceOnUse" x1="200" y1="70" x2="200" y2="330">
+      <stop offset="0" stop-color="#6FA0C0"/>
+      <stop offset="0.55" stop-color="#2C5F87"/>
+      <stop offset="1" stop-color="#1D3557"/>
+    </linearGradient>
+    <linearGradient id="bn-node" gradientUnits="userSpaceOnUse" x1="200" y1="70" x2="200" y2="330">
+      <stop offset="0" stop-color="#7FB2D4"/>
+      <stop offset="1" stop-color="#2C5F87"/>
+    </linearGradient>
+    <linearGradient id="bn-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5F8FC"/>
+      <stop offset="1" stop-color="#E8EFF7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="400" fill="url(#bn-bg)"/>
+
+  <!-- faint oversized shield echo, right side -->
+  <g opacity="0.08" transform="translate(1150,10) scale(1.5)">
+    <path d="M128 18 C154 32 182 40 208 44 C210 96 208 132 200 160 C190 196 164 222 128 240 C92 222 66 196 56 160 C48 132 46 96 48 44 C74 40 102 32 128 18 Z"
+          fill="none" stroke="#1D3557" stroke-width="10"/>
+    <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="#1D3557"/>
+    <circle cx="128" cy="130" r="27" fill="#F5F8FC"/>
+  </g>
+
+  <!-- the mark: shield, eye, and the governed graph -->
+  <g transform="translate(96,60) scale(1.1)">
+
   <defs>
     <!-- The shield: guardrails. Deep navy sinking to near-black at the point, electric rim light. -->
     <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240">
@@ -59,4 +88,19 @@
   </g>
   <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
   <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+
+  </g>
+
+  <!-- wordmark -->
+  <g font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+    <text x="440" y="185" font-size="84" font-weight="700" fill="#1D3557" letter-spacing="-1">
+      Agent Harness Bootstrap
+    </text>
+    <text x="443" y="248" font-size="34" font-weight="400" fill="#2C5F87">
+      The frame that lets AI agents operate autonomously - and safely.
+    </text>
+    <text x="443" y="305" font-size="26" font-weight="400" fill="#3E6E93" opacity="0.95">
+      Specs both of you understand. A team fitted to your repo. Guardrails that block, not advise.
+    </text>
+  </g>
 </svg>

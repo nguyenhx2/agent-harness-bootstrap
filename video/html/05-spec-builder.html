@@ -68,12 +68,36 @@
   .pulse-b{animation:pulseb .9s ease}
   @keyframes pulseb{0%{box-shadow:0 0 0 0 rgba(168,218,220,.5)}100%{box-shadow:0 0 0 22px rgba(168,218,220,0)}}
   .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
   .hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
 </style>
 </head>
 <body>
 <div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
   <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
 
   <!-- Scene 0: title -->
   <section class="scene" data-s="0">
@@ -258,6 +282,12 @@
     </div>
   </section>
 
+  <!-- Scene 9: brand end card -->
+  <section class="scene" data-s="9">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
   <div class="caption" id="cap"></div>
 </div>
 
@@ -322,6 +352,7 @@
       at(500,function(){say('Everything unresolved is surfaced to the human, not smoothed over.')});
       at(3800,function(){say('Handoff: the contract exists. Now bootstrap the harness that implements it.')});
     }},
+    {s:9,d:2400,run:function(){}},
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
 

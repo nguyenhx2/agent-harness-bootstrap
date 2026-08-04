@@ -38,6 +38,8 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 AMBER = "#FFBA08"
@@ -93,6 +95,7 @@ PX = -4.3  # pain column centre x
 class Solution(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ============ title =============================================
         t = title_text("The complete solution", fs=46, color=WHITE)
@@ -206,7 +209,7 @@ class Solution(Scene):
         grid = VGroup(
             box("15 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("15 rules\n6 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("20 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("21 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("9 blocking hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
@@ -292,7 +295,7 @@ class Solution(Scene):
         caption(self, "Contract, enforcement, durable state, a chosen bill.", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("guardrail eval 25/25", GREEN_HI, fs=20),
+            tag("guardrail eval 26/26", GREEN_HI, fs=20),
             tag("Opus -> Haiku: byte-identical safety", GREEN_HI, fs=20),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
@@ -306,6 +309,10 @@ class Solution(Scene):
         self.play(FadeIn(ev, lag_ratio=0.3), run_time=0.55)
         caption(self, "Guardrails are shell scripts and glob rules - so they are model-independent.", hold=1.5, y=-3.4, size=22)
         self.play(FadeIn(ports), run_time=0.4)
-        self.wait(1.7)
+        self.wait(1.0)
         self.play(FadeOut(VGroup(phead, payoff, ev, ports)), run_time=0.6)
-        self.wait(0.25)
+
+        # ============ Beat 6: brand end card ============================
+        card = logo_reveal(self)
+        self.wait(0.2)
+        self.play(FadeOut(card), run_time=0.5)

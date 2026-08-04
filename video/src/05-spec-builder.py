@@ -40,6 +40,8 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 AMBER = "#FFBA08"
@@ -48,6 +50,7 @@ AMBER = "#FFBA08"
 class SpecBuilder(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ---- title card -----------------------------------------------
         t = title_text("spec-builder", fs=52, color=WHITE)
@@ -262,6 +265,10 @@ class SpecBuilder(Scene):
         self.play(GrowFromCenter(sb2), Create(ah1), GrowFromCenter(contract), FadeIn(csub), run_time=0.8)
         self.play(Create(ah2), GrowFromCenter(hb), run_time=0.6)
         caption(self, "Handoff: the contract exists. Now bootstrap the harness that implements it.",
-                hold=1.7, y=-3.5, size=24)
-        self.play(FadeOut(VGroup(head8, surfaced, sb2, contract, csub, hb, ah1, ah2)), run_time=0.7)
-        self.wait(0.3)
+                hold=1.0, y=-3.5, size=24)
+        self.play(FadeOut(VGroup(head8, surfaced, sb2, contract, csub, hb, ah1, ah2)), run_time=0.6)
+
+        # ---- brand end card ---------------------------------------------
+        card = logo_reveal(self)
+        self.wait(0.2)
+        self.play(FadeOut(card), run_time=0.5)
