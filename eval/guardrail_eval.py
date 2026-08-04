@@ -72,7 +72,12 @@ VARS = {
     "flags": ["posix", "ui", "db", "ai", "tdd", "ddd"],
 }
 
-# (name, hook, expected_exit, payload_builder)  exit 2 = BLOCKED, 0 = allowed
+# (name, hook, expected_exit, payload_builder, assertions={})  exit 2 = BLOCKED, 0 = allowed.
+# `assertions` is optional and checks pr.stdout in addition to the exit code:
+#   {"contains": "text"}      stdout must contain this substring - proves an advisory hook's
+#                              additionalContext actually fired, not just that it didn't crash.
+#   {"not_contains": "text"}  stdout must NOT contain this substring - proves an advisory hook
+#                              stayed quiet when nothing warranted a nudge.
 def suite(repo: str) -> list[tuple]:
     def p(tool: str, **ti) -> str:
         return json.dumps({"cwd": repo, "tool_name": tool, "tool_input": ti})
@@ -98,6 +103,17 @@ def suite(repo: str) -> list[tuple]:
         ("allow: write seat with a task",    "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TASK-001: run the suite, log results")),
         ("allow: allowlisted Explore",       "guard-agent-spawn", 0, p("Agent", subagent_type="Explore", prompt="find the auth module")),
         ("allow: graph-stale never blocks",  "graph-stale",       0, p("Edit", file_path="src/core/auth.py")),
+
+        # --- guard-agent-scope: advisory, never blocks, proven by CONTENT not just exit code ---
+        ("advisory: cross-module write nudges", "guard-agent-scope", 0,
+         p("Edit", file_path="src/billing/invoice.ts"), {"contains": "src/billing"}),
+        ("advisory: in-scope write stays quiet", "guard-agent-scope", 0,
+         p("Edit", file_path="src/auth/session.ts"), {"not_contains": "additionalContext"}),
+
+        # --- graph-stale: past 20 accumulated edits it also nudges /code-graph ---
+        ("advisory: graph-stale nudges past 20 edits", "graph-stale", 0,
+         p("Edit", file_path="src/other/thing.py"), {"contains": "/code-graph"}),
+
         ("allow: read source",               "protect-secrets",  0, p("Read", file_path="src/index.ts")),
         ("allow: run tests",                 "protect-secrets",  0, p("Bash", command="npm test")),
         ("allow: conventional commit",       "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): add endpoint"')),
@@ -157,10 +173,33 @@ def main() -> int:
         (adr / "ADR-001-x.md").write_text("---\nstatus: Accepted\n---\n", encoding="utf-8")
         (adr / "ADR-002-y.md").write_text("---\nstatus: Proposed\n---\n", encoding="utf-8")
         #  - guard-agent-spawn requires a write-capable dispatch to name a REGISTERED task, so the
-        #    must-allow case needs a real task file on the board.
+        #    must-allow case needs a real task file on the board. guard-agent-scope needs that same
+        #    task to carry an `owner:` and a "Related files and modules:" line - it is the ONLY
+        #    Active task, so it doubles as the fixture for both hooks.
         tasks = repo / "docs/tasks/active"
         tasks.mkdir(parents=True, exist_ok=True)
-        (tasks / "TASK-001-fixture.md").write_text("---\ntitle: fixture\nstatus: Active\n---\n", encoding="utf-8")
+        (tasks / "TASK-001-fixture.md").write_text(
+            "---\ntitle: fixture\nstatus: Active\nowner: auth-dev\n---\n\n"
+            "## Inputs and context\n\n- Related files and modules: src/auth\n",
+            encoding="utf-8")
+        #  - guard-agent-scope compares an edited file's module owner (code-graph.json) against the
+        #    sole Active task's owner: src/auth is IN the task's named scope (quiet); src/billing is
+        #    NOT, and is owned by a different agent (nudge).
+        state = repo / ".claude/state"
+        state.mkdir(parents=True, exist_ok=True)
+        (state / "code-graph.json").write_text(json.dumps({
+            "generated_at": "2026-01-01T00:00:00+00:00",
+            "modules": {
+                "src/auth": {"files": ["src/auth/session.ts"], "owner": "auth-dev"},
+                "src/billing": {"files": ["src/billing/invoice.ts"], "owner": "billing-dev"},
+            },
+            "edges": [],
+        }), encoding="utf-8")
+        #  - graph-stale only nudges past 20 accumulated edits; seed 20 so the very next append (in
+        #    the suite below) crosses the threshold regardless of what else in the suite also writes
+        #    to this file first.
+        (state / "code-graph.stale").write_text(
+            "".join(f"src/seed/f{i}.py\n" for i in range(20)), encoding="utf-8")
         for cmd in (["git", "init", "-q", "-b", "main", "."],
                     ["git", "config", "user.email", "eval@local"],
                     ["git", "config", "user.name", "eval"],
@@ -174,7 +213,9 @@ def main() -> int:
         posix_cwd = repo.as_posix()
 
         results = []
-        for name, hook, want, payload in suite(posix_cwd):
+        for entry in suite(posix_cwd):
+            name, hook, want, payload = entry[:4]
+            assertions = entry[4] if len(entry) > 4 else {}
             if not (repo / ".claude/hooks" / f"{hook}.sh").is_file():
                 results.append({"name": name, "hook": hook, "status": "MISSING"})
                 continue
@@ -184,6 +225,10 @@ def main() -> int:
             pr = subprocess.run(["bash", f".claude/hooks/{hook}.sh"], input=payload,
                                 capture_output=True, text=True, cwd=str(repo))
             ok = pr.returncode == want
+            if ok and "contains" in assertions:
+                ok = assertions["contains"] in pr.stdout
+            if ok and "not_contains" in assertions:
+                ok = assertions["not_contains"] not in pr.stdout
             results.append({"name": name, "hook": hook, "want": want,
                             "got": pr.returncode, "status": "pass" if ok else "FAIL"})
     finally:
