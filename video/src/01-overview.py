@@ -39,12 +39,15 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 
 class Overview(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ---- Beat 0: core message -------------------------------------
         line1 = Text(
@@ -175,6 +178,10 @@ class Overview(Scene):
 
         self.play(FadeIn(ports, lag_ratio=0.3, shift=0.15 * UP), run_time=1.0)
         self.play(FadeIn(sub, shift=0.1 * UP), run_time=0.6)
-        self.wait(2.6)
-        self.play(FadeOut(VGroup(payoff, ports, sub)), run_time=0.8)
+        self.wait(1.6)
+        self.play(FadeOut(VGroup(payoff, ports, sub)), run_time=0.6)
+
+        # ---- Beat 4: brand end card -------------------------------------
+        card = logo_reveal(self)
         self.wait(0.3)
+        self.play(FadeOut(card), run_time=0.5)

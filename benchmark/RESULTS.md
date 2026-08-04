@@ -1,58 +1,87 @@
 # Benchmark results
 
-## Summary
+`harness-bootstrap` against `project-bootstrap`, the predecessor skill it replaces. Everything below
+is counted from the files on disk (see [Methodology](#methodology)) and reproduced by one command.
 
-`harness-bootstrap` against `project-bootstrap`, the predecessor skill it replaces:
+## The three goals this benchmark proves
+
+1. **Cheap sessions** - the context tax an agent pays on every turn. A rule with no `paths:`
+   frontmatter loads into every session of every agent, forever. That is rent, not a one-time cost.
+2. **Fast onboarding** - what a fresh model must read before it can act. The old skill's hooks,
+   commands, rules and templates were fenced code blocks inside markdown; to use them, the model had
+   to read all of them.
+3. **Safe writes** - what the scaffolder writes byte-for-byte vs what a model would have to
+   hand-type. A byte a model hand-types is a byte it can drop, garble, or invent. A byte the
+   scaffolder copies cannot.
+
+## At a glance
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 107,311 | -54% |
+| Read path (bytes the model must pull into context) | 234,196 | 108,591 | -54% |
 | Read path (files read) | 24 | 9 | -62% |
 | Write path (bytes the model must author) | 95,064 | 13,881 | -85% |
-| Rule content kept out of the default session | - | 67% | - |
+| Session tax kept out of every launch | - | 67% | - |
 | Scaffold time | - | ~0.2s | - |
 
-## What is measured and what is estimated
+## Goal 1 - Cheap sessions
 
-- **Byte columns are exact.** They are counted from the files on disk.
-- **Token columns are estimated** at 3.6 chars/token, because the run that produced this file had no
-  API key. Tokens are what you are billed for and they are not a fixed multiple of bytes, so treat
-  the token columns as an order of magnitude, not a quote. The script emits measured tokens when
-  `ANTHROPIC_API_KEY` is present, and labels the source either way.
-- **The write-path baseline is a proxy.** The old skill's output was not deterministic; it varied per
-  run. It is sized here by the bytes of the template packs it had to reproduce, which is the closest
-  countable stand-in, and is if anything conservative: the old skill also authored the rules, the
-  agents, `CLAUDE.md` and the docs tree from prose briefs, none of which is counted here.
-- **This measures the harness, not the outcome.** A cheaper bootstrap that produced a worse harness
-  would be a bad trade. The correctness claims - hooks that actually block, rules that actually load,
-  a task board the orchestrator can actually see - are covered by the tests in the repo, not by this
-  benchmark.
-- **Cost across model tiers is modelled, not measured.** `benchmark/model_cost.py` computes what a
-  roster would cost from published prices and a stated workload. Its assumptions are at the top of
-  the file and are editable. It cannot tell you whether a cheaper roster produces acceptable work;
-  that is a quality question, and `eval/` measures only the safety floor.
-- **Not measured: the per-dispatch cost of tool schemas.** Every tool in an agent's `tools:` list
-  ships its schema on every request of that agent's run. Narrow grants reduce that, and the roster
-  applies them, but quantifying it needs runtime instrumentation this script does not have.
+67% of rule content stays out of the default session: 6 unconditional rules load every time; 9
+path-scoped rules load only when Claude actually touches a matching file. The database agent no
+longer carries the frontend rules; the UI agent no longer carries the migration-safety rules.
 
-## 1. Read path - what the model must pull into context to do one bootstrap
+```mermaid
+xychart-beta
+    title "Rule bytes loaded per session: always vs on demand"
+    x-axis ["Unconditional - 6 rules, every session", "Path-scoped - 9 rules, on demand"]
+    y-axis "Bytes" 0 --> 60000
+    bar [25731, 51785]
+```
 
-The old skill kept its hooks, commands, rules and templates as fenced code blocks inside markdown
-"packs". To use them, the model had to read all of them.
+| | Rules | Bytes | Tokens (est.) |
+|---|---:|---:|---:|
+| Unconditional (always loaded) | 6 | 25,731 | ~7,100 |
+| Path-scoped (loaded on demand) | 9 | 51,785 | ~14,400 |
+
+The six that stay unconditional are the ones no glob can scope: `00-overview`, `agent-guardrails`,
+`task-tracking`, `conventional-commits` (governs commit *messages*, not files, so no `paths:` pattern
+can ever match it - which is why it is kept under 25 lines on purpose), and the two governance rules
+`model-policy` and `ai-governance`, which decide what may be sent where before any file is touched.
+
+## Goal 2 - Fast onboarding
+
+The new skill reads `SKILL.md` plus seven reference docs - 9 files. It never reads `assets/`: the
+scaffolder copies those files directly, so they never enter the context window at all.
+
+```mermaid
+xychart-beta
+    title "Read path: bytes pulled into context per bootstrap"
+    x-axis ["project-bootstrap (before)", "harness-bootstrap (after)"]
+    y-axis "Bytes" 0 --> 250000
+    bar [234196, 108094]
+```
 
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 9 | 107,311 | ~30,000 |
+| harness-bootstrap | 9 | 108,591 | ~30,000 |
 | **Reduction** | **-62%** | **-54%** | **-54%** |
 
-The new skill reads `SKILL.md` plus seven reference docs. It never reads `assets/`: the scaffolder
-copies those files directly, so they never enter the context window at all.
+## Goal 3 - Safe writes
 
-## 2. Write path - what the model must generate as output tokens
+Output tokens cost 5x input across every current model, and the old skill's core loop was *read
+1,350 lines of assets, then retype them*. What the new skill still authors by hand is what cannot be
+templated - `tech-stack.md`, `coding-standards.md`, `git-workflow.md`, the orchestrator's routing
+table, and each dev agent's scope. Those are decisions about a specific repo; everything else is a
+file copy.
 
-Output tokens cost 5x input across every current model, and the old skill's core loop was *read 1,350
-lines of assets, then retype them*.
+```mermaid
+xychart-beta
+    title "Write path: bytes the model must author as output"
+    x-axis ["project-bootstrap (before)", "harness-bootstrap (after)"]
+    y-axis "Bytes" 0 --> 100000
+    bar [95064, 13881]
+```
 
 | | Files authored | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
@@ -60,41 +89,27 @@ lines of assets, then retype them*.
 | harness-bootstrap | 3 + `vars.json` | 13,881 | ~3,900 |
 | **Reduction** | | **-85%** | **-85%** |
 
-What the new skill still authors by hand is what cannot be templated: `tech-stack.md`,
-`coding-standards.md`, `git-workflow.md`, the orchestrator's routing table, and each dev agent's
-scope. Those are decisions about a specific repo. Everything else is a file copy.
+The scaffolder is the other half of "safe": a first run takes **~0.2s** (varies 0.15-0.30s across
+runs), creates 89 paths, and exits 0. A re-run reports `KEPT` with 0 conflicts - nothing clobbered.
+An unresolved `{{VAR}}` makes it exit non-zero rather than ship a placeholder into a rule. That
+comparison is not a fifth of a second against some other number of seconds; it is deterministic file
+copying against a model generating ~26,000 output tokens, which takes minutes, costs real money, and
+can hallucinate a hook that does not run.
 
-## 3. Session tax - the cost paid on every session, not once
+## Methodology
 
-A file in `.claude/rules/` with no `paths:` frontmatter loads at launch into every session of every
-agent, at the same priority as `CLAUDE.md`. It is not a one-time cost; it is rent.
-
-| | Rules | Bytes | Tokens (est.) |
-|---|---:|---:|---:|
-| Unconditional (always loaded) | 6 | 25,667 | ~7,100 |
-| Path-scoped (loaded on demand) | 9 | 51,785 | ~14,400 |
-
-**67% of the rule content is kept out of the default session.** The database agent no longer carries
-the frontend rules; the UI agent no longer carries the migration-safety rules. They load when Claude
-actually touches a matching file.
-
-The six that stay unconditional are the ones no glob can scope: `00-overview`, `agent-guardrails`,
-`task-tracking`, `conventional-commits` (which governs commit *messages*, not files, so no `paths:`
-pattern can ever match it; that is why it is deliberately kept under 25 lines), and the two
-governance rules `model-policy` and `ai-governance`, which decide what may be sent where *before* any
-file is touched.
-
-## 4. Scaffold - the deterministic path
-
-| | |
-|---|---|
-| First run | **~0.2s** (varies 0.15-0.30s across runs), 86 paths created, exit 0 |
-| Re-run (idempotency) | reports `KEPT`, 0 conflicts, nothing clobbered |
-| Unresolved `{{VAR}}` | exits non-zero, rather than shipping a placeholder into a rule |
-
-The comparison is not a fifth of a second against some other number of seconds. It is a fifth of a
-second of deterministic file copying against a model generating ~26,000 output tokens, which takes
-minutes of wall-clock, costs real money, and can hallucinate a hook that does not run.
+- **Bytes are exact**, counted from the files on disk. **Tokens are estimated** at 3.6 chars/token
+  when no `ANTHROPIC_API_KEY` is set (this run); the script uses the real `count_tokens` endpoint and
+  labels the source either way when a key is present.
+- **The write-path baseline is a proxy.** The old skill's output was not deterministic. It is sized
+  here by the bytes of the template packs it had to reproduce - the closest countable stand-in, and
+  conservative: the old skill also authored the rules, agents, `CLAUDE.md` and docs tree from prose
+  briefs, none of which is counted here.
+- **This measures the harness, not the outcome.** A cheaper bootstrap that produced a worse harness
+  would be a bad trade. Correctness claims - hooks that actually block, rules that actually load - are
+  covered by `eval/guardrail_eval.py`, not by this benchmark.
+- **Not measured here:** cost across model tiers (`benchmark/model_cost.py` models that separately)
+  and the per-dispatch cost of tool schemas (needs runtime instrumentation this script does not have).
 
 ## Reproducing
 

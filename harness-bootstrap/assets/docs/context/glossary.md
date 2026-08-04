@@ -11,6 +11,7 @@ Updated via `/sync-context` whenever a new term enters the code or the specs.
 
 | Term | Definition | Synonyms and aliases | Where it lives |
 |------|-----------|----------------------|----------------|
+{{GLOSSARY_SEED}}
 | <term> | <one-sentence definition, in the domain's language, not the code's> | <what else it is called, including the wrong names people use> | <module, table, or spec section> |
 
 <!-- Prefer the term the business uses over the term the schema uses, and record the schema name as

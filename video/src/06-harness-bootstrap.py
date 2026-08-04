@@ -41,6 +41,8 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 AMBER = "#FFBA08"
@@ -69,6 +71,7 @@ def sub(s, ref, size=19, color=DIM, buff=0.2):
 class HarnessBootstrap(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ================= title ==========================================
         t = title_text("harness-bootstrap, end to end", fs=44, color=WHITE)
@@ -182,30 +185,39 @@ class HarnessBootstrap(Scene):
         caption(self, "Target tools are detected and confirmed, then you confirm one setup plan.", hold=1.0, y=-3.35, size=23)
         self.play(FadeOut(VGroup(intake, its, tools, tts, plan, ps, ar1, ar2)), run_time=0.4)
 
-        # ================= Beat 5: roster + OS + vars.json ================
-        roster = chip("Roster", PURPLE, PURPLE_HI, fs=24, h=0.8, w=3.6).move_to([-4.5, 1.7, 0])
+        # ================= Beat 5: roster + skills + OS + vars.json =======
+        roster = chip("Roster", PURPLE, PURPLE_HI, fs=21, h=0.8, w=3.05).move_to([-5.05, 1.7, 0])
         rs = Text(
-            "Tier 0 unconditional, preset S / M / L,\nexplicit model: AND effort: on every agent",
-            font=FONT, font_size=17, color=DIM, line_spacing=0.8,
-        ).next_to(roster, DOWN, buff=0.22)
-        osd = chip("Detect the dev OS", PURPLE, PURPLE_HI, fs=22, h=0.8, w=4.0).move_to([0.3, 1.7, 0])
+            "Tier 0 unconditional,\npreset S / M / L, explicit\nmodel: AND effort:",
+            font=FONT, font_size=15, color=DIM, line_spacing=0.75,
+        ).next_to(roster, DOWN, buff=0.2)
+        skills = chip("Skill discovery + install", PURPLE, PURPLE_HI, fs=19, h=0.8, w=3.6).move_to([-1.55, 1.7, 0])
+        sks = Text(
+            "search skills.sh per seat,\ntrust rubric + mandatory\ncontent read, yes per skill",
+            font=FONT, font_size=15, color=DIM, line_spacing=0.75,
+        ).next_to(skills, DOWN, buff=0.2)
+        osd = chip("Detect the dev OS", PURPLE, PURPLE_HI, fs=19, h=0.8, w=3.3).move_to([1.9, 1.7, 0])
         oss = Text(
-            "Windows to .ps1, macOS or Linux to .sh",
-            font=FONT, font_size=17, color=DIM,
-        ).next_to(osd, DOWN, buff=0.22)
-        vj = chip("vars.json", NEUTRAL, WHITE, fs=24, h=0.8, w=3.2).move_to([4.9, 1.7, 0])
+            "Windows to .ps1,\nmacOS or Linux to .sh",
+            font=FONT, font_size=15, color=DIM, line_spacing=0.75,
+        ).next_to(osd, DOWN, buff=0.2)
+        vj = chip("vars.json", NEUTRAL, WHITE, fs=21, h=0.8, w=2.8).move_to([5.15, 1.7, 0])
         vjs = Text(
-            "vars + flags: ui, db, ai, audit,\nexactly one of windows / posix",
-            font=FONT, font_size=17, color=DIM, line_spacing=0.8,
-        ).next_to(vj, DOWN, buff=0.22)
-        br1 = Arrow(roster.get_right(), osd.get_left(), buff=0.12, color=DIM, stroke_width=3)
-        br2 = Arrow(osd.get_right(), vj.get_left(), buff=0.12, color=DIM, stroke_width=3)
+            "vars + flags: ui, db, ai,\naudit, tdd, ddd, deploy_ask,\nwindows / posix",
+            font=FONT, font_size=15, color=DIM, line_spacing=0.75,
+        ).next_to(vj, DOWN, buff=0.2)
+        br1 = Arrow(roster.get_right(), skills.get_left(), buff=0.1, color=DIM, stroke_width=3)
+        br2 = Arrow(skills.get_right(), osd.get_left(), buff=0.1, color=DIM, stroke_width=3)
+        br3 = Arrow(osd.get_right(), vj.get_left(), buff=0.1, color=DIM, stroke_width=3)
 
         self.play(GrowFromCenter(roster), FadeIn(rs), run_time=0.5)
-        self.play(Create(br1), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
-        self.play(Create(br2), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
-        caption(self, "Every agent gets an explicit model and effort - and the decisions land in vars.json.", hold=1.5, y=-3.35, size=22)
-        self.play(FadeOut(VGroup(roster, rs, osd, oss, vj, vjs, br1, br2, b1)), run_time=0.4)
+        caption(self, "Every agent gets an explicit model and effort - Tier 0 unconditional, then a preset.", hold=0.8, y=-3.35, size=22)
+        self.play(Create(br1), GrowFromCenter(skills), FadeIn(sks), run_time=0.5)
+        caption(self, "Each seat can search skills.sh - a trust rubric and a mandatory content read gate every install.", hold=1.1, y=-3.35, size=21)
+        self.play(Create(br2), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
+        self.play(Create(br3), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
+        caption(self, "The decisions land in vars.json - including the methodology flag: DDD by default, TDD opt-in.", hold=1.5, y=-3.35, size=21)
+        self.play(FadeOut(VGroup(roster, rs, skills, sks, osd, oss, vj, vjs, br1, br2, br3, b1)), run_time=0.4)
 
         # ================= Beat 6: scaffold (GREEN) =======================
         b2 = band("GREEN - a script, deterministic and free", GREEN_HI, w=13.6, h=5.6).move_to([0, 0.1, 0])
@@ -276,30 +288,39 @@ class HarnessBootstrap(Scene):
         caption(self, "Then the model wires orchestration and seeds Phase 1 from the analysis gaps.", hold=1.1, y=-3.35, size=23)
         self.play(FadeOut(VGroup(gap, gaps, wire, wires, wa, b3)), run_time=0.4)
 
-        # ================= Beat 8: gate -> smoke -> port -> done ==========
-        gate = chip("Quality gate", RED, AMBER, fs=24, h=0.85, w=3.6).move_to([-4.6, 1.6, 0])
+        # ================= Beat 8: gate -> smoke -> graphs -> port -> done =
+        gate = chip("Quality gate", RED, AMBER, fs=20, h=0.85, w=2.9).move_to([-5.35, 1.6, 0])
         gs2 = Text(
-            "structure / cost and context /\nsafety / grounding / handoff",
-            font=FONT, font_size=18, color=DIM, line_spacing=0.85,
-        ).next_to(gate, DOWN, buff=0.24)
-        smoke = chip("Smoke-test the loop", GREEN, GREEN_HI, fs=22, h=0.85, w=4.2).move_to([0.35, 1.6, 0])
-        port = chip("Port to your tools", GREEN, GREEN_HI, fs=22, h=0.85, w=3.8).move_to([4.8, 1.6, 0])
-        pa1 = Arrow(gate.get_right(), smoke.get_left(), buff=0.12, color=DIM, stroke_width=3)
-        pa2 = Arrow(smoke.get_right(), port.get_left(), buff=0.12, color=DIM, stroke_width=3)
-        allg = Text("all green", font=FONT, font_size=18, color=GREEN_HI).next_to(pa1, UP, buff=0.22)
+            "structure / cost /\nsafety / grounding /\nhandoff",
+            font=FONT, font_size=14, color=DIM, line_spacing=0.8,
+        ).next_to(gate, DOWN, buff=0.22)
+        smoke = chip("Smoke-test the loop", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([-1.95, 1.6, 0])
+        graphs = chip("Build both graphs", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([1.4, 1.6, 0])
+        gr2 = Text(
+            "code-graph.py + docs-graph.py,\nthen graph-html.py:\nharness-graph.html + specs-graph.html",
+            font=FONT, font_size=14, color=DIM, line_spacing=0.8,
+        ).next_to(graphs, DOWN, buff=0.22)
+        port = chip("Port to your tools", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([4.85, 1.6, 0])
+        pa1 = Arrow(gate.get_right(), smoke.get_left(), buff=0.1, color=DIM, stroke_width=3)
+        pa2 = Arrow(smoke.get_right(), graphs.get_left(), buff=0.1, color=DIM, stroke_width=3)
+        pa3 = Arrow(graphs.get_right(), port.get_left(), buff=0.1, color=DIM, stroke_width=3)
+        allg = Text("all green", font=FONT, font_size=16, color=GREEN_HI).next_to(pa1, UP, buff=0.35)
 
         self.play(GrowFromCenter(gate), FadeIn(gs2), run_time=0.5)
-        caption(self, "A quality gate checks structure, cost, safety, grounding and handoff.", hold=1.0, y=-3.35, size=23)
+        caption(self, "A quality gate checks structure, cost, safety, grounding and handoff.", hold=0.8, y=-3.35, size=23)
         self.play(Create(pa1), FadeIn(allg), GrowFromCenter(smoke), run_time=0.5)
-        self.play(Create(pa2), GrowFromCenter(port), run_time=0.5)
-        caption(self, "All green: the loop is smoke-tested and ported to the tools you selected.", hold=1.1, y=-3.35, size=23)
+        caption(self, "All green: the loop is smoke-tested end to end - a real task, a session-log row, /task-resume.", hold=0.9, y=-3.35, size=21)
+        self.play(Create(pa2), GrowFromCenter(graphs), FadeIn(gr2), run_time=0.5)
+        caption(self, "Then both knowledge graphs are built and exported as interactive HTML - code dependency and docs traceability.", hold=1.3, y=-3.35, size=20)
+        self.play(Create(pa3), GrowFromCenter(port), run_time=0.5)
+        caption(self, "Finally it ports to the tools you selected.", hold=0.9, y=-3.35, size=23)
 
         done = chip("Harness runs under orchestration", GREEN, GREEN_HI, fs=26, h=1.0, w=7.6).move_to([1.9, -1.1, 0])
-        da = Arrow([4.8, 1.175, 0], [4.8, -0.6, 0], buff=0.14, color=GREEN_HI, stroke_width=3)
+        da = Arrow([4.85, 1.175, 0], [4.85, -0.6, 0], buff=0.14, color=GREEN_HI, stroke_width=3)
         self.play(Create(da), GrowFromCenter(done), run_time=0.6)
         self.play(Indicate(done, color=GREEN_HI, scale_factor=1.06), run_time=0.7)
         self.wait(0.4)
-        self.play(FadeOut(VGroup(gate, gs2, smoke, port, pa1, pa2, allg, done, da)), run_time=0.4)
+        self.play(FadeOut(VGroup(gate, gs2, smoke, graphs, gr2, port, pa1, pa2, pa3, allg, done, da)), run_time=0.4)
 
         # ================= Beat 9: three-band recap =======================
         rb1 = band("analyse + decide", PURPLE_HI, w=4.3, h=2.4).move_to([-4.7, 0.2, 0])
@@ -316,6 +337,10 @@ class HarnessBootstrap(Scene):
         self.play(FadeIn(rb1), FadeIn(l1), run_time=0.45)
         self.play(Create(ra1), FadeIn(rb2), FadeIn(l2), run_time=0.45)
         self.play(Create(ra2), FadeIn(rb3), FadeIn(l3), run_time=0.45)
-        caption(self, "Purple to green to purple - pay the model only where a script cannot know the answer.", hold=1.1, y=-3.35, size=22)
-        self.play(FadeOut(VGroup(rh, rb1, rb2, rb3, l1, l2, l3, ra1, ra2)), run_time=0.6)
+        caption(self, "Purple to green to purple - pay the model only where a script cannot know the answer.", hold=0.7, y=-3.35, size=22)
+        self.play(FadeOut(VGroup(rh, rb1, rb2, rb3, l1, l2, l3, ra1, ra2)), run_time=0.5)
+
+        # ================= brand end card =================================
+        card = logo_reveal(self)
         self.wait(0.2)
+        self.play(FadeOut(card), run_time=0.5)

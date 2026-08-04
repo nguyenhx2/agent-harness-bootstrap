@@ -5,6 +5,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.6.0
+
+Living specs, a docs graph, DDD by default, and a face: shield logo, banner, and media that a gate
+now keeps honest.
+
+**Added**
+
+- Docs knowledge graph: `/docs-graph` maps ID traceability (defining doc, references, orphans) and
+  `graph-html.py` exports both graphs as self-contained interactive pages
+  (`docs/context/harness-graph.html`, `specs-graph.html`), built at the end of both skills.
+- spec-builder living-spec commands: `/spec-ingest` (fold a new source in - diffed, versioned,
+  rippled to dependent agent files) and `/spec-retract` (trace and withdraw a bad source or claim,
+  converted to open issues, affected tasks blocked with a `human_gate`).
+- Windows quickstart (`irm` + `Expand-Archive`) and a paste-to-agent self-install block, both
+  languages. New shield-and-eye logo, README banner, deck favicon, video watermark + end cards.
+- Eval: a `guard-main-commit` allow case it was missing, plus optional `--flavor ps1` Windows
+  parity (26/26 default, 52/52 both flavors). `check_numbers.py` now guards presentation, video,
+  and prose eval badges - the drift class that recurred every release is now a failing gate.
+- PR #1 merged: board validator with dependency-cycle detection, `human_gate` markers,
+  attempt-reason taxonomy, advisory scope guard, `control-surfaces.md`.
+
+**Changed**
+
+- DDD is the sole default methodology; TDD is opt-in (alone or combined) - it trades delivery
+  speed for proof discipline, so intake asks instead of assuming.
+- Counts: commands 20 -> 21 (+2 spec-side), hooks 8 -> 9, eval 22 -> 26 cases; read path -54% /
+  108,591 B after bootstrap.
+- README reframed: problem scenarios first, "what you get" as tailoring dimensions (the counts are
+  the toolbox, not the product), spec-builder's 13-section standard named; benchmark results
+  rebuilt around three goals with bar charts; presentation and all six intro clips audited,
+  corrected, and re-rendered.
+
 ## v1.5.0
 
 Skill discovery, a code knowledge graph, and a friendlier front door.
@@ -133,13 +165,13 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 20 commands, 9 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 21 commands, 9 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
 - 9 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
-- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 21/21 correct. The guardrails are shell scripts, so the result does not change with the model.
+- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 26/26 correct. The guardrails are shell scripts, so the result does not change with the model.
 
 **State on disk, not in context**
 

@@ -18,10 +18,10 @@ so the process does not have to be remembered.
 4. **`SHA256SUMS` ships with every release.** Anyone pulling an artifact can verify it.
 5. **CHANGELOG first, tag second.** `CHANGELOG.md` must contain a `## vX.Y.Z` section before the tag
    exists. `package.py` refuses to build otherwise; the preflight is the gate.
-6. **The eval must be green.** CI runs the guardrail eval and the scaffold matrix. Do not ship a
+6. **The eval AND the diagram check must be green** (`eval/guardrail_eval.py`, `scripts/check_mermaid.py`). CI runs the guardrail eval and the scaffold matrix. Do not ship a
    harness whose guardrails do not block.
 7. **Every release carries its eval and benchmark.** The release attaches `eval-results.md` and
-   `benchmark-results.md`, captured from the tagged commit, so the "25/25" and the numbers are
+   `benchmark-results.md`, captured from the tagged commit, so the "26/26" and the numbers are
    provable per version. CI does this automatically on a tag.
 
 ## The note format

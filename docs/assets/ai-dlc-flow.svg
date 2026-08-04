@@ -120,7 +120,7 @@
   <rect x="666" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
   <text x="680" y="538" font-size="13" font-weight="700" fill="#E0AAFF">dev agent</text>
   <text x="680" y="558" font-size="13" fill="#E0AAFF">implements,</text>
-  <text x="680" y="576" font-size="13" fill="#E0AAFF">tests first (TDD)</text>
+  <text x="680" y="576" font-size="13" fill="#E0AAFF">tests ship with the code</text>
 
   <!-- loop turns down the right side -->
   <line x1="751" y1="592" x2="751" y2="721" stroke="#ADB5BD" stroke-width="2" fill="none"/>

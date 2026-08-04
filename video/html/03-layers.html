@@ -19,16 +19,16 @@
   .title{position:absolute;top:5%;left:0;right:0;text-align:center;
     font-size:clamp(18px,2.8vw,34px);font-weight:700}
   .scene{position:absolute;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;padding:8% 5% 4%;text-align:center;gap:12px}
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;padding:7% 5% 6%;text-align:center;gap:8px}
   .scene.on{opacity:1}
-  h2{font-size:clamp(15px,2.2vw,28px);font-weight:600}
-  .layers{display:flex;flex-direction:column;gap:12px;width:min(80%,760px)}
-  .layer{border:2.5px solid var(--green-hi);background:#12211a;border-radius:12px;
-    padding:.7em 1em;text-align:left;opacity:0;transform:translateY(12px);
+  h2{font-size:clamp(14px,2vw,25px);font-weight:600}
+  .layers{display:flex;flex-direction:column;gap:8px;width:min(80%,760px)}
+  .layer{border:2.5px solid var(--green-hi);background:#12211a;border-radius:10px;
+    padding:.45em .9em;text-align:left;opacity:0;transform:translateY(12px);
     transition:opacity .5s,transform .5s}
   .layer.on{opacity:1;transform:none}
-  .layer .nm{color:var(--green-hi);font-weight:700;font-size:clamp(13px,1.9vw,23px)}
-  .layer .ds{color:var(--dim);font-size:clamp(10px,1.5vw,18px);margin-top:2px}
+  .layer .nm{color:var(--green-hi);font-weight:700;font-size:clamp(12px,1.7vw,20px)}
+  .layer .ds{color:var(--dim);font-size:clamp(9px,1.3vw,16px);margin-top:1px}
   .chip{border-radius:12px;padding:.55em 1.1em;font-weight:700;
     font-size:clamp(13px,1.9vw,24px);display:inline-flex;align-items:center;justify-content:center}
   .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:#fff}
@@ -55,19 +55,44 @@
   .caption.on{opacity:1}
   .caption.green{color:var(--green-hi)}
   .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
 </style>
 </head>
 <body>
 <div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
   <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
   <div class="title">The control layers</div>
 
-  <!-- Scene 0: four layers -->
+  <!-- Scene 0: five layers -->
   <section class="scene" data-s="0">
-    <h2>Four layers between the agent and damage</h2>
+    <h2>Five layers between the agent and damage</h2>
     <div class="layers" id="layers">
       <div class="layer"><div class="nm">settings deny list</div><div class="ds">cannot read .env, ~/.ssh, .npmrc</div></div>
       <div class="layer"><div class="nm">blocking hooks</div><div class="ds">cannot commit to main, edit an Accepted ADR</div></div>
+      <div class="layer"><div class="nm">spawn boundary</div><div class="ds">guard-agent-spawn: only a roster seat, only at its pinned model</div></div>
       <div class="layer"><div class="nm">path-scoped rules</div><div class="ds">glob rules load only when a path matches</div></div>
       <div class="layer"><div class="nm">review gates</div><div class="ds">code + security reviewers, no Edit or Write</div></div>
     </div>
@@ -81,7 +106,7 @@
       <span class="sub" id="swaplab">&nbsp;</span>
       <span class="chip purple" id="model">Opus</span>
       <span class="arrow">&#8595;</span>
-      <span class="chip green" id="result">15 / 15</span>
+      <span class="chip green" id="result">26 / 26</span>
       <span class="sub">guardrail eval</span>
     </div>
   </section>
@@ -99,6 +124,12 @@
     <div class="sub">Ports with enforcement, not just advice</div>
   </section>
 
+  <!-- Scene 3: brand end card -->
+  <section class="scene" data-s="3">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
   <div class="caption" id="cap"></div>
 </div>
 
@@ -109,9 +140,10 @@
   var prog=document.getElementById('prog');
   function q(id){return document.getElementById(id)}
   var TL=[
-    {s:0,d:8000,cap:'Four guardrail layers: deny list, hooks, path-scoped rules, review gates.',capAt:2800,reveal:true},
+    {s:0,d:8600,cap:'Five guardrail layers: deny list, hooks, the spawn boundary, path-scoped rules, review gates.',capAt:2800,reveal:true},
     {s:1,d:9000,cap:'Swap Opus to Haiku: byte-identical result. Control does not depend on the model.',capAt:4200,swap:true},
     {s:2,d:8000,cap:'Control does not depend on the model.',capAt:600,green:true},
+    {s:3,d:2400,cap:null},
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
   function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}

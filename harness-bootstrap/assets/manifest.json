@@ -203,6 +203,10 @@
       "dest": ".claude/commands/skill-wire.md"
     },
     {
+      "src": "claude/commands/docs-graph.md",
+      "dest": ".claude/commands/docs-graph.md"
+    },
+    {
       "src": "claude/commands/secret-scan.md",
       "dest": ".claude/commands/secret-scan.md"
     },
@@ -364,6 +368,16 @@
         "posix"
       ],
       "exec": true
+    },
+    {
+      "src": "scripts/docs-graph.py",
+      "dest": ".claude/scripts/docs-graph.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/graph-html.py",
+      "dest": ".claude/scripts/graph-html.py",
+      "subst": false
     },
     {
       "src": "scripts/code-graph.py",

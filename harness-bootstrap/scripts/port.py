@@ -280,6 +280,7 @@ _TEST_VARS["vars"]["HOOK_RUNNER"] = "bash"
 _TEST_VARS["vars"]["HOOK_EXT"] = "sh"
 _TEST_VARS["vars"]["SOURCE_GLOBS"] = '"src/**/*.ts"'
 _TEST_VARS["vars"]["RESTRICTED_DENIES"] = '"Read(**/.restricted/**)",'
+_TEST_VARS["vars"]["GLOSSARY_SEED"] = "| - | seeded at bootstrap | - | - |"
 
 
 def port(target: pathlib.Path, tool: str) -> None:

@@ -327,7 +327,7 @@ sequenceDiagram
     Orch->>Board: status: Active in BOTH places
 
     Orch->>Dev: Dispatch: TASK code, FR/PRD, target files,<br/>acceptance criteria, isolated worktree + branch
-    Note over Dev: TDD: the failing test comes first.
+    Note over Dev: tests ship with the code - DDD default. Under opt-in TDD the failing test comes first.
     Dev->>Hooks: Edit / Write
     Hooks-->>Dev: PreToolUse: protect-adr, protect-secrets - allowed (exit 0)
     Hooks-->>Dev: PostToolUse: specs-reminder

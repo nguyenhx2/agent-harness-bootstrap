@@ -39,12 +39,15 @@ from theme import (
     chip,
     tag,
     title_text,
+    watermark,
+    logo_reveal,
 )
 
 
 class Layers(Scene):
     def construct(self):
         self.camera.background_color = BG
+        watermark(self)
 
         # ---- title ----------------------------------------------------
         t = title_text("The control layers", fs=46, color=WHITE)
@@ -52,32 +55,33 @@ class Layers(Scene):
         self.wait(0.7)
         self.play(t.animate.scale(0.62).to_edge(UP, buff=0.4), run_time=0.7)
 
-        # ---- four guardrail layers stacked ----------------------------
+        # ---- five guardrail layers stacked -----------------------------
         layer_specs = [
             ("settings deny list", "cannot read .env, ~/.ssh, .npmrc"),
             ("blocking hooks", "cannot commit to main, edit an Accepted ADR"),
+            ("spawn boundary", "guard-agent-spawn: only a roster seat, only at its pinned model"),
             ("path-scoped rules", "glob rules load only when a path matches"),
             ("review gates", "code + security reviewers, no Edit or Write"),
         ]
         layers = VGroup()
         for name, desc in layer_specs:
-            box = RoundedRectangle(width=8.6, height=0.92, corner_radius=0.14,
+            box = RoundedRectangle(width=8.6, height=0.78, corner_radius=0.13,
                                    fill_color="#12211A", fill_opacity=1.0,
                                    stroke_color=GREEN_HI, stroke_width=2.5)
-            nm = Text(name, font=FONT, font_size=25, color=GREEN_HI, weight="BOLD")
-            ds = Text(desc, font=FONT, font_size=20, color=DIM)
-            txt = VGroup(nm, ds).arrange(DOWN, aligned_edge=LEFT, buff=0.12).move_to(box.get_center())
+            nm = Text(name, font=FONT, font_size=22, color=GREEN_HI, weight="BOLD")
+            ds = Text(desc, font=FONT, font_size=18, color=DIM)
+            txt = VGroup(nm, ds).arrange(DOWN, aligned_edge=LEFT, buff=0.1).move_to(box.get_center())
             layers.add(VGroup(box, txt))
-        layers.arrange(DOWN, buff=0.28).move_to([0, -0.35, 0])
+        layers.arrange(DOWN, buff=0.22).move_to([0, -0.35, 0])
 
-        sub = Text("Four layers between the agent and damage", font=FONT, font_size=24, color=WHITE)
+        sub = Text("Five layers between the agent and damage", font=FONT, font_size=24, color=WHITE)
         sub.next_to(t, DOWN, buff=0.35)
         self.play(FadeIn(sub), run_time=0.5)
 
         for lyr in layers:
-            self.play(FadeIn(lyr, shift=0.15 * UP), run_time=0.5)
-            self.wait(0.45)
-        caption(self, "Four guardrail layers: deny list, hooks, path-scoped rules, review gates.", hold=1.8, y=-3.6, size=23)
+            self.play(FadeIn(lyr, shift=0.15 * UP), run_time=0.4)
+            self.wait(0.35)
+        caption(self, "Five guardrail layers: deny list, hooks, the spawn boundary, path-scoped rules, review gates.", hold=1.9, y=-3.65, size=22)
         self.wait(0.9)
 
         self.play(FadeOut(sub), layers.animate.scale(0.72).to_edge(LEFT, buff=0.5), run_time=0.8)
@@ -89,7 +93,7 @@ class Layers(Scene):
 
         # model swap Opus -> Haiku, identical result
         model = chip("Opus", PURPLE, PURPLE_HI, fs=26, h=0.85, w=2.4).move_to([2.2, 0.7, 0])
-        result = chip("15 / 15", GREEN, GREEN_HI, fs=30, h=0.9, w=2.6).move_to([2.2, -1.2, 0])
+        result = chip("26 / 26", GREEN, GREEN_HI, fs=30, h=0.9, w=2.6).move_to([2.2, -1.2, 0])
         res_label = Text("guardrail eval", font=FONT, font_size=20, color=DIM).next_to(result, DOWN, buff=0.2)
         arrow = Arrow(model.get_bottom(), result.get_top(), buff=0.2, color=DIM, stroke_width=3)
 
@@ -138,7 +142,10 @@ class Layers(Scene):
         pl.next_to(ports, DOWN, buff=0.4)
         self.play(FadeIn(ports, lag_ratio=0.3, shift=0.12 * UP), run_time=0.8)
         self.play(FadeIn(pl), run_time=0.5)
-        caption(self, "Control does not depend on the model.", hold=2.2, y=-3.6, size=24, color=GREEN_HI)
-        self.wait(0.6)
-        self.play(FadeOut(VGroup(t, h2, ram, ram_sub, disk, disk_sub, ports, pl)), run_time=0.8)
+        caption(self, "Control does not depend on the model.", hold=1.6, y=-3.6, size=24, color=GREEN_HI)
+        self.play(FadeOut(VGroup(t, h2, ram, ram_sub, disk, disk_sub, ports, pl)), run_time=0.6)
+
+        # ---- brand end card ---------------------------------------------
+        card = logo_reveal(self)
         self.wait(0.2)
+        self.play(FadeOut(card), run_time=0.5)

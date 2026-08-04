@@ -9,12 +9,17 @@ Color = meaning, never reassigned (matches docs/FLOWS.md and README):
 Dark background, clean, technical, calm. No emoji.
 """
 
+import os
+
 from manim import (
     Text,
     VGroup,
     RoundedRectangle,
     Rectangle,
     Line,
+    ImageMobject,
+    FadeIn,
+    FadeOut,
     config,
 )
 
@@ -92,3 +97,37 @@ def tag(label, color, fs=22):
 
 def title_text(s, fs=52, color=WHITE):
     return Text(s, font=FONT, font_size=fs, color=color, weight="BOLD")
+
+
+# --- brand mark --------------------------------------------------------------
+# navy shield + eye + graph nodes, rasterized from docs/assets/logo.svg (gradients
+# do not survive SVGMobject reliably, so a PNG - rendered once via playwright - is
+# the safe path; see video/src/assets/logo.png).
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
+
+
+def watermark(scene, height=0.55, opacity=0.5, corner=None):
+    """A small, non-animated corner mark that persists for the rest of the scene.
+    Call once near the top of construct(); do not FadeOut it with everything else."""
+    mark = ImageMobject(LOGO_PATH).set_z_index(50)
+    mark.height = height
+    mark.set_opacity(opacity)
+    pos = corner if corner is not None else (FW / 2 - 0.55, -FH / 2 + 0.5, 0)
+    mark.move_to(pos)
+    scene.add(mark)
+    return mark
+
+
+def logo_reveal(scene, brand_text="AGENT HARNESS BOOTSTRAP", height=1.5, hold=1.1, y=0.0):
+    """A brief, centered logo + wordmark beat. Caller fades it out afterward."""
+    mark = ImageMobject(LOGO_PATH)
+    mark.height = height
+    word = Text(brand_text, font=FONT, font_size=22, color=DIM)
+    group = VGroup(word)
+    mark.move_to([0, y + 0.55, 0])
+    word.move_to([0, y - height / 2 - 0.15, 0])
+    scene.play(FadeIn(mark, scale=0.9), FadeIn(word, shift=0.1 * _up()), run_time=0.7)
+    scene.wait(hold)
+    from manim import Group
+
+    return Group(mark, word)

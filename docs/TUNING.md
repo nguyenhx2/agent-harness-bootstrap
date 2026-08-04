@@ -3,7 +3,7 @@
 `harness-bootstrap` picks a starting posture at intake and writes it into `.claude/`. Real projects
 drift from that posture - a deploy command earns trust, a seat needs a tool it does not have, the
 board needs a health check, the skill ships a new asset you want to pick up, the code shifted enough
-that the module map is stale. Five commands, installed into every bootstrapped repo, cover that drift. This page is the full reference for each: what it
+that the module map is stale. Seven commands, installed into every bootstrapped repo, cover that drift. This page is the full reference for each: what it
 does, when to reach for it, a worked example, and the invariants it will not let you break.
 
 None of the five edit hook *logic*. They edit data - lists, caps, seat frontmatter, `vars.json` - the
@@ -204,6 +204,33 @@ Changed since the last build:
 edits, and it only marks the graph stale, never rebuilds it. And it does not replace the review a new
 cross-module edge deserves; it surfaces the edge so a human or reviewer looks at it.
 
+## `/docs-graph`
+
+**What it does.** Builds the documentation twin of the code graph: which document defines each
+requirement/decision/task ID, who references it, and which IDs are orphans. Writes
+`.claude/state/docs-graph.json`, `docs/context/docs-graph.md` (mermaid + orphan list), and - via
+`graph-html.py` - the interactive `docs/context/specs-graph.html`. Purpose is TRACEABILITY;
+`/code-graph` covers dependency. The same script pass also regenerates
+`docs/context/harness-graph.html`, the interactive map of agents, hooks, rules, commands,
+settings, and modules.
+
+**When to reach for it.** After any spec edit, when spec-guardian needs to check a diff's claimed
+requirement IDs, or when the orchestrator wants the unscheduled-requirement backlog (orphan IDs).
+
+**Worked example.**
+
+```text
+/docs-graph
+```
+
+```text
+python .claude/scripts/docs-graph.py
+  42 docs, 118 IDs, 96 edges, 3 orphan(s)
+python .claude/scripts/graph-html.py
+  wrote docs/context/specs-graph.html, docs/context/harness-graph.html
+Orphans: FR-017 (defined in 05, no task references it), BR-009, ADR-0007 - unstarted work or dead references.
+```
+
 ## `/skill-wire`
 
 **What it does.** Maps a skill installed in `.claude/skills/` to one roster seat. Wiring is a
@@ -237,6 +264,13 @@ wired to no seat, ever. Reviewers get read-only skills only. Only the orchestrat
 skill that finds or installs other skills. Every wire is recorded - an unrecorded wire fails the
 quality gate.
 
+## The spec side
+
+Two more commands arrive with a `spec-builder` spec set rather than the harness:
+`/spec-ingest` (fold a new source into the sections - diffed, versioned, rippled to the agent
+files that depend on it) and `/spec-retract` (trace and withdraw a bad source or claim - converted
+to open issues, never silently deleted). See `spec-builder/SKILL.md`.
+
 ## Quick reference
 
 | Command | Changes | Confirmation |
@@ -246,8 +280,10 @@ quality gate.
 | `/agent-permissions` | One tool on one seat | Diff shown, yes required (invariant violations refuse instead) |
 | `/harness-update` | Re-syncs `.claude/` with the current skill version and codebase | `CONFLICT` queue, resolved by hand |
 | `/code-graph` | Rebuilds `.claude/state/code-graph.json` and `docs/context/code-graph.md`, clears the stale log | None - regenerates derived files, nothing hand-authored is touched |
+| `/docs-graph` | Rebuilds `.claude/state/docs-graph.json`, `docs/context/docs-graph.md`, and both HTML graph exports | None - derived files only |
+| `/skill-wire` | One installed skill onto one seat's "Skills available" section | Diff shown, yes required; content re-review at wire time, invariant violations refuse |
 
-## The three invariants that hold across all five
+## The three invariants that hold across all of them
 
 However you reach them - `/harness-tune`, `/agent-permissions`, or a hand edit reviewed like any
 other change - three things do not move:
