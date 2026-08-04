@@ -22,6 +22,10 @@ Run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTION`:
 6. **Blocked with no unblocker.** `status: Blocked` files whose notes name no owner or condition
    that would unblock them - those never resurface on their own.
 
+7. **Stale code graph.** `.claude/state/code-graph.stale` is non-empty, or
+   `python .claude/scripts/code-graph.py --check` exits 1: dispatch decisions are being made on an
+   outdated module map. Fix is `/code-graph`, not ignoring it.
+
 End with a one-line verdict: `BOARD CLEAN` or `N findings - board needs reconciliation`, and if
 findings exist, the single next action that clears the most of them.
 

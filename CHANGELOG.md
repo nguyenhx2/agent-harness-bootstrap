@@ -5,6 +5,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.5.0
+
+Skill discovery, a code knowledge graph, and a friendlier front door.
+
+**Added**
+
+- Code knowledge graph: `/code-graph` builds the module/import map agents consult before any
+  cross-module change (`.claude/scripts/code-graph.py`, stdlib only); the non-blocking
+  `graph-stale` hook records drift and `/board-audit` flags it.
+- Skill discovery and install: bootstrap step 2.5 searches [skills.sh](https://www.skills.sh/)
+  per seat under a trust rubric with a mandatory content read
+  ([reference/skill-discovery.md](harness-bootstrap/reference/skill-discovery.md)); `/skill-wire`
+  maps installed skills to seats with re-review, invariant refusals, and a changelog record.
+- Express intake: 28 -> 24 questions, closed choices via AskUserQuestion, derivable answers
+  confirmed instead of re-asked; the governance batch is still never defaulted.
+- `docs/TUNING.md` covers all six post-bootstrap commands; CONTRIBUTING.md rewritten.
+
+**Changed**
+
+- TDD and DDD are now BOTH default methodology flags; single-methodology remains a choice.
+- README rewritten around the two skills' one-line essence (363 -> 180 lines), mirrored in
+  Japanese; long detail moved into linked docs.
+- The two skills invoke each other through the Skill tool with prefilled variables, replacing
+  prose handoffs.
+- Counts: commands 18 -> 20, hooks 7 -> 8, eval 21 -> 22 cases; read path after bootstrap
+  97,190 B (-59%).
+
 ## v1.4.0
 
 The spawn boundary, a DDD option, and post-bootstrap tuning.
@@ -106,11 +133,11 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 18 commands, 7 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 20 commands, 8 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
-- 7 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
+- 8 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
 - `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 21/21 correct. The guardrails are shell scripts, so the result does not change with the model.
 

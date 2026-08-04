@@ -20,6 +20,10 @@ agent's module is how two agents end up fighting over one file.
 first, never invented inline. Aggregates change only through their root; other contexts are reached
 through their published interface, never by importing their internals. See `.claude/rules/ddd.md`.
 {{/IF_DDD}}
+**The code graph**: before a change that adds or alters an import across module lines, read
+`docs/context/code-graph.md`. A new cross-module edge is an interface decision, not a convenience -
+if it surprises the graph, stop and report instead of shipping it.
+
 **Rules you obey**: `.claude/rules/00-overview.md`, `coding-standards.md`, `testing.md`,
 `agent-guardrails.md`. Path-scoped rules load automatically when you touch matching files.
 

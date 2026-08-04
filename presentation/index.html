@@ -981,13 +981,13 @@ const S = [
       vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
       ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"21/21", cls:"g", l:{en:"<b>Does the floor hold?</b> 11 forbidden and 10 permitted actions, every one judged correctly", vi:"<b>Sàn có giữ được không?</b> 11 hành động bị cấm và 10 được phép, tất cả đều phán đúng", ja:"<b>下限は保たれるか</b> 禁止11件と許可10件、すべて正しく判定"}},
+  {v:"22/22", cls:"g", l:{en:"<b>Does the floor hold?</b> 11 forbidden and 11 permitted actions, every one judged correctly", vi:"<b>Sàn có giữ được không?</b> 11 hành động bị cấm và 11 được phép, tất cả đều phán đúng", ja:"<b>下限は保たれるか</b> 禁止11件と許可11件、すべて正しく判定"}},
   {v:"Opus = Haiku", cls:"g", l:{en:"<b>Does it depend on the model?</b> Re-run on the cheapest tier, the result is byte-identical", vi:"<b>Có phụ thuộc model không?</b> Chạy lại trên tier rẻ nhất, kết quả giống hệt từng byte", ja:"<b>モデルに依存するか</b> 最安ティアで再実行しても結果はバイト単位で同一"}},
   {v:"5/5", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断"}}],
  note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
        vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
        ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
- nav:{en:"21/21 proof", vi:"Bằng chứng 21/21", ja:"21/21 の証明"}},
+ nav:{en:"22/22 proof", vi:"Bằng chứng 22/22", ja:"22/22 の証明"}},
 
 /* 16 */
 {icon:"i-coins", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
@@ -1046,11 +1046,11 @@ const S = [
       vi:"Bạn có thể chạy lại tất cả, và CI sẽ fail nếu bất kỳ con số nào trong tài liệu không còn khớp.",
       ja:"すべて再実行できます。文書中の数値が一致しなくなればCIが失敗します。"},
  stats:[
-  {v:"-62%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
+  {v:"-59%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
   {v:"-85%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
   {v:"67%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
   {v:"~0.2s", cls:"g", l:{en:"to scaffold 73 paths, idempotent on re-run", vi:"để scaffold 73 đường dẫn, chạy lại vẫn bất biến", ja:"73パスのscaffold、再実行しても冪等"}},
-  {v:"15", cls:"a", l:{en:"agents, 15 rules, 18 commands, 7 hooks", vi:"agents, 15 rules, 18 commands, 7 hooks", ja:"エージェント、15ルール、18コマンド、7フック"}},
+  {v:"15", cls:"a", l:{en:"agents, 15 rules, 20 commands, 8 hooks", vi:"agents, 15 rules, 20 commands, 8 hooks", ja:"エージェント、15ルール、20コマンド、8フック"}},
   {v:"$2.44", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
  note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
        vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",

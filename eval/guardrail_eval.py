@@ -69,7 +69,7 @@ VARS = {
         "DEP_MANIFEST_GLOBS": '"package.json"',
         "RESTRICTED_DENIES": '"Read(**/.restricted/**)",',
     }.items()},
-    "flags": ["posix", "ui", "db", "ai", "tdd"],
+    "flags": ["posix", "ui", "db", "ai", "tdd", "ddd"],
 }
 
 # (name, hook, expected_exit, payload_builder)  exit 2 = BLOCKED, 0 = allowed
@@ -97,6 +97,7 @@ def suite(repo: str) -> list[tuple]:
         ("allow: spawn a roster seat",       "guard-agent-spawn", 0, p("Agent", subagent_type="code-reviewer", prompt="review the diff for TASK-001")),
         ("allow: write seat with a task",    "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TASK-001: run the suite, log results")),
         ("allow: allowlisted Explore",       "guard-agent-spawn", 0, p("Agent", subagent_type="Explore", prompt="find the auth module")),
+        ("allow: graph-stale never blocks",  "graph-stale",       0, p("Edit", file_path="src/core/auth.py")),
         ("allow: read source",               "protect-secrets",  0, p("Read", file_path="src/index.ts")),
         ("allow: run tests",                 "protect-secrets",  0, p("Bash", command="npm test")),
         ("allow: conventional commit",       "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): add endpoint"')),

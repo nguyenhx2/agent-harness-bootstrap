@@ -1,6 +1,6 @@
 ---
 name: spec-builder
-version: 1.4.0
+version: 1.5.0
 description: Build a complete BA specification set (13-section structure under docs/specs/) for any project from raw input - an idea, meeting notes, a transcript, an existing PRD, or legacy docs. Use when the user asks to "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "chuẩn hóa tài liệu BA", or wants requirement docs scaffolded for a new or existing project.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---
@@ -93,7 +93,11 @@ Three sections carry the load, and they are the three most often thinned out:
   valuable output of this skill: they are cheap now and expensive in month four.
 
 **5. Verify.** The quality gate below. Then surface the open issues to the user - they cannot
-correct an assumption you did not tell them you made.
+correct an assumption you did not tell them you made. Once the spec set is complete, offer to invoke
+`harness-bootstrap` via the **`Skill`** tool - with `FR_LIST` (section 05's FR IDs, verbatim, in the same
+order they appear) and `GLOSSARY_SEED` (section 03's terms) prefilled from this spec set, so its intake
+does not re-collect what this skill already produced. State the exact handoff in words if the `Skill`
+tool is unavailable.
 
 ## Re-running on an existing spec
 
@@ -140,8 +144,8 @@ If the full docs workspace exists (`docs/requirements/`, `docs/context/`, `docs/
 - `docs/context/business-rules.md` - from the BR-nn tables in section 05.
 
 Seed, do not duplicate: the spec section stays the source of truth and the context file links back
-to it. If there is no docs tree at all, run `harness-bootstrap` first - it creates the one this
-skill writes into.
+to it. If there is no docs tree at all, invoke `harness-bootstrap` first via the `Skill` tool (see
+step 5's `FR_LIST`/`GLOSSARY_SEED` handoff above) - it creates the one this skill writes into.
 
 **Re-running this seeding step is safe.** If a `PRD-FR-NN-<slug>.md`, `glossary.md`, or
 `business-rules.md` already exists, reconcile it against the current 03/05 content instead of
