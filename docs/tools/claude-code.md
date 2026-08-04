@@ -2,7 +2,7 @@
 
 Claude Code is where the harness is **generated** and where it enforces most completely. It reads
 `.claude/` (agents, rules, hooks, `settings.json`) plus `AGENTS.md` and `CLAUDE.md`. Enforcement is the
-`settings.json` permission deny list backed by seven blocking hooks. Cursor and Codex render the same
+`settings.json` permission deny list backed by nine hooks (one advisory-only). Cursor and Codex render the same
 harness; this is the reference implementation they are ported from.
 
 ## Setup
@@ -58,7 +58,7 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo ships
-`python eval/guardrail_eval.py` (21 payloads at a real generated harness, expect 21/21). In the
+`python eval/guardrail_eval.py` (25 payloads at a real generated harness, expect 25/25). In the
 tool itself, try to read `.env` or commit to `main` and confirm each is blocked.
 
 ## See also

@@ -19,9 +19,14 @@ Obey `.claude/rules/00-overview.md` and `AGENTS.md`.
 At session start, ALWAYS scan for unfinished work before accepting a new mission:
 
 ```
+grep -l "^human_gate:" docs/tasks/active/*.md
 grep -l "status: Active" docs/tasks/active/*.md
 grep -l "status: Blocked" docs/tasks/active/*.md
 ```
+
+List `human_gate` rows FIRST: they mark a task waiting on a human decision, not on more agent work,
+and surfacing them ahead of ordinary Active/Blocked rows is what makes them actually get seen instead
+of scrolling past in a longer board.
 
 Then read `docs/tasks/master-plan.md`. Unfinished work takes priority: read the task file's session
 log and continue from the recorded state. **The task files, not conversation memory, are the source of
@@ -101,6 +106,12 @@ failed re-dispatches (three attempts total), stop: set the task `Blocked`, recor
 and escalate to the user.** A task that cannot land in three attempts has a problem that another
 identical attempt will not fix.
 
+Classify every failure with `attempt-reason: infra | scope | env` in that session-log row
+(task-control.md): `infra` may retry with an unchanged brief (the change-the-brief rule above does
+not apply, though the retry still counts toward `attempts:` like any dispatch); `scope` follows the
+changed-brief rule above and counts toward the cap the same way; `env` escalates to the user
+immediately, without retrying and without incrementing `attempts:`.
+
 Never block open-ended on a background child. Bound every wait, poll the child's output on that
 deadline, and either proceed or report the blocker. **Hitting the wait deadline is itself a trigger:
 set the task `Blocked` (file and board row) before moving to other work** - a timed-out child must
@@ -139,6 +150,12 @@ Write a durable, machine-checkable completion marker so a supervisor can tell "d
 Then deliver the final summary and TERMINATE. Never linger idle after close-out: an idle instance is
 indistinguishable from a crashed one, and a lingering one invites a duplicate orchestrator to be
 spawned against the same board.
+
+On a long mission, a phase boundary (not just mission end) is a reasonable place to end the session
+too: close out the phase's tasks, then let a fresh orchestrator instance pick up the next phase via
+`/task-resume`. The board makes this handoff free - a fresh instance reads `master-plan.md` and the
+task files and starts exactly where the last one stopped - and a shorter session keeps the context
+window free of everything the finished phase no longer needs.
 
 ## Routing table
 

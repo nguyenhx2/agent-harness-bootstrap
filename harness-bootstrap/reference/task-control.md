@@ -89,12 +89,21 @@ artifacts, they are different tasks. Never bundle unrelated work into one task.
 - When a decision is made, add a bullet under the task file's orchestration-notes with the decision
   and its rationale.
 - When a blocker appears: set `Blocked` in BOTH locations and record what is missing and who can
-  unblock it, in the session log and the notes.
-- When it clears: back to `Active` in BOTH locations, with a session-log row noting the resolution.
+  unblock it, in the session log and the notes. If the blocker needs a human DECISION rather than
+  more agent work - a policy call, a requirement trade-off, an owner-only trigger from Phase 1 -
+  also write `human_gate: <reason>` in the frontmatter, so the board can tell "waiting on a human"
+  apart from an ordinary technical block. `board-check.py` rejects `human_gate` on any task whose
+  status is not `Blocked`.
+- When it clears: back to `Active` in BOTH locations, remove `human_gate` if it was set, with a
+  session-log row noting the resolution.
 - When an environment workaround is discovered (a compiler needing a specific wrapper, a sandbox that
   blocks loopback, a parallelism flag that avoids an OOM): record it in `docs/context/known-issues.md`
   the FIRST time it is found, capturing the WORKAROUND and not just the symptom. Otherwise every agent
   rediscovers the same gotcha.
+- Frontmatter enums (`status`, `attempts`, `priority`, `human_gate`) and dependency cycles in `deps:`
+  chains are machine-checked, not just eyeballed: `python .claude/scripts/board-check.py` (stdlib
+  only) exits 1 with a findings list on any violation. `/board-audit` runs it first, before its own
+  sweeps, because a malformed board makes those sweeps unreliable.
 
 **Attempt discipline (the anti-loop rule).** Every dispatch of a task increments its `attempts:`
 frontmatter field and is logged with that number. A failed attempt may be re-dispatched ONCE to the
@@ -102,6 +111,19 @@ same agent, and the new brief must state what changed since the last attempt - a
 a loop, not a retry, and is never sent. At `attempts: 3` the task goes `Blocked` in both places with
 a record of what was tried, and the orchestrator escalates to the user. No exceptions: a task that
 three briefs could not land has a problem a fourth brief will not fix.
+
+**Failure-reason taxonomy.** Not every failed dispatch is the same kind of problem, so every one is
+logged in the task's session row with an `attempt-reason` of exactly one of three values:
+
+- `infra` - the tooling failed, not the plan (a flaky test runner, a crashed subprocess, a network
+  blip). May be re-dispatched with the SAME, unchanged brief - the anti-loop rule above does not
+  apply, because nothing about the brief was wrong.
+- `scope` - the brief was insufficient or wrong for the work. Governed by the anti-loop rule above:
+  re-dispatch requires a CHANGED brief, and the attempt counts toward the `attempts: 3` cap.
+- `env` - the environment itself cannot do the work (a missing dependency the agent cannot install,
+  a permission the sandbox denies, a platform mismatch). Escalate to the user immediately, without
+  retrying and without incrementing `attempts:` - no brief fixes an environment the agent cannot
+  change.
 
 **Resume protocol (mandatory at every session start).** Before continuing any task in a new or
 compacted session, run `/task-resume TASK-NNN`: read `master-plan.md` for position and deps, then the

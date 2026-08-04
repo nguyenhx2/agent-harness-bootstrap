@@ -37,8 +37,9 @@ yet"; Pending means "we consciously decided to stop working on this". A Planned 
 - **At registration**: create the task file from the template in `active/` with `status: Planned`, and
   add its row to the board. No work begins before the task file exists.
 - **At task start**: flip the file and the board row to `Active`, and name the owner and the branch.
-- **During work**: append a row to the task file's session log as work happens - what was done,
-  what was decided, what ran and what it returned. Concise. The log is the evidence a gate ran.
+- **During work**: append a row to the task file's session log after every tool-call batch that
+  changed files, not at the end of the session - what was done, what was decided, what ran and what
+  it returned. Concise. The log is the evidence a gate ran.
 - **A gate counts as passed only when the task file's session log records the run.** A claim in a
   chat message, a PR description, or an agent's final report is a claim, not a fact. Verify against
   git state and the log.

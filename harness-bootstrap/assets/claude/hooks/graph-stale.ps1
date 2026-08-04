@@ -3,7 +3,9 @@
 # Non-blocking. When a SOURCE file is edited and a code graph has been built, records the path in
 # .claude/state/code-graph.stale so agents (and /code-graph --check) know the graph no longer
 # matches the code. The rebuild itself is deliberate (/code-graph), never a side effect of an edit.
-# Never blocks: always exit 0.
+# Once the drift is large (more than 20 edited files since the last build), this ALSO emits
+# hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
+# specs-reminder.ps1's fixed-literal JSON. Never blocks: always exit 0.
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -25,5 +27,13 @@ if (-not (Test-Path $graph)) { exit 0 }
 
 $stateDir = Join-Path $base ".claude/state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Force $stateDir | Out-Null }
-Add-Content -Path (Join-Path $stateDir "code-graph.stale") -Value $norm
+$staleFile = Join-Path $stateDir "code-graph.stale"
+Add-Content -Path $staleFile -Value $norm
+
+$lines = (Get-Content $staleFile | Measure-Object -Line).Lines
+if ($lines -gt 20) {
+    $msg = "The code graph is now stale against $lines edited source file(s) - run /code-graph to refresh the module map before relying on it for dispatch decisions."
+    $out = @{ hookSpecificOutput = @{ hookEventName = "PostToolUse"; additionalContext = $msg } } | ConvertTo-Json -Compress
+    Write-Output $out
+}
 exit 0
