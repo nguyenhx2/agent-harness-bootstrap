@@ -96,11 +96,19 @@ artifacts, they are different tasks. Never bundle unrelated work into one task.
   the FIRST time it is found, capturing the WORKAROUND and not just the symptom. Otherwise every agent
   rediscovers the same gotcha.
 
+**Attempt discipline (the anti-loop rule).** Every dispatch of a task increments its `attempts:`
+frontmatter field and is logged with that number. A failed attempt may be re-dispatched ONCE to the
+same agent, and the new brief must state what changed since the last attempt - an identical brief is
+a loop, not a retry, and is never sent. At `attempts: 3` the task goes `Blocked` in both places with
+a record of what was tried, and the orchestrator escalates to the user. No exceptions: a task that
+three briefs could not land has a problem a fourth brief will not fix.
+
 **Resume protocol (mandatory at every session start).** Before continuing any task in a new or
 compacted session, run `/task-resume TASK-NNN`: read `master-plan.md` for position and deps, then the
 task file's session log and orchestration-notes. Trust the files over conversation memory, and verify
 the working tree (`git status` / `git diff`) before continuing - files record intent, the tree records
-reality.
+reality. Then reconcile the subagent archive: a `.claude/state/history/` entry newer than a task's
+last session-log row is a finished run nobody logged - log it before dispatching anything new.
 
 **Quality gates before `Done`.** `qa-test` (tests green) → `code-reviewer` + `security-reviewer` in
 parallel → `/secret-scan` → PR/MR opened. Never skip a gate. Report a gate as passed ONLY when the

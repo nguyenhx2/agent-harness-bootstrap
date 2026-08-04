@@ -41,7 +41,7 @@ Loaded only when a matching file is touched:
 - security-privacy.md - vulnerability classes, secrets, standards anchoring.
 - ip-compliance.md - dependency licences, provenance, attribution, ownership.
 - performance.md - performance pattern tables and the evidence rule.
-- testing.md - TDD, mocking, coverage.
+- testing.md - test discipline, mocking, coverage.
 - data-model.md - schema and migration discipline.
 - frontend.md - UI conventions.
 - docs-workflow.md - where docs live and when they change.

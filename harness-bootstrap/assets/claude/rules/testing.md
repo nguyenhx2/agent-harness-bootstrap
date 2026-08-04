@@ -10,14 +10,25 @@ paths:
 How tests are written. How tests are REVIEWED is in code-quality.md, which also owns the severity
 model used to grade a testing gap.
 
+{{#IF_TDD}}
 ## Test-driven, for anything with behavior
 
 Red, green, refactor. Write the failing test first, from the acceptance criteria of the requirement
 the task names, then make it pass, then clean up.
 
 - Business logic, handlers, and data transforms are always test-first.
-- Pure presentation, generated code, and configuration are not - do not perform TDD theater on a
-  file with no behavior.
+{{/IF_TDD}}
+{{^IF_TDD}}
+## Tests prove the criteria
+
+Every acceptance criterion of the requirement the task names has a test that proves it, written in
+the same change as the implementation - never promised for later. A criterion with no test is not
+done.
+
+- Business logic, handlers, and data transforms always ship with their tests.
+{{/IF_TDD}}
+- Pure presentation, generated code, and configuration are not - do not perform coverage theater on
+  a file with no behavior.
 - A test asserts the acceptance criterion in the requirement, not the implementation that happens
   to satisfy it. If a refactor that keeps behavior identical breaks the test, the test was wrong.
 

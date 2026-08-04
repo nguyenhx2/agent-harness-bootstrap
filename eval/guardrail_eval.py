@@ -69,7 +69,7 @@ VARS = {
         "DEP_MANIFEST_GLOBS": '"package.json"',
         "RESTRICTED_DENIES": '"Read(**/.restricted/**)",',
     }.items()},
-    "flags": ["posix", "ui", "db", "ai"],
+    "flags": ["posix", "ui", "db", "ai", "tdd"],
 }
 
 # (name, hook, expected_exit, payload_builder)  exit 2 = BLOCKED, 0 = allowed
@@ -88,7 +88,15 @@ def suite(repo: str) -> list[tuple]:
         ("commit: AI-attribution trailer",   "check-commit-msg", 2, p("Bash", command='git commit -m "feat(a): x\n\nCo-Authored-By: Claude <noreply@anthropic.com>"')),
         ("adr: edit an Accepted ADR",        "protect-adr",      2, p("Edit", file_path="docs/architecture/decisions/ADR-001-x.md")),
 
+        # --- the spawn boundary: agents outside the harness never start ---
+        ("spawn: type outside the roster",   "guard-agent-spawn", 2, p("Agent", subagent_type="general-purpose", prompt="explore the repo")),
+        ("spawn: model escalation on a seat","guard-agent-spawn", 2, p("Agent", subagent_type="history-tracker", model="opus", prompt="summarize TASK-001")),
+        ("spawn: write seat with no task",   "guard-agent-spawn", 2, p("Agent", subagent_type="qa-test", prompt="run the suite and fix flakes")),
+
         # --- and the things it must NOT block, or the harness is unusable ---
+        ("allow: spawn a roster seat",       "guard-agent-spawn", 0, p("Agent", subagent_type="code-reviewer", prompt="review the diff for TASK-001")),
+        ("allow: write seat with a task",    "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TASK-001: run the suite, log results")),
+        ("allow: allowlisted Explore",       "guard-agent-spawn", 0, p("Agent", subagent_type="Explore", prompt="find the auth module")),
         ("allow: read source",               "protect-secrets",  0, p("Read", file_path="src/index.ts")),
         ("allow: run tests",                 "protect-secrets",  0, p("Bash", command="npm test")),
         ("allow: conventional commit",       "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): add endpoint"')),
@@ -147,6 +155,11 @@ def main() -> int:
         adr.mkdir(parents=True, exist_ok=True)
         (adr / "ADR-001-x.md").write_text("---\nstatus: Accepted\n---\n", encoding="utf-8")
         (adr / "ADR-002-y.md").write_text("---\nstatus: Proposed\n---\n", encoding="utf-8")
+        #  - guard-agent-spawn requires a write-capable dispatch to name a REGISTERED task, so the
+        #    must-allow case needs a real task file on the board.
+        tasks = repo / "docs/tasks/active"
+        tasks.mkdir(parents=True, exist_ok=True)
+        (tasks / "TASK-001-fixture.md").write_text("---\ntitle: fixture\nstatus: Active\n---\n", encoding="utf-8")
         for cmd in (["git", "init", "-q", "-b", "main", "."],
                     ["git", "config", "user.email", "eval@local"],
                     ["git", "config", "user.name", "eval"],

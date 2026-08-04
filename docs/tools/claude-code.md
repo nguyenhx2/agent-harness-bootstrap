@@ -2,7 +2,7 @@
 
 Claude Code is where the harness is **generated** and where it enforces most completely. It reads
 `.claude/` (agents, rules, hooks, `settings.json`) plus `AGENTS.md` and `CLAUDE.md`. Enforcement is the
-`settings.json` permission deny list backed by six blocking hooks. Cursor and Codex render the same
+`settings.json` permission deny list backed by seven blocking hooks. Cursor and Codex render the same
 harness; this is the reference implementation they are ported from.
 
 ## Setup
@@ -16,14 +16,14 @@ everything below is written by `scripts/scaffold.py`, not by hand.
 | Path | What it does |
 |---|---|
 | `.claude/agents/` | 15 agents, each with an explicit `model`, `effort`, `tools`, and `maxTurns` |
-| `.claude/rules/*.md` | 14 rules with optional `paths:` frontmatter for path-scoped lazy loading |
-| `.claude/hooks/` | 6 hooks (`.sh` on macOS/Linux, `.ps1` on Windows) plus a README |
+| `.claude/rules/*.md` | 15 rules with optional `paths:` frontmatter for path-scoped lazy loading |
+| `.claude/hooks/` | 7 hooks (`.sh` on macOS/Linux, `.ps1` on Windows) plus a README |
 | `.claude/settings.json` | Permission allow/deny list and the PreToolUse / PostToolUse / SubagentStop hook registration |
 | `AGENTS.md` + `CLAUDE.md` | The vendor-neutral contract; `CLAUDE.md` is a thin `@AGENTS.md` import plus Claude-only bits |
 
 Rules load lazily. A rule with no `paths:` loads every session; a rule with `paths: [glob]` attaches only
-when a matching file is touched. Only 6 of the 14 load unconditionally: `00-overview`, `agent-guardrails`,
-`model-policy`, `ai-governance`, `task-tracking`, `conventional-commits`. The other 8 stay off the default
+when a matching file is touched. Only 6 of the 15 load unconditionally: `00-overview`, `agent-guardrails`,
+`model-policy`, `ai-governance`, `task-tracking`, `conventional-commits`. The other 9 stay off the default
 context.
 
 ## What enforces vs. what is advice-only
@@ -58,7 +58,7 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo ships
-`python eval/guardrail_eval.py` (15 known-bad payloads at a real generated harness, expect 15/15). In the
+`python eval/guardrail_eval.py` (21 payloads at a real generated harness, expect 21/21). In the
 tool itself, try to read `.env` or commit to `main` and confirm each is blocked.
 
 ## See also

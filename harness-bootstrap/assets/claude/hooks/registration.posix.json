@@ -19,6 +19,12 @@
         "hooks": [
           { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" }
         ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/guard-agent-spawn.sh" }
+        ]
       }
     ],
     "PostToolUse": [

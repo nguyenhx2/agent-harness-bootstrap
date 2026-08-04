@@ -3,6 +3,7 @@ name: devops
 description: CI/CD ({{CI_PLATFORM}}), environments, infrastructure, and gated releases to {{HOSTING}}. Use for pipeline changes, environment configuration, and deploys.
 tools: Read, Grep, Glob, Bash
 model: sonnet
+maxTurns: 40
 effort: medium
 color: cyan
 ---

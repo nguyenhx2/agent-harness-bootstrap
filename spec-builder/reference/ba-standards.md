@@ -117,7 +117,9 @@ the quality gate. Without those, the split would be a downgrade.
 ### Why stable IDs and anchors
 
 `FR-nn`, `NFR-XXX-nn`, `UC-xx`, `US-xx`, `BR-xx`, `AS-xx`, `OI-xx`, `SCR-xx`, `INT-xx`, `CO-xx`,
-`DP-xx`, `R-xx`, `BF-xx` - each with an anchor form (`{#fr-01}`) and a relative-path link convention.
+`DP-xx`, `R-xx`, `BF-xx` - each with a relative-path link convention, and an anchor form for the ones
+addressed directly and often enough to need one (`{#fr-01}`, `{#oi-01}`, the NFR category anchors
+like `{#nfr-security}`). The rest are linked by a plain file link; see writing-rules.md.
 
 BABOK and 29148 both call for traceability. Neither says how. The position taken here:
 
@@ -386,8 +388,13 @@ and hooks. Break the first link and the last two are enforcing nothing in partic
 `harness-bootstrap` step 6: "In brownfield, seed Phase 1 from the analysis gap list - one registered
 task per gap - so the orchestrator finds real work on its first session."
 
-**Section 12 is the greenfield equivalent of that gap list.** It is the only section that produces
-work items rather than descriptions:
+**Section 12 is the greenfield equivalent of that gap list - by analogy, not by a wired mechanism.**
+Unlike 03, 05, 07, 08, and 10, `harness-bootstrap`'s intake and scaffolder have no step that reads
+`12-technical-feasibility.md`: there is no `{{VAR}}` it fills and no flag it sets. Turning 12 into a
+Phase 1 backlog is manual work you do while running `harness-bootstrap`, using the table below as the
+checklist - it is the one entry in this consumption map that stays judgment on the harness side too,
+not only on the spec-builder side. It is still the most valuable section for that purpose, because it
+produces work items rather than descriptions:
 
 | Row in 12 | Becomes |
 |-----------|---------|

@@ -51,15 +51,22 @@ invented - anything not stated by a stakeholder or clearly implied by source mat
 | `US-xx` | 05 | `US-01` |
 | `BR-xx` | 05 | `BR-01` |
 | `AS-xx` | 11 | `AS-01` (assumption) |
-| `OI-xx` | 11 | `OI-01` (open issue) |
+| `OI-xx` | 11 | `OI-01` (open issue), anchored `{#oi-01}` |
+| `CO-xx` | 11 | `CO-01` (constraint) |
+| `DP-xx` | 11 | `DP-01` (dependency) |
+| `R-xx` | 12 | `R-01` (risk) |
+| `BF-xx` | 04 | `BF-01` (business flow) |
+| `SCR-xx` | 10 | `SCR-01` (screen) |
+| `INT-xx` | 09 | `INT-01` (integration) |
+| `SH-xx` | 02 | `SH-01` (stakeholder) |
 
 IDs are stable. A requirement that is dropped keeps its ID and is marked withdrawn; it is never
 reused, because a task, a commit, and a test somewhere still name it.
 
 ## Traceability
 
-Every functional requirement is reachable from five directions, and each link is a relative path
-plus an anchor:
+Every functional requirement is reachable from five directions, and each link is a relative path,
+anchored wherever the target carries one:
 
 ```mermaid
 flowchart LR

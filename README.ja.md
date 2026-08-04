@@ -8,16 +8,12 @@
 
 <p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 15/15](https://img.shields.io/badge/guardrail%20eval-15%2F15-brightgreen.svg)](eval/guardrail_eval.py)
-[![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code)
-[![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![Guardrail eval: 21/21](https://img.shields.io/badge/guardrail%20eval-21%2F21-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 **Claude Code** のための2つのスキル。`spec-builder` は、AIがそれをもとに構築できる仕様を書きます。
 `harness-bootstrap` は、AIがその内側で動く `.claude/` ハーネス - エージェント、ルール、ガードレール、タスクボード -
-を*あなたの*リポジトリに合わせて構築します。できあがったものは、ガードレールごと Cursor と Codex にも移植できます。
+を*あなたの*リポジトリに合わせて構築します。
 
 **まずはここから:**
 
@@ -27,11 +23,7 @@ curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/
   && rm skills.zip
 ```
 
-```text
-/spec-builder           # write the contract first
-/harness-bootstrap      # build or update the .claude harness for this repo
-```
-
+続けて Claude Code で `/spec-builder`（契約を書く）または `/harness-bootstrap`（ハーネスを構築する）を呼び出します。
 Python 3 が必要です。詳しい[インストール](#インストール)（Cursor と Codex を含む）と[使い方](#使ってみる)は下にあります。
 
 ## 60秒で見る
@@ -63,7 +55,7 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 | | 何を作るか | 必要になるとき |
 |---|---|---|
 | [**`spec-builder`**](spec-builder/) | **AIが理解できる入力。** `docs/specs/` 配下の13セクションからなる仕様セット。安定したIDを持つ要件、受け入れ基準、データモデル、必須のセキュリティNFR。アイデア、トランスクリプト、会議メモ、あるいはレガシードキュメントの山から構築します。**要件を決して勝手に作りません** - 未記述のものはすべてフラグ付きのオープンイシューになります。 | 誰も書き留めなかったせいで、AIが何を作るべきか推測しているとき。 |
-| [**`harness-bootstrap`**](harness-bootstrap/) | **AIがその内側で動くハーネス。** 15のエージェント、14のルール、6つのブロッキングフックと拒否リストを備えた `.claude/`、加えて `docs/tasks/`、クラッシュしても生き残るボード。*あなたの*リポジトリに合わせて仕立てられます。まずコードを読み、そこに実際にあるものを中心にハーネスを構築します。 | AIは構築できるが、それが害を与えるのを止めるものがなく、AIが忘れたときに何も生き残らないとき。 |
+| [**`harness-bootstrap`**](harness-bootstrap/) | **AIがその内側で動くハーネス。** 15のエージェント、15のルール、7つのブロッキングフックと拒否リストを備えた `.claude/`、加えて `docs/tasks/`、クラッシュしても生き残るボード。*あなたの*リポジトリに合わせて仕立てられます。まずコードを読み、そこに実際にあるものを中心にハーネスを構築します。 | AIは構築できるが、それが害を与えるのを止めるものがなく、AIが忘れたときに何も生き残らないとき。 |
 
 これらは同じギャップの両端を覆います。**AIはあなたが何を望むかを知らず、そしてAIの行いを制約するものが何もない。**
 
@@ -93,10 +85,7 @@ AIエージェントを実際のリポジトリに投入すると、どのチー
 ## インストール
 
 2つのスキルは **Claude Code** の内側で動きます - そこで `/harness-bootstrap` と `/spec-builder` を呼び出します。
-**Cursor** と **Codex** はスキルを実行しません。スキルが生成したハーネスを実行するので、そのセットアップは
-すでにスキャフォールドされたリポジトリに対する1コマンドです。
-
-### Claude Code
+**Cursor** と **Codex** はスキルを実行せず、スキルが生成したハーネスを実行します。
 
 **[最新リリースをダウンロード](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)**、
 または両方のスキルを1行でインストール:
@@ -113,35 +102,20 @@ curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/
 cat ~/.claude/skills/harness-bootstrap/VERSION
 ```
 
-### Cursor
+### Cursor と Codex
 
 まず Claude Code から一度ハーネスをスキャフォールドし（または既存の `.claude/` をコピーして持ち込み）、それを
 移植します。リポジトリのルートから:
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool cursor
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool cursor   # または codex, all
 ```
 
-これは `.cursor/rules/*.mdc` と `.cursor/hooks.json`、加えてそのアダプターを書き出します。Cursor は `AGENTS.md`
-とルールを自力で読みます。フックはアダプターを通じて強制します。インストールするリリースはありません -
-ポーターはスキルに同梱されています。
-
-### Codex
-
-同じ出発点、1コマンド:
-
-```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool codex
-```
-
-Codex は `AGENTS.md` をネイティブに読み、そのフックのペイロードは Claude Code のものと一致するので、これは
-既存のフックを指す `.codex/hooks.json` を書き出すだけです。`--tool all` を使うと、Cursor と Codex を一度に
-セットアップできます。
+インストールするリリースはありません - ポーターはスキルに同梱されています。仕組みは後述の
+「Cursor と Codex でも動く」の節を参照してください。
 
 <details>
 <summary><b>スキルを1つずつ、バージョン固定、チェックサム、またはソースから</b></summary>
-
-<br>
 
 ```bash
 # one skill at a time (stable URLs, always the newest release)
@@ -150,22 +124,16 @@ unzip -o hb.zip -d ~/.claude/skills/ && rm hb.zip
 
 curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/spec-builder.zip -o sb.zip
 unzip -o sb.zip -d ~/.claude/skills/ && rm sb.zip
-```
 
-```bash
 # a pinned version
 V=1.3.0
 curl -fsSL "https://github.com/nguyenhx2/agent-harness-bootstrap/releases/download/v${V}/harness-bootstrap-v${V}.zip" -o hb.zip
 unzip -o hb.zip -d ~/.claude/skills/ && rm hb.zip
-```
 
-```bash
 # verify the download
 curl -fsSLO https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
-```
 
-```bash
 # from source
 git clone https://github.com/nguyenhx2/agent-harness-bootstrap.git
 cp -r agent-harness-bootstrap/harness-bootstrap ~/.claude/skills/
@@ -186,32 +154,30 @@ cp -r agent-harness-bootstrap/spec-builder      ~/.claude/skills/
 /spec-builder           # write the specs first
 ```
 
-**リポジトリにすでにコードがある場合**、`/harness-bootstrap` を単体で実行します。何かを書く前にコードを読み -
-スタック、モジュール、慣習、危険な操作 - そのインベントリをまず見せてくれます。インテーク（受け入れ）のほとんどは
-見つけたものから事前入力されるので、コードでは分からないことだけを尋ねられます。既存のファイルは
-**上書きではなく、突き合わせて調整されます**。あなたが書いたもの、または別のツールが作成したものはすべて
-`CONFLICT` として報告され、あなたがマージできるようにその場に残されます - 決して置き換えられません。
+**リポジトリにすでにコードがある場合**、`/harness-bootstrap` を単体で実行します。まずコードを読み -
+スタック、モジュール、慣習、危険な操作 - そのインベントリを見せ、見つけたものからインテークを事前入力するので、
+コードでは分からないことだけを尋ねられます。既存のファイルは**上書きではなく、突き合わせて調整されます**。
+競合は `CONFLICT` として報告され、あなたがマージできるようにその場に残されます - 決して置き換えられません。
 
 **アイデアと空のリポジトリから始める場合**、まず `/spec-builder` を実行し、次に `/harness-bootstrap` を実行します。
 仕様が先に来るのは、エージェントの陣容が仕様から生まれるからです。要件をドメインごとにクラスタリングし、
 ドメインごとに1つの開発エージェントを、それぞれが所有するモジュールパスにスコープを絞って割り当てます。
 
 いずれにせよ、あなたはプランを目にします - 何が作成され、保持され、変更されるか、加えてすべてのエージェントの
-モデルとエフォートの予算 - そしてあなたが承認するまで何も書かれません。スキャフォールドそのものは約5分の1秒しか
-かかりません。
+モデルとエフォートの予算 - そしてあなたが承認するまで何も書かれません。
 
 ここでは何もグローバルな状態になりません。両方のスキルは対象のリポジトリ内、`.claude/` と `docs/` 配下にのみ
-書き込みます。あなたの `~/.claude/skills/` ディレクトリには決して触れず、ハーネス全体は削除できるファイルの集合です。
-`.claude/` を削除すれば、リポジトリはまさに元通りになります。
+書き込み、あなたの `~/.claude/skills/` ディレクトリには決して触れません。`.claude/` を削除すれば、
+リポジトリはまさに元通りになります。
 
 ### リポジトリに置かれるもの
 
 ```text
 .claude/
   agents/           15 agents, each with an explicit model, effort, tool grant and turn limit
-  rules/            14 rules - 6 always loaded, 8 that load only when you touch a matching file
+  rules/            15 rules - 6 always loaded, 9 that load only when you touch a matching file
   commands/         /new-task /task-resume /implement-fr /review-changes /secret-scan /deploy ...
-  hooks/            6 hooks that block bad actions before they happen
+  hooks/            7 hooks that block bad actions before they happen
   settings.json     permission allow/deny + hook registration
 docs/
   tasks/
@@ -220,8 +186,6 @@ docs/
   specs/ requirements/ architecture/ context/ templates/
 AGENTS.md + CLAUDE.md
 ```
-
----
 
 ## ハーネスが保証すること
 
@@ -236,9 +200,10 @@ AGENTS.md + CLAUDE.md
 | `main` に直接コミットする | ブロック |
 | Accepted の ADR を編集する | ブロック |
 | AI帰属のトレーラーを付けたコミットを送る | ブロック |
+| 陣容外のエージェントを起動する、そのモデルをエスカレーションする、タスクなしで書き込み座席をディスパッチする | ブロック |
 
 ```bash
-python eval/guardrail_eval.py   # 15 known-bad payloads at a real generated harness -> 15/15
+python eval/guardrail_eval.py   # 21 payloads at a real generated harness -> 21/21
 ```
 
 すべてのエージェントを Opus から Haiku に入れ替えて再実行してください。結果は同一です。ループの中にモデルはいません。
@@ -257,14 +222,12 @@ python eval/guardrail_eval.py   # 15 known-bad payloads at a real generated harn
   <img src="docs/assets/memory-hierarchy.svg" alt="Memory tiers: always-RAM, lazy-RAM, disk, archive" width="820">
 </p>
 
-状態は、圧縮が要約して消し去るコンテキストウィンドウではなく、エージェントが作業しながら書く、コミットされた
-マークダウンに残ります。クラッシュのあと、空のコンテキストを持つエージェントは `docs/tasks/active/` をスキャンし、
-セッションログを読み、ブランチをボードと突き合わせて調整し、記憶ではなく `git` に照らして検証し、
-最後に記録された行から続行します。`/task-resume` があなたの代わりにそれを行います。
+状態は、圧縮が要約して消し去るコンテキストウィンドウではなく、エージェントが*作業しながら*書く、コミットされた
+マークダウンに残ります。クラッシュのあと、空のコンテキストを持つエージェントは `docs/tasks/active/` の
+最後に記録された行から再開します - `/task-resume` があなたの代わりにそれを行います。
 
 それを機能させるルール: **ゲートは、セッションログがそれを記録したときにのみ、通過したものと見なされる。**
 エージェントの「完了」は、あなたが検証する主張であって、決して事実ではありません。
-
 詳細: [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md)。
 
 ### 使うつもりのなかったトークンへの支払いをやめる
@@ -272,7 +235,7 @@ python eval/guardrail_eval.py   # 15 known-bad payloads at a real generated harn
 | デフォルト | ここでは |
 |---|---|
 | `model:` のないエージェントは呼び出し元のティアを継承するので、ログ要約のエージェントが Opus 料金で課金される | すべてのエージェントが明示的な `model:` と `effort:` を持つ |
-| `paths:` のないルールは、すべてのエージェントのすべてのセッションに、永久に読み込まれる | 14のルールのうち8つがパススコープ付き。**ルール内容の66%がデフォルトセッションに決して入らない** |
+| `paths:` のないルールは、すべてのエージェントのすべてのセッションに、永久に読み込まれる | 15のルールのうち9つがパススコープ付き。**ルール内容の67%がデフォルトセッションに決して入らない** |
 | ループするエージェントは、毎ターン、無制限にフルコンテキストを消費する | ループが「すでに何かがおかしくなった」ことを意味するあらゆる座席に `maxTurns` |
 | `tools:` の省略は、スキーマ込みで、マシン上のすべてのツールを継承する | 絞り込んだ付与。レビュアーは `Read, Grep, Glob, Bash` を得て、それ以外は何も得ない |
 
@@ -284,10 +247,9 @@ python eval/guardrail_eval.py   # 15 known-bad payloads at a real generated harn
 | haiku のみ | 0.61 |
 
 Opus は Sonnet の **1.67倍**であって5倍ではないので、ティアはたいていの助言が想定するより小さいダイヤルであり、
-`effort:` のほうが大きなダイヤルです。デフォルトの陣容は意図的に最安ではありません。その差額を Opus のレビューゲートに
-費やします。その賭けの反対側を取りたければ、[`roster.md`](harness-bootstrap/reference/roster.md) の1つのテーブルを
-編集してください。これらの数字は公表価格からモデル化したもので、実測ではありません -
-`python benchmark/model_cost.py` を実行してください。
+`effort:` のほうが大きなダイヤルです。デフォルトの陣容は意図的に最安ではありません - その差額を Opus の
+レビューゲートに費やします。その賭けの反対側を取りたければ [`roster.md`](harness-bootstrap/reference/roster.md)
+を編集してください。公表価格からモデル化したもので、実測ではありません - `python benchmark/model_cost.py` を実行してください。
 
 ---
 
@@ -298,31 +260,26 @@ Opus は Sonnet の **1.67倍**であって5倍ではないので、ティアは
 </p>
 
 あなたの `.claude/` フォルダの中に、勝手に作られたものは何もありません。各エージェント、ルール、フック、拒否エントリは、
-現実の何かに遡ります。あなたのコード、あなたの仕様、あるいはインテークであなたが答えた回答であり、`scaffold.py` が
-残りをディスク上のファイルからコピーします。ひとたび動き出せば、各パーツが互いを保ちます。オーケストレーターは
-すべてのエージェントをディスパッチしますが、プロダクトコードは書けません。レビュアーは開発エージェントをゲートしますが、
-何も編集できません。ボードは実際に起きたことを記録し、フックは尋ねることなくそれら全員を止めます。
-
-### 全体像を1枚の絵で
+あなたのコード、あなたの仕様、あるいはインテークでの回答という現実の何かに遡ります。ひとたび動き出せば、各パーツが
+互いを保ちます。オーケストレーターはすべてのエージェントをディスパッチしますが、プロダクトコードは書けません。
+レビュアーは開発エージェントをゲートしますが、何も編集できません。ボードは実際に起きたことを記録し、フックは
+尋ねることなくそれら全員を止めます。
 
 <p align="center">
   <img src="docs/assets/harness-architecture.svg" alt="Harness layers, with the model drawn as a swappable layer" width="820">
 </p>
 
-モデルは上部近くのスロットに収まります。その下のすべての層 - 拒否リスト、フック、ツール付与、ボード - は
-決定論的で、モデルが変わっても変わりません。
-
-モデルの**ティア**は今日でも入れ替え可能です: `opus`、`sonnet`、`haiku`、`fable`。モデルの**ベンダー**は違います。
-陣容をセルフホストのモデルやサードパーティのモデルに再指定するのは、設定変更ではなく移植であり、ここにアダプターは
-同梱されていません。[`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) の Gap 2 を参照してください。
+全体像を1枚の絵で: モデルは上部近くのスロットに収まり、その下のすべての層 - 拒否リスト、フック、ツール付与、
+ボード - は決定論的で、モデルが変わっても変わりません。モデルの**ティア**は今日でも入れ替え可能です
+（`opus`、`sonnet`、`haiku`、`fable`）。モデルの**ベンダー**は違います - 陣容をセルフホストのモデルやサードパーティの
+モデルに再指定するのは、設定変更ではなく移植です。[`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) の Gap 2 を参照してください。
 
 ---
 
 ## Cursor と Codex でも動く
 
 Cursor と Codex はどちらも、Claude Code のものに十分近いフックシステムを備えているので、ルールだけでなく
-ガードレールも移植されます。それぞれの1コマンドセットアップは上の[インストール](#インストール)にあります。
-ここでは、実際に何が引き継がれ、どこで止まるかを示します:
+ガードレールも移植されます - 実際に何が引き継がれ、どこで止まるかを示します:
 
 | | Claude Code | Cursor | Codex |
 |---|---|---|---|
@@ -330,30 +287,23 @@ Cursor と Codex はどちらも、Claude Code のものに十分近いフック
 | 強制 | `settings.json` フック | `.cursor/hooks.json` + 生成されたアダプター | `.codex/hooks.json`（フックが直接登録される） |
 | 秘密の読み取り、`main` へのコミットをブロック | はい | はい | はい |
 
-**Codex** はリポジトリのルートで `AGENTS.md` をセットアップなしで読み、そのフックのペイロードは Claude Code のものと
-同一なので、ポーターは既存のフックを `.codex/hooks.json` に直接登録します。
-
-**Cursor** は `AGENTS.md` と `.cursor/rules/*.mdc` を読みます。そのフックのイベントと出力は異なるので、ポーターは
-Cursor のペイロードをハーネスのフックへ、そしてその逆へと変換する小さなアダプターを書き出します。このアダプターは
-CI でユニットテストされています。`.env` の読み取りと `main` へのコミットを正しく拒否し、`npm test` を許可します。
+**Codex** は `AGENTS.md` をネイティブに読むので、ポーターは既存のフックを直接登録します。**Cursor** は
+`AGENTS.md` と `.cursor/rules/*.mdc` を、CI でユニットテストされる小さなアダプターを通じて読み、そのフックの
+ペイロードをハーネスのフックへ、そしてその逆へと変換します。
 
 正直な2つの限界。どちらもポーターが表示し、それ以外の場所では強制されません:
 
 - **Codex** はファイル編集をコマンド内にパスを含む `apply_patch` を通じてルーティングするので、`protect-adr`
   （ファイルパスを読む）はそこではベストエフォートです。Bash のガードは厳密です。
 - **Cursor** の `afterFileEdit` は観測的なので、Accepted の ADR への編集は、事前にブロックされるのではなく
-  事後にフラグ付けされます。シェルコマンドやファイル読み取りを通じて到達可能なものはすべて、Claude Code と
-  同じようにブロックされます。
+  事後にフラグ付けされます。
 
-3つのツールは1つの信頼できる情報源を共有します。`AGENTS.md` が契約であり、`.claude/`、`.cursor/`、`.codex/` は
-その3つのレンダリングで、同じアセットから生成されます。各ツールには、正確なファイル、強制対助言の表、そして
-検証方法を載せたページがあります:
+1つの信頼できる情報源: `AGENTS.md` が契約であり、`.claude/`、`.cursor/`、`.codex/` はその3つのレンダリングです。
+各ツールには、正確なファイルと検証方法を載せたページがあります:
 
 - [**Claude Code**](docs/tools/claude-code.md) - リファレンス。ハーネスがどう生成され、強制されるか。
 - [**Cursor**](docs/tools/cursor.md) - `.mdc` ルールとフックアダプター。
 - [**Codex**](docs/tools/codex.md) - ネイティブの `AGENTS.md` と直接登録されるフック。
-
----
 
 ## ガバナンス
 
@@ -362,13 +312,10 @@ CI でユニットテストされています。`.env` の読み取りと `main`
 
 - [**`model-policy.md`**](harness-bootstrap/assets/claude/rules/model-policy.md) - データを分類し
   （Public / Internal / Confidential / Restricted）、各クラスをどのモデルが処理してよいかを述べます。
-  Restricted のパスは読み取りの境界で拒否されるので、エージェントは開けないものを漏らすことができません。
 - [**`ip-compliance.md`**](harness-bootstrap/assets/claude/rules/ip-compliance.md) - 依存関係ライセンスの
   許可/拒否、AGPL-on-SaaS トリガー、そしてレビュアーが実行できる差分チェック。
 - [**`ai-governance.md`**](harness-bootstrap/assets/claude/rules/ai-governance.md) - どのアクションが、
   設定フラグではなく、その具体的なアクションを見た人間を必要とするか。
-
----
 
 ## リファレンス
 
@@ -386,17 +333,15 @@ CI でユニットテストされています。`.env` の読み取りと `main`
 | [`RELEASING.md`](docs/RELEASING.md) | Semver、成果物、ノートのフォーマット |
 | [`video/README.md`](video/README.md) | クリップ一式、パレット、そしてその再生成方法 |
 
-### 数字
-
-これが置き換える前身スキルに対して測定。`python benchmark/benchmark.py` で再現できます。
+**数字**。これが置き換える前身スキルに対して測定。`python benchmark/benchmark.py` で再現できます。
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むべきバイト数 | 234,196 | 85,641 | **-63%** |
-| モデルが出力として書くべきバイト数 | 95,064 | 14,595 | **-85%** |
-| デフォルトセッションから除外されたルール内容 | - | 74,697 B 中 49,394 B | **66%** |
+| リポジトリをブートストラップするためにモデルが読むべきバイト数 | 234,196 | 90,029 | **-62%** |
+| モデルが出力として書くべきバイト数 | 95,064 | 13,881 | **-85%** |
+| デフォルトセッションから除外されたルール内容 | - | 77,452 B 中 51,785 B | **67%** |
 | スキャフォールド時間 | - | 約0.2秒、73ファイル | - |
-| ガードレール eval | - | **15/15** | - |
+| ガードレール eval | - | **21/21** | - |
 
 バイトの数字は正確です。トークンの数字は、`ANTHROPIC_API_KEY` が設定されている場合を除いて推定であり、設定されている場合は
 スクリプトが実際のエンドポイントに照らしてカウントします。

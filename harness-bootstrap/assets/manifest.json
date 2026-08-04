@@ -1,5 +1,5 @@
 {
-  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR. Flags: ui, db, ai, audit, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
+  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR. Flags: ui, db, ai, audit, tdd, ddd, deploy_ask, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
   "files": [
     {
       "src": "claude/agents/ba-analyst.md",
@@ -98,6 +98,13 @@
       ]
     },
     {
+      "src": "claude/rules/ddd.md",
+      "dest": ".claude/rules/ddd.md",
+      "when": [
+        "ddd"
+      ]
+    },
+    {
       "src": "claude/rules/docs-workflow.md",
       "dest": ".claude/rules/docs-workflow.md"
     },
@@ -172,6 +179,22 @@
       "dest": ".claude/commands/scaffold-feature.md"
     },
     {
+      "src": "claude/commands/board-audit.md",
+      "dest": ".claude/commands/board-audit.md"
+    },
+    {
+      "src": "claude/commands/harness-tune.md",
+      "dest": ".claude/commands/harness-tune.md"
+    },
+    {
+      "src": "claude/commands/agent-permissions.md",
+      "dest": ".claude/commands/agent-permissions.md"
+    },
+    {
+      "src": "claude/commands/harness-update.md",
+      "dest": ".claude/commands/harness-update.md"
+    },
+    {
       "src": "claude/commands/secret-scan.md",
       "dest": ".claude/commands/secret-scan.md"
     },
@@ -211,6 +234,13 @@
     {
       "src": "claude/hooks/guard-main-commit.ps1",
       "dest": ".claude/hooks/guard-main-commit.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-agent-spawn.ps1",
+      "dest": ".claude/hooks/guard-agent-spawn.ps1",
       "when": [
         "windows"
       ]
@@ -259,6 +289,19 @@
         "posix"
       ],
       "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-agent-spawn.sh",
+      "dest": ".claude/hooks/guard-agent-spawn.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/spawn-allowlist",
+      "dest": ".claude/hooks/spawn-allowlist",
+      "subst": false
     },
     {
       "src": "claude/hooks/protect-adr.sh",

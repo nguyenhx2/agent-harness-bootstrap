@@ -35,14 +35,17 @@ step 3 fails the release if a `SKILL.md` version does not match the tag.
 **2. Write the CHANGELOG section.** Add `## vX.Y.Z` at the top of `CHANGELOG.md`, above the previous
 version. Group under **Added / Changed / Fixed / Removed** and use only the headings that apply.
 
-Write it for someone deciding whether to upgrade:
+Write it for someone deciding whether to upgrade, and keep it to the cap in
+[the note format](../../../docs/RELEASING.md#the-note-format): max 5 bullets per heading, max 2 lines
+per bullet, breaking changes in their own section first.
 
-- One line per item. What it is, not how you feel about it.
+- One line per item. What it is, not how you feel about it, plus the one-clause why.
 - For a **Fixed** entry, name the **failure mode**, not just the patch. "Fixed a bug in the hooks"
   tells a reader nothing; "hooks failed OPEN under WSL, so the guardrails silently stopped guarding"
   tells them whether they were exposed.
+- If an item needs more than 2 lines to explain, link to the relevant doc instead of expanding it.
 - No em-dashes. No hype. No unsourced numbers - every figure must trace to a script in this repo, and
-  a modelled figure says it is modelled.
+  a modelled figure says it is modelled. Include a count only when it changed (e.g. `15 -> 21 cases`).
 
 **3. Preflight.** This is the gate, not a formality:
 
@@ -58,7 +61,7 @@ the cause - do not work around it.
 block, whose diagrams do not render, or whose figures contradict the scripts.
 
 ```bash
-python eval/guardrail_eval.py                       # must be 15/15
+python eval/guardrail_eval.py                       # must be 21/21
 python benchmark/benchmark.py                       # must exit 0
 python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 5/5
 python scripts/check_numbers.py                     # figures match the scripts
@@ -93,8 +96,10 @@ git push origin vX.Y.Z
 gh release create vX.Y.Z --title "vX.Y.Z - <one line>" --notes-file notes.md dist/*
 ```
 
-The notes file follows the same **Added / Changed / Fixed / Removed** shape as the CHANGELOG section,
-plus an **Install** block:
+The notes file follows [the note format](../../../docs/RELEASING.md#the-note-format): a title with a
+one-line theme, an opening of at most 2 sentences, breaking changes in their own section first if any
+exist, then **Added / Changed / Fixed** (only the headings that apply, max 5 bullets each, max 2 lines
+per bullet), and an **Install** block. The whole body fits on one screen, about 40 lines:
 
 ```
 **Install**
@@ -133,4 +138,6 @@ Then record it in `CHANGELOG.md` under **Removed**, with the reason.
       `eval-results.md` + `benchmark-results.md` for this version.
 - [ ] Each zip carries `VERSION` inside the skill directory (the packager prints this - check it).
 - [ ] `gh release view` lists the attached assets. A release with no assets is not done.
+- [ ] Notes fit [the note format](../../../docs/RELEASING.md#the-note-format): breaking changes (if
+      any) first, max 5 bullets per heading, max 2 lines per bullet, whole body ~40 lines or less.
 - [ ] No em-dashes anywhere in the notes.

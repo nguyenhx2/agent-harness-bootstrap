@@ -77,7 +77,7 @@ Routing:
 {{ROUTING_TABLE}}
 
 The standard feature flow, and none of it is optional: `spec-guardian` locks the scope, the
-specialist implements test-first, `qa-test` runs the suites, `code-reviewer` and
+specialist implements against the locked criteria (test-first under TDD), `qa-test` runs the suites, `code-reviewer` and
 `security-reviewer` run in parallel, `/secret-scan` runs, and only then is the {{PR_OR_MR}} opened.
 Run it with `/implement-fr FR-NN`.
 
