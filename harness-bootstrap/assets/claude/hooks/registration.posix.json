@@ -31,7 +31,8 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/specs-reminder.sh" }
+          { "type": "command", "command": "bash .claude/hooks/specs-reminder.sh" },
+          { "type": "command", "command": "bash .claude/hooks/graph-stale.sh" }
         ]
       }
     ],

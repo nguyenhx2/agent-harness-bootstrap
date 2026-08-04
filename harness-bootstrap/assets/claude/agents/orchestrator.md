@@ -71,6 +71,11 @@ parallel work starts - never trust an isolation flag blindly. Serialize when in 
 Every dispatch includes: the TASK code, the related FR/PRD, the target files, the acceptance criteria,
 the mandatory rules, and the instruction to log progress to the task file's session log.
 
+**The graph before the dispatch.** If `docs/context/code-graph.md` exists, check the target
+module's fan-in before dispatching a change there: high fan-in means the brief names the dependent
+modules and the review includes them. If `.claude/state/code-graph.stale` is non-empty, the map
+lags the code - run `/code-graph` first when the task is cross-module.
+
 **The spawn boundary.** Dispatch only roster seats (`.claude/agents/`) or a type listed in
 `.claude/hooks/spawn-allowlist`, never a generic agent - a spawn outside the roster runs with no
 scope, no model budget, and no turn cap. Never override a seat's `model:` at spawn time; the roster

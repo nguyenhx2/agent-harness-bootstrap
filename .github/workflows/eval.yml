@@ -92,7 +92,7 @@ jobs:
           import guardrail_eval as G
 
           v = json.loads(json.dumps(G.VARS))
-          v["flags"] = [flavor, "ui", "db", "ai"]
+          v["flags"] = [flavor, "ui", "db", "ai", "tdd", "ddd"]
           v["vars"]["HOOK_RUNNER"] = "bash" if flavor == "posix" else \
               "powershell -NoProfile -ExecutionPolicy Bypass -File"
           v["vars"]["HOOK_EXT"] = "sh" if flavor == "posix" else "ps1"

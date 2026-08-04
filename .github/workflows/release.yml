@@ -128,9 +128,18 @@ jobs:
           # Title = the CHANGELOG section's summary line, i.e. the first line that is neither a
           # group heading nor a bullet. A blind `head -1` would yield "**Added**".
           SUMMARY=$(grep -m1 -vE '^[[:space:]]*$|^\*\*|^- ' notes.md || echo "release")
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
-            --notes-file notes.md \
-            dist/*
+          # Idempotent: a maintainer may have published the release by hand before this job ran.
+          # Creating over an existing release fails, so edit-and-clobber in that case instead.
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release edit "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
+              --notes-file notes.md
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
+              --notes-file notes.md \
+              dist/*
+          fi
           echo "attached:"
           gh release view "${GITHUB_REF_NAME}" --json assets -q '.assets[].name'

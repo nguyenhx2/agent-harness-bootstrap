@@ -96,9 +96,14 @@ The richest input, and the one most likely to be over-read. Discipline:
 
 ## Batching questions
 
-Use `AskUserQuestion`, at most 4 questions per call, grouped so each batch is answerable by one
-person in one sitting. Do not interleave "what is your NFR target for p95 latency" with "who signs
-this off" - they have different audiences and the mixed batch stalls on whichever is harder.
+Closed-choice questions (output language, security posture category, and similar - a fixed, small set
+of named options) go through **`AskUserQuestion`**: max 4 options per question, recommended option
+first labeled `"(Recommended)"` where one genuinely exists (most elicitation questions have no safe
+recommendation - see the rule above, do not manufacture one just to fill the label), up to 4 questions
+batched per call. Most elicitation questions are open-ended (a name, a number, a description) and stay
+plain chat questions instead. Grouped so each batch is answerable by one person in one sitting: do not
+interleave "what is your NFR target for p95 latency" with "who signs this off" - they have different
+audiences and the mixed batch stalls on whichever is harder.
 
 Suggested batches:
 
@@ -111,6 +116,26 @@ If the user cannot answer a batch, that is a result: each unanswered question be
 owner and a needed-by date. A spec set full of well-formed open issues is a good deliverable. A
 spec set with no open issues is almost always a fabricated one - real projects have unknowns, and a
 document that shows none has hidden them.
+
+## Express elicitation - pacing, not shortcuts
+
+A user in a hurry ("let's move fast", "keep it lean") can compress the *process*, never the *content*.
+There is no defaults table here like harness-bootstrap's express intake - business facts are never
+guessed, so there is nothing safe to default. What can legitimately move faster:
+
+- **Section order and depth, not section count.** Draft 01-05 from what the user already gave you
+  before opening a new elicitation batch for 06+, so the FR list is visibly forming instead of the user
+  waiting through four batches before anything is confirmable.
+- **Fewer, denser batches.** Combine the 4 suggested batches above into 2-3 where the source material
+  already answers most of a batch, asking only the gaps - still via `AskUserQuestion`/chat as above,
+  never silently.
+- **A shallower first pass, explicitly labeled.** Produce the FR list and confirmation gate fast, mark
+  06/07/09/12 as "pending detail" open issues rather than blocking on them, and schedule a second pass.
+  This is still every unknown recorded as an OI - never a filled-in guess standing in for the pass that
+  did not happen yet.
+
+Priorities, NFR targets, security posture, and volumes are asked in every pace - "fast" changes how
+soon you ask and how many at once, never whether you ask.
 
 ## The confirmation gate
 

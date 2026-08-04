@@ -195,6 +195,14 @@
       "dest": ".claude/commands/harness-update.md"
     },
     {
+      "src": "claude/commands/code-graph.md",
+      "dest": ".claude/commands/code-graph.md"
+    },
+    {
+      "src": "claude/commands/skill-wire.md",
+      "dest": ".claude/commands/skill-wire.md"
+    },
+    {
       "src": "claude/commands/secret-scan.md",
       "dest": ".claude/commands/secret-scan.md"
     },
@@ -241,6 +249,13 @@
     {
       "src": "claude/hooks/guard-agent-spawn.ps1",
       "dest": ".claude/hooks/guard-agent-spawn.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/graph-stale.ps1",
+      "dest": ".claude/hooks/graph-stale.ps1",
       "when": [
         "windows"
       ]
@@ -304,6 +319,14 @@
       "subst": false
     },
     {
+      "src": "claude/hooks/graph-stale.sh",
+      "dest": ".claude/hooks/graph-stale.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
       "src": "claude/hooks/protect-adr.sh",
       "dest": ".claude/hooks/protect-adr.sh",
       "when": [
@@ -326,6 +349,11 @@
         "posix"
       ],
       "exec": true
+    },
+    {
+      "src": "scripts/code-graph.py",
+      "dest": ".claude/scripts/code-graph.py",
+      "subst": false
     },
     {
       "src": "claude/settings.json",

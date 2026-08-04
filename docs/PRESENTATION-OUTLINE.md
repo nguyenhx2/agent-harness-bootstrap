@@ -285,8 +285,8 @@ shape behaviour; they do not enforce it.
 
 ### The strongest claim in the talk
 
-`eval/guardrail_eval.py` scaffolds a real harness and fires **21 known-bad and known-good payloads**
-at it: **11 must-block, 10 must-allow, 21/21 correct.**
+`eval/guardrail_eval.py` scaffolds a real harness and fires **22 known-bad and known-good payloads**
+at it: **11 must-block, 11 must-allow, 22/22 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -370,7 +370,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
    - `git commit` on `main` → blocked, with the hook's message
    - Edit an Accepted ADR → blocked
 6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **21/21** in seconds. Say it: *"No model was consulted. These are exit codes."*
+   **22/22** in seconds. Say it: *"No model was consulted. These are exit codes."*
 7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
    session and watch it pick up mid-task.
 
@@ -389,7 +389,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **21/21** (11 blocked, 10 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **22/22** (11 blocked, 11 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **5/5** | `port.py --self-test` |
 
@@ -397,8 +397,8 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **90,029** | **-62%** |
-| Read path (files read) | 24 | **7** | **-71%** |
+| Read path (bytes pulled into context) | 234,196 | **97,190** | **-59%** |
+| Read path (files read) | 24 | **7** | **-67%** |
 | Write path (bytes the model must author) | 95,064 | **13,881** | **-85%** |
 
 ### Session tax (paid on every request, of every agent, forever)
@@ -428,7 +428,7 @@ clobbered. An unresolved variable exits non-zero rather than shipping a placehol
 
 ### What ships
 
-**15** agents (+1 template), **14** rules, **14** commands, **6** hooks.
+**15** agents (+1 template), **15** rules, **20** commands, **8** hooks.
 
 ### Say this out loud, it is what makes the rest believable
 
@@ -504,12 +504,12 @@ prompt problem is the part the audience has not heard before.
 
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
-- **15** agents (+1 dev-agent template), **15** rules, **18** commands, **7** hooks
+- **15** agents (+1 dev-agent template), **15** rules, **20** commands, **8** hooks
 - **6** rules unconditional, **9** path-scoped → **67%** of rule content stays out of session
 - Always-RAM rules **25,667 bytes**; path-scoped **51,785 bytes**
-- Read path **-62%** (234,196 → 90,029 bytes), files read **-71%** (24 → 7)
+- Read path **-59%** (234,196 → 97,190 bytes), files read **-67%** (24 → 7)
 - Write path **-85%** (95,064 → 13,881 bytes)
-- Guardrail eval **21/21** (11 must-block, 10 must-allow), model-independent
+- Guardrail eval **22/22** (11 must-block, 11 must-allow), model-independent
 - Port adapter self-test **5/5**
 - Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
 - Scaffold **~0.2s**, 73 paths, idempotent on re-run
