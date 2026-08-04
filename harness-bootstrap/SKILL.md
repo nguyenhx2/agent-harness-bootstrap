@@ -181,7 +181,8 @@ rules and the Bash-based guards port exactly. `AGENTS.md` is already read native
 
 **Safety**
 - [ ] All four guardrail layers present: settings.json deny rules, hooks, `agent-guardrails.md`, and a
-      review command gated by `/secret-scan`.
+      review command gated by `/secret-scan`. [`reference/control-surfaces.md`](reference/control-surfaces.md)
+      ranks every control by hardness (enforced vs advisory) and is the citable reference for this bullet.
 - [ ] settings.json denies destructive ops (force push, `rm -rf`, direct prod deploy, secret reads, DB
       reset) **adapted to the stack actually found**. Note the limit honestly: these are prefix matches
       and are defeated by re-ordering (`rm -r -f`) - they are a speed bump, and the hooks are the gate.

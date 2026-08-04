@@ -2,7 +2,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **21/21 correct (11 must-block, 10 must-allow).**
+`python eval/guardrail_eval.py` -> **25/25 correct (11 must-block, 14 must-allow).**
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
 None of them consults the model.

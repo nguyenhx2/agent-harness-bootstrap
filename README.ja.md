@@ -9,7 +9,7 @@
 <p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 22/22](https://img.shields.io/badge/guardrail%20eval-22%2F22-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 25/25](https://img.shields.io/badge/guardrail%20eval-25%2F25-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -42,7 +42,7 @@
   まずあなたのコードを読み込むので、生成される内容は手で埋めるテンプレートではなく*あなたの*リポジトリに
   合ったものになる。
 - ガードレールはシェルスクリプトと終了コードであり、モデルの判断力に頼らない。すべてのエージェントを
-  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、22/22。
+  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、25/25。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
@@ -84,7 +84,7 @@ curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/
   agents/     15個のエージェント、それぞれ明示的な model / effort / tool grant / turn limit を持つ
   rules/      15個のルール - 常時読み込み6個、該当ファイルを触ったときだけ読み込む9個
   commands/   20個のスラッシュコマンド(下記の5個のチューニングコマンドを含む)
-  hooks/      8個のフック - 危険な操作を実行される前にブロックする
+  hooks/      9個のフック - 危険な操作を実行される前にブロックする(うち1個はアドバイザリのみで、その理由を明記)
   settings.json
 docs/
   tasks/      タスクボード: タスク1件につき1行、エージェントが作業しながら書くセッションログ
@@ -155,10 +155,10 @@ AGENTS.md + CLAUDE.md
 
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 97,190 | **-59%** |
+| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 107,311 | **-54%** |
 | モデルが出力として書くバイト数 | 95,064 | 13,881 | **-85%** |
 | デフォルトのセッションから除外されるルール内容 | - | 51,785 of 77,452 B | **67%** |
-| ガードレール評価 | - | **22/22** | - |
+| ガードレール評価 | - | **25/25** | - |
 
 ---
 

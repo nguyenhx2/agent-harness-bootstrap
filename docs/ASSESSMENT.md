@@ -8,8 +8,8 @@ backed by a file or a runnable script in this repo is marked as not delivered.
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
-| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 22 payloads (11 must-block, 11 must-allow) at it: 22/22 correct. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
-| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -59%, write path -85%). Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
+| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 25 payloads (11 must-block, 14 must-allow) at it: 25/25 correct. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
+| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -54%, write path -85%). Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
 | Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
 | Governance: model sovereignty | Enforced for data at rest; advisory beyond it | Gap 1 below. Partially closed. |
@@ -148,8 +148,8 @@ as a rule the model chose to follow - Gap 1's problem, in a third costume.
 
 ## What the repo supports today
 
-1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 22/22.
-2. **The harness itself is cheap to install and cheap to carry.** Measured: 59% less to read, 85%
+1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 25/25.
+2. **The harness itself is cheap to install and cheap to carry.** Measured: 54% less to read, 85%
    less to author, 67% of rule content kept out of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the

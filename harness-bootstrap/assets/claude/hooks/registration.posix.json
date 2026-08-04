@@ -4,7 +4,8 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/protect-adr.sh" }
+          { "type": "command", "command": "bash .claude/hooks/protect-adr.sh" },
+          { "type": "command", "command": "bash .claude/hooks/guard-agent-scope.sh" }
         ]
       },
       {

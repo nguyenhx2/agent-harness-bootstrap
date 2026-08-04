@@ -254,6 +254,13 @@
       ]
     },
     {
+      "src": "claude/hooks/guard-agent-scope.ps1",
+      "dest": ".claude/hooks/guard-agent-scope.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
       "src": "claude/hooks/graph-stale.ps1",
       "dest": ".claude/hooks/graph-stale.ps1",
       "when": [
@@ -314,6 +321,14 @@
       "exec": true
     },
     {
+      "src": "claude/hooks/guard-agent-scope.sh",
+      "dest": ".claude/hooks/guard-agent-scope.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
       "src": "claude/hooks/spawn-allowlist",
       "dest": ".claude/hooks/spawn-allowlist",
       "subst": false
@@ -353,6 +368,11 @@
     {
       "src": "scripts/code-graph.py",
       "dest": ".claude/scripts/code-graph.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/board-check.py",
+      "dest": ".claude/scripts/board-check.py",
       "subst": false
     },
     {

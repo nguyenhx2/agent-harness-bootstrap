@@ -207,7 +207,7 @@ class Solution(Scene):
             box("15 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("15 rules\n6 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("20 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("8 blocking hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("9 blocking hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  a board that survives a crash", NEUTRAL, WHITE, w=6.8, h=0.7, fs=19).move_to(
@@ -292,7 +292,7 @@ class Solution(Scene):
         caption(self, "Contract, enforcement, durable state, a chosen bill.", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("guardrail eval 22/22", GREEN_HI, fs=20),
+            tag("guardrail eval 25/25", GREEN_HI, fs=20),
             tag("Opus -> Haiku: byte-identical safety", GREEN_HI, fs=20),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
