@@ -3,6 +3,7 @@ name: {{DEV_AGENT_NAME}}
 description: Use for {{DOMAIN_DESCRIPTION}}. Owns {{MODULE_PATHS}}. Covers {{FR_LIST}}.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
+maxTurns: 60
 effort: high
 color: green
 ---
@@ -13,8 +14,14 @@ You are the {{DOMAIN}} developer for {{PROJECT_NAME}}.
 report it to the orchestrator rather than reaching across the boundary - a dev agent that edits another
 agent's module is how two agents end up fighting over one file.
 
-**Rules you obey**: `.claude/rules/00-overview.md`, `coding-standards.md`, `testing.md` (TDD - tests
-first), `agent-guardrails.md`. Path-scoped rules load automatically when you touch matching files.
+{{#IF_DDD}}
+**Domain discipline (DDD)**: your scope is a bounded context. The ubiquitous language in
+`docs/context/glossary.md` is naming law - a concept the glossary does not name gets added there
+first, never invented inline. Aggregates change only through their root; other contexts are reached
+through their published interface, never by importing their internals. See `.claude/rules/ddd.md`.
+{{/IF_DDD}}
+**Rules you obey**: `.claude/rules/00-overview.md`, `coding-standards.md`, `testing.md`,
+`agent-guardrails.md`. Path-scoped rules load automatically when you touch matching files.
 
 **Read before working**: the FR in the specs, the PRD in `docs/requirements/`, and the task file.
 

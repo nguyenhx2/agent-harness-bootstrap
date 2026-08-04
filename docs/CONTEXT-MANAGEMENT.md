@@ -60,8 +60,8 @@ of the work actually lives.
 
 | Tier | What lives there | When it loads | What it costs | What compaction does to it |
 |---|---|---|---|---|
-| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 6 unconditional files in `.claude/rules/`, the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,300 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
-| **Lazy-RAM** | The 8 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~49,400 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
+| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 6 unconditional files in `.claude/rules/`, the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
+| **Lazy-RAM** | The 9 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~51,800 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
 | **Disk** (the state of the work) | `docs/tasks/master-plan.md` (the board) and `docs/tasks/active/TASK-NNN.md` (goal, scope, acceptance criteria, decisions and blockers, session log) | On demand, by an explicit `Read` | A few hundred bytes read once per session | **Nothing.** It is committed markdown in git. This is the tier that survives everything |
 | **Archive** (append-only) | `.claude/state/history/` - one markdown file per finished subagent run, holding the prompt it was given and its final response | Never, unless read | Zero, until someone asks | Nothing. It is written by a hook after the fact, so no amount of context loss can erase it |
 
@@ -84,7 +84,7 @@ The six are `00-overview.md`, `agent-guardrails.md`, `model-policy.md`, `ai-gove
   session, deliberately: an agent that forgets where state lives will invent it."* The tier that
   tells the agent where disk is has to live in RAM.
 
-### Lazy-RAM: the 66%
+### Lazy-RAM: the 67%
 
 Everything else in `.claude/rules/` carries a `paths:` block:
 
@@ -96,8 +96,8 @@ paths:
 # Frontend
 ```
 
-`benchmark/RESULTS.md` measures the effect: 6 unconditional rules at 25,303 bytes against 8
-path-scoped rules at 49,394 bytes. **66% of the rule content is kept out of the default session.** The
+`benchmark/RESULTS.md` measures the effect: 6 unconditional rules at 25,667 bytes against 9
+path-scoped rules at 51,785 bytes. **67% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,
@@ -340,7 +340,7 @@ controls are which.
 | `tools:` allowlist in agent frontmatter | e.g. `code-reviewer` and `security-reviewer` get `Read, Grep, Glob, Bash` | What the agent cannot **reach**. A reviewer with `Edit` has stopped being a reviewer, and the frontmatter is what makes that structural rather than aspirational |
 | `maxTurns` | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. `cost-model.md`: *"the cost of a stuck agent is unbounded"* |
 
-`eval/guardrail_eval.py` scaffolds a harness and fires 15 known-bad payloads at it: **15/15 blocked**.
+`eval/guardrail_eval.py` scaffolds a harness and fires 21 payloads (11 must-block, 10 must-allow) at it: **21/21 correct**.
 Every block is a shell script and an exit code, which is what the eval's header describes:
 
 > `A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an accepted
@@ -402,7 +402,7 @@ The memory hierarchy of section 1 and the control ranking above are two views of
 
 Read it bottom-up. The work is at the bottom, and everything above it exists to protect it. The
 enforcement plane is the thickest band because it is the only one that does not negotiate: shell
-scripts and glob matching, no model consulted, `15/15`. Above that, the state plane is markdown in
+scripts and glob matching, no model consulted, `21/21`. Above that, the state plane is markdown in
 git; the context plane is the volatile window this document is about; the policy plane is advice. Only
 then does the **model** appear, in a slot near the top, with the seat-tier bindings (`judgment ->
 opus`, `implementation -> sonnet`, `mechanical -> haiku`) drawn as replaceable contents rather than as
@@ -484,8 +484,8 @@ Every claim above traces to a file in this repository:
 - `harness-bootstrap/assets/claude/settings.json` - deny rules and hook registrations.
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`, `hooks/README.md` - the SubagentStop archive.
 - `harness-bootstrap/reference/cost-model.md` - path-scoped rules, byte-stability, `maxTurns`.
-- `benchmark/RESULTS.md` - the 66% figure.
-- `eval/guardrail_eval.py` - 15/15.
+- `benchmark/RESULTS.md` - the 67% figure.
+- `eval/guardrail_eval.py` - 21/21.
 - `docs/ASSESSMENT.md` - what is enforced, what is advisory, and why routing cannot be hooked.
 
 External:

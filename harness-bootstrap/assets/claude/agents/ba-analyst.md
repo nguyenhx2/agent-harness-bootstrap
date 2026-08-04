@@ -3,6 +3,7 @@ name: ba-analyst
 description: Writes and edits the specification set in docs/specs/ and the PRDs in docs/requirements/. Use when requirements need capturing, restructuring, or updating. Writes only inside docs/.
 tools: Read, Write, Edit, Grep, Glob
 model: sonnet
+maxTurns: 40
 effort: high
 color: blue
 ---

@@ -21,25 +21,40 @@ so the process does not have to be remembered.
 6. **The eval must be green.** CI runs the guardrail eval and the scaffold matrix. Do not ship a
    harness whose guardrails do not block.
 7. **Every release carries its eval and benchmark.** The release attaches `eval-results.md` and
-   `benchmark-results.md`, captured from the tagged commit, so the "15/15" and the numbers are
+   `benchmark-results.md`, captured from the tagged commit, so the "21/21" and the numbers are
    provable per version. CI does this automatically on a tag.
 
 ## The note format
 
-Bullets. Short. Grouped under the Keep a Changelog headings, and only the ones that apply:
+Optimize for a reader deciding whether to upgrade in under a minute. The whole body must fit on one
+screen, about 40 lines.
+
+- **Title.** The version plus a one-line theme: `vX.Y.Z - <theme>`.
+- **Opening.** At most 2 sentences. What this release is, nothing more.
+- **Breaking changes.** If any exist, they get their own section, first, above Added/Changed/Fixed.
+  Each entry names the break and the exact migration step.
+- **Added / Changed / Fixed.** Only the headings that apply. Max 5 bullets per heading. Max 2 lines
+  per bullet. A bullet states what changed and the one-clause why - no narrative, no tutorial, no
+  restating what a doc already says. Link to the doc for detail instead of inlining it.
+- **Counts and metrics.** Only when they changed. Show the delta, e.g. `eval 15 -> 21 cases`. Drop a
+  metric that did not move.
+- **Install.** Unchanged: the unzip command per artifact.
+
+Skeleton:
 
 ```markdown
-**Added**
-- One line per item. What it is.
+# vX.Y.Z - <one-line theme>
 
-**Changed**
-- What changed and what a user has to do differently. If nothing, say nothing.
+<1-2 sentence opening: what this release is.>
+
+**Breaking** (only if applicable)
+- <what breaks> - migrate by <step>. See [docs/X.md](docs/X.md).
+
+**Added**
+- <what changed> - <why, one clause>.
 
 **Fixed**
-- The bug, and the failure mode it caused. "Fixed a bug" tells the reader nothing.
-
-**Removed**
-- What is gone and what replaces it.
+- <failure mode> - <why, one clause>.
 
 **Install**
 - unzip <artifact> -d ~/.claude/skills/
@@ -53,6 +68,8 @@ Rules for the prose:
   labelled modelled. Do not round in a flattering direction.
 - **Name the failure mode.** For a fix, say what went wrong, not just what was patched. A reader
   deciding whether to upgrade needs to know if they were exposed.
+- **Detail lives in the docs, not the notes.** If an item needs more than 2 lines to explain, link
+  to the relevant doc instead of expanding the bullet.
 
 ## The procedure
 

@@ -6,10 +6,10 @@
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 85,641 | -63% |
+| Read path (bytes the model must pull into context) | 234,196 | 90,029 | -62% |
 | Read path (files read) | 24 | 7 | -71% |
-| Write path (bytes the model must author) | 95,064 | 14,595 | -85% |
-| Rule content kept out of the default session | - | 66% | - |
+| Write path (bytes the model must author) | 95,064 | 13,881 | -85% |
+| Rule content kept out of the default session | - | 67% | - |
 | Scaffold time | - | ~0.2s | - |
 
 ## What is measured and what is estimated
@@ -43,8 +43,8 @@ The old skill kept its hooks, commands, rules and templates as fenced code block
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 7 | 85,641 | ~23,800 |
-| **Reduction** | **-71%** | **-63%** | **-63%** |
+| harness-bootstrap | 7 | 90,029 | ~25,000 |
+| **Reduction** | **-71%** | **-62%** | **-62%** |
 
 The new skill reads `SKILL.md` plus six reference docs. It never reads `assets/`: the scaffolder
 copies those files directly, so they never enter the context window at all.
@@ -57,7 +57,7 @@ lines of assets, then retype them*.
 | | Files authored | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 11 packs -> ~60 files | 95,064 | ~26,400 |
-| harness-bootstrap | 3 + `vars.json` | 14,595 | ~4,100 |
+| harness-bootstrap | 3 + `vars.json` | 13,881 | ~3,900 |
 | **Reduction** | | **-85%** | **-85%** |
 
 What the new skill still authors by hand is what cannot be templated: `tech-stack.md`,
@@ -71,10 +71,10 @@ agent, at the same priority as `CLAUDE.md`. It is not a one-time cost; it is ren
 
 | | Rules | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
-| Unconditional (always loaded) | 6 | 25,303 | ~7,000 |
-| Path-scoped (loaded on demand) | 8 | 49,394 | ~13,700 |
+| Unconditional (always loaded) | 6 | 25,667 | ~7,100 |
+| Path-scoped (loaded on demand) | 9 | 51,785 | ~14,400 |
 
-**66% of the rule content is kept out of the default session.** The database agent no longer carries
+**67% of the rule content is kept out of the default session.** The database agent no longer carries
 the frontend rules; the UI agent no longer carries the migration-safety rules. They load when Claude
 actually touches a matching file.
 

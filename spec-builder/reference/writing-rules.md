@@ -62,15 +62,17 @@ test that still names it; a recycled ID makes that reference lie.
 
 ## Cross-references
 
-Relative path plus anchor, always:
+Relative path, plus an anchor whenever the target ID has one (see the anchor-form column above); a
+plain file link when it does not, or when the reference is to a section as a whole:
 
 ```markdown
-`FR-01`
-`the security NFRs`
+[FR-01](05-functional-requirements.md#fr-01)
+[the security NFRs](07-non-functional-requirements.md#nfr-security)
+[BF-01](04-business-flows.md)
 ```
 
-Relative, so the links survive being moved, mirrored, or published. Anchored, so the reader lands
-on the requirement and not at the top of a 400-line file.
+Relative, so the links survive being moved, mirrored, or published. Anchored, wherever an anchor
+exists, so the reader lands on the requirement and not at the top of a 400-line file.
 
 Never restate content that lives in another section. Link to it. Two copies of a business rule
 means one of them is wrong within a month, and nobody knows which.
@@ -112,9 +114,11 @@ adjective cannot fail a test either.
 ## Cells are never blank
 
 An empty table cell reads as "no constraint" to whoever implements it - which is how a permission
-matrix with a blank cell becomes a data leak. If the value is unknown, write the open-issue ID:
-`<unknown - `OI-03`>`. "TBD" with no ID is a blank cell with
-extra steps.
+matrix with a blank cell becomes a data leak. If the value is unknown, the required form is
+`<unknown - OI-03>` - the open-issue ID, inline, every time. A bare "TBD" is not an accepted
+substitute; it is a blank cell with extra steps, and it is not enough to pass the quality gate. This
+is what makes "never invent a requirement" (SKILL.md) enforceable inside a table: the cell that
+would otherwise carry a guess instead carries the ID of the person who owes you the real answer.
 
 ## Byte stability
 

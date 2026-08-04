@@ -8,16 +8,12 @@
 
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 15/15](https://img.shields.io/badge/guardrail%20eval-15%2F15-brightgreen.svg)](eval/guardrail_eval.py)
-[![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code)
-[![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![Guardrail eval: 21/21](https://img.shields.io/badge/guardrail%20eval-21%2F21-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 Two skills for **Claude Code**. `spec-builder` writes the spec an AI can build from. `harness-bootstrap`
 builds the `.claude/` harness it runs inside - agents, rules, guardrails and a task board, fitted to
-*your* repo. The result also ports to Cursor and Codex, guardrails included.
+*your* repo.
 
 **Start here:**
 
@@ -27,12 +23,9 @@ curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/
   && rm skills.zip
 ```
 
-```text
-/spec-builder           # write the contract first
-/harness-bootstrap      # build or update the .claude harness for this repo
-```
-
-Requires Python 3. Full [install](#install) (including Cursor and Codex) and [usage](#use-it) below.
+Then invoke `/spec-builder` (write the contract) or `/harness-bootstrap` (build the harness) in Claude
+Code. Requires Python 3. Full [install](#install) (including Cursor and Codex) and [usage](#use-it)
+below.
 
 ## Watch it in 60 seconds
 
@@ -63,7 +56,7 @@ Dropping an AI agent into a real repository raises the same hard questions every
 | | What it makes | You need it when |
 |---|---|---|
 | [**`spec-builder`**](spec-builder/) | **The input an AI can understand.** A 13-section spec set under `docs/specs/`: requirements with stable IDs, acceptance criteria, a data model, mandatory security NFRs. Built from an idea, a transcript, meeting notes, or a pile of legacy docs. It **never invents a requirement** - anything unstated becomes a flagged open issue. | The AI is guessing what to build, because nobody wrote it down. |
-| [**`harness-bootstrap`**](harness-bootstrap/) | **The harness an AI runs inside.** `.claude/` with 15 agents, 14 rules, 6 blocking hooks and a deny list, plus `docs/tasks/`, a board that survives a crash. Fitted to *your* repo: it reads your code first, then builds the harness around what is actually there. | The AI can build, but nothing stops it doing damage and nothing survives when it forgets. |
+| [**`harness-bootstrap`**](harness-bootstrap/) | **The harness an AI runs inside.** `.claude/` with 15 agents, 15 rules, 7 blocking hooks and a deny list, plus `docs/tasks/`, a board that survives a crash. Fitted to *your* repo: it reads your code first, then builds the harness around what is actually there. | The AI can build, but nothing stops it doing damage and nothing survives when it forgets. |
 
 They cover the two ends of the same gap: **the AI does not know what you want, and nothing constrains
 what it does.**
@@ -77,8 +70,8 @@ tier, because the gates around it are shell scripts rather than judgment.
 
 ### The rest of the clips
 
-Every clip plays in your browser - **[watch the gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**,
-no download. Sources in [`video/`](video/). There is also a
+Every clip plays in your browser - **[watch the gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)**
+(no download, sources in [`video/`](video/)) - plus a
 **[slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)** (EN / VI / JP).
 
 | Clip | Play in browser |
@@ -95,10 +88,7 @@ no download. Sources in [`video/`](video/). There is also a
 ## Install
 
 The two skills run inside **Claude Code** - that is where you invoke `/harness-bootstrap` and
-`/spec-builder`. **Cursor** and **Codex** do not run the skills; they run the harness the skills
-produce, so their setup is one command against an already-scaffolded repo.
-
-### Claude Code
+`/spec-builder`. **Cursor** and **Codex** do not run the skills; they run the harness the skills produce.
 
 **[Download the latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)**,
 or install both skills in one line:
@@ -115,35 +105,20 @@ Requires **Python 3**. Confirm what you installed:
 cat ~/.claude/skills/harness-bootstrap/VERSION
 ```
 
-### Cursor
+### Cursor and Codex
 
 Scaffold the harness once from Claude Code (or copy an existing `.claude/` in), then port it. From the
 repo root:
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool cursor
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool cursor   # or: codex, all
 ```
 
-This writes `.cursor/rules/*.mdc` and `.cursor/hooks.json` plus its adapter. Cursor reads `AGENTS.md`
-and the rules on its own; the hooks enforce through the adapter. No release to install - the porter
-ships with the skill.
-
-### Codex
-
-Same starting point, one command:
-
-```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool codex
-```
-
-Codex reads `AGENTS.md` natively and its hook payload matches Claude Code's, so this only writes
-`.codex/hooks.json` pointing at the existing hooks. Use `--tool all` to set up Cursor and Codex at
-once.
+No release to install - the porter ships with the skill. Mechanics in
+[Also runs in Cursor and Codex](#also-runs-in-cursor-and-codex) below.
 
 <details>
 <summary><b>One skill at a time, a pinned version, checksums, or from source</b></summary>
-
-<br>
 
 ```bash
 # one skill at a time (stable URLs, always the newest release)
@@ -152,22 +127,16 @@ unzip -o hb.zip -d ~/.claude/skills/ && rm hb.zip
 
 curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/spec-builder.zip -o sb.zip
 unzip -o sb.zip -d ~/.claude/skills/ && rm sb.zip
-```
 
-```bash
 # a pinned version
 V=1.3.0
 curl -fsSL "https://github.com/nguyenhx2/agent-harness-bootstrap/releases/download/v${V}/harness-bootstrap-v${V}.zip" -o hb.zip
 unzip -o hb.zip -d ~/.claude/skills/ && rm hb.zip
-```
 
-```bash
 # verify the download
 curl -fsSLO https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
-```
 
-```bash
 # from source
 git clone https://github.com/nguyenhx2/agent-harness-bootstrap.git
 cp -r agent-harness-bootstrap/harness-bootstrap ~/.claude/skills/
@@ -188,32 +157,30 @@ collide with a natural-language phrase that could match some other skill you hav
 /spec-builder           # write the specs first
 ```
 
-**If the repo already has code**, run `/harness-bootstrap` on its own. It reads the code before
-writing anything - stack, modules, conventions, risky operations - and shows you that inventory first.
-Most of the intake is pre-filled from what it found, so you are only asked what the code cannot tell
-it. Existing files are **reconciled, not overwritten**: anything you wrote, or another tool created, is
-reported as a `CONFLICT` and left in place for you to merge - never replaced.
+**If the repo already has code**, run `/harness-bootstrap` on its own. It reads the code first - stack,
+modules, conventions, risky operations - and shows you that inventory, pre-filling the intake with what
+it found. Existing files are **reconciled, not overwritten**: conflicts are reported as `CONFLICT` and
+left for you to merge, never replaced.
 
 **If you are starting from an idea and an empty repo**, run `/spec-builder` first, then
 `/harness-bootstrap`. The specs come first because the agent roster comes out of them: cluster the
 requirements into domains, one dev agent per domain, each scoped to the module path it will own.
 
 Either way you see the plan - what will be created, kept and modified, plus every agent's model and
-effort budget - and nothing is written until you approve it. The scaffold itself takes about a fifth
-of a second.
+effort budget - and nothing is written until you approve it.
 
 Nothing here becomes global state. Both skills write only into the target repository, under `.claude/`
-and `docs/`; they never touch your `~/.claude/skills/` directory, and the whole harness is a set of
-files you can delete. Remove `.claude/` and the repo is exactly as it was.
+and `docs/`, and never touch your `~/.claude/skills/` directory. Remove `.claude/` and the repo is
+exactly as it was.
 
 ### What lands in your repo
 
 ```text
 .claude/
   agents/           15 agents, each with an explicit model, effort, tool grant and turn limit
-  rules/            14 rules - 6 always loaded, 8 that load only when you touch a matching file
+  rules/            15 rules - 6 always loaded, 9 that load only when you touch a matching file
   commands/         /new-task /task-resume /implement-fr /review-changes /secret-scan /deploy ...
-  hooks/            6 hooks that block bad actions before they happen
+  hooks/            7 hooks that block bad actions before they happen
   settings.json     permission allow/deny + hook registration
 docs/
   tasks/
@@ -222,8 +189,6 @@ docs/
   specs/ requirements/ architecture/ context/ templates/
 AGENTS.md + CLAUDE.md
 ```
-
----
 
 ## What the harness guarantees
 
@@ -238,9 +203,10 @@ Not "is told not to". **Cannot.** The guardrails are shell scripts and glob rule
 | Commit straight to `main` | Blocked |
 | Edit an Accepted ADR | Blocked |
 | Ship a commit with an AI-attribution trailer | Blocked |
+| Spawn an off-roster agent, escalate its model, or dispatch a write seat with no task | Blocked |
 
 ```bash
-python eval/guardrail_eval.py   # 15 known-bad payloads at a real generated harness -> 15/15
+python eval/guardrail_eval.py   # 21 payloads at a real generated harness -> 21/21
 ```
 
 Swap every agent from Opus to Haiku and re-run. Identical result: no model is in the loop.
@@ -259,22 +225,20 @@ moment it can be written as a file check.
   <img src="docs/assets/memory-hierarchy.svg" alt="Memory tiers: always-RAM, lazy-RAM, disk, archive" width="820">
 </p>
 
-State lives in committed markdown, written as the agent works, not in a context window that compaction
-will summarise away. After a crash, an agent with an empty context scans `docs/tasks/active/`, reads
-the session log, reconciles branches against the board, verifies against `git` rather than memory, and
-continues from the last recorded row. `/task-resume` does it for you.
+State lives in committed markdown the agent writes *as it works*, not in a context window that
+compaction summarises away. After a crash, an agent with an empty context resumes from the last
+recorded row in `docs/tasks/active/` - `/task-resume` does it for you.
 
 The rule that makes it work: **a gate counts as passed only when the session log records it.** An
-agent's "done" is a claim you verify, never a fact.
-
-Details: [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md).
+agent's "done" is a claim you verify, never a fact. Details:
+[`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md).
 
 ### You stop paying for tokens you did not choose to spend
 
 | Default | Here |
 |---|---|
 | An agent with no `model:` inherits the caller's tier, so a log-summarising agent bills at Opus rates | Every agent has an explicit `model:` and `effort:` |
-| A rule with no `paths:` loads into every session of every agent, forever | 8 of 14 rules are path-scoped. **66% of rule content never enters a default session** |
+| A rule with no `paths:` loads into every session of every agent, forever | 9 of 15 rules are path-scoped. **67% of rule content never enters a default session** |
 | An agent that loops burns full context every turn, unbounded | `maxTurns` on every seat where a loop means something already went wrong |
 | Omitting `tools:` inherits every tool on the machine, schema included | Narrow grants. Reviewers get `Read, Grep, Glob, Bash` and nothing else |
 
@@ -285,11 +249,10 @@ Details: [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md).
 | sonnet-only | 1.92 |
 | haiku-only | 0.61 |
 
-Opus is **1.67x** Sonnet, not 5x, so tier is a smaller dial than most advice assumes and `effort:` is a
-bigger one. The default roster is deliberately not the cheapest: it spends the difference on Opus review
-gates. Take the other side of that bet by editing one table in
-[`roster.md`](harness-bootstrap/reference/roster.md). These figures are modelled from published prices,
-not measured - run `python benchmark/model_cost.py`.
+Opus is **1.67x** Sonnet, not 5x, so tier is a smaller dial than most advice assumes and `effort:` is
+the bigger one. The default roster is deliberately not the cheapest - it spends the difference on Opus
+review gates; edit [`roster.md`](harness-bootstrap/reference/roster.md) to take the other side of that
+bet. Modelled from published prices, not measured - run `python benchmark/model_cost.py`.
 
 ---
 
@@ -299,32 +262,27 @@ not measured - run `python benchmark/model_cost.py`.
   <img src="docs/assets/generation-and-constraint.svg" alt="Where the agents, rules, commands and hooks come from, and how they hold each other in check" width="820">
 </p>
 
-Nothing in your `.claude/` folder is invented. Each agent, rule, hook and deny entry traces back to
-something real: your code, your specs, or an answer you gave at intake, and `scaffold.py` copies the
-rest from files on disk. Once it runs, the pieces hold each other: the orchestrator dispatches every
-agent but cannot write product code, the reviewers gate the dev agents but cannot edit anything, the
-board records what actually happened, and the hooks stop all of them without asking.
-
-### The whole thing, in one picture
+Nothing in `.claude/` is invented: every agent, rule, hook and deny entry traces back to your code,
+your specs, or an intake answer. Once it runs, the pieces hold each other - the orchestrator dispatches
+every agent but cannot write product code, the reviewers gate the dev agents but cannot edit anything,
+the board records what actually happened, and the hooks stop all of them without asking.
 
 <p align="center">
   <img src="docs/assets/harness-architecture.svg" alt="Harness layers, with the model drawn as a swappable layer" width="820">
 </p>
 
-The model sits in a slot near the top. Every layer beneath it - the deny list, the hooks, the tool
-grants, the board - is deterministic and unchanged when the model changes.
-
-Model **tier** is swappable today: `opus`, `sonnet`, `haiku`, `fable`. Model **vendor** is not.
-Re-pointing the roster at a self-hosted or third-party model is a port rather than a config change, and
-no adapter ships here. See [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md), Gap 2.
+The whole thing in one picture: the model sits in a slot near the top, and every layer beneath it - the
+deny list, the hooks, the tool grants, the board - is deterministic and unchanged when the model
+changes. Model **tier** is swappable today (`opus`, `sonnet`, `haiku`, `fable`); model **vendor** is
+not - re-pointing the roster at a self-hosted or third-party model is a port, not a config change. See
+[`docs/ASSESSMENT.md`](docs/ASSESSMENT.md), Gap 2.
 
 ---
 
 ## Also runs in Cursor and Codex
 
 Cursor and Codex both have hook systems close enough to Claude Code's that the guardrails port, not
-just the rules. The one-command setup for each is in [Install](#install) above; here is what actually
-crosses over and where it stops:
+just the rules - here is what actually crosses over and where it stops:
 
 | | Claude Code | Cursor | Codex |
 |---|---|---|---|
@@ -332,31 +290,23 @@ crosses over and where it stops:
 | Enforcement | `settings.json` hooks | `.cursor/hooks.json` + a generated adapter | `.codex/hooks.json` (hooks register directly) |
 | Blocks a secret read, a commit to `main` | yes | yes | yes |
 
-**Codex** reads `AGENTS.md` at the repo root with no setup, and its hook payload is identical to
-Claude Code's, so the porter registers the existing hooks directly in `.codex/hooks.json`.
-
-**Cursor** reads `AGENTS.md` and `.cursor/rules/*.mdc`. Its hook events and output differ, so the
-porter writes a small adapter that translates Cursor's payload to the harness hooks and back. The
-adapter is unit-tested in CI: it correctly denies a `.env` read and a commit to `main`, and allows
-`npm test`.
+**Codex** reads `AGENTS.md` natively, so the porter registers the existing hooks directly. **Cursor**
+reads `AGENTS.md` and `.cursor/rules/*.mdc` through a small adapter, unit-tested in CI, that translates
+its hook payload to the harness hooks and back.
 
 Two honest limits, both printed by the porter and enforced nowhere else:
 
 - **Codex** routes file edits through `apply_patch` with the path inside the command, so `protect-adr`
   (which reads a file path) is best-effort there. The Bash guards are exact.
 - **Cursor**'s `afterFileEdit` is observational, so an edit to an Accepted ADR is flagged after the
-  fact rather than blocked before. Everything reachable through a shell command or a file read blocks
-  the same as in Claude Code.
+  fact rather than blocked before.
 
-The three tools share one source of truth. `AGENTS.md` is the contract; `.claude/`, `.cursor/`, and
-`.codex/` are three renderings of it, generated from the same assets. Each tool has a page with the
-exact files, the enforce-vs-advice table, and how to verify it:
+One source of truth: `AGENTS.md` is the contract; `.claude/`, `.cursor/`, and `.codex/` are three
+renderings of it. Each tool has a page with the exact files and how to verify it:
 
 - [**Claude Code**](docs/tools/claude-code.md) - the reference: how the harness is generated and enforced.
 - [**Cursor**](docs/tools/cursor.md) - the `.mdc` rules and the hook adapter.
 - [**Codex**](docs/tools/codex.md) - native `AGENTS.md` and the directly registered hooks.
-
----
 
 ## Governance
 
@@ -365,13 +315,10 @@ invents a policy for your company.
 
 - [**`model-policy.md`**](harness-bootstrap/assets/claude/rules/model-policy.md) - classify your data
   (Public / Internal / Confidential / Restricted) and say which models may process each class.
-  Restricted paths are denied at the read boundary, so an agent cannot leak what it cannot open.
 - [**`ip-compliance.md`**](harness-bootstrap/assets/claude/rules/ip-compliance.md) - dependency licence
   allow/deny, the AGPL-on-SaaS trigger, and a diff check the reviewers can run.
 - [**`ai-governance.md`**](harness-bootstrap/assets/claude/rules/ai-governance.md) - which actions need
   a human who saw the specific action, not a config flag.
-
----
 
 ## Reference
 
@@ -389,17 +336,15 @@ invents a policy for your company.
 | [`RELEASING.md`](docs/RELEASING.md) | Semver, artifacts, note format |
 | [`video/README.md`](video/README.md) | The clip set, the palette, and how to regenerate it |
 
-### Numbers
-
-Measured against the predecessor skill this replaces. Reproduce with `python benchmark/benchmark.py`.
+**Numbers**, measured against the predecessor skill this replaces. Reproduce with `python benchmark/benchmark.py`.
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 85,641 | **-63%** |
-| Bytes the model must write as output | 95,064 | 14,595 | **-85%** |
-| Rule content kept out of the default session | - | 49,394 of 74,697 B | **66%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 90,029 | **-62%** |
+| Bytes the model must write as output | 95,064 | 13,881 | **-85%** |
+| Rule content kept out of the default session | - | 51,785 of 77,452 B | **67%** |
 | Scaffold time | - | ~0.2 s, 73 files | - |
-| Guardrail eval | - | **15/15** | - |
+| Guardrail eval | - | **21/21** | - |
 
 Byte figures are exact. Token figures are estimated unless `ANTHROPIC_API_KEY` is set, in which case
 the script counts them against the real endpoint.

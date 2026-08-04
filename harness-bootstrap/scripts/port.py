@@ -26,6 +26,11 @@ Rules port in full. Enforcement ports with two caveats, both honest and document
           translates their exit code back. afterFileEdit is observational-only in Cursor, so an edit
           to an Accepted ADR cannot be blocked before it happens there - only flagged after.
 
+  Both    guard-agent-spawn does not port at all: neither Cursor nor Codex exposes a subagent-spawn
+          hook point, because neither has Claude Code's Agent tool. The spawn boundary is a
+          Claude-Code-only control; in the other tools the roster exists as rules text, not as an
+          enforced gate. This is recorded in the generated output so nobody assumes otherwise.
+
 This wiring is built to each tool's published hook schema. It is unit-tested here against documented
 sample payloads, but run one real action in the tool to smoke-test it in your environment.
 """
@@ -294,6 +299,8 @@ def port(target: pathlib.Path, tool: str) -> None:
         print(f"  {f[1].relative_to(target).as_posix()}  the adapter (Cursor payload -> harness hooks)")
         print(f"  note: Cursor's afterFileEdit is observational, so an edit to an Accepted ADR is")
         print(f"        flagged after the fact, not blocked before. Everything else blocks pre-hoc.")
+        print(f"  note: guard-agent-spawn does not port - Cursor has no subagent-spawn hook point,")
+        print(f"        so the spawn boundary is rules text there, not an enforced gate.")
 
     if tool in ("codex", "all"):
         h = port_codex_hooks(hooks, target / ".codex", ext)
@@ -302,6 +309,8 @@ def port(target: pathlib.Path, tool: str) -> None:
         print(f"  {h.relative_to(target).as_posix()}   registers the existing hooks (Codex payload == Claude payload)")
         print(f"  note: Codex routes file edits through apply_patch (path inside tool_input.command),")
         print(f"        so protect-adr is best-effort there; the Bash-based guards are exact.")
+        print(f"  note: guard-agent-spawn does not port - Codex has no Agent tool, so the spawn")
+        print(f"        boundary is rules text there, not an enforced gate.")
 
 
 def main() -> int:

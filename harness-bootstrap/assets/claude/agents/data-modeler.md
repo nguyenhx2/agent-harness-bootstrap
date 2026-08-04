@@ -3,6 +3,7 @@ name: data-modeler
 description: Designs and modifies the {{ORM}} schema and its migrations, per the ERD and the data dictionary. Use for any schema change. Owns schema design, not DB operations.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
+maxTurns: 40
 effort: high
 color: blue
 ---

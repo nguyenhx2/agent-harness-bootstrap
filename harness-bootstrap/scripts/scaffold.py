@@ -205,6 +205,24 @@ def main() -> int:
     if all_missing:
         print("\nFAIL: unresolved variables. Add them to vars.json and re-run.")
         return 1
+
+    # Spawn-boundary invariant: exactly one seat (the orchestrator) may hold the Agent tool.
+    # A second Agent-holding seat is a second uncontrolled dispatch point - the exact escape the
+    # guard-agent-spawn hook and the roster design exist to prevent. Checked here because a hand
+    # edit to a roster file would otherwise ship silently.
+    agents_dir = args.target / ".claude" / "agents"
+    if agents_dir.is_dir():
+        import re as _re
+        spawners = []
+        for f in sorted(agents_dir.glob("*.md")):
+            head = f.read_text(encoding="utf-8", errors="replace")[:2000]
+            m = _re.search(r"^tools:\s*(.+)$", head, _re.MULTILINE)
+            if m and _re.search(r"(^|[,\s])Agent(,|\s|$)", m.group(1)):
+                spawners.append(f.stem)
+        if len(spawners) > 1:
+            print(f"\nFAIL: {len(spawners)} agents hold the Agent tool: {', '.join(spawners)}.")
+            print("Only the orchestrator may spawn. Remove Agent from the others' tools: line.")
+            return 1
     return 0
 
 

@@ -5,6 +5,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.4.0
+
+The spawn boundary, a DDD option, and post-bootstrap tuning.
+
+**Added**
+
+- `guard-agent-spawn` hook on `Agent|Task`: blocks off-roster spawns, per-dispatch model escalation,
+  and write-capable dispatches that name no task. Allowlist at `.claude/hooks/spawn-allowlist`.
+- DDD as a first-class methodology (flag `ddd`, ships `rules/ddd.md`); TDD stays the default
+  (flag `tdd`) and the two compose. Intake asks which, plus a control-level question whose
+  `deploy_ask` flag moves the deploy command from `deny` to `ask`.
+- Four post-bootstrap commands: `/board-audit` (orphan and stale-task sweep), `/harness-tune`
+  (control dials), `/agent-permissions` (per-seat tool grants), `/harness-update` (safe re-run).
+- Anti-loop discipline: `attempts:` counter on tasks, hard cap 3 then Blocked; `maxTurns` on all
+  16 seats; the scaffolder fails the build if more than one seat holds the `Agent` tool.
+- Release notes standard: one screen, capped bullets ([docs/RELEASING.md](docs/RELEASING.md)).
+
+**Changed**
+
+- Guardrail eval 15 -> 21 cases (3 spawn blocks, 3 spawn allows). Counts: rules 14 -> 15,
+  hooks 6 -> 7, commands 14 -> 18.
+- README slimmed 13% in both languages; every stale figure re-synced by `check_numbers.py`.
+- spec-builder: 10 audit fixes - complete ID-prefix table, verifiable quality gate, re-run
+  procedure for existing specs, section-12 seeding claim corrected to manual.
+- `port.py` now states that `guard-agent-spawn` does not port: Cursor and Codex have no
+  subagent-spawn hook point, so the spawn boundary is Claude Code only.
+
 ## v1.3.0
 
 Intro videos, a tool-selection questionnaire in the docs, and drift caught at the source.
@@ -79,13 +106,13 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 14 rules, 14 commands, 6 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 18 commands, 7 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
-- 6 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message.
+- 7 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
-- `python eval/guardrail_eval.py` fires 15 known-bad payloads at a real generated harness: 15/15 blocked. The guardrails are shell scripts, so the result does not change with the model.
+- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 21/21 correct. The guardrails are shell scripts, so the result does not change with the model.
 
 **State on disk, not in context**
 
@@ -94,7 +121,7 @@ the harness the agent runs inside.
 **Cost as a decision**
 
 - Every agent carries an explicit `model:`, `effort:`, a narrow `tools:` grant and `maxTurns`. An unset `model:` inherits the caller's tier, which bills mechanical work at Opus rates.
-- 8 of 14 rules are path-scoped, keeping 66% of rule content out of the default session.
+- 9 of 15 rules are path-scoped, keeping 67% of rule content out of the default session.
 - Assets are real files copied by `scripts/scaffold.py` rather than prose the model retypes: 64% less to read and 85% less to author than the predecessor skill. Figures from `benchmark/benchmark.py`.
 
 **Governance**

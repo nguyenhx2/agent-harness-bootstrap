@@ -2,7 +2,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **15/15 known-bad payloads blocked.**
+`python eval/guardrail_eval.py` -> **21/21 correct (11 must-block, 10 must-allow).**
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
 None of them consults the model.

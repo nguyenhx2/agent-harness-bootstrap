@@ -3,6 +3,7 @@ name: db-engineer
 description: Database operations - applies and troubleshoots migrations, tunes queries and indexes, checks integrity, manages the local DB environment. Owns operations, not schema design.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
+maxTurns: 40
 effort: medium
 color: blue
 ---

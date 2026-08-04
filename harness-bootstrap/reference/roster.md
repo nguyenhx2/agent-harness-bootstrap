@@ -133,7 +133,7 @@ by exactly one agent:
 | Flow step | Seat | Filled by |
 |---|---|---|
 | Lock scope + criteria | requirement gate | `spec-guardian` |
-| Implement (TDD) | owner | the `<domain>-dev` for that FR |
+| Implement (per the chosen methodology) | owner | the `<domain>-dev` for that FR |
 | Tests | quality | `qa-test` (or the dev agent, if declined - say so) |
 | Review diff | code gate | `code-reviewer` |
 | Review secrets/data | security gate | `security-reviewer` |

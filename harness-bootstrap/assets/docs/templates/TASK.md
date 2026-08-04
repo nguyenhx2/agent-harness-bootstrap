@@ -12,6 +12,10 @@ status: Planned
 fr: <FR-NN, or "-">
 owner: <agent>
 deps: <TASK-NNN, TASK-NNN, or "-">
+# Dispatch attempts so far. The orchestrator increments this on every dispatch of this task and
+# stops at 3: after two failed re-dispatches the task goes Blocked and escalates to the user
+# (task-control.md). This is the counter that makes "retry forever" impossible to do silently.
+attempts: 0
 priority: <P0 | P1 | P2>
 phase: <phase number in docs/tasks/master-plan.md, or "-">
 created: <YYYY-MM-DD>

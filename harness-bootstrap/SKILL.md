@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.3.0
+version: 1.4.0
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -16,16 +16,22 @@ installed by `scripts/scaffold.py`. Your job is the decisions - the roster, the 
 not transcribing 1,300 lines of hooks and commands. Read a reference file when you reach its step;
 never improvise a step that has one.
 
-## Three modes - decide first
+## Four modes - decide first
 
 | Mode | When | What happens |
 |---|---|---|
 | **Greenfield** | Empty or near-empty repo | Generate the full structure from intake answers |
 | **Brownfield** | Repo already has code, and maybe a partial `.claude/` | Run codebase analysis FIRST, derive most answers from evidence, then RECONCILE - never clobber |
 | **Audit** | The repo(s) will be analysed but never modified by agents; a human applies any fixes | Build a read-only control plane beside untouched source. See [`reference/audit-mode.md`](reference/audit-mode.md) |
+| **Update** | The repo was already bootstrapped by this skill and the user wants to tune it, add or retire agents, or pick up newer assets | Follow the installed `/harness-update` command: re-read reality, re-run the scaffolder with the existing `vars.json`, resolve the CONFLICT queue by hand. Do NOT redo intake - ask only the questions whose answers changed |
 
-Selection rule: if agents will never modify the source (a human applies fixes), you are in **audit**
-mode, however much code exists. Otherwise, any source code at all means **brownfield**.
+Selection rule: a `vars.json` (or a `.claude/` this skill clearly generated) means **update** - never
+re-bootstrap over it. Otherwise: if agents will never modify the source (a human applies fixes), you
+are in **audit** mode, however much code exists; any source code at all means **brownfield**.
+
+Update mode in one line each: single dials → `/harness-tune` (control posture) or
+`/agent-permissions` (one seat's tools); structural change (new seats, new assets, re-scope) → the
+`/harness-update` procedure. All three are installed by the bootstrap itself.
 
 ## Procedure
 
@@ -75,12 +81,15 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 ```json
 {
   "vars":  { "PROJECT_NAME": "...", "DEFAULT_BRANCH": "main", "PR_OR_MR": "PR", "...": "..." },
-  "flags": ["posix", "ui", "db", "ai"]
+  "flags": ["posix", "ui", "db", "ai", "tdd"]
 }
 ```
 
-Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `ai`, `audit`, and exactly
-one of `windows` / `posix`.
+Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `ai`, `audit`, `tdd`,
+`ddd`, `deploy_ask`, and exactly one of `windows` / `posix`. Methodology: `tdd` is the default and
+stays on unless the user chose DDD-only in intake; `ddd` adds `rules/ddd.md` and the bounded-context
+discipline, and the two compose. `deploy_ask` moves `{{DEPLOY_CMD}}` from `permissions.deny` to
+`permissions.ask` - set it only when intake's control-level question chose agent-initiated deploys.
 
 The scaffolder **never overwrites an existing file**. It reports `ADDED` / `KEPT` (already identical) /
 `CONFLICT` (exists and differs). **CONFLICT is not an error - it is the brownfield reconciliation
@@ -93,7 +102,10 @@ this is still far cheaper than regenerating them - but say so, and fix Python.
 
 **5. Fill in what only judgment can fill.** The scaffolder installs the invariant assets. You still author:
 - the orchestrator's **routing table** (every agent appears; every module has exactly one owner),
-- each dev agent's **scope** (real module paths - brownfield: paths that actually exist),
+- each dev agent's **scope** (real module paths - brownfield: paths that actually exist). When
+  instantiating `dev-agent.md`, resolve its `{{#IF_...}}`/`{{^IF_...}}` blocks by hand against the
+  chosen flags (keep the block's content if the flag matches, drop it otherwise) - the template is
+  copied per-domain, not run through the scaffolder,
 - the **project-specific rules** the scaffolder does not ship - `tech-stack.md`, `coding-standards.md`,
   `git-workflow.md` - written from the analysis, never invented. (`data-model.md` IS shipped: it
   carries the generic migration-safety discipline. You still fill in this project's actual entities.)

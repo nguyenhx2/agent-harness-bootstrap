@@ -31,8 +31,15 @@
       "Bash(git push -f:*)",
       "Bash(git reset --hard:*)",
       "Bash(rm -rf:*)",
-      "Bash({{DB_RESET_CMD}}:*)",
+{{^IF_DEPLOY_ASK}}
+      "Bash({{DEPLOY_CMD}}:*)",
+{{/IF_DEPLOY_ASK}}
+      "Bash({{DB_RESET_CMD}}:*)"
+    ],
+    "ask": [
+{{#IF_DEPLOY_ASK}}
       "Bash({{DEPLOY_CMD}}:*)"
+{{/IF_DEPLOY_ASK}}
     ]
   },
   "hooks": {
@@ -68,6 +75,16 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/check-commit-msg.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-agent-spawn.{{HOOK_EXT}}",
             "timeout": 10
           }
         ]
