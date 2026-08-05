@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - 運用の流れ</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;
+    padding:4% 5%;text-align:center;gap:14px}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(20px,3.2vw,40px);font-weight:700}
+  h2{font-size:clamp(16px,2.4vw,30px);font-weight:600;margin-bottom:8px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .tag{border-radius:999px;padding:.4em 1em;font-size:clamp(10px,1.4vw,18px);border:2px solid}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:12px;padding:.6em 1em;font-size:clamp(12px,1.7vw,22px);font-weight:600;
+    display:inline-flex;align-items:center;text-align:center;justify-content:center}
+  .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border:2px solid var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border:2px solid var(--dim);color:#fff}
+  .chip.red{background:var(--red);border:2px solid var(--amber);color:#fff}
+  .row{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+  .arrow{color:var(--dim);font-size:clamp(18px,2.4vw,30px)}
+  .sub{color:var(--dim);font-size:clamp(10px,1.5vw,18px)}
+  .steps{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .steps .chip{opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s}
+  .steps .chip.on{opacity:1;transform:none}
+  .caption{position:absolute;left:0;right:0;bottom:5%;text-align:center;
+    font-size:clamp(12px,1.8vw,22px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .loop{position:relative;width:100%;max-width:760px;height:52%;margin-top:6px}
+  .node{position:absolute;transform:translate(-50%,-50%)}
+  #orch{left:50%;top:16%}
+  #dev{left:20%;top:64%}
+  #board{left:80%;top:64%}
+  #hooks{left:40%;top:96%}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .wire{stroke:var(--dim);stroke-width:2.5;fill:none;
+    stroke-dasharray:6 6;opacity:0;transition:opacity .4s}
+  .wire.on{opacity:1;animation:dash 1s linear infinite}
+  .wire.green{stroke:var(--green-hi);stroke-dasharray:none;animation:none}
+  @keyframes dash{to{stroke-dashoffset:-12}}
+  .wlabel{fill:var(--dim);font-size:12px}
+  .flash{animation:flash .8s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(157,2,8,.7)}100%{box-shadow:0 0 0 26px rgba(157,2,8,0)}}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
+  <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+
+  <!-- Scene 0: title + legend -->
+  <section class="scene" data-s="0">
+    <h1>運用の流れ</h1>
+    <div class="legend">
+      <span class="tag g">緑 = 無料・決定的</span>
+      <span class="tag p">紫 = 課金されるトークン</span>
+      <span class="tag r">赤 = ブロック</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: spec-builder -> contract -->
+  <section class="scene" data-s="1">
+    <div class="row">
+      <span class="chip purple fadein">spec-builder</span>
+      <span class="arrow">&#8594;</span>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <span class="chip neutral fadein">docs/specs/</span>
+        <span class="sub">契約書</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2: harness-bootstrap steps -->
+  <section class="scene" data-s="2">
+    <span class="chip purple fadein">harness-bootstrap</span>
+    <div class="steps" id="steps">
+      <span class="chip purple">あなたのコードを読む</span>
+      <span class="chip purple">スコープを絞ったロースターを選ぶ</span>
+      <span class="chip green">約0.2秒でスキャフォルドする</span>
+      <span class="chip green">オーケストレーションを配線する</span>
+    </div>
+  </section>
+
+  <!-- Scene 3: the task loop -->
+  <section class="scene" data-s="3">
+    <h2>その後、タスクループが回る</h2>
+    <div class="loop">
+      <svg class="wires" viewBox="0 0 760 300" preserveAspectRatio="none">
+        <path id="w-dispatch" class="wire" d="M355,50 L165,180"/>
+        <path id="w-record"   class="wire" d="M240,192 L560,192"/>
+        <path id="w-bad"      class="wire" d="M160,215 L300,285"/>
+        <path id="w-resume"   class="wire green" d="M600,215 Q430,300 175,215"/>
+        <text x="235" y="120" class="wlabel">起動する</text>
+        <text x="360" y="182" class="wlabel">記録する</text>
+      </svg>
+      <div class="node" id="orch"><span class="chip purple">オーケストレーター</span></div>
+      <div class="node" id="dev"><span class="chip purple">スコープを絞った専門エージェント</span></div>
+      <div class="node" id="board"><span class="chip neutral">ディスク上のタスクボード</span></div>
+      <div class="node" id="hooks"><span class="chip red">フックがブロック</span></div>
+    </div>
+  </section>
+
+  <!-- Scene 4: brand end card -->
+  <section class="scene" data-s="4">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+  var TL=[
+    {s:0,d:4500,cap:null},
+    {s:1,d:5500,cap:'spec-builderがヒアリングし、仕様一式 - 契約書を書く。',capAt:500},
+    {s:2,d:6500,cap:'harness-bootstrapがコードを読み、約0.2秒でハーネスをスキャフォルドする。',capAt:400,steps:true},
+    {s:3,d:11000,cap:null,loop:true},
+    {s:4,d:2400,cap:null},
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function runSteps(){
+    var cs=document.querySelectorAll('#steps .chip');
+    cs.forEach(function(c){c.classList.remove('on');
+      setTimeout(function(){c.classList.add('on')},500+[].indexOf.call(cs,c)*550);});
+  }
+  function clearWires(){['w-dispatch','w-record','w-bad','w-resume'].forEach(function(id){q(id).classList.remove('on')});
+    q('hooks').style.opacity=0;q('dev').firstChild.textContent='スコープを絞った専門エージェント';}
+  function runLoop(){
+    clearWires();
+    q('hooks').style.opacity=0;
+    setTimeout(function(){q('w-dispatch').classList.add('on');
+      cap.textContent='オーケストレーターがスコープを絞った専門エージェントを起動する。';cap.classList.add('on');},500);
+    setTimeout(function(){q('w-record').classList.add('on')},1600);
+    setTimeout(function(){
+      q('hooks').style.opacity=1;q('w-bad').classList.add('on');
+      q('hooks').firstChild.classList.add('flash');
+      cap.textContent='フックは危険な操作を、実行される前にブロックする。';},3200);
+    setTimeout(function(){q('hooks').firstChild.classList.remove('flash')},4200);
+    setTimeout(function(){
+      q('dev').firstChild.textContent='新しいエージェント';
+      q('w-dispatch').classList.remove('on');q('w-record').classList.remove('on');
+      q('w-bad').classList.remove('on');q('hooks').style.opacity=0;
+      q('w-resume').classList.add('on');
+      cap.textContent='ボードはクラッシュを生き延びる - 新しいエージェントが止まった場所から再開する。';},6000);
+    setTimeout(function(){cap.classList.remove('on')},10200);
+  }
+  function step(i){
+    var t=TL[i];showScene(t.s);cap.classList.remove('on');
+    if(t.steps) runSteps();
+    if(t.loop){runLoop();return;}
+    if(t.cap){setTimeout(function(){cap.textContent=t.cap;cap.classList.add('on')},t.capAt||300);}
+    setTimeout(function(){cap.classList.remove('on')},t.d-500);
+  }
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>

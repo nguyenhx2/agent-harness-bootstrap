@@ -50,6 +50,14 @@
     padding-top: 20px; margin-top: 56px;
   }
   footer a { color: #6FA0C0; }
+  .langtoggle { display: flex; gap: 8px; margin: 0 0 20px; }
+  .langtoggle button {
+    font: inherit; font-size: 13px; cursor: pointer; padding: 7px 16px; border-radius: 999px;
+    border: 1px solid #3E6E93; background: transparent; color: #A8DADC;
+  }
+  .langtoggle button.active { background: #1D3557; color: #fff; border-color: #A8DADC; }
+  .langsec { display: none; }
+  .langsec.on { display: block; }
 </style>
 </head>
 <body>
@@ -58,6 +66,12 @@
     <img src="../docs/assets/logo.svg" alt="Agent Harness Bootstrap logo" width="40" height="40">
     <h1>Agent Harness Bootstrap</h1>
   </div>
+  <div class="langtoggle" role="group" aria-label="Language">
+    <button type="button" id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button type="button" id="btn-ja" onclick="setLang('ja')">日本語</button>
+  </div>
+
+  <div id="sec-en" class="langsec on">
   <p class="sub">Six explainer clips. They play here in the browser - no download needed. Every clip is captioned, so sound is not required.</p>
 
   <div class="clip flagship">
@@ -124,11 +138,96 @@
       <a href="mp4/06-harness-bootstrap.mp4">Open the MP4</a>
     </div>
   </div>
+  </div>
+
+  <div id="sec-ja" class="langsec">
+  <p class="sub">6本の解説クリップ。ブラウザでそのまま再生できます - ダウンロード不要。すべてのクリップにキャプションが付いているため、音声がなくても内容を追えます。</p>
+
+  <div class="clip flagship">
+    <span class="badge">まずここから</span>
+    <h3>完全なソリューション <span class="dur">~55秒</span></h3>
+    <p>プロダクト全体を1本のクリップで: 4つの課題、そしてspec-builderが契約書を書き、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回り、成果に至るまで。各課題は解決するたびに赤から緑へと目に見えて切り替わります。</p>
+    <video src="mp4/ja/04-solution.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/04-solution.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/04-solution.mp4">MP4を開く</a>
+    </div>
+  </div>
+
+  <h2 class="group">短い紹介編</h2>
+
+  <div class="clip">
+    <h3>1. 全体像 - 何をするか、なぜ必要か <span class="dur">~34秒</span></h3>
+    <p>制約のないエージェントは要件を勝手に作り、圧縮で忘れ、最上位モデル階層で課金される。2つのスキルがハーネスを構築する。</p>
+    <video src="mp4/ja/01-overview.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/01-overview.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/01-overview.mp4">MP4を開く</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h3>2. 運用の流れ <span class="dur">~31秒</span></h3>
+    <p>spec-builderが契約書を書き、harness-bootstrapがコードを読んで約0.2秒でスキャフォルドし、その後タスクループが回る。</p>
+    <video src="mp4/ja/02-flow.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/02-flow.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/02-flow.mp4">MP4を開く</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h3>3. 制御の階層 <span class="dur">~32秒</span></h3>
+    <p>拒否リスト、フック、起動境界、パススコープルール、レビューゲート。ガードレールはシェルスクリプトなので、OpusからHaikuに替えても安全性は同一。</p>
+    <video src="mp4/ja/03-layers.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/03-layers.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/03-layers.mp4">MP4を開く</a>
+    </div>
+  </div>
+
+  <h2 class="group">2つのスキルを深く見る</h2>
+
+  <div class="clip">
+    <h3>5. spec-builder詳解 <span class="dur">~58秒</span></h3>
+    <p>生の入力から契約書へ: ヒアリング、まずFR一覧を確認、13セクションをスキャフォルド、順番に埋め、トレーサビリティチェック。何も作らない - 書かれていないことはすべてAS-nnかOI-nnとしてフラグが立つ。docs/FLOWS.mdの図5に対応。</p>
+    <video src="mp4/ja/05-spec-builder.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/05-spec-builder.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/05-spec-builder.mp4">MP4を開く</a>
+    </div>
+  </div>
+
+  <div class="clip">
+    <h3>6. harness-bootstrap詳解 <span class="dur">~68秒</span></h3>
+    <p>モード選択、必須のコードベース分析と棚卸しレポート、インテイクとツール質問、model・effort明示のロースター、スキルの発見、ADDED / KEPT / CONFLICTを報告し決して上書きしないスキャフォルド、オーケストレーションの配線、そして両方のナレッジグラフとHTML書き出し。docs/FLOWS.mdの図2に対応。</p>
+    <video src="mp4/ja/06-harness-bootstrap.mp4" controls preload="metadata" playsinline></video>
+    <div class="links">
+      <a href="html/ja/06-harness-bootstrap.html">HTMLアニメーションを開く</a>
+      <a href="mp4/ja/06-harness-bootstrap.mp4">MP4を開く</a>
+    </div>
+  </div>
+  </div>
 
   <footer>
     Part of <a href="https://github.com/nguyenhx2/agent-harness-bootstrap">agent-harness-bootstrap</a>.
     Sources and how to regenerate: <a href="README.md">video/README.md</a>.
   </footer>
 </div>
+<script>
+  function setLang(lang){
+    document.getElementById('sec-en').classList.toggle('on', lang==='en');
+    document.getElementById('sec-ja').classList.toggle('on', lang==='ja');
+    document.getElementById('btn-en').classList.toggle('active', lang==='en');
+    document.getElementById('btn-ja').classList.toggle('active', lang==='ja');
+    document.documentElement.lang = lang;
+    try{ localStorage.setItem('ahb-video-lang', lang); }catch(e){}
+  }
+  (function(){
+    var saved = null;
+    try{ saved = localStorage.getItem('ahb-video-lang'); }catch(e){}
+    if(saved === 'ja') setLang('ja');
+  })();
+</script>
 </body>
 </html>
