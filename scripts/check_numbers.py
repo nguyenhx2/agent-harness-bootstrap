@@ -113,8 +113,16 @@ COUNT_CHECKS = [
 # not markdown, so the .md walk never sees them - and they drifted on every release until this list
 # existed. English phrasings only: every baked stat has an EN variant, and the VI/JA strings are
 # edited in the same pass.
+#
+# video/html/ja/*.html and video/src/ja/*.py are the Japanese twins of the same media (translated
+# copies, not new content) - they bake the same numbers, so the gate has to see them too. MEDIA_CHECKS
+# below is an EN-phrase regex list ("21 commands", "9 blocking hooks", ...) and will not match the
+# JA prose ("コマンド21", "ブロッキングフック9") - that is expected, not a gap: the JA source is a
+# translation of the already-checked EN source, so a divergence would have to be introduced by hand
+# in the JA file itself, and the EVAL_PAIR check below still applies to it (the JA badge reads
+# "ガードレール評価 26/26", and "ガードレール" is in the context regex the same as "guardrail" is).
 MEDIA_FILES = ["presentation/index.html"]
-MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py"]
+MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html", "video/src/ja/*.py"]
 MEDIA_CHECKS = [
     ("media command count", r"(\d+) commands\b", "commands"),
     ("media hook count",    r"(\d+) (?:blocking )?hooks\b", "hooks"),
@@ -236,7 +244,7 @@ def main() -> int:
             # next to "adapter" is the port self-test, and equal pairs elsewhere are not claims.
             ctx = text[max(0, m.start() - 120):m.start() + 40].lower()
             if a == b and a != c["eval_cases"] \
-                    and re.search(r"eval|guardrail|payload|ペイロード", ctx) \
+                    and re.search(r"eval|guardrail|payload|ペイロード|ガードレール", ctx) \
                     and "adapter" not in ctx and "5/5" != m.group(0):
                 line = text[:m.start()].count("\n") + 1
                 print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
