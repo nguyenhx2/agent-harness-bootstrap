@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - 制御の階層</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .title{position:absolute;top:5%;left:0;right:0;text-align:center;
+    font-size:clamp(18px,2.8vw,34px);font-weight:700}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;padding:7% 5% 6%;text-align:center;gap:8px}
+  .scene.on{opacity:1}
+  h2{font-size:clamp(14px,2vw,25px);font-weight:600}
+  .layers{display:flex;flex-direction:column;gap:8px;width:min(80%,760px)}
+  .layer{border:2.5px solid var(--green-hi);background:#12211a;border-radius:10px;
+    padding:.45em .9em;text-align:left;opacity:0;transform:translateY(12px);
+    transition:opacity .5s,transform .5s}
+  .layer.on{opacity:1;transform:none}
+  .layer .nm{color:var(--green-hi);font-weight:700;font-size:clamp(12px,1.7vw,20px)}
+  .layer .ds{color:var(--dim);font-size:clamp(9px,1.25vw,15px);margin-top:1px}
+  .chip{border-radius:12px;padding:.55em 1.1em;font-weight:700;
+    font-size:clamp(13px,1.9vw,24px);display:inline-flex;align-items:center;justify-content:center}
+  .chip.purple{background:var(--purple);border:2px solid var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border:2px solid var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border:2px solid var(--dim);color:#fff}
+  .swap{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .arrow{color:var(--dim);font-size:clamp(16px,2.2vw,28px);line-height:1}
+  .sub{color:var(--dim);font-size:clamp(10px,1.4vw,18px)}
+  .insight{font-size:clamp(13px,1.9vw,24px)}
+  .byte{color:var(--green-hi);font-weight:700;font-size:clamp(13px,1.9vw,24px);
+    opacity:0;transition:opacity .5s}
+  .byte.on{opacity:1}
+  .pulse{animation:pulse 1s ease}
+  @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+  .row{display:flex;align-items:center;justify-content:center;gap:6%;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .pills{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .pill{border:2px solid var(--green-hi);color:var(--green-hi);border-radius:999px;
+    padding:.45em 1.1em;font-size:clamp(12px,1.6vw,22px)}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(12px,1.7vw,21px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .caption.green{color:var(--green-hi)}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
+  <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+  <div class="title">制御の階層</div>
+
+  <!-- Scene 0: five layers -->
+  <section class="scene" data-s="0">
+    <h2>エージェントと被害の間にある5つの階層</h2>
+    <div class="layers" id="layers">
+      <div class="layer"><div class="nm">設定の拒否リスト</div><div class="ds">.env、~/.ssh、.npmrcを読めない</div></div>
+      <div class="layer"><div class="nm">ブロッキングフック</div><div class="ds">mainへのコミット、AcceptedなADRの編集ができない</div></div>
+      <div class="layer"><div class="nm">起動境界</div><div class="ds">guard-agent-spawn: ロースターの担当席のみ、固定モデルのみ</div></div>
+      <div class="layer"><div class="nm">パススコープルール</div><div class="ds">グロブが一致したパスでのみルールを読み込む</div></div>
+      <div class="layer"><div class="nm">レビューゲート</div><div class="ds">コード・セキュリティレビュアー、EditもWriteもできない</div></div>
+    </div>
+  </section>
+
+  <!-- Scene 1: model independence -->
+  <section class="scene" data-s="1">
+    <div class="insight">ガードレールはシェルスクリプトとグロブルールでできている</div>
+    <div class="byte" id="byte">バイト単位で同一の安全性</div>
+    <div class="swap" style="margin-top:12px">
+      <span class="sub" id="swaplab">&nbsp;</span>
+      <span class="chip purple" id="model">Opus</span>
+      <span class="arrow">&#8595;</span>
+      <span class="chip green" id="result">26 / 26</span>
+      <span class="sub">ガードレール評価</span>
+    </div>
+  </section>
+
+  <!-- Scene 2: state on disk + ports -->
+  <section class="scene" data-s="2">
+    <h2>状態はコンテキストウィンドウではなくディスク上にある</h2>
+    <div class="row">
+      <div class="col"><span class="chip purple fadein">RAM</span><span class="sub" style="color:var(--red)">圧縮され、消える</span></div>
+      <div class="col"><span class="chip neutral fadein">コミットされたMarkdown</span><span class="sub" style="color:var(--green-hi)">生き残る</span></div>
+    </div>
+    <div class="pills">
+      <span class="pill">Claude Code</span><span class="pill">Cursor</span><span class="pill">Codex</span>
+    </div>
+    <div class="sub">助言だけでなく、強制を伴って移植される</div>
+  </section>
+
+  <!-- Scene 3: brand end card -->
+  <section class="scene" data-s="3">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+  var TL=[
+    {s:0,d:8600,cap:'5つのガードレール階層: 拒否リスト、フック、起動境界、パススコープルール、レビューゲート。',capAt:2800,reveal:true},
+    {s:1,d:9000,cap:'OpusをHaikuに差し替えても結果はバイト単位で同一。制御はモデルに依存しない。',capAt:4200,swap:true},
+    {s:2,d:8000,cap:'制御はモデルに依存しない。',capAt:600,green:true},
+    {s:3,d:2400,cap:null},
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function revealLayers(){
+    var ls=document.querySelectorAll('#layers .layer');
+    ls.forEach(function(l,k){l.classList.remove('on');setTimeout(function(){l.classList.add('on')},400+k*600)});
+  }
+  function runSwap(){
+    q('model').textContent='Opus';q('swaplab').innerHTML='&nbsp;';q('byte').classList.remove('on');
+    setTimeout(function(){q('swaplab').textContent='全エージェントを差し替える';q('swaplab').style.color='var(--purple-hi)';},2500);
+    setTimeout(function(){q('model').textContent='Haiku';q('model').classList.add('pulse');},3300);
+    setTimeout(function(){q('model').classList.remove('pulse');q('result').classList.add('pulse');},4200);
+    setTimeout(function(){q('result').classList.remove('pulse');q('byte').classList.add('on');},5300);
+  }
+  function step(i){
+    var t=TL[i];showScene(t.s);cap.classList.remove('on');cap.classList.toggle('green',!!t.green);
+    if(t.reveal) revealLayers();
+    if(t.swap) runSwap();
+    if(t.cap){setTimeout(function(){cap.textContent=t.cap;cap.classList.add('on')},t.capAt||300);}
+    setTimeout(function(){cap.classList.remove('on')},t.d-500);
+  }
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>

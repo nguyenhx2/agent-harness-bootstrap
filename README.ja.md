@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme-banner.png" alt="Agent Harness Bootstrap - AIエージェントが自律的かつ安全に動くための枠組み" width="100%">
+  <img src="docs/assets/readme-banner.ja.png" alt="Agent Harness Bootstrap - AIエージェントが自律的かつ安全に動くための枠組み" width="100%">
 </p>
 
 <p align="center"><b>AIエージェントに、本当に理解できるリポジトリと、抜け出せないハーネスを与える。</b></p>
@@ -27,7 +27,7 @@
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
-    <img src="video/gif/04-solution.gif" alt="完全なソリューション: 課題、契約を書く spec-builder、ハーネスを構築する harness-bootstrap、その内側で回るデリバリーループ、そして成果" width="860">
+    <img src="video/gif/ja/04-solution.gif" alt="完全なソリューション: 課題、契約を書く spec-builder、ハーネスを構築する harness-bootstrap、その内側で回るデリバリーループ、そして成果" width="860">
   </a>
 </p>
 
@@ -47,7 +47,7 @@
   Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、26/26。
 
 <p align="center">
-  <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
+  <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
 </p>
 
 ---

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - harness-bootstrap、最初から最後まで</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --blue-hi:#A8DADC; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .45s ease;
+    padding:3% 4% 12%;text-align:center;gap:12px;pointer-events:none}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(17px,2.7vw,35px);font-weight:700}
+  h2{font-size:clamp(13px,1.9vw,25px);font-weight:600;color:var(--blue-hi)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .tag{border-radius:999px;padding:.35em .9em;font-size:clamp(8px,1.1vw,15px);border:2px solid}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.b{color:var(--blue-hi);border-color:var(--blue-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:11px;padding:.55em .9em;font-size:clamp(9px,1.3vw,17px);font-weight:600;
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;border:2px solid}
+  .chip.purple{background:var(--purple);border-color:var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border-color:var(--green-hi);color:#fff}
+  .chip.blue{background:var(--blue);border-color:var(--blue-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border-color:var(--white);color:#fff}
+  .chip.art{background:var(--neutral);border-color:var(--amber);color:#fff}
+  .chip.red{background:var(--red);border-color:var(--amber);color:#fff}
+  .row{display:flex;align-items:flex-start;justify-content:center;gap:14px;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:31%}
+  .arrow{color:var(--dim);font-size:clamp(12px,1.7vw,24px);align-self:center}
+  .arrow.g{color:var(--green-hi)}
+  .arrow.a{color:var(--amber)}
+  .sub{color:var(--dim);font-size:clamp(7px,1.02vw,13px);line-height:1.45}
+  .sub.amber{color:var(--amber)}
+  .sub.blue{color:var(--blue-hi)}
+  .sub.wide{max-width:36ch}
+  .band{border:2px solid;border-radius:10px;padding:2.2% 2.4% 2.6%;width:96%;
+    display:flex;flex-direction:column;align-items:center;gap:14px}
+  .band.purple{border-color:var(--purple-hi);background:rgba(157,78,221,.13)}
+  .band.green{border-color:var(--green-hi);background:rgba(82,183,136,.11)}
+  .bandlabel{font-size:clamp(8px,1.1vw,15px);letter-spacing:.04em;margin-bottom:2px}
+  .bandlabel.p{color:var(--purple-hi)}
+  .bandlabel.g{color:var(--green-hi)}
+  .folder{border:2px solid var(--dim);border-radius:12px;width:min(46%,360px);
+    padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .folder .name{color:var(--dim);font-size:clamp(10px,1.4vw,19px)}
+  .folder .empty{color:var(--neutral);font-size:clamp(12px,1.8vw,24px)}
+  .qs{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;color:var(--dim);
+    font-size:clamp(8px,1.2vw,16px);margin-top:8px}
+  .qs span{opacity:0;transition:opacity .4s}
+  .qs.on span{opacity:1}
+  .qs.on span:nth-child(2){transition-delay:.15s}
+  .qs.on span:nth-child(3){transition-delay:.3s}
+  .qs.on span:nth-child(4){transition-delay:.45s}
+  .maps{display:flex;flex-direction:column;align-items:flex-start;gap:5px;
+    font-size:clamp(8px,1.15vw,15px);color:var(--white)}
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(9px,1.4vw,18px);color:var(--white);padding:0 6%;opacity:0;
+    transition:opacity .35s;line-height:1.4}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+  .pulse{animation:pl .8s ease}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(157,2,8,.75)}100%{box-shadow:0 0 0 24px rgba(157,2,8,0)}}
+  .grow{animation:gr .7s ease}
+  @keyframes gr{0%,100%{transform:none}50%{transform:scale(1.06)}}
+  .bands3{display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+  .bands3 .b{border:2px solid;border-radius:10px;flex:1;padding:6% 2%;
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .bands3 .b.p{border-color:var(--purple-hi);background:rgba(157,78,221,.13);color:var(--purple-hi)}
+  .bands3 .b.g{border-color:var(--green-hi);background:rgba(82,183,136,.11);color:var(--green-hi)}
+  .bands3 .lab{font-size:clamp(8px,1.1vw,15px);opacity:.85}
+  .bands3 .big{font-size:clamp(9px,1.3vw,18px);font-weight:600}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0;z-index:5}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
+  <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+
+  <!-- Scene 0: title + legend -->
+  <section class="scene" data-s="0">
+    <h1>harness-bootstrap、最初から最後まで</h1>
+    <div class="legend">
+      <span class="tag p">紫 = モデル、課金される</span>
+      <span class="tag g">緑 = スクリプト、無料</span>
+      <span class="tag b">青 = あなた</span>
+      <span class="tag r">赤 = ガードレール</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: the problem -->
+  <section class="scene" data-s="1">
+    <div class="folder fadein">
+      <span class="name">.claude/</span>
+      <span class="empty">空</span>
+    </div>
+    <div class="qs" id="qs">
+      <span>エージェントは？</span><span>ルールは？</span><span>ガードレールは？</span><span>タスクは？</span>
+    </div>
+  </section>
+
+  <!-- Scene 2: mode first -->
+  <section class="scene" data-s="2">
+    <h2>まずモードを選ぶ - 規模の話ではない</h2>
+    <div class="row" style="margin-top:10px">
+      <div class="col">
+        <span class="chip blue fadein">greenfield</span>
+        <span class="sub">空、またはほぼ空のリポジトリ</span>
+      </div>
+      <div class="col">
+        <span class="chip blue fadein">brownfield</span>
+        <span class="sub">既存のコードがあり、エージェントが変更する</span>
+      </div>
+      <div class="col">
+        <span class="chip blue fadein" id="audit">audit</span>
+        <span class="sub">エージェントが分析し、人間が全ての修正を適用する</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3: analysis + Inventory Report -->
+  <section class="scene" data-s="3">
+    <span class="bandlabel p">紫 - モデルが必要</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col" style="max-width:44%">
+          <span class="chip purple fadein">コードベース分析 - 必須</span>
+          <span class="sub wide">スタック、モジュール、データ層、連携先、規約、危険な操作、既存の.claude/、gitの実態</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:40%">
+          <span class="chip neutral fadein">棚卸しレポート</span>
+          <div class="maps">
+            <span>モジュール &#8594; 開発エージェント</span>
+            <span>規約 &#8594; ルール</span>
+            <span>危険な操作 &#8594; 拒否リスト + フック</span>
+          </div>
+        </div>
+      </div>
+      <span class="arrow">&#8595;</span>
+      <div class="col" style="max-width:70%">
+        <span class="chip blue">あなたが確認・訂正する</span>
+        <span class="sub amber">確認される前は1つもファイルを生成しない</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 4: intake + tools + plan -->
+  <section class="scene" data-s="4">
+    <span class="bandlabel p">紫 - モデルが必要</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col">
+          <span class="chip purple fadein">インテイク質問</span>
+          <span class="sub">AskUserQuestion、1回最大4問。Brownfieldは根拠から事前入力し、コードで判断できないことだけ尋ねる</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip purple fadein">ツールを検出・確認</span>
+          <span class="sub">.cursor/ .codex/ AGENTS.mdを走査し尋ねる: Claude Code / Cursor / Codex</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col">
+          <span class="chip blue fadein">1画面のセットアップ計画</span>
+          <span class="sub blue">作成 / 維持 / 変更、model + effort付きロースター。あなたが確認する</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 5: roster + skill discovery + OS + vars.json -->
+  <section class="scene" data-s="5">
+    <span class="bandlabel p">紫 - モデルが必要</span>
+    <div class="band purple" style="padding:1.6% 1.6% 2%">
+      <div class="row" style="gap:8px">
+        <div class="col" style="max-width:20%">
+          <span class="chip purple fadein" style="font-size:clamp(8px,1.2vw,16px);padding:.45em .7em">ロースター</span>
+          <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">Tier 0は無条件、プリセットS / M / L、明示的なmodel: と effort:</span>
+        </div>
+        <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+        <div class="col" style="max-width:23%">
+          <span class="chip purple fadein" style="font-size:clamp(8px,1.2vw,16px);padding:.45em .7em">スキルの発見・導入</span>
+          <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">担当席ごとにskills.shを検索、信頼基準 + 内容の必読、スキルごとにyes</span>
+        </div>
+        <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+        <div class="col" style="max-width:19%">
+          <span class="chip purple fadein" style="font-size:clamp(8px,1.2vw,16px);padding:.45em .7em">開発OSを検出</span>
+          <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">Windowsは.ps1へ、macOS/Linuxは.shへ</span>
+        </div>
+        <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+        <div class="col" style="max-width:23%">
+          <span class="chip neutral fadein" style="font-size:clamp(8px,1.2vw,16px);padding:.45em .7em">vars.json</span>
+          <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">vars + flags: ui, db, ai, audit, tdd, ddd, deploy_ask, windows / posix</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 6: scaffold -->
+  <section class="scene" data-s="6">
+    <span class="bandlabel g">緑 - スクリプト、決定的で無料</span>
+    <div class="band green">
+      <div class="row">
+        <span class="chip green fadein">scaffold.py --dry-run</span>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:40%">
+          <span class="chip green fadein">scaffold.py</span>
+          <span class="sub">assets/の決定的なコピー</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="chip neutral">追加</span><span class="sub">ファイルが存在しなかった</span></div>
+        <div class="col"><span class="chip neutral">維持</span><span class="sub">存在し、バイト単位で同一</span></div>
+        <div class="col"><span class="chip art">競合</span><span class="sub amber">存在し内容が異なる - 書き込まない</span></div>
+      </div>
+      <span class="arrow a">&#8595;</span>
+      <div class="row">
+        <span class="chip green">手で突き合わせる: 維持 / 適応 / 追加 / フラグ</span>
+        <span class="sub" style="color:var(--green-hi);align-self:center">exit 0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 7: unresolved var -->
+  <section class="scene" data-s="7">
+    <span class="bandlabel g">緑 - スクリプト、決定的で無料</span>
+    <div class="band green">
+      <div class="row">
+        <span class="chip green">scaffold.py --dry-run</span>
+        <span class="arrow">&#8594;</span>
+        <span class="chip green">scaffold.py</span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <span class="chip red fadein">未解決の &#123;&#123; VAR &#125;&#125;</span>
+        <span class="arrow a">&#8594;</span>
+        <span class="chip red" id="exit1">exit 1</span>
+      </div>
+      <span class="sub" style="margin-top:6px">プレースホルダーが本番のルールファイルに紛れ込むと、何にも一致せず静かに失敗する</span>
+    </div>
+  </section>
+
+  <!-- Scene 8: gap-fill + wiring -->
+  <section class="scene" data-s="8">
+    <span class="bandlabel p">紫、再び - テンプレートには分からないこと</span>
+    <div class="band purple">
+      <div class="row">
+        <div class="col" style="max-width:46%">
+          <span class="chip purple fadein">モデルが埋める空白</span>
+          <span class="sub wide">オーケストレーターのルーティング表、開発エージェントのスコープ、tech-stack.md、coding-standards.md、git-workflow.md、実際のスタック向けsettings.jsonのallow / deny、.env.example</span>
+        </div>
+        <span class="arrow">&#8594;</span>
+        <div class="col" style="max-width:46%">
+          <span class="chip purple fadein">オーケストレーションの配線</span>
+          <span class="sub wide">マスタープランの索引表、分析のギャップ一覧から種をまくPhase 1、AGENTS.mdのエントリーポイント、薄い@AGENTS.mdインポートとしてのCLAUDE.md</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 9: gate -> smoke -> graphs -> port -> done -->
+  <section class="scene" data-s="9">
+    <div class="row" style="gap:8px">
+      <div class="col" style="max-width:19%">
+        <span class="chip red fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">品質ゲート</span>
+        <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">構造 / コスト / 安全性 / 裏付け / 引き継ぎ</span>
+      </div>
+      <div class="col" style="max-width:7%">
+        <span class="arrow g" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+        <span class="sub" style="color:var(--green-hi);font-size:clamp(7px,0.98vw,12px)">全て green</span>
+      </div>
+      <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">ループをスモークテスト</span>
+      <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+      <div class="col" style="max-width:23%">
+        <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">両方のグラフを構築</span>
+        <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">code-graph.py + docs-graph.py、その後graph-html.py: harness-graph.html + specs-graph.html</span>
+      </div>
+      <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
+      <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">あなたのツールへ移植</span>
+    </div>
+    <span class="arrow g" style="margin-top:12px">&#8595;</span>
+    <span class="chip green" id="done" style="font-size:clamp(11px,1.6vw,21px);padding:.7em 1.4em">ハーネスがオーケストレーションの下で動く</span>
+  </section>
+
+  <!-- Scene 10: three-band recap -->
+  <section class="scene" data-s="10">
+    <h1 style="font-size:clamp(14px,2.2vw,29px)">3つの帯として読む</h1>
+    <div class="bands3" style="margin-top:16px">
+      <div class="b p"><span class="lab">分析 + 決定</span><span class="big">モデルが必要</span></div>
+      <span class="arrow">&#8594;</span>
+      <div class="b g"><span class="lab">スキャフォルド</span><span class="big">スクリプト、無料</span></div>
+      <span class="arrow">&#8594;</span>
+      <div class="b p"><span class="lab">空白埋め + 配線</span><span class="big">テンプレートが知らないこと</span></div>
+    </div>
+  </section>
+
+  <!-- Scene 11: brand end card -->
+  <section class="scene" data-s="11">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=document.getElementById('cap');
+  var prog=document.getElementById('prog');
+  function q(id){return document.getElementById(id)}
+
+  // Each entry: scene index, duration (ms), and a list of [atMs, captionText].
+  var TL=[
+    {s:0,d:3000,caps:[]},
+    {s:1,d:6500,caps:[[600,'良いエージェント構成がどんなものかすら分からない。'],
+                      [3000,'エージェント・ルール・ガードレール・タスクがどう噛み合うかの標準がない - 空の.claude/を手で埋めるのは答えにならない。']],
+     fn:function(){var e=q('qs');e.classList.remove('on');setTimeout(function(){e.classList.add('on')},2400);}},
+    {s:2,d:6000,caps:[[600,'Greenfield、brownfield、audit - 何よりも先にモードを選ぶ。'],
+                      [3200,'エージェントがソースを一切変更しないなら、コード量に関わらずモードはaudit。']],
+     fn:function(){var e=q('audit');e.classList.remove('grow');
+       setTimeout(function(){e.classList.add('grow')},3000);}},
+    {s:3,d:7000,caps:[[600,'brownfieldとaudit: 分析は必須で、棚卸しレポートを生む - 汎用テンプレートではなく対応表。'],
+                      [4200,'全てをゲートする - 訂正は分析結果より優先される。']]},
+    {s:4,d:5000,caps:[[500,'インテイクはコードで判断できないことだけを尋ねる - 1回最大4問。'],
+                      [2600,'対象ツールを検出・確認した後、1つのセットアップ計画をあなたが確認する。']]},
+    {s:5,d:5200,caps:[[400,'全エージェントに明示的なmodelとeffort - Tier 0は無条件、その後プリセット。'],
+                      [2600,'各担当席がskills.shを検索できる - 信頼基準と内容の必読が全ての導入をゲートする。'],
+                      [4400,'決定事項はvars.jsonに入る - 方法論フラグも含む: 既定はDDD、TDDはオプトイン。']]},
+    {s:6,d:6500,caps:[[500,'次にスクリプトが一括コピーを行う - 決定的で、無料。'],
+                      [2800,'「競合」は失敗ではなくキュー - スキップし、表示し、exit 0で、あなたが書いたものを決して上書きしない。']]},
+    {s:7,d:4200,caps:[[700,'exit 1になるのは未解決のプレースホルダーだけ - しかも意図的に大きく失敗する。']],
+     fn:function(){var e=q('exit1');e.classList.remove('pulse');
+       setTimeout(function(){e.classList.add('pulse')},600);}},
+    {s:8,d:5800,caps:[[500,'ルーティング表、各エージェントのスコープ、実際の拒否コマンド - テンプレートはこれらを知らない。'],
+                      [3000,'その後モデルがオーケストレーションを配線し、分析のギャップからPhase 1の種をまく。']]},
+    {s:9,d:7200,caps:[[500,'品質ゲートが構造・コスト・安全性・裏付け・引き継ぎを確認する。'],
+                      [2200,'全てgreen: ループを最初から最後までスモークテストする - 実際のタスク、セッションログの1行、/task-resume。'],
+                      [4200,'その後両方のナレッジグラフを構築し、インタラクティブHTMLとして書き出す - コード依存関係とドキュメントのトレーサビリティ。'],
+                      [6400,'最後に選択したツールへ移植する。']],
+     fn:function(){var e=q('done');e.classList.remove('grow');
+       setTimeout(function(){e.classList.add('grow')},5000);}},
+    {s:10,d:4500,caps:[[600,'紫から緑、また紫へ - スクリプトが答えを知り得ない箇所でだけモデルに払う。']]},
+    {s:11,d:2400,caps:[]}
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+  var timers=[];
+
+  function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+  function later(fn,ms){timers.push(setTimeout(fn,ms));}
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+
+  function step(i){
+    var t=TL[i];
+    clearTimers();
+    showScene(t.s);
+    cap.classList.remove('on');
+    if(t.fn) t.fn();
+    t.caps.forEach(function(c){
+      later(function(){cap.textContent=c[1];cap.classList.add('on');},c[0]);
+    });
+    later(function(){cap.classList.remove('on')},t.d-400);
+  }
+
+  var idx=-1;
+  function loop(){idx=(idx+1)%TL.length;step(idx);setTimeout(loop,TL[idx].d);}
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';
+    requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+  loop();
+})();
+</script>
+</body>
+</html>
