@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Harness Bootstrap - 完全なソリューション</title>
+<style>
+  :root{
+    --bg:#12141a; --green:#2D6A4F; --green-hi:#52B788; --purple:#5A189A;
+    --purple-hi:#9D4EDD; --red:#9D0208; --amber:#FFBA08; --blue:#1D3557;
+    --blue-hi:#A8DADC; --neutral:#495057; --white:#F8F9FA; --dim:#8A94A0;
+    --pain-bg:#3A0D10; --fixed-bg:#0E2E22;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--white);
+    font-family:"Yu Gothic UI","Meiryo","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:min(96vw,1120px);aspect-ratio:16/9;
+    background:var(--bg);border-radius:14px;overflow:hidden}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;
+    padding:3% 4% 12%;text-align:center;gap:10px;pointer-events:none}
+  .scene.on{opacity:1}
+  h1{font-size:clamp(20px,3.2vw,40px);font-weight:700}
+  h2{font-size:clamp(15px,2.3vw,28px);font-weight:600}
+  .sub{color:var(--dim);font-size:clamp(10px,1.5vw,18px)}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .tag{border-radius:999px;padding:.35em .9em;font-size:clamp(9px,1.3vw,17px);border:2px solid}
+  .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
+  .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
+  .tag.r{color:var(--red);border-color:var(--red)}
+  .chip{border-radius:12px;padding:.5em .9em;font-size:clamp(10px,1.5vw,20px);font-weight:600;
+    display:inline-flex;align-items:center;text-align:center;justify-content:center;
+    border:2px solid transparent;line-height:1.25}
+  .chip.purple{background:var(--purple);border-color:var(--purple-hi);color:#fff}
+  .chip.green{background:var(--green);border-color:var(--green-hi);color:#fff}
+  .chip.neutral{background:var(--neutral);border-color:var(--white);color:#fff}
+  .chip.red{background:var(--red);border-color:var(--amber);color:#fff}
+  .arrow{color:var(--dim);font-size:clamp(14px,2vw,26px);line-height:1}
+
+  /* --- pain / split layout --- */
+  .split{display:flex;width:100%;height:100%;align-items:center;gap:2%}
+  .paincol{flex:0 0 42%;display:flex;flex-direction:column;gap:2.2%;align-items:stretch}
+  .paincol .hdr{color:var(--dim);font-size:clamp(9px,1.3vw,16px);margin-bottom:2px}
+  .pain{display:flex;align-items:center;gap:10px}
+  .pain .chip{flex:1;background:var(--pain-bg);border-color:var(--red);color:var(--white);
+    font-weight:500;transition:background .5s,border-color .5s,color .5s}
+  .mark{width:1.6em;font-size:clamp(12px,1.6vw,22px);font-weight:700;color:var(--red);transition:color .4s}
+  .pain.fixed .chip{background:var(--fixed-bg);border-color:var(--green-hi);color:var(--green-hi)}
+  .pain.fixed .mark{color:var(--green-hi)}
+  .pain.fixed .mark::after{content:"\2713"}
+  .pain .mark::after{content:"\2715"}
+  .pain.fixed .mark{animation:pop .5s ease}
+  @keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .work{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+
+  /* centred pain intro */
+  .painstack{display:flex;flex-direction:column;gap:12px;align-items:center;width:min(60%,600px)}
+  .painstack .pain{width:100%}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:460px}
+  .notes{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .n1{color:var(--blue-hi);font-size:clamp(9px,1.3vw,16px)}
+  .n2{color:var(--dim);font-size:clamp(9px,1.3vw,16px)}
+  .n3{color:var(--amber);font-size:clamp(9px,1.3vw,16px)}
+  .mono{color:var(--green-hi);font-size:clamp(11px,1.5vw,20px);font-weight:600}
+  .foot{display:flex;gap:18px;justify-content:center;font-size:clamp(9px,1.2vw,15px)}
+  .foot .a{color:var(--green-hi)} .foot .b{color:var(--dim)}
+
+  /* --- loop --- */
+  .loop{position:relative;width:100%;max-width:760px;height:60%;margin-top:4px}
+  .node{position:absolute;transform:translate(-50%,-50%)}
+  #orch{left:50%;top:12%}
+  #agents{left:22%;top:52%}
+  #tboard{left:80%;top:52%}
+  #hooks{left:36%;top:92%}
+  #blk{left:62%;top:92%;color:var(--amber);font-size:clamp(10px,1.4vw,19px);font-weight:700;
+    white-space:nowrap;opacity:0;transition:opacity .4s}
+  #blk small{display:block;color:var(--dim);font-weight:400;font-size:.75em}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+  .wire{stroke:var(--dim);stroke-width:2.5;fill:none;stroke-dasharray:6 6;opacity:0;transition:opacity .4s}
+  .wire.on{opacity:1;animation:dash 1s linear infinite}
+  @keyframes dash{to{stroke-dashoffset:-12}}
+  .wlabel{fill:var(--dim);font-size:12px}
+  #hooks{opacity:0;transition:opacity .4s}
+  .flash{animation:flash .8s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(157,2,8,.75)}100%{box-shadow:0 0 0 26px rgba(157,2,8,0)}}
+
+  /* --- payoff --- */
+  .payoff{display:flex;flex-direction:column;gap:8px;width:min(60%,580px)}
+  .payoff .chip{opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s}
+  .payoff .chip.on{opacity:1;transform:none}
+  .evrow{display:flex;gap:14px;justify-content:center;margin-top:10px;opacity:0;transition:opacity .5s;flex-wrap:wrap}
+  .evrow.on{opacity:1}
+  .ports{color:var(--dim);font-size:clamp(9px,1.2vw,16px);margin-top:8px;opacity:0;transition:opacity .5s}
+  .ports.on{opacity:1}
+
+  .caption{position:absolute;left:0;right:0;bottom:4.5%;text-align:center;
+    font-size:clamp(11px,1.7vw,21px);color:var(--white);padding:0 6%;opacity:0;transition:opacity .35s}
+  .caption.on{opacity:1}
+  .fadein{animation:fi .5s ease both}
+  @keyframes fi{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+  .progress{position:absolute;top:0;left:0;height:4px;background:var(--green-hi);width:0}
+  .brandmark{position:absolute;right:2.2%;bottom:3%;width:6.5%;max-width:52px;min-width:22px;opacity:.5;z-index:6;pointer-events:none}
+  .brandmark-big{width:20%;max-width:150px;margin-bottom:10px}
+  .brand{letter-spacing:3px;font-size:clamp(11px,1.4vw,16px);color:var(--dim)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="brand-logo" viewBox="0 0 256 256">
+  <linearGradient id="sh-body" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#2A4A9F"/><stop offset="0.45" stop-color="#1D3557"/><stop offset="1" stop-color="#101B33"/></linearGradient>
+  <linearGradient id="sh-rim" gradientUnits="userSpaceOnUse" x1="128" y1="20" x2="128" y2="240"><stop offset="0" stop-color="#6FB8F5"/><stop offset="1" stop-color="#35348F"/></linearGradient>
+  <linearGradient id="sh-eye" gradientUnits="userSpaceOnUse" x1="128" y1="96" x2="128" y2="168"><stop offset="0" stop-color="#EAF4FC"/><stop offset="1" stop-color="#BFDCF2"/></linearGradient>
+  <radialGradient id="sh-iris" gradientUnits="userSpaceOnUse" cx="122" cy="124" r="34"><stop offset="0" stop-color="#6FB8F5"/><stop offset="0.6" stop-color="#3B6FE0"/><stop offset="1" stop-color="#35348F"/></radialGradient>
+  <path d="M128 18 C 154 32 182 40 208 44 C 210 96 208 132 200 160 C 190 196 164 222 128 240 C 92 222 66 196 56 160 C 48 132 46 96 48 44 C 74 40 102 32 128 18 Z" fill="url(#sh-body)" stroke="url(#sh-rim)" stroke-width="7" stroke-linejoin="round"/>
+  <g stroke="#6FB8F5" stroke-width="5" stroke-linecap="round" opacity="0.85" fill="none"><path d="M128 60 L128 100"/><path d="M88 74 L113 106"/><path d="M168 74 L143 106"/><path d="M88 74 L128 60"/><path d="M168 74 L128 60"/></g>
+  <circle cx="128" cy="58" r="11" fill="#8FD0FF"/>
+  <polygon points="88,64 97,69 97,79 88,84 79,79 79,69" fill="#5A8FE8"/>
+  <polygon points="168,64 177,69 177,79 168,84 159,79 159,69" fill="#5A8FE8"/>
+  <path d="M62 132 Q128 84 194 132 Q128 180 62 132 Z" fill="url(#sh-eye)"/>
+  <circle cx="128" cy="130" r="27" fill="url(#sh-iris)"/>
+  <circle cx="128" cy="130" r="11" fill="#101B33"/>
+  <circle cx="136" cy="121" r="5" fill="#EAF4FC"/>
+  <g stroke="#4f74d8" stroke-width="4.5" stroke-linecap="round" opacity="0.8" fill="none"><path d="M104 196 L119 152"/><path d="M152 196 L137 152"/></g>
+  <circle cx="102" cy="200" r="8" fill="#5A8FE8"/>
+  <polygon points="152,192 160,196.5 160,205.5 152,210 144,205.5 144,196.5" fill="#8FD0FF"/>
+  </symbol>
+  </svg>
+  <div class="progress" id="prog"></div>
+  <svg class="brandmark" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+
+  <!-- Scene 0: title -->
+  <section class="scene" data-s="0">
+    <h1>完全なソリューション</h1>
+    <div class="sub">契約書、そしてハーネス、そしてループ</div>
+    <div class="legend">
+      <span class="tag g">緑 = ハーネス・決定的</span>
+      <span class="tag p">紫 = モデル</span>
+      <span class="tag r">赤 = ブロック</span>
+    </div>
+  </section>
+
+  <!-- Scene 1: the pain, centred -->
+  <section class="scene" data-s="1">
+    <h2>実際のリポジトリに置かれたエージェント</h2>
+    <div class="painstack" style="margin-top:10px">
+      <div class="pain"><span class="chip">マージできそうに見える要件を作り出す</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">コンテキストが圧縮され、作業が消える</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">1回の悪いターンで.envを読み、mainにコミットする</span><span class="mark"></span></div>
+      <div class="pain"><span class="chip">モデル指定がなく、請求額が膨らむ</span><span class="mark"></span></div>
+    </div>
+  </section>
+
+  <!-- Scene 2: spec-builder (pain column + work) -->
+  <section class="scene" data-s="2">
+    <div class="split">
+      <div class="paincol" id="pc-a"></div>
+      <div class="work">
+        <span class="chip neutral fadein">アイデア / メモ / 書き起こし / 旧ドキュメント</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip purple fadein">spec-builder</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip neutral fadein">docs/specs/ - 13セクション</span>
+        <div class="notes">
+          <span class="n1">安定したFR ID + 受け入れ基準</span>
+          <span class="n2">要件を勝手に作らない:</span>
+          <span class="n3">未記載 -&gt; AS-nn 前提 / OI-nn 未解決の課題</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 3: harness-bootstrap -->
+  <section class="scene" data-s="3">
+    <div class="split">
+      <div class="paincol" id="pc-b"></div>
+      <div class="work">
+        <span class="chip purple fadein">harness-bootstrap</span>
+        <span class="arrow">&#8595;</span>
+        <span class="chip purple fadein">まずあなたのコードを読む</span>
+        <span class="arrow">&#8595;</span>
+        <span class="mono">.claude/</span>
+        <div class="grid2">
+          <span class="chip green">エージェント15<br>model + effort</span>
+          <span class="chip green">ルール15<br>常時6、スコープ9</span>
+          <span class="chip green">コマンド21</span>
+          <span class="chip green">ブロッキングフック9</span>
+        </div>
+        <span class="chip neutral">docs/tasks/ - クラッシュを生き延びるボード</span>
+        <div class="foot"><span class="a">スキャフォルド: 約0.2秒</span><span class="b">突き合わせる、決して上書きしない</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 4: the delivery loop -->
+  <section class="scene" data-s="4">
+    <h2>デリバリーループがその内側で回る</h2>
+    <div class="loop">
+      <svg class="wires" viewBox="0 0 760 300" preserveAspectRatio="none">
+        <path id="w-dispatch" class="wire" d="M340,42 L185,140"/>
+        <path id="w-record"   class="wire" d="M270,156 L570,156"/>
+        <path id="w-bad"      class="wire" d="M172,180 L265,262"/>
+        <text x="205" y="105" class="wlabel">起動する</text>
+        <text x="360" y="146" class="wlabel">進捗を記録する</text>
+      </svg>
+      <div class="node" id="orch"><span class="chip purple">オーケストレーター</span></div>
+      <div class="node" id="agents"><span class="chip purple">スコープを絞った専門エージェント</span></div>
+      <div class="node" id="tboard"><span class="chip neutral">docs/tasks/ ボード<br>ディスク上</span></div>
+      <div class="node" id="hooks"><span class="chip red">フック</span></div>
+      <div class="node" id="blk">ブロック<small>「非推奨」ではない</small></div>
+    </div>
+  </section>
+
+  <!-- Scene 5: payoff -->
+  <section class="scene" data-s="5">
+    <h2>成果</h2>
+    <div class="payoff" id="payoff">
+      <span class="chip green">契約書が存在する</span>
+      <span class="chip green">ハーネスから抜け出せない</span>
+      <span class="chip green">状態はクラッシュを生き延びる</span>
+      <span class="chip green">請求額は選ばれる、押し付けられない</span>
+    </div>
+    <div class="evrow" id="evrow">
+      <span class="tag g">ガードレール評価 26/26</span>
+      <span class="tag g">Opus -&gt; Haiku: バイト単位で同一の安全性</span>
+    </div>
+    <div class="ports" id="ports">シェルスクリプト + グロブルール | Claude Code・Cursor・Codexへ強制ごと移植</div>
+  </section>
+
+  <!-- Scene 6: brand end card -->
+  <section class="scene" data-s="6">
+    <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
+    <div class="brand">AGENT HARNESS BOOTSTRAP</div>
+  </section>
+
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+(function(){
+  var PAINS=[
+    'マージできそうに見える要件を作り出す',
+    'コンテキストが圧縮され、作業が消える',
+    '1回の悪いターンで.envを読み、mainにコミットする',
+    'モデル指定がなく、請求額が膨らむ'
+  ];
+  function q(id){return document.getElementById(id)}
+  function buildCol(el){
+    el.innerHTML='';
+    var h=document.createElement('div');h.className='hdr';h.textContent='課題';el.appendChild(h);
+    PAINS.forEach(function(p){
+      var row=document.createElement('div');row.className='pain';
+      var c=document.createElement('span');c.className='chip';c.textContent=p;
+      var m=document.createElement('span');m.className='mark';
+      row.appendChild(c);row.appendChild(m);el.appendChild(row);
+    });
+  }
+  buildCol(q('pc-a'));buildCol(q('pc-b'));
+
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var cap=q('cap'), prog=q('prog');
+  var timers=[];
+  function at(ms,fn){timers.push(setTimeout(fn,ms))}
+  function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+  function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}
+  function say(s){cap.textContent=s;cap.classList.add('on')}
+  function hush(){cap.classList.remove('on')}
+  function fixRows(colId,idxs){
+    var rows=q(colId).querySelectorAll('.pain');
+    idxs.forEach(function(i){rows[i].classList.add('fixed')});
+  }
+  function resetCol(colId){
+    q(colId).querySelectorAll('.pain').forEach(function(r){r.classList.remove('fixed')});
+  }
+
+  var TL=[
+    {s:0,d:4000,run:function(){}},
+    {s:1,d:9500,run:function(){
+      at(600,function(){say('4つの失敗が、実際のリポジトリで毎回起こる。')});
+      at(4300,function(){say('もっともらしい作り話、失われた作業、危険なターン、押し付けられた請求。')});
+      at(9000,hush);
+    }},
+    {s:2,d:10000,run:function(){
+      resetCol('pc-a');
+      at(500,function(){say('ステップ1: spec-builderが生の入力を契約書に変える。')});
+      at(3800,function(){say('決して作らない: 書かれていないことは推測ではなくフラグが立つ。')});
+      at(7000,function(){fixRows('pc-a',[0]);say('課題1解決 - もっともらしい作り話はもうない。')});
+      at(9500,hush);
+    }},
+    {s:3,d:12000,run:function(){
+      resetCol('pc-b');fixRows('pc-b',[0]);
+      at(500,function(){say('ステップ2: harness-bootstrapがコードを読み、ハーネスを構築する。')});
+      at(4200,function(){say('全エージェントに明示的なモデル。フックがブロックする。ボードはディスク上。')});
+      at(8000,function(){fixRows('pc-b',[1])});
+      at(8600,function(){fixRows('pc-b',[2])});
+      at(9200,function(){fixRows('pc-b',[3]);
+        say('課題2・3・4解決 - 善意ではなく構造によって。')});
+      at(11500,hush);
+    }},
+    {s:4,d:11500,run:function(){
+      ['w-dispatch','w-record','w-bad'].forEach(function(id){q(id).classList.remove('on')});
+      q('hooks').style.opacity=0;q('blk').style.opacity=0;
+      at(500,function(){q('w-dispatch').classList.add('on');
+        say('オーケストレーターがボードに対しスコープを絞った専門エージェントを起動する。')});
+      at(3000,function(){q('w-record').classList.add('on');
+        say('ディスク上のボードが、作業中の進捗を記録する。')});
+      at(5800,function(){
+        q('hooks').style.opacity=1;q('w-bad').classList.add('on');
+        q('hooks').firstChild.classList.add('flash');
+        q('blk').style.opacity=1;
+        say('フックは危険な操作をブロックする。忠告するだけではない。')});
+      at(6900,function(){q('hooks').firstChild.classList.remove('flash')});
+      at(11000,hush);
+    }},
+    {s:5,d:11000,run:function(){
+      var cs=q('payoff').querySelectorAll('.chip');
+      cs.forEach(function(c){c.classList.remove('on')});
+      q('evrow').classList.remove('on');q('ports').classList.remove('on');
+      cs.forEach(function(c,i){at(400+i*450,function(){c.classList.add('on')})});
+      at(2600,function(){say('契約書、強制、永続する状態、選ばれた請求額。')});
+      at(5200,function(){q('evrow').classList.add('on');
+        say('ガードレールはシェルスクリプトとグロブルール - だからモデルに依存しない。')});
+      at(8000,function(){q('ports').classList.add('on')});
+      at(10400,hush);
+    }},
+    {s:6,d:2400,run:function(){}}
+  ];
+  var total=TL.reduce(function(a,b){return a+b.d},0);
+
+  var idx=-1;
+  function step(){
+    idx=(idx+1)%TL.length;
+    clearTimers();hush();
+    var t=TL[idx];showScene(t.s);t.run();
+    setTimeout(step,t.d);
+  }
+  var start=performance.now();
+  function tick(now){prog.style.width=((((now-start)%total)/total)*100).toFixed(2)+'%';requestAnimationFrame(tick)}
+  requestAnimationFrame(tick);
+  step();
+})();
+</script>
+</body>
+</html>
