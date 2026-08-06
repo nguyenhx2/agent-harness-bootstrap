@@ -33,10 +33,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "."
+      # deploy-pages caps its own wait at 600000 ms, so raising `timeout:` past that does nothing
+      # (it warns and clamps). If a deploy aborts with "Timeout reached" while still reporting
+      # deployment_in_progress, that is GitHub-side: re-run it. The artifact size is not the
+      # trigger - the run that first added the Japanese clips deployed the same payload in 31s.
       - id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # The site carries twelve 1080p clips (English and Japanese), so the artifact is tens of
-          # megabytes and GitHub's own deployment step routinely runs past the action's 10-minute
-          # default wait - which aborts a deploy that was still progressing. 30 minutes.
-          timeout: 1800000
