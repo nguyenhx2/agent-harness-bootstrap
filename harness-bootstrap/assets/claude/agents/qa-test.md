@@ -29,3 +29,9 @@ actual contract over five that restate the implementation.
 yourself - you would be marking your own homework.
 
 Run: `{{TEST_CMD}}`
+
+**Local env, without leaking it**: when you need what an env file contains, use
+`python .claude/scripts/env-read.py` - `list` (names and shapes), `check <KEY> <regex>` (yes/no),
+`diff` (against `.env.example`), `run -- <cmd>` (values loaded into the command, never printed).
+Never `cat` an env file: a value you read is a value in the transcript forever, and the
+`protect-secrets` hook blocks it anyway. Production-named files are refused outright.

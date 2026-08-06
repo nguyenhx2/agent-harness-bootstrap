@@ -13,20 +13,31 @@
 # Contract: reads the PreToolUse JSON payload on stdin. exit 2 = BLOCK (message on stderr, shown
 # to Claude); exit 0 = allow.
 
+# Unlike every other hook, this one does NOT fail open on an unreadable payload. A spawn whose
+# payload cannot be parsed cannot be shown to name a roster seat, and letting an unverifiable
+# dispatch through is exactly what this hook exists to prevent. The .sh flavor reaches the same
+# outcome by extracting an empty subagent_type and blocking on it; this branch makes the two
+# flavors behaviorally identical, which the eval pins in both flavors.
+$payload = $null
 try {
     $raw = [Console]::In.ReadToEnd()
-    if (-not $raw) { exit 0 }
-    $payload = $raw | ConvertFrom-Json
+    if ($raw) { $payload = $raw | ConvertFrom-Json }
 } catch {
-    exit 0
+    $payload = $null
 }
 
-$baseCwd = if ($payload.cwd) { $payload.cwd } else { (Get-Location).Path }
+$baseCwd = if ($payload -and $payload.cwd) { $payload.cwd } else { (Get-Location).Path }
 $agentsDir = Join-Path $baseCwd '.claude/agents'
 $allowlist = Join-Path $baseCwd '.claude/hooks/spawn-allowlist'
 
-# No harness in this repo: nothing to guard against, do not break other projects.
+# No harness in this repo: nothing to guard against, do not break other projects. Checked BEFORE
+# the unreadable-payload refusal, matching the .sh ordering.
 if (-not (Test-Path $agentsDir)) { exit 0 }
+
+if (-not $payload) {
+    [Console]::Error.WriteLine("BLOCKED: this spawn's payload could not be read, so it cannot be shown to name a roster seat. Re-issue the dispatch naming a subagent_type from .claude/agents/.")
+    exit 2
+}
 
 $stype = $payload.tool_input.subagent_type
 

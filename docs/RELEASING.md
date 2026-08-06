@@ -21,7 +21,7 @@ so the process does not have to be remembered.
 6. **The eval AND the diagram check must be green** (`eval/guardrail_eval.py`, `scripts/check_mermaid.py`). CI runs the guardrail eval and the scaffold matrix. Do not ship a
    harness whose guardrails do not block.
 7. **Every release carries its eval and benchmark.** The release attaches `eval-results.md` and
-   `benchmark-results.md`, captured from the tagged commit, so the "26/26" and the numbers are
+   `benchmark-results.md`, captured from the tagged commit, so the "33/33" and the numbers are
    provable per version. CI does this automatically on a tag.
 
 ## The note format

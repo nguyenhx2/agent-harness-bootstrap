@@ -97,7 +97,7 @@ paths:
 ```
 
 `benchmark/RESULTS.md` measures the effect: 6 unconditional rules at 25,667 bytes against 9
-path-scoped rules at 51,785 bytes. **67% of the rule content is kept out of the default session.** The
+path-scoped rules at 51,785 bytes. **66% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,
@@ -405,7 +405,7 @@ Every claim above traces to a file in this repository:
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`, `hooks/README.md` - the SubagentStop archive.
 - `harness-bootstrap/reference/cost-model.md` - path-scoped rules, byte-stability, `maxTurns`.
 - `benchmark/RESULTS.md` - the 67% figure.
-- `eval/guardrail_eval.py` - 26/26.
+- `eval/guardrail_eval.py` - 33/33.
 - `docs/ASSESSMENT.md` - what is enforced, what is advisory, and why routing cannot be hooked.
 
 External:

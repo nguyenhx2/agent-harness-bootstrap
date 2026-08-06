@@ -53,8 +53,15 @@ if printf '%s' "$cmd" | grep -Eqi 'co-authored-by:[^"]*(claude|anthropic|copilot
   exit 2
 fi
 
-msg=$(printf '%s' "$cmd" | sed -nE 's/.*-m[[:space:]]+"([^"]*)".*/\1/p')
-[ -z "$msg" ] && msg=$(printf '%s' "$cmd" | sed -nE "s/.*-m[[:space:]]+'([^']*)'.*/\1/p")
+# The subject is by definition the FIRST line of the message, so extraction runs against the
+# first line of the command and does not require the closing quote to sit on it. The earlier
+# version demanded a matching quote on the same line, so `git commit -m "bad subject<newline>
+# <body>"` extracted nothing, fell through the editor-flow exit below, and skipped validation
+# entirely - a one-newline bypass of the whole check, reachable by accident since multi-line
+# messages are normal.
+first=$(printf '%s' "$cmd" | head -1)
+msg=$(printf '%s' "$first" | sed -nE 's/.*-m[[:space:]]+"([^"]*).*/\1/p')
+[ -z "$msg" ] && msg=$(printf '%s' "$first" | sed -nE "s/.*-m[[:space:]]+'([^']*).*/\1/p")
 [ -z "$msg" ] && exit 0   # editor flow / -F file: git's own hooks own that path
 
 subject=$(printf '%s\n' "$msg" | head -1 | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')

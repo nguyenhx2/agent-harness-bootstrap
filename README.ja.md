@@ -7,7 +7,7 @@
 <p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 26/26](https://img.shields.io/badge/guardrail%20eval-26%2F26-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 33/33](https://img.shields.io/badge/guardrail%20eval-33%2F33-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -44,7 +44,7 @@
   まずあなたのコードを読み込むので、生成される内容は*あなたの*リポジトリに合ったものになる。「合わせて作る」
   の具体的な中身は[手に入るもの](#-手に入るもの)を参照。
 - ガードレールはシェルスクリプトと終了コードであり、モデルの判断力に頼らない。すべてのエージェントを
-  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、26/26。
+  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、33/33。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
@@ -197,6 +197,8 @@ AGENTS.md + CLAUDE.md
 | [`/harness-update`](docs/TUNING.md#harness-update) | 新しいアセットや変わったコードベースを取り込むためスキャフォルダを再実行。競合はフラグ付け、上書きは絶対にしない |
 | [`/code-graph`](docs/TUNING.md#code-graph) | コードの依存関係グラフ(mermaid + JSON)を再構築する。モジュールをまたぐ変更の前にエージェントが参照する |
 | [`/docs-graph`](docs/TUNING.md#docs-graph) | ドキュメントのトレーサビリティグラフ(孤立した要件ID)を再構築し、`specs-graph.html` と `harness-graph.html` の両方のインタラクティブ出力を更新する |
+| [`/spec-ingest`](docs/TUNING.md#the-spec-side) | 新しい情報源を既存のスペックに取り込む。差分を突き合わせ、改訂履歴に記録し、依存するエージェント定義まで反映する |
+| [`/spec-retract`](docs/TUNING.md#the-spec-side) | 誤った情報源や記述を撤回する。影響範囲を追跡し、未確認事項に変換し、該当タスクは人間の判断待ちとしてブロックする |
 | [`/skill-wire`](docs/TUNING.md#skill-wire) | インストール済みの [skills.sh](https://www.skills.sh/) スキルをロースターの担当席に配線する。内容の再レビューとスコープ確認のうえ記録される |
 
 確認しても7つのどれも決してしないこと: レビューア系エージェントが書き込み権限を得ることはなく、
@@ -227,10 +229,10 @@ AGENTS.md + CLAUDE.md
 
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 108,591 | **-54%** |
+| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 128,072 | **-45%** |
 | モデルが出力として書くバイト数 | 95,064 | 13,881 | **-85%** |
-| デフォルトのセッションから除外されるルール内容 | - | 51,785 of 77,452 B | **67%** |
-| ガードレール評価 | - | **26/26** | - |
+| デフォルトのセッションから除外されるルール内容 | - | 51,785 of 77,452 B | **66%** |
+| ガードレール評価 | - | **33/33** | - |
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **26/26 correct (11 must-block, 15 must-allow).**
+`python eval/guardrail_eval.py` -> **33/33 correct (11 must-block, 15 must-allow).**
 
 The count moved from 25 to 26: `guard-main-commit` previously had only a must-block case
 (straight-to-main). A hook that blocked every commit unconditionally - a real regression, not a
@@ -10,7 +10,7 @@ hypothetical - would still have passed the old suite. `allow: commit on a featur
 that gap; see [What changed](#what-changed) for how it was verified to actually catch a broken hook.
 
 Pass `--flavor ps1` to ALSO run the identical 26 payloads through the `.ps1` hooks (Windows parity),
-for **52/52** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+for **66/66** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
@@ -40,7 +40,7 @@ during development, once when `jq` was absent and once under WSL.
 hooks (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
 `guard-agent-spawn`) were audited against both sides. Only `guard-main-commit` had a gap - no
 must-allow case existed, so a hook broken to block every commit unconditionally would still have
-passed 26/26. The new case points the payload's `cwd` at a sibling git checkout on a non-default
+passed 33/33. The new case points the payload's `cwd` at a sibling git checkout on a non-default
 branch (`feat/allow-test`, with a real commit - `git rev-parse --abbrev-ref HEAD` fails on an unborn
 branch on current git, which would silently fall back to resolving the wrong repo's branch) and
 asserts the commit is allowed.

@@ -29,86 +29,134 @@
 
   # JSON extraction: jq preferred, perl (core JSON::PP) then python3 as fallbacks, because jq is
   # not installed by default on macOS.
-  json_str() {
+  #
+  # json_fields fetches every field this hook needs (cwd, agent_type, agent_id,
+  # agent_transcript_path, transcript_path) in ONE parser invocation instead of one per field -
+  # see hooks/README.md. This hook was the worst offender: 5 separate perl/python3 startups on a
+  # no-jq machine, one per field, on every single subagent completion. Sets array JF, same length
+  # as the arg list, in order.
+  json_fields() {
+    local keys=("$@")
+    JF=()
     if command -v jq >/dev/null 2>&1; then
-      printf '%s' "$payload" | jq -r --arg k "$1" 'getpath($k | split(".")) // empty' 2>/dev/null
+      local k
+      for k in "${keys[@]}"; do
+        JF+=("$(printf '%s' "$payload" | jq -r --arg k "$k" 'getpath($k | split(".")) // empty' 2>/dev/null)")
+      done
     elif command -v perl >/dev/null 2>&1; then
-      printf '%s' "$payload" | perl -0777 -MJSON::PP -e 'my $k=shift; local $/; my $d=eval{decode_json(<STDIN>)}; exit 0 unless $d; for my $p (split /\./,$k){ $d = (ref($d) eq "HASH") ? $d->{$p} : undef; last unless defined $d } print $d if defined $d && !ref $d' "$1" 2>/dev/null
+      while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+        printf '%s' "$payload" | perl -0777 -MJSON::PP -e '
+          local $/; my $d = eval { decode_json(<STDIN>) };
+          for my $k (@ARGV) {
+            my $v = $d;
+            if ($d) {
+              for my $p (split /\./, $k) {
+                $v = (ref($v) eq "HASH") ? $v->{$p} : undef;
+                last unless defined $v;
+              }
+            } else { $v = undef; }
+            print(((defined $v && !ref $v) ? $v : "") . "\0");
+          }
+        ' "${keys[@]}" 2>/dev/null
+      )
     elif command -v python3 >/dev/null 2>&1; then
-      printf '%s' "$payload" | python3 -c 'import json,sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for p in sys.argv[1].split("."):
-    d = d.get(p) if isinstance(d, dict) else None
-    if d is None: break
-sys.stdout.write(d if isinstance(d, str) else "")' "$1" 2>/dev/null
+      while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+        printf '%s' "$payload" | python3 -c '
+import json, sys
+try: root = json.load(sys.stdin)
+except Exception: root = None
+out = []
+for k in sys.argv[1:]:
+    v = root
+    for p in k.split("."):
+        v = v.get(p) if isinstance(v, dict) else None
+        if v is None: break
+    out.append(v if isinstance(v, str) else "")
+sys.stdout.write("\0".join(out) + "\0")
+' "${keys[@]}" 2>/dev/null
+      )
     fi
+    local i
+    for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done
   }
 
   # Pull the first user turn (the prompt sent in) and the last assistant turn (final response) out
   # of a JSONL transcript: one object per line, top-level `type` ('user'|'assistant') and a
   # `message` object with `role` and a `content` array of blocks (text / tool_use / tool_result).
-  transcript_part() {   # $1 = transcript path, $2 = 'prompt' | 'response'
+  #
+  # ONE call returns BOTH prompt and response (NUL-separated), instead of two separate
+  # perl/python3 startups that each re-read and re-parse the whole transcript file from scratch.
+  transcript_parts() {   # $1 = transcript path; sets PROMPT_TXT and RESPONSE_TXT
+    PROMPT_TXT=""; RESPONSE_TXT=""
+    local out=()
     if command -v perl >/dev/null 2>&1; then
-      perl -MJSON::PP -e '
-        my ($f, $want) = @ARGV;
-        open(my $fh, "<", $f) or exit 0;
-        my ($prompt, $response);
-        while (my $line = <$fh>) {
-          next unless $line =~ /\S/;
-          my $e = eval { decode_json($line) } or next;
-          my $m = $e->{message} or next;
-          my $c = $m->{content};
-          my $text = "";
-          if (!ref $c) { $text = defined $c ? $c : ""; }
-          elsif (ref $c eq "ARRAY") {
-            $text = join("\n", map { $_->{text} } grep { ref $_ eq "HASH" && ($_->{type}//"") eq "text" && defined $_->{text} } @$c);
+      while IFS= read -r -d '' v; do out+=("$v"); done < <(
+        perl -MJSON::PP -e '
+          my ($f) = @ARGV;
+          open(my $fh, "<", $f) or exit 0;
+          my ($prompt, $response);
+          while (my $line = <$fh>) {
+            next unless $line =~ /\S/;
+            my $e = eval { decode_json($line) } or next;
+            my $m = $e->{message} or next;
+            my $c = $m->{content};
+            my $text = "";
+            if (!ref $c) { $text = defined $c ? $c : ""; }
+            elsif (ref $c eq "ARRAY") {
+              $text = join("\n", map { $_->{text} } grep { ref $_ eq "HASH" && ($_->{type}//"") eq "text" && defined $_->{text} } @$c);
+            }
+            next unless $text =~ /\S/;
+            if (($e->{type}//"") eq "user")           { $prompt = $text unless defined $prompt; }
+            elsif (($e->{type}//"") eq "assistant")   { $response = $text; }
           }
-          next unless $text =~ /\S/;
-          if (($e->{type}//"") eq "user")           { $prompt = $text unless defined $prompt; }
-          elsif (($e->{type}//"") eq "assistant")   { $response = $text; }
-        }
-        print(($want eq "prompt" ? $prompt : $response) // "");
-      ' "$1" "$2" 2>/dev/null
+          print(($prompt // "") . "\0" . ($response // "") . "\0");
+        ' "$1" 2>/dev/null
+      )
     elif command -v python3 >/dev/null 2>&1; then
-      python3 -c '
+      while IFS= read -r -d '' v; do out+=("$v"); done < <(
+        python3 -c '
 import json, sys
-f, want = sys.argv[1], sys.argv[2]
+f = sys.argv[1]
 prompt = response = None
 try:
     fh = open(f, encoding="utf-8", errors="replace")
 except Exception:
-    sys.exit(0)
-for line in fh:
-    line = line.strip()
-    if not line: continue
-    try: e = json.loads(line)
-    except Exception: continue
-    m = e.get("message") or {}
-    c = m.get("content")
-    if isinstance(c, str): text = c
-    elif isinstance(c, list):
-        text = "\n".join(b.get("text","") for b in c if isinstance(b, dict) and b.get("type") == "text")
-    else: text = ""
-    if not text.strip(): continue
-    if e.get("type") == "user" and prompt is None: prompt = text
-    elif e.get("type") == "assistant": response = text
-sys.stdout.write((prompt if want == "prompt" else response) or "")
-' "$1" "$2" 2>/dev/null
+    fh = None
+if fh:
+    for line in fh:
+        line = line.strip()
+        if not line: continue
+        try: e = json.loads(line)
+        except Exception: continue
+        m = e.get("message") or {}
+        c = m.get("content")
+        if isinstance(c, str): text = c
+        elif isinstance(c, list):
+            text = "\n".join(b.get("text","") for b in c if isinstance(b, dict) and b.get("type") == "text")
+        else: text = ""
+        if not text.strip(): continue
+        if e.get("type") == "user" and prompt is None: prompt = text
+        elif e.get("type") == "assistant": response = text
+sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
+' "$1" 2>/dev/null
+      )
     fi
+    PROMPT_TXT="${out[0]:-}"
+    RESPONSE_TXT="${out[1]:-}"
   }
 
   # --- resolve the archive dir against the payload's cwd -------------------------------------
-  base=$(json_str cwd)
+  json_fields cwd agent_type agent_id agent_transcript_path transcript_path
+  base="${JF[0]}"
   [ -z "$base" ] && base=$(pwd)
   dir="$base/.claude/state/history"
   mkdir -p "$dir" || exit 0
 
-  agent=$(json_str agent_type);  [ -z "$agent" ] && agent='agent'
-  agent_id=$(json_str agent_id)
+  agent="${JF[1]}";  [ -z "$agent" ] && agent='agent'
+  agent_id="${JF[2]}"
 
-  tp=$(json_str agent_transcript_path)
-  [ -z "$tp" ] && tp=$(json_str transcript_path)
+  tp="${JF[3]}"
+  [ -z "$tp" ] && tp="${JF[4]}"
   case "$tp" in
     ''|/*|[A-Za-z]:/*) ;;
     *) tp="$base/$tp" ;;
@@ -117,8 +165,9 @@ sys.stdout.write((prompt if want == "prompt" else response) or "")
   prompt=''
   response=''
   if [ -n "$tp" ] && [ -f "$tp" ]; then
-    prompt=$(transcript_part "$tp" prompt)
-    response=$(transcript_part "$tp" response)
+    transcript_parts "$tp"
+    prompt="$PROMPT_TXT"
+    response="$RESPONSE_TXT"
   fi
   [ -z "$prompt" ]   && prompt='(prompt unavailable - no readable subagent transcript)'
   [ -z "$response" ] && response='(response unavailable - no readable subagent transcript)'

@@ -112,6 +112,20 @@ a loop, not a retry, and is never sent. At `attempts: 3` the task goes `Blocked`
 a record of what was tried, and the orchestrator escalates to the user. No exceptions: a task that
 three briefs could not land has a problem a fourth brief will not fix.
 
+**Spend capability before spending the user's attention.** The third attempt is the one place the
+orchestrator may change the seat's tier rather than only its brief: dispatch it once at a higher
+`effort:` (or, for a genuinely hard problem, the next model up) with a brief that states what the
+two previous attempts got wrong. This does NOT add an attempt - it is attempt three, done better,
+and if it fails the task still goes `Blocked`. Record the tier change in the session row, because a
+seat that repeatedly needs escalation is a roster fact worth acting on, not a one-off
+(`reference/cost-model.md`). Escalation is never the FIRST response to a failure: a wrong brief
+costs the same at any tier.
+
+**No placeholders in a dispatched task.** A task whose acceptance criteria contain "TBD", "etc.",
+or a file list ending in "and related files" is not ready to dispatch - the agent will fill the gap
+with an invention, and the reviewer will have nothing to check it against. Name the files, name the
+criteria, or leave the task Pending until you can.
+
 **Failure-reason taxonomy.** Not every failed dispatch is the same kind of problem, so every one is
 logged in the task's session row with an `attempt-reason` of exactly one of three values:
 

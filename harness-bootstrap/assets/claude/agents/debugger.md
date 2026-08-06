@@ -22,9 +22,14 @@ the highest effort setting on it. Use that: do not stop at the first plausible s
    versus expected. Not a summary of it.
 3. **Bisect the surface.** What changed? `git log`, `git diff` against the last known-good. Distinguish
    "this code is wrong" from "this code newly runs against something that changed underneath it".
-4. **Separate the symptom from the cause.** A flaky test that passes on retry is not fixed by retrying.
+4. **Compare against something that works.** Find the nearest analog in this codebase that does the
+   same kind of thing and does not fail - the sibling handler, the other module's version of the same
+   query, the test that passes. Diff them. A difference you cannot explain is either the bug or the
+   next place to look, and the code graph (`docs/context/code-graph.md`) is how you find the analog
+   without reading the tree.
+5. **Separate the symptom from the cause.** A flaky test that passes on retry is not fixed by retrying.
    An intermittent failure has a cause: ordering, shared state, time, and concurrency are where to look.
-5. **Prove it.** State the evidence that ties the cause to the symptom. "This looks suspicious" is not
+6. **Prove it.** State the evidence that ties the cause to the symptom. "This looks suspicious" is not
    evidence.
 
 ## Deliverable

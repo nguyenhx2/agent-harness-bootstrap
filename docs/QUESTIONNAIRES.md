@@ -37,13 +37,13 @@ flowchart TD
 | Batch | Extracts | Why it matters |
 |---|---|---|
 | A - project identity | Name, domain, docs language, whether specs already exist, target AI tools | Sets the vocabulary for every generated file and which tool-specific output (Cursor, Codex) gets ported |
-| B - tech stack | Language/framework, DB + ORM, integrations, environments and secrets, dev OS | Drives which rules load, the `db` flag, and which hook flavor - Windows or POSIX - actually fires |
-| C - git and CI | Platform, commit identity, default branch, commit convention and scopes | Feeds the main-commit guard and the PR/MR terminology; a wrong identity misattributes commits |
-| D - quality and safety | Test agent + frameworks, methodology (DDD default, TDD opt-in), data sensitivity, effort profile, control level | Sets the delivery discipline, the AI/PII guardrail strictness, and whether deploy rights sit in `deny` or `ask` |
+| B - tech stack | Language/framework (version-checked against `tech-presets.md`, never recalled from memory), DB + ORM, integrations and their fallback/update cadence, product internationalization, authorization model and tenancy, environments and who owns each, dev OS | Drives which rules load, the `db` flag, which hook flavor - Windows or POSIX - actually fires, and the locale/tenancy facts `tech-stack.md` and `data-model.md` are authored against |
+| C - git and CI | Platform, commit identity, any bot with existing merge rights, default branch, commit convention and scopes | Feeds the main-commit guard and the PR/MR terminology; a wrong identity misattributes commits, and an unflagged auto-merge bot can bypass `merge-manager`'s gate |
+| D - quality and safety | Test agent + frameworks, methodology (DDD default, TDD opt-in), data sensitivity and the compliance regime that binds it (GDPR/CCPA/HIPAA/PCI-DSS/SOC2/ISO 27001/APPI/Decree 13) plus retention and deletion rights, effort profile, operations posture (uptime, observability, incident ladder), control level | Sets the delivery discipline, the AI/PII/compliance guardrail strictness, the ops baseline, and whether deploy rights sit in `deny` or `ask` |
 | E - DB operations and seed | DB agent roster, seed policy, the real destructive DB command | Turns a reset command into an enforceable `permissions.deny` entry instead of a guess |
 | F - branding and frontend | Brand assets, icon policy, accessibility target | Feeds `rules/frontend.md` and the a11y bar agents build against |
 | G - audit mode | Repo scope, standards per repo, scanner strategy | Defines a read-only control plane's boundary; never eligible for express intake because scope cannot be guessed |
-| H - governance | Model sovereignty per data class, residency, dependency licences, gated actions and incident contact | Policy positions only the org can hold - always asked in full, never defaulted, never guessed |
+| H - governance | Model sovereignty per data class, residency, dependency licences, gated actions and the incident path (now covering any production incident, not only a shipped AI feature's) | Policy positions only the org can hold - always asked in full, never defaulted, never guessed |
 
 ## `spec-builder` elicitation
 
@@ -73,9 +73,9 @@ flowchart TD
 | Question batch | Extracts | Why it matters |
 |---|---|---|
 | Scope | Purpose, must-have features, explicit non-goals, output language | Becomes the draft FR list section 02 onward is built from - a wrong list costs twelve documents |
-| People | User groups, roles, who decides, who signs off | Role *names* can be inferred; permission *scope* (Own/Team/All) almost never can - it is asked, not guessed |
-| Data and systems | Entities, volumes, integrations, identity provider | Feeds the data dictionary (08) and the integration NFRs (09); a volume guess is a design decision in disguise |
-| Constraints | Security/compliance obligations, deadlines, budget, stack constraints | Section 07's security NFRs are mandatory and are never left "TBD" - an unanswered one becomes a named, owned open issue instead |
+| People | User groups, roles, authorization model and tenancy isolation, who decides, who signs off | Role *names* can be inferred; permission *scope* (Own/Team/All), the RBAC/ABAC model, and any break-glass path almost never can - they are asked, not guessed |
+| Data and systems | Entities, retention and deletion rights, volumes, integrations and their fallback if unavailable, identity provider, product locale support, legacy-system cutover | Feeds the data dictionary (08) and the integration NFRs (09); a volume or retention guess is a design decision in disguise |
+| Constraints | Security/compliance obligations (the regime named, not just "secure"), deadlines, budget, stack constraints | Section 07's security NFRs are mandatory and are never left "TBD" - an unanswered one becomes a named, owned open issue instead |
 
 The one rule governing both skills the same way: an answer that can be inferred from what is already
 there is inferred; an answer that is a decision, a priority, or a policy position is always asked, and

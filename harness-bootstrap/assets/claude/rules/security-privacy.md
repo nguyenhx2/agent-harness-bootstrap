@@ -12,6 +12,9 @@ Behavioral constraints on the agent itself are in agent-guardrails.md.
 
 ## Baseline practice
 
+- **Reading local env safely**: `python .claude/scripts/env-read.py list|check|diff|run <file>` -
+  presence, shape, and exit codes, never values. This is the only route to a non-example env file;
+  see `agent-guardrails.md`.
 - **Secrets**: configuration comes from the environment. `.env.local` (or equivalent) for local
   development, the platform's secret store in every deployed environment, `.env.example` with
   placeholder values only, committed. Never a credential in source, in a test, or in a fixture.
