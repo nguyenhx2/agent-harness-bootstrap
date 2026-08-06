@@ -35,3 +35,8 @@ jobs:
           path: "."
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # The site carries twelve 1080p clips (English and Japanese), so the artifact is tens of
+          # megabytes and GitHub's own deployment step routinely runs past the action's 10-minute
+          # default wait - which aborts a deploy that was still progressing. 30 minutes.
+          timeout: 1800000
