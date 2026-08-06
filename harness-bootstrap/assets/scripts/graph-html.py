@@ -217,11 +217,13 @@ def harness_graph(root: pathlib.Path) -> str | None:
 
     # code<->docs: active tasks referencing modules
     tasks = sorted((root / "docs" / "tasks").rglob("TASK-*.md")) if (root / "docs" / "tasks").exists() else []
-    mod_names = [n["id"][4:] for n in nodes if n["cat"] == "module"]
+    # (module, basename) pairs computed once - the basename split does not depend on the task
+    # body, so recomputing it inside the tasks loop was wasted work per task.
+    mod_names = [(n["id"][4:], n["id"][4:].split("/")[-1]) for n in nodes if n["cat"] == "module"]
     for t in tasks[:60]:
         body = t.read_text(encoding="utf-8", errors="replace")
         tid = f"doc:{t.stem}"
-        hits = [m for m in mod_names if m.split("/")[-1] in body]
+        hits = [m for m, base in mod_names if base in body]
         if hits:
             add(tid, t.stem, "doc", t.relative_to(root).as_posix())
             for m in hits:

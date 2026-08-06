@@ -1,0 +1,14 @@
+# Ignores that belong to the harness, kept INSIDE .claude/ on purpose: git applies a nested
+# .gitignore relative to its own directory, so this never has to be merged into the repo's root
+# .gitignore and never conflicts with it.
+
+# Per-task worktrees the orchestrator creates. These are checkouts, not content - committing one
+# nests a repo inside the repo.
+worktrees/
+
+# Machine state: the subagent-run archive, the code and docs graphs, the staleness log. Derived,
+# per-machine, and regenerated on demand (/code-graph, /docs-graph).
+state/
+
+# Local overrides a developer may keep beside the shared settings.
+settings.local.json

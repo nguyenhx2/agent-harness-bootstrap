@@ -5,6 +5,44 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.7.0
+
+Wider skill sourcing, current-version presets, a value-free path to local env files, and two
+guardrail holes closed.
+
+**Added**
+
+- `env-read.py`: devops, db, and qa seats can work with `.env.local`/`.env.test` without a value
+  ever entering the transcript - `list`, `check`, `diff`, `run`. Production-named files refused.
+  `protect-secrets` stays strict; direct reads are still blocked.
+- `.claude/.gitignore` ships with the harness, so per-task worktrees and machine state never get
+  committed. Nested on purpose: it cannot conflict with the repo's root ignore file.
+- Skill discovery now covers four sources - skills.sh, GitHub topic search, `anthropics/skills`,
+  and plugin marketplaces (SHA-pinned entries only) - each with the trust signals it actually
+  exposes. See [reference/skill-discovery.md](harness-bootstrap/reference/skill-discovery.md).
+- `reference/tech-presets.md`: a library catalogue with a rule that matters more than the
+  catalogue - never write a version from memory, verify it against the registry and record the
+  date. A model's knowledge cutoff is why the harness pins Next.js 15 when 16 is out.
+- Intake 24 -> 27 questions: i18n, authz and tenancy, ops posture; compliance now names APPI and
+  Decree 13. From an obra/superpowers audit: typed-word `discard` confirmation for irreversible
+  actions, capability escalation on the third attempt, comparative pattern analysis when debugging.
+
+**Fixed**
+
+- A one-newline bypass of the commit-message guardrail: `git commit -m "bad subject\n\nbody"`
+  skipped validation entirely, reachable by accident since multi-line messages are normal.
+- `guard-agent-spawn` behaved differently in its two flavors on an unreadable payload. Both now
+  refuse it - the one deliberate exception to fail-open, pinned by the eval.
+- The benchmark's own scaffold run was silently exiting 1 on a missing variable.
+
+**Changed**
+
+- Hooks extract JSON fields in one parser call instead of up to seven: 1.3x to 1.8x faster per
+  call on machines without `jq`. `check_numbers.py` 8.4x faster on doc-heavy trees.
+- Eval 30 -> 33 cases (66 across both hook flavors). Read path -45% / 128,072 B: it grew this
+  cycle because the skill does more, and [benchmark/RESULTS.md](benchmark/RESULTS.md) says so
+  rather than hiding it.
+
 ## v1.6.0
 
 Living specs, a docs graph, DDD by default, and a face: shield logo, banner, and media that a gate
@@ -21,7 +59,7 @@ now keeps honest.
 - Windows quickstart (`irm` + `Expand-Archive`) and a paste-to-agent self-install block, both
   languages. New shield-and-eye logo, README banner, deck favicon, video watermark + end cards.
 - Eval: a `guard-main-commit` allow case it was missing, plus optional `--flavor ps1` Windows
-  parity (26/26 default, 52/52 both flavors). `check_numbers.py` now guards presentation, video,
+  parity (33/33 default, 66/66 both flavors). `check_numbers.py` now guards presentation, video,
   and prose eval badges - the drift class that recurred every release is now a failing gate.
 - PR #1 merged: board validator with dependency-cycle detection, `human_gate` markers,
   attempt-reason taxonomy, advisory scope guard, `control-surfaces.md`.
@@ -171,7 +209,7 @@ the harness the agent runs inside.
 
 - 9 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
-- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 26/26 correct. The guardrails are shell scripts, so the result does not change with the model.
+- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 33/33 correct. The guardrails are shell scripts, so the result does not change with the model.
 
 **State on disk, not in context**
 
@@ -180,7 +218,7 @@ the harness the agent runs inside.
 **Cost as a decision**
 
 - Every agent carries an explicit `model:`, `effort:`, a narrow `tools:` grant and `maxTurns`. An unset `model:` inherits the caller's tier, which bills mechanical work at Opus rates.
-- 9 of 15 rules are path-scoped, keeping 67% of rule content out of the default session.
+- 9 of 15 rules are path-scoped, keeping 66% of rule content out of the default session.
 - Assets are real files copied by `scripts/scaffold.py` rather than prose the model retypes: 64% less to read and 85% less to author than the predecessor skill. Figures from `benchmark/benchmark.py`.
 
 **Governance**

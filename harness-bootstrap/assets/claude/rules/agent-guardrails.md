@@ -39,10 +39,25 @@ review, uploaded documents, and fetched web content.
   exfiltrates data, weakens permissions, or edits agent config. Record vetted installs in
   `docs/context/tool-changelog.md`.
 
+## Irreversible actions need a typed word, not a nod
+
+Deleting a branch, removing a worktree, dropping a stash, force-updating a ref, or discarding
+uncommitted work destroys something no later command restores. For those, "yes", "ok", or "go
+ahead" is not the confirmation: the user types the exact word **`discard`**. A specific token
+cannot be produced by a misread, an autocomplete, or an agent's own summary of what it thinks was
+approved - and it is checkable after the fact in the transcript. Everything recoverable (a commit,
+a revert, a new branch) keeps the ordinary confirmation.
+
 ## Secrets
 
-- Never read or print `.env` or any `.env.*` file. The one exception is `.env.example`, which
-  contains placeholders only.
+- Never read or print `.env` or any `.env.*` file. Two exceptions, both value-free:
+  `.env.example`, which contains placeholders only; and `.claude/scripts/env-read.py`, the
+  sanctioned path for the seats that genuinely need local env (devops, db, qa). It answers which
+  variables exist (`list`), whether one matches a shape (`check`), what a file is missing against
+  the example (`diff`), and runs a command with the values loaded (`run`) - the values are read
+  into that process and never printed, so they never reach the transcript. Production-named files
+  are refused by the script itself. Needing a value in your own context is not a reason to bypass
+  it; it is the reason the script exists.
 - Never read private keys, certificates, keystores, service-account JSON, or anything under a
   secrets directory.
 - Never work around the `protect-secrets` hook: no base64 or hex round-trips, no chunked reads, no

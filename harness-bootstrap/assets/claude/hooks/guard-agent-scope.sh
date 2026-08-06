@@ -53,26 +53,58 @@ norm_path() {
   fi
 }
 
-json_str() {
+# json_fields fetches every field this hook needs in ONE parser invocation instead of one per
+# field - see hooks/README.md. Sets array JF, same length as the arg list, in order.
+json_fields() {
+  local keys=("$@")
+  JF=()
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$payload" | jq -r --arg k "$1" 'getpath($k | split(".")) // empty' 2>/dev/null
+    local k
+    for k in "${keys[@]}"; do
+      JF+=("$(printf '%s' "$payload" | jq -r --arg k "$k" 'getpath($k | split(".")) // empty' 2>/dev/null)")
+    done
   elif command -v perl >/dev/null 2>&1; then
-    printf '%s' "$payload" | perl -0777 -MJSON::PP -e 'my $k=shift; local $/; my $d=eval{decode_json(<STDIN>)}; exit 0 unless $d; for my $p (split /\./,$k){ $d = (ref($d) eq "HASH") ? $d->{$p} : undef; last unless defined $d } print $d if defined $d && !ref $d' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | perl -0777 -MJSON::PP -e '
+        local $/; my $d = eval { decode_json(<STDIN>) };
+        for my $k (@ARGV) {
+          my $v = $d;
+          if ($d) {
+            for my $p (split /\./, $k) {
+              $v = (ref($v) eq "HASH") ? $v->{$p} : undef;
+              last unless defined $v;
+            }
+          } else { $v = undef; }
+          print(((defined $v && !ref $v) ? $v : "") . "\0");
+        }
+      ' "${keys[@]}" 2>/dev/null
+    )
   elif command -v python3 >/dev/null 2>&1; then
-    printf '%s' "$payload" | python3 -c 'import json,sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for p in sys.argv[1].split("."):
-    d = d.get(p) if isinstance(d, dict) else None
-    if d is None: break
-sys.stdout.write(d if isinstance(d, str) else "")' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | python3 -c '
+import json, sys
+try: root = json.load(sys.stdin)
+except Exception: root = None
+out = []
+for k in sys.argv[1:]:
+    v = root
+    for p in k.split("."):
+        v = v.get(p) if isinstance(v, dict) else None
+        if v is None: break
+    out.append(v if isinstance(v, str) else "")
+sys.stdout.write("\0".join(out) + "\0")
+' "${keys[@]}" 2>/dev/null
+    )
   fi
+  local i
+  for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done
 }
 
 payload=$(cat)
-path=$(json_str tool_input.file_path)
+json_fields tool_input.file_path cwd
+path="${JF[0]}"
 [ -z "$path" ] && exit 0
-base_cwd=$(norm_path "$(json_str cwd)")
+base_cwd=$(norm_path "${JF[1]}")
 [ -z "$base_cwd" ] && base_cwd=$(pwd)
 
 [ -f "$base_cwd/.claude/state/code-graph.json" ] || exit 0

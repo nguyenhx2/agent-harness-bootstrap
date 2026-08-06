@@ -90,9 +90,16 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("secret: read .env",                "protect-secrets",  2, p("Read", file_path=".env")),
         ("secret: read .ENV (case bypass)",  "protect-secrets",  2, p("Read", file_path=".ENV")),
         ("secret: cat .env via shell",       "protect-secrets",  2, p("Bash", command="cat .env")),
+        ("secret: cat .env.local via shell", "protect-secrets",  2, p("Bash", command="cat .env.local")),
+        ("secret: read .env.test directly",  "protect-secrets",  2, p("Read", file_path=".env.test")),
         ("secret: read private key",         "protect-secrets",  2, p("Read", file_path="id_rsa")),
         ("commit: straight to main",         "guard-main-commit", 2, p("Bash", command="git commit -m 'feat(x): y'")),
         ("commit: non-conventional message", "check-commit-msg", 2, p("Bash", command='git commit -m "stuff"')),
+        # A newline in the -m value used to make the subject extraction return empty, which fell
+        # through to the editor-flow exit and skipped validation entirely. Multi-line messages are
+        # normal, so the bypass was reachable by accident.
+        ("commit: bad subject, multi-line msg", "check-commit-msg", 2,
+         p("Bash", command='git commit -m "stuff\n\na body line"')),
         ("commit: AI-attribution trailer",   "check-commit-msg", 2, p("Bash", command='git commit -m "feat(a): x\n\nCo-Authored-By: Claude <noreply@anthropic.com>"')),
         ("adr: edit an Accepted ADR",        "protect-adr",      2, p("Edit", file_path="docs/architecture/decisions/ADR-001-x.md")),
 
@@ -128,6 +135,13 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
 
         ("allow: read source",               "protect-secrets",  0, p("Read", file_path="src/index.ts")),
         ("allow: run tests",                 "protect-secrets",  0, p("Bash", command="npm test")),
+        # The sanctioned env path: it never prints a value, so it is allowed where `cat` is not.
+        ("allow: env-read list",             "protect-secrets",  0,
+         p("Bash", command="python .claude/scripts/env-read.py list .env.local")),
+        ("allow: env-read run",              "protect-secrets",  0,
+         p("Bash", command="python .claude/scripts/env-read.py run .env.test -- npm run test:integration")),
+        ("allow: conventional multi-line msg", "check-commit-msg", 0,
+         p("Bash", command='git commit -m "feat(api): add endpoint\n\nA body paragraph."')),
         ("allow: conventional commit",       "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): add endpoint"')),
         ("allow: human co-author",           "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): x\n\nCo-Authored-By: Mai Tran <mai@acme.io>"')),
         ("allow: edit a Proposed ADR",       "protect-adr",      0, p("Edit", file_path="docs/architecture/decisions/ADR-002-y.md")),
@@ -135,6 +149,9 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         # --- robustness: a hook that crashes on bad input fails OPEN, which is worse than useless ---
         ("robust: empty payload",            "protect-secrets",  0, "{}"),
         ("robust: malformed json",           "protect-secrets",  0, "not json at all"),
+        # Deliberate exception to fail-open: a spawn whose payload cannot be read cannot be shown
+        # to name a roster seat, so guard-agent-spawn refuses it. Pinned so it stays intentional.
+        ("robust: spawn payload unreadable",  "guard-agent-spawn", 2, "not json at all"),
     ]
 
 

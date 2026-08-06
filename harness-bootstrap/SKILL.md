@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.6.0
+version: 1.7.0
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -203,6 +203,13 @@ rules and the Bash-based guards port exactly. `AGENTS.md` is already read native
       block case exits 2 and the pass case exits 0, shown in the transcript. Not "should work". In
       PowerShell check `$LASTEXITCODE`, never `$?` (a boolean).
 - [ ] Hook flavor and the settings registration lines match the detected OS.
+- [ ] `.claude/.gitignore` is present, so per-task worktrees (`.claude/worktrees/`) and machine
+      state (`.claude/state/`) never get committed. It is nested on purpose: git reads it relative
+      to `.claude/`, so it needs no merge into the repo's root `.gitignore` and cannot conflict
+      with it. If the root `.gitignore` already ignores them too, that is harmless.
+- [ ] The seats that need local env values (devops, db, qa) point at
+      `.claude/scripts/env-read.py`, not at `cat`. Values are read into that process and never
+      printed, so `protect-secrets` stays strict and nobody has a reason to disable it.
 - [ ] `.env.example` covers every integration in the tech-stack rule and nothing more; placeholders only.
 
 **Governance**

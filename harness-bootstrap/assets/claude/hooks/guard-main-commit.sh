@@ -12,22 +12,53 @@
 # JSON extraction: jq is preferred but is NOT installed by default on macOS, and a missing jq
 # would make this hook silently fail OPEN. Fall back to perl (core JSON::PP - ships with macOS and
 # every Linux), then python3. With no extractor at all we warn and allow.
-json_str() {
+# json_fields fetches every field this hook needs in ONE parser invocation instead of one per
+# field - see hooks/README.md. Sets array JF, same length as the arg list, in order.
+json_fields() {
+  local keys=("$@")
+  JF=()
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$payload" | jq -r --arg k "$1" 'getpath($k | split(".")) // empty' 2>/dev/null
+    local k
+    for k in "${keys[@]}"; do
+      JF+=("$(printf '%s' "$payload" | jq -r --arg k "$k" 'getpath($k | split(".")) // empty' 2>/dev/null)")
+    done
   elif command -v perl >/dev/null 2>&1; then
-    printf '%s' "$payload" | perl -0777 -MJSON::PP -e 'my $k=shift; local $/; my $d=eval{decode_json(<STDIN>)}; exit 0 unless $d; for my $p (split /\./,$k){ $d = (ref($d) eq "HASH") ? $d->{$p} : undef; last unless defined $d } print $d if defined $d && !ref $d' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | perl -0777 -MJSON::PP -e '
+        local $/; my $d = eval { decode_json(<STDIN>) };
+        for my $k (@ARGV) {
+          my $v = $d;
+          if ($d) {
+            for my $p (split /\./, $k) {
+              $v = (ref($v) eq "HASH") ? $v->{$p} : undef;
+              last unless defined $v;
+            }
+          } else { $v = undef; }
+          print(((defined $v && !ref $v) ? $v : "") . "\0");
+        }
+      ' "${keys[@]}" 2>/dev/null
+    )
   elif command -v python3 >/dev/null 2>&1; then
-    printf '%s' "$payload" | python3 -c 'import json,sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for p in sys.argv[1].split("."):
-    d = d.get(p) if isinstance(d, dict) else None
-    if d is None: break
-sys.stdout.write(d if isinstance(d, str) else "")' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | python3 -c '
+import json, sys
+try: root = json.load(sys.stdin)
+except Exception: root = None
+out = []
+for k in sys.argv[1:]:
+    v = root
+    for p in k.split("."):
+        v = v.get(p) if isinstance(v, dict) else None
+        if v is None: break
+    out.append(v if isinstance(v, str) else "")
+sys.stdout.write("\0".join(out) + "\0")
+' "${keys[@]}" 2>/dev/null
+    )
   else
     echo "guard-main-commit: no jq/perl/python3 available to parse the hook payload; allowing." >&2
   fi
+  local i
+  for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done
 }
 
 
@@ -67,13 +98,14 @@ norm_path() {
 }
 
 payload=$(cat)
-cmd=$(json_str tool_input.command)
+json_fields tool_input.command cwd
+cmd="${JF[0]}"
 [ -z "$cmd" ] && exit 0
 
 # POSIX ERE has no portable \b (BSD grep on macOS), so the trailing boundary is hand-rolled.
 printf '%s' "$cmd" | grep -Eq '(^|[;&|][[:space:]]*)git[[:space:]]+(commit|push)([^a-zA-Z0-9_-]|$)' || exit 0
 
-base_cwd=$(norm_path "$(json_str cwd)")
+base_cwd=$(norm_path "${JF[1]}")
 [ -z "$base_cwd" ] && base_cwd=$(pwd)
 target_dir="$base_cwd"
 

@@ -25,7 +25,11 @@ audit workspace - see `assets/audit/hooks/`.
   **stderr** (that text is what Claude sees and acts on); `0` = allow. Any other code is ignored.
 - Fast (< 1s), no network, plain-ASCII messages. Blocking hooks have no side effects.
 - Fail **open**, never closed: an unparseable payload or a missing dependency exits 0 - the
-  `settings.json` deny rules and `rules/agent-guardrails.md` remain the backstop.
+  `settings.json` deny rules and `rules/agent-guardrails.md` remain the backstop. **One deliberate
+  exception**: `guard-agent-spawn` refuses a dispatch whose payload it cannot read, because an
+  unreadable spawn cannot be shown to name a roster seat, and letting an unverifiable spawn through
+  is precisely the thing that hook exists to stop. The eval pins this so it stays a decision rather
+  than an accident.
 
 ## Gotchas that bit us
 

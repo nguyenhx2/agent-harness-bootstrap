@@ -70,7 +70,9 @@ stays clean. Do the work inline when it is two tool calls and a short answer. Ne
 to hand you something you already have.
 
 Parallel dev agents NEVER perform git operations in one shared checkout. Give each an isolated git
-worktree and one branch per task. Verify the isolation actually took effect (`git worktree list`) before
+worktree and one branch per task, created under `.claude/worktrees/<task-id>` (the shipped
+`.claude/.gitignore` ignores that directory - a worktree committed into the repo nests a checkout
+inside the checkout). Verify the isolation actually took effect (`git worktree list`) before
 parallel work starts - never trust an isolation flag blindly. Serialize when in doubt.
 
 Every dispatch includes: the TASK code, the related FR/PRD, the target files, the acceptance criteria,

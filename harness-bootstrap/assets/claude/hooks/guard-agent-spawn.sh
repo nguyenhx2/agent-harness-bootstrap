@@ -17,22 +17,56 @@
 
 # JSON extraction: jq preferred; missing jq must not fail OPEN. Fall back to perl (core JSON::PP),
 # then python3. With no extractor at all we warn and allow.
-json_str() {
+#
+# json_fields fetches every field this hook needs (subagent_type, cwd, model, prompt) in ONE
+# parser invocation instead of one per field - see hooks/README.md. This hook could call the
+# perl/python3 fallback up to 4 times per spawn without it; now it is always at most 1. Sets
+# array JF, same length as the arg list, in order.
+json_fields() {
+  local keys=("$@")
+  JF=()
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$payload" | jq -r --arg k "$1" 'getpath($k | split(".")) // empty' 2>/dev/null
+    local k
+    for k in "${keys[@]}"; do
+      JF+=("$(printf '%s' "$payload" | jq -r --arg k "$k" 'getpath($k | split(".")) // empty' 2>/dev/null)")
+    done
   elif command -v perl >/dev/null 2>&1; then
-    printf '%s' "$payload" | perl -0777 -MJSON::PP -e 'my $k=shift; local $/; my $d=eval{decode_json(<STDIN>)}; exit 0 unless $d; for my $p (split /\./,$k){ $d = (ref($d) eq "HASH") ? $d->{$p} : undef; last unless defined $d } print $d if defined $d && !ref $d' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | perl -0777 -MJSON::PP -e '
+        local $/; my $d = eval { decode_json(<STDIN>) };
+        for my $k (@ARGV) {
+          my $v = $d;
+          if ($d) {
+            for my $p (split /\./, $k) {
+              $v = (ref($v) eq "HASH") ? $v->{$p} : undef;
+              last unless defined $v;
+            }
+          } else { $v = undef; }
+          print(((defined $v && !ref $v) ? $v : "") . "\0");
+        }
+      ' "${keys[@]}" 2>/dev/null
+    )
   elif command -v python3 >/dev/null 2>&1; then
-    printf '%s' "$payload" | python3 -c 'import json,sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit(0)
-for p in sys.argv[1].split("."):
-    d = d.get(p) if isinstance(d, dict) else None
-    if d is None: break
-sys.stdout.write(d if isinstance(d, str) else "")' "$1" 2>/dev/null
+    while IFS= read -r -d '' v; do JF+=("$v"); done < <(
+      printf '%s' "$payload" | python3 -c '
+import json, sys
+try: root = json.load(sys.stdin)
+except Exception: root = None
+out = []
+for k in sys.argv[1:]:
+    v = root
+    for p in k.split("."):
+        v = v.get(p) if isinstance(v, dict) else None
+        if v is None: break
+    out.append(v if isinstance(v, str) else "")
+sys.stdout.write("\0".join(out) + "\0")
+' "${keys[@]}" 2>/dev/null
+    )
   else
     echo "guard-agent-spawn: no jq/perl/python3 available to parse the hook payload; allowing." >&2
   fi
+  local i
+  for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done
 }
 
 # Same path normalization as the sibling hooks: a bash on Windows cannot resolve "C:/x" in a file
@@ -59,9 +93,10 @@ norm_path() {
 }
 
 payload=$(cat)
-stype=$(json_str tool_input.subagent_type)
+json_fields tool_input.subagent_type cwd tool_input.model tool_input.prompt
+stype="${JF[0]}"
 
-base_cwd=$(norm_path "$(json_str cwd)")
+base_cwd=$(norm_path "${JF[1]}")
 [ -z "$base_cwd" ] && base_cwd=$(pwd)
 agents_dir="$base_cwd/.claude/agents"
 allowlist="$base_cwd/.claude/hooks/spawn-allowlist"
@@ -90,7 +125,7 @@ if [ "$allowed" -eq 0 ]; then
 fi
 
 # --- 2. model pinning (roster seats only) ---------------------------------
-override=$(json_str tool_input.model)
+override="${JF[2]}"
 if [ -n "$override" ] && [ -f "$agents_dir/$stype.md" ]; then
   pinned=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^model:' | head -1 | sed -E 's/^model:[[:space:]]*//; s/[[:space:]]*$//')
   if [ -n "$pinned" ] && [ "$override" != "$pinned" ]; then
@@ -108,7 +143,7 @@ if [ -f "$agents_dir/$stype.md" ]; then
   seat_tools=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^tools:' | head -1)
   if printf '%s' "$seat_tools" | grep -Eq '(^|[,: ])(Edit|Write)(,| |$)'; then
     if [ -d "$base_cwd/docs/tasks/active" ]; then
-      task_id=$(json_str tool_input.prompt | grep -oE 'TASK-[0-9]{1,5}' | head -1)
+      task_id=$(printf '%s' "${JF[3]}" | grep -oE 'TASK-[0-9]{1,5}' | head -1)
       if [ -z "$task_id" ]; then
         echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN. Work with no registered task is invisible to the board and becomes an orphan. Register the task (see /new-task), put its code in the dispatch prompt, and dispatch again." >&2
         exit 2

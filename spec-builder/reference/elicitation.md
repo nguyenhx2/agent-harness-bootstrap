@@ -30,11 +30,13 @@ nobody said. Stop, and move it to 11.
 | Problem statement | From the source, quoting where possible | If the source only describes a solution, ask what problem it solves |
 | Feature list -> FR candidates | Yes - every capability the source names | Priorities (MoSCoW). Never assign them yourself |
 | Priorities | No | Always. Priority is a stakeholder's answer, not a builder's |
-| Roles and permissions | Role names, yes | The scope (Own/Team/All) - almost never stated, almost never guessable |
-| Data entities and fields | From the source and the flows | Cardinalities, retention, classification |
-| NFR targets | No | Always. A number you made up is a fabricated requirement |
-| Security posture | No | Ask, and if nobody knows, that is an OI with a named owner |
+| Roles and permissions | Role names, yes | The scope (Own/Team/All), the authorization model (RBAC vs ABAC) if it is not obviously RBAC, and - if the system is multi-tenant - the isolation boundary and any break-glass admin path. Almost none of this is stated or guessable |
+| Data entities and fields | From the source and the flows | Cardinalities, retention period and deletion/erasure rights, backup/restore expectation, classification |
+| NFR targets | No | Always. A number you made up is a fabricated requirement - availability/uptime, RPO/RTO, and observability expectations are the three most often skipped; do not let "performance" stand in for all three |
+| Security posture | No | Ask which regime actually binds this project - GDPR/CCPA, HIPAA/PCI-DSS, SOC2/ISO 27001, or (a common pair for this practice's client base) Japan's APPI (個人情報保護法) or Vietnam's Decree 13 - and if nobody knows, that is an OI with a named owner |
 | Tech stack | Only if the source states or the repo shows it | If undecided, it is an open issue - not a default |
+| Product locale support | No | Languages served to users, RTL layout, currency/date-format convention - a business decision, distinct from the output-language row below and never inferred from it |
+| Legacy system replacement | Only that one exists, if the source says so | The cutover plan (migrate once, dual-run, or a hard switch) and any data-migration mapping - ask, never infer an approach |
 | Volumes and growth | No | Ask. An order-of-magnitude guess here is a design decision |
 | Output language | From the user's own language | Only if genuinely unclear |
 
@@ -55,7 +57,8 @@ Ask in batches (max 4 questions per `AskUserQuestion` call), in this order:
 1. Who uses it, and what do they do today instead?
 2. What are the three things it must do? (These become the Must FRs.)
 3. Who may see whose data? (Roles + scope.)
-4. What already exists that it must talk to? (Integrations, identity, the system of record.)
+4. What already exists that it must talk to? (Integrations, identity, the system of record - and what
+   happens to the flow if each one is unavailable.)
 
 Then produce a *draft* FR list and get it confirmed before writing anything else. Everything after
 05 is derived from it, so a wrong FR list costs twelve documents.
@@ -93,6 +96,10 @@ The richest input, and the one most likely to be over-read. Discipline:
   this a requirement or an accident?" That question has surfaced more scope than any other in this
   document.
 - Anything a stakeholder wants that the code cannot support is a `Partial` or `No` row in 12.
+- If this system replaces or coexists with a legacy one, the cutover plan (migrate the data once, run
+  both in parallel for a period, or a hard switch) and any data-migration mapping are business
+  decisions - ask, and if nobody has decided, it is an OI blocking every FR that depends on cutover,
+  not an assumption you make on their behalf.
 
 ## Batching questions
 
@@ -108,9 +115,11 @@ audiences and the mixed batch stalls on whichever is harder.
 Suggested batches:
 
 1. **Scope**: purpose, must-have features, explicit non-goals, output language.
-2. **People**: user groups, roles, who decides, who signs off.
-3. **Data and systems**: entities, volumes, what it integrates with, what identity provider.
-4. **Constraints**: security and compliance obligations, deadlines, budget, stack constraints.
+2. **People**: user groups, roles, authorization model and tenancy isolation, who decides, who signs off.
+3. **Data and systems**: entities, retention and deletion expectations, volumes, what it integrates
+   with (and the fallback if each is down), what identity provider, product locale support.
+4. **Constraints**: security and compliance obligations (name the regime, not just "secure"),
+   deadlines, budget, stack constraints.
 
 If the user cannot answer a batch, that is a result: each unanswered question becomes an OI with an
 owner and a needed-by date. A spec set full of well-formed open issues is a good deliverable. A

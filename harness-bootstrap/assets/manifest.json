@@ -380,6 +380,11 @@
       "subst": false
     },
     {
+      "src": "scripts/env-read.py",
+      "dest": ".claude/scripts/env-read.py",
+      "subst": false
+    },
+    {
       "src": "scripts/code-graph.py",
       "dest": ".claude/scripts/code-graph.py",
       "subst": false
@@ -387,6 +392,11 @@
     {
       "src": "scripts/board-check.py",
       "dest": ".claude/scripts/board-check.py",
+      "subst": false
+    },
+    {
+      "src": "claude/gitignore",
+      "dest": ".claude/.gitignore",
       "subst": false
     },
     {

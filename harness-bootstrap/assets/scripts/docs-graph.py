@@ -58,7 +58,6 @@ def build(root: pathlib.Path) -> dict:
             text = f.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        ids = ID_RE.findall(text)  # findall returns the prefix group; re-scan for full IDs
         for m in ID_RE.finditer(text):
             full = m.group(0)
             mentions[full][rel] = mentions[full].get(rel, 0) + 1

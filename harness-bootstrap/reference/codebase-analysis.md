@@ -13,7 +13,10 @@ path as proof for every finding - never guess:
 
 1. **Stack** - manifests (`package.json`, `pyproject.toml`, `go.mod`, `*.csproj`, `pom.xml`) →
    language, framework, test runner, lint/format tools, pinned versions. Lockfile → package manager.
-   The scripts block → the real test/lint/build/deploy commands.
+   The scripts block → the real test/lint/build/deploy commands. What is actually installed always
+   wins over any preset - see [`tech-presets.md`](tech-presets.md) for the currency rule (verify
+   versions against the registry, never from memory) and for how a preset that contradicts installed
+   reality becomes a migration proposal, not a silent rewrite.
 2. **Layout and modules** - source dirs one and two levels deep (`src/*`, `app/*`, `lib/*`,
    `packages/*`). Per module: purpose, rough size, and the dependencies visible cheaply.
 3. **Data layer** - ORM and schema files (`schema.prisma`, `models/`, `migrations/`, `*.sql`); the DB

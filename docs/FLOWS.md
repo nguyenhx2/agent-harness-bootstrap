@@ -491,7 +491,7 @@ flowchart TD
 ```
 
 Six unconditional rules, nine path-scoped ones. On the shipped asset set that is 25,667 bytes always
-loaded against 51,785 bytes loaded on demand: **67% of the rule content is kept out of the default
+loaded against 51,785 bytes loaded on demand: **66% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 

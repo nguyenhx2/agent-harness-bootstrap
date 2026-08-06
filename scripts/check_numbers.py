@@ -95,6 +95,22 @@ CHECKS = [
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
 ]
 
+# A cheap plain-substring pre-check before each CHECKS regex: every pattern above requires one of
+# these literal (lowercased) phrases to appear, so if none is present the regex cannot match and
+# running it is wasted work. Each entry is a SAFE SUPERSET of what its pattern needs - never
+# narrower - so this can only skip a file the regex would have skipped anyway. Most documents in a
+# repo do not mention "path-scoped" or "unconditional rule" at all; on a doc-heavy tree this avoids
+# firing all 7 regexes against every file's full text. Names not listed here always run the regex.
+REQUIRED_SUBSTR: dict[str, tuple[str, ...]] = {
+    "read-path reduction":   ("read path (bytes", "the model must read"),
+    "write-path reduction":  ("write path (bytes", "the model must write"),
+    "read-path files":       ("read path (files",),
+    "session tax":           ("rule content",),
+    "rule content kept out": ("rule content kept out",),
+    "unconditional rules":   ("unconditional rule",),
+    "path-scoped rules":     ("path-scoped",),
+}
+
 # Counts of the shipped artifact set, checked only in the two files that describe it. Elsewhere the
 # same words carry different claims - "5-6 agents" is a preset size, "the two rules that matter" is a
 # heading - and a checker that flags those is a checker people learn to ignore.
@@ -192,9 +208,12 @@ def main() -> int:
             continue
         text = p.read_text(encoding="utf-8")
         # Blank out inline code spans. A figure in backticks is a quotation - a changelog entry
-        # naming the wrong number it fixed, for instance - not a claim the repo is making.
-        text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
+        # naming the wrong number it fixed, for instance - not a claim the repo is making. Skip
+        # the regex entirely when there is no backtick to blank - cheap and exact, same result.
+        if "`" in text:
+            text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
         rel = p.relative_to(ROOT).as_posix()
+        text_lower = text.lower()
         # Eval badge in prose: "26/26" near eval-ish words is a claim about the suite. This drifted
         # across fifteen files at once while only the media files were scanned.
         for m in EVAL_PAIR.finditer(text):
@@ -210,6 +229,9 @@ def main() -> int:
                 bad += 1
         active = CHECKS + (COUNT_CHECKS if rel in COUNT_FILES else [])
         for name, pat, key in active:
+            reqs = REQUIRED_SUBSTR.get(name)
+            if reqs is not None and not any(r in text_lower for r in reqs):
+                continue
             for m in re.finditer(pat, text, re.I):
                 tok = next(g for g in m.groups() if g)
                 got = as_int(tok)

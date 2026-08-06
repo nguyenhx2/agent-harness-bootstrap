@@ -12,6 +12,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git worktree list)",
+      "Bash(python .claude/scripts/:*)",
+      "Bash(python3 .claude/scripts/:*)",
       "Bash({{TEST_CMD}}:*)",
       "Bash({{LINT_CMD}}:*)",
       "Bash({{BUILD_CMD}}:*)"
