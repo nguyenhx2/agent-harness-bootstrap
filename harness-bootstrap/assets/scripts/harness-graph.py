@@ -145,11 +145,10 @@ def build(root: pathlib.Path) -> dict:
 
     disabled_entries = load_disabled(claude)
 
-    # settings
+    # settings (no meta by contract: id/type/label/file/disabled only)
     if (claude / "settings.json").is_file():
         add_node("settings", "settings", "settings.json",
-                 file=".claude/settings.json",
-                 meta={"detail": "permissions + hook registration"})
+                 file=".claude/settings.json")
 
     # agents (active + disabled are both nodes; disabled agents are not a
     # supported toggle, but a file parked there still deserves visibility)
@@ -195,16 +194,21 @@ def build(root: pathlib.Path) -> dict:
                 for name in agents:
                     add_edge(f"rule:{rl.stem}", f"agent:{name}", "gates")
 
-    # commands (+ the scripts they run)
+    # scripts: complete inventory of .claude/scripts/*.py by contract, whether or
+    # not any command references them
+    scripts_dir = claude / "scripts"
+    for sp in sorted(scripts_dir.glob("*.py")) if scripts_dir.is_dir() else []:
+        add_node(f"script:{sp.stem}", "script", sp.name, file=rel(sp))
+
+    # commands (+ a runs edge for EVERY .claude/scripts/<name>.py reference)
     for d, dis in [(claude / "commands", False), (claude / "disabled" / "commands", True)]:
         for c in sorted(d.glob("*.md")) if d.is_dir() else []:
             add_node(f"cmd:{c.stem}", "command", "/" + c.stem, file=rel(c), disabled=dis)
             body = read_text(c)
             for s in sorted(set(re.findall(r"\.claude/scripts/([\w-]+)\.py", body))):
-                sid = f"script:{s}"
-                if sid not in nodes:
-                    add_node(sid, "script", s + ".py", file=f".claude/scripts/{s}.py")
-                add_edge(f"cmd:{c.stem}", sid, "runs")
+                # nodes are the on-disk inventory; a reference to a script that
+                # does not exist stays a dangling edge (the viewers tolerate it)
+                add_edge(f"cmd:{c.stem}", f"script:{s}", "runs")
             if not dis:
                 add_edge("human", f"cmd:{c.stem}", "invokes")
 
@@ -219,6 +223,10 @@ def build(root: pathlib.Path) -> dict:
     for stem in sorted(hook_files):
         files = hook_files[stem]
         dis = all("disabled" in f.parts for f in files)
+        # File tie-break by contract: the .sh flavor if present, else the .ps1;
+        # an active flavor beats a disabled one at equal extension.
+        files = sorted(files, key=lambda f: (f.suffix != ".sh",
+                                             "disabled" in f.parts, f.name))
         r = reg.get(stem)
         meta = {"registered": bool(r)}
         if r:
@@ -249,9 +257,9 @@ def build(root: pathlib.Path) -> dict:
         except (json.JSONDecodeError, TypeError):
             g = {}
         for mod, info in (g.get("modules") or {}).items():
+            owner = info.get("owner", "-") or "-"
             add_node(f"mod:{mod}", "module", mod,
-                     meta={"files": len(info.get("files", []))})
-            owner = info.get("owner", "-")
+                     meta={"files": len(info.get("files", [])), "owner": owner})
             if owner != "-" and f"agent:{owner}" in nodes:
                 add_edge(f"agent:{owner}", f"mod:{mod}", "owns")
         for e in g.get("edges") or []:
@@ -259,22 +267,21 @@ def build(root: pathlib.Path) -> dict:
             if f_ in nodes and t_ in nodes:
                 add_edge(f_, t_, "references", int(e.get("refs", 1)))
 
-    # active tasks that reference modules
+    # tasks: EVERY TASK-*.md under docs/tasks/** is a node by contract;
+    # references edges only where the body names a module path
     tasks_dir = root / "docs" / "tasks"
     if tasks_dir.is_dir():
         mod_names = [(n["label"], n["label"].split("/")[-1])
                      for n in nodes.values() if n["type"] == "module"]
-        for t in sorted(tasks_dir.rglob("TASK-*.md"))[:60]:
+        for t in sorted(tasks_dir.rglob("TASK-*.md")):
+            add_node(f"task:{t.stem}", "task", t.stem, file=rel(t))
             body = read_text(t)
-            hits = [m for m, base in mod_names if base and base in body]
-            if hits:
-                add_node(f"task:{t.stem}", "task", t.stem, file=rel(t))
-                for m in hits:
-                    add_edge(f"task:{t.stem}", f"mod:{m}", "references")
+            for m in [m for m, base in mod_names if base and base in body]:
+                add_edge(f"task:{t.stem}", f"mod:{m}", "references")
 
     edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r else {})}
                  for (f, t, ty, r) in edges
-                 if f in nodes and t in nodes]
+                 if f in nodes and (t in nodes or ty == "runs")]
     edge_list.sort(key=lambda e: (e["from"], e["to"], e["type"]))
     return {"version": 1,
             "nodes": sorted(nodes.values(), key=lambda n: n["id"]),

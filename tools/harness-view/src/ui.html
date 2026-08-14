@@ -218,8 +218,9 @@ function select(n) {
     b.className = "toggle-btn";
     b.textContent = n.disabled ? "Enable " + label(n) : "Disable " + label(n);
     b.onclick = async () => {
+      const bare = n.id.split(":").slice(1).join(":");
       const res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: n.type, name: label(n), enable: !!n.disabled }) });
+        body: JSON.stringify({ kind: n.type, name: bare, enable: !!n.disabled }) });
       const txt = await res.text();
       if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }
       else { d.classList.remove("open"); sel = null; await load(); }

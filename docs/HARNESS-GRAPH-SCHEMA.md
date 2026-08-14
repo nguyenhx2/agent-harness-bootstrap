@@ -29,20 +29,29 @@ extra keys; anything that writes it must preserve the guarantees below.
 |---|---|---|
 | `id` | string | `<prefix>:<name>` - prefixes: `agent:` `rule:` `cmd:` `hook:` `script:` `mod:` `task:` `gate:`; plus the bare ids `settings` and `human` |
 | `type` | enum | `agent` `rule` `command` `hook` `settings` `script` `module` `task` `gate` `human` |
-| `label` | string | display name (agent stem, `/command`, module path, ...) |
-| `file` | string? | repo-relative path, absent for synthetic and module nodes |
-| `disabled` | bool | true when the item sits under `.claude/disabled/` or is listed in `.claude/disabled.json` |
+| `label` | string | ALWAYS present. Commands are `/<name>`; the synthetic nodes are `Merge request` and `Human`; settings is `settings.json`; scripts are `<name>.py`; modules are the module path; everything else the bare name |
+| `file` | string? | repo-relative path, absent for synthetic and module nodes. When a hook has both flavors, `file` points at the `.sh` if present, else the `.ps1` (an active flavor beats a disabled one at equal extension) |
+| `disabled` | bool | ALWAYS present; `false` when not applicable. True when the item sits under `.claude/disabled/` or is listed in `.claude/disabled.json` |
 | `synthetic` | bool? | true only on `gate:merge-request` and `human` (Flow-view anchors, no file) |
 | `meta` | object? | per-type extras, see below |
 
 `meta` by type:
 
 - `agent`: `model` (string, `inherit` when unset), `effort`?, `maxTurns`? (int), `tools`? (string list)
-- `rule`: `scoped` (bool - has `paths:` frontmatter), `paths`? (first globs, max 8)
+- `rule`: `scoped` (bool - has `paths:` frontmatter), `paths`? (first globs, max 8, values
+  unquoted - surrounding single/double quotes from the frontmatter are stripped)
 - `hook`: `registered` (bool - appears in settings.json hook arrays), `event`?, `matcher`?,
   `blocking`? (true when `event == "PreToolUse"`)
-- `module`: `files` (int)
-- `settings`: `detail` (free text)
+- `module`: `files` (int) AND `owner` (agent name from code-graph.json, `"-"` when unowned)
+- `settings`: no meta - the settings node carries `id`/`type`/`label`/`file`/`disabled` only
+
+Inventory rules:
+
+- **Scripts**: EVERY `*.py` under `.claude/scripts/` is a node, referenced by a command or not.
+  A script referenced by a command but missing on disk still becomes a node (keeps edge
+  endpoints valid).
+- **Tasks**: EVERY `TASK-*.md` under `docs/tasks/**` is a node; `references` edges are added
+  only where the task body names a module path.
 
 ## Edges
 
@@ -60,7 +69,7 @@ extra keys; anything that writes it must preserve the guarantees below.
 | `reviews` | a review seat gates the merge request | agent -> gate:merge-request |
 | `escalates` | the gate hands the decision to a person | gate:merge-request -> human |
 | `invokes` | a human runs a slash command | human -> command |
-| `runs` | a command executes a script | command -> script |
+| `runs` | a command executes a script - one edge per distinct `.claude/scripts/<name>.py` referenced in the command body | command -> script |
 | `spawns` | the orchestrator can dispatch a seat | agent:orchestrator -> agent |
 | `owns` | a dev agent owns a code module | agent -> module |
 | `references` | module imports module, or a task names a module | module -> module, task -> module |
@@ -70,7 +79,7 @@ extra keys; anything that writes it must preserve the guarantees below.
 - `.claude/{agents,rules,commands}/**.md`, `.claude/hooks/*.{sh,ps1}`, `.claude/settings.json`
 - `.claude/disabled/**` and `.claude/disabled.json` (runtime toggle state; absent = nothing disabled)
 - `.claude/state/code-graph.json` (module nodes, owners, import edges) - optional
-- `docs/tasks/**/TASK-*.md` (first 60; only tasks that name a module become nodes) - optional
+- `docs/tasks/**/TASK-*.md` (every task file becomes a node) - optional
 
 ## Freshness
 

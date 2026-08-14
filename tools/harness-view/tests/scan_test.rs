@@ -60,7 +60,9 @@ fn scan_builds_expected_edges() {
     assert!(has_edge(&g, "agent:code-reviewer", "gate:merge-request", "reviews"));
     assert!(has_edge(&g, "gate:merge-request", "human", "escalates"));
     assert!(has_edge(&g, "human", "cmd:deploy", "invokes"));
+    // one command referencing two scripts emits two runs edges
     assert!(has_edge(&g, "cmd:review-changes", "script:code-graph", "runs"));
+    assert!(has_edge(&g, "cmd:review-changes", "script:graph-html", "runs"));
     assert!(has_edge(&g, "agent:app-dev", "mod:src/app", "owns"));
     assert!(has_edge(&g, "mod:src/app", "mod:src/lib", "references"));
     assert!(has_edge(&g, "task:TASK-01", "mod:src/app", "references"));
@@ -95,6 +97,37 @@ fn scan_reads_frontmatter_meta() {
     assert_eq!(hook["meta"]["registered"], true);
     // .sh flavor preferred as the representative file
     assert_eq!(hook["file"], ".claude/hooks/protect-secrets.sh");
+}
+
+#[test]
+fn every_node_carries_label_and_disabled() {
+    let g = scan::scan(&fixture());
+    for n in g["nodes"].as_array().unwrap() {
+        let id = n["id"].as_str().unwrap();
+        assert!(n.get("label").and_then(|l| l.as_str()).is_some(), "{id} lacks label");
+        assert!(n.get("disabled").and_then(|d| d.as_bool()).is_some(), "{id} lacks disabled");
+    }
+    let by_id = |id: &str| {
+        g["nodes"].as_array().unwrap().iter().find(|n| n["id"] == id).unwrap().clone()
+    };
+    // canonical label forms
+    assert_eq!(by_id("cmd:review-changes")["label"], "/review-changes");
+    assert_eq!(by_id("gate:merge-request")["label"], "Merge request");
+    assert_eq!(by_id("human")["label"], "Human");
+    assert_eq!(by_id("settings")["label"], "settings.json");
+    assert_eq!(by_id("script:code-graph")["label"], "code-graph.py");
+    assert_eq!(by_id("mod:src/app")["label"], "src/app");
+    assert_eq!(by_id("rule:testing")["label"], "testing");
+    // module meta carries both files and owner, owner "-" when unknown
+    assert_eq!(by_id("mod:src/app")["meta"]["files"], 3);
+    assert_eq!(by_id("mod:src/app")["meta"]["owner"], "app-dev");
+    assert_eq!(by_id("mod:src/lib")["meta"]["files"], 2);
+    assert_eq!(by_id("mod:src/lib")["meta"]["owner"], "-");
+    // rule paths are unquoted
+    let paths = by_id("rule:testing")["meta"]["paths"].clone();
+    assert_eq!(paths[0], "tests/**");
+    // settings node has no meta
+    assert!(by_id("settings").get("meta").is_none());
 }
 
 #[test]

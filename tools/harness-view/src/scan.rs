@@ -24,7 +24,6 @@ const ENFORCES: &[(&str, &str)] = &[
 
 const REVIEWERS: &[&str] = &["code-reviewer", "reviewer", "security-reviewer", "spec-guardian"];
 
-const MAX_TASKS: usize = 60;
 
 /// Minimal line-based YAML-subset frontmatter parser: `key: value` pairs and
 /// block lists. Good enough for the harness's own agent/rule files; anything
@@ -81,19 +80,31 @@ fn frontmatter(text: &str) -> BTreeMap<String, Value> {
     out
 }
 
+/// Strip one layer of surrounding single or double quotes.
+fn unquote(s: &str) -> String {
+    let t = s.trim();
+    if t.len() >= 2
+        && ((t.starts_with('"') && t.ends_with('"')) || (t.starts_with('\'') && t.ends_with('\'')))
+    {
+        t[1..t.len() - 1].to_string()
+    } else {
+        t.to_string()
+    }
+}
+
 /// "Read, Write, Bash(git commit:*)" or a YAML list -> list of strings.
 fn as_list(v: &Value) -> Vec<String> {
     match v {
         Value::Array(a) => a
             .iter()
             .filter_map(|x| x.as_str())
-            .map(|s| s.to_string())
+            .map(unquote)
             .collect(),
         Value::String(s) => {
             let inner = s.trim().trim_start_matches('[').trim_end_matches(']');
             inner
                 .split(',')
-                .map(|p| p.trim().to_string())
+                .map(unquote)
                 .filter(|p| !p.is_empty())
                 .collect()
         }
@@ -143,7 +154,7 @@ fn hook_name_from_command(cmd: &str) -> Option<String> {
 pub fn scan(root: &Path) -> Value {
     let claude = root.join(".claude");
     let mut nodes: BTreeMap<String, Value> = BTreeMap::new();
-    let mut edges: Vec<(String, String, String)> = Vec::new();
+    let mut edges: Vec<(String, String, String, i64)> = Vec::new();
 
     // --- agents (never toggleable, so no disabled variant) ---
     let mut agent_names: Vec<String> = Vec::new();
@@ -199,9 +210,15 @@ pub fn scan(root: &Path) -> Value {
             for name in md_stems(&root.join(&dir_tail)) {
                 let file = format!("{dir_tail}/{name}.md");
                 let id = format!("{prefix}:{name}");
+                let label = if kind == "command" {
+                    format!("/{name}")
+                } else {
+                    name.clone()
+                };
                 let mut node = Map::new();
                 node.insert("id".into(), json!(id));
                 node.insert("type".into(), json!(kind));
+                node.insert("label".into(), json!(label));
                 node.insert("file".into(), json!(rel(root, &file)));
                 node.insert("disabled".into(), json!(disabled));
                 if kind == "rule" {
@@ -301,8 +318,8 @@ pub fn scan(root: &Path) -> Value {
         }
         nodes.insert(
             "settings".into(),
-            json!({"id": "settings", "type": "settings",
-                   "file": rel(root, ".claude/settings.json")}),
+            json!({"id": "settings", "type": "settings", "label": "settings.json",
+                   "file": rel(root, ".claude/settings.json"), "disabled": false}),
         );
     }
 
@@ -322,12 +339,12 @@ pub fn scan(root: &Path) -> Value {
                    "file": rel(root, file), "disabled": disabled, "meta": Value::Object(meta)}),
         );
         if registered && have_settings {
-            edges.push(("settings".into(), format!("hook:{name}"), "triggers".into()));
+            edges.push(("settings".into(), format!("hook:{name}"), "triggers".into(), 0));
         }
     }
 
     // --- scripts ---
-    let mut script_names: Vec<String> = Vec::new();
+    let mut _script_count = 0usize;
     if let Ok(rd) = fs::read_dir(claude.join("scripts")) {
         let mut names: Vec<String> = rd
             .flatten()
@@ -345,18 +362,24 @@ pub fn scan(root: &Path) -> Value {
             nodes.insert(
                 format!("script:{name}"),
                 json!({"id": format!("script:{name}"), "type": "script",
+                       "label": format!("{name}.py"), "disabled": false,
                        "file": rel(root, &format!(".claude/scripts/{name}.py"))}),
             );
-            script_names.push(name);
+            _script_count += 1;
         }
     }
 
     // --- synthetic flow anchors ---
     nodes.insert(
         "gate:merge-request".into(),
-        json!({"id": "gate:merge-request", "type": "gate", "synthetic": true}),
+        json!({"id": "gate:merge-request", "type": "gate", "label": "Merge request",
+               "disabled": false, "synthetic": true}),
     );
-    nodes.insert("human".into(), json!({"id": "human", "type": "human", "synthetic": true}));
+    nodes.insert(
+        "human".into(),
+        json!({"id": "human", "type": "human", "label": "Human",
+               "disabled": false, "synthetic": true}),
+    );
 
     // --- modules from code-graph.json (best effort, absence is fine) ---
     let mut module_names: Vec<String> = Vec::new();
@@ -365,22 +388,27 @@ pub fn scan(root: &Path) -> Value {
             if let Some(mods) = v.get("modules").and_then(|m| m.as_object()) {
                 for (name, info) in mods {
                     let mut meta = Map::new();
-                    if let Some(n) = info.get("files").and_then(|x| x.as_i64()) {
-                        meta.insert("files".into(), json!(n));
-                    }
-                    if let Some(owner) = info.get("owner").and_then(|x| x.as_str()) {
-                        meta.insert("owner".into(), json!(owner));
-                        if nodes.contains_key(&format!("agent:{owner}")) {
-                            edges.push((
-                                format!("agent:{owner}"),
-                                format!("mod:{name}"),
-                                "owns".into(),
-                            ));
-                        }
+                    // code-graph.json stores files as a path array; a bare count
+                    // is tolerated for forward compatibility
+                    let files = info
+                        .get("files")
+                        .map(|x| x.as_array().map(|a| a.len() as i64).or_else(|| x.as_i64()).unwrap_or(0))
+                        .unwrap_or(0);
+                    meta.insert("files".into(), json!(files));
+                    let owner = info.get("owner").and_then(|x| x.as_str()).unwrap_or("-");
+                    meta.insert("owner".into(), json!(owner));
+                    if owner != "-" && nodes.contains_key(&format!("agent:{owner}")) {
+                        edges.push((
+                            format!("agent:{owner}"),
+                            format!("mod:{name}"),
+                            "owns".into(),
+                            0,
+                        ));
                     }
                     nodes.insert(
                         format!("mod:{name}"),
                         json!({"id": format!("mod:{name}"), "type": "module",
+                               "label": name, "disabled": false,
                                "meta": Value::Object(meta)}),
                     );
                     module_names.push(name.clone());
@@ -403,10 +431,12 @@ pub fn scan(root: &Path) -> Value {
                         if nodes.contains_key(&format!("mod:{f}"))
                             && nodes.contains_key(&format!("mod:{t}"))
                         {
+                            let refs = e.get("refs").and_then(|x| x.as_i64()).unwrap_or(1);
                             edges.push((
                                 format!("mod:{f}"),
                                 format!("mod:{t}"),
                                 "references".into(),
+                                refs,
                             ));
                         }
                     }
@@ -439,17 +469,17 @@ pub fn scan(root: &Path) -> Value {
     }
     walk_tasks(&root.join("docs").join("tasks"), &mut task_files, root);
     task_files.sort();
-    task_files.truncate(MAX_TASKS);
     for (stem, relpath) in &task_files {
         nodes.insert(
             format!("task:{stem}"),
-            json!({"id": format!("task:{stem}"), "type": "task", "file": relpath}),
+            json!({"id": format!("task:{stem}"), "type": "task", "label": stem,
+                   "disabled": false, "file": relpath}),
         );
         if !module_names.is_empty() {
             if let Ok(body) = fs::read_to_string(root.join(relpath)) {
                 for m in &module_names {
                     if body.contains(m.as_str()) {
-                        edges.push((format!("task:{stem}"), format!("mod:{m}"), "references".into()));
+                        edges.push((format!("task:{stem}"), format!("mod:{m}"), "references".into(), 0));
                     }
                 }
             }
@@ -460,7 +490,7 @@ pub fn scan(root: &Path) -> Value {
     for (hook, rule) in ENFORCES {
         if nodes.contains_key(&format!("hook:{hook}")) && nodes.contains_key(&format!("rule:{rule}"))
         {
-            edges.push((format!("hook:{hook}"), format!("rule:{rule}"), "enforces".into()));
+            edges.push((format!("hook:{hook}"), format!("rule:{rule}"), "enforces".into(), 0));
         }
     }
     let unconditional_rules: Vec<String> = nodes
@@ -476,39 +506,48 @@ pub fn scan(root: &Path) -> Value {
         .collect();
     for rule_id in &unconditional_rules {
         for agent in &agent_names {
-            edges.push((rule_id.clone(), format!("agent:{agent}"), "gates".into()));
+            edges.push((rule_id.clone(), format!("agent:{agent}"), "gates".into(), 0));
         }
     }
     if agent_names.iter().any(|a| a == "orchestrator") {
         for agent in &agent_names {
             if agent != "orchestrator" {
-                edges.push(("agent:orchestrator".into(), format!("agent:{agent}"), "spawns".into()));
+                edges.push(("agent:orchestrator".into(), format!("agent:{agent}"), "spawns".into(), 0));
             }
         }
     }
     for r in REVIEWERS {
         if nodes.contains_key(&format!("agent:{r}")) {
-            edges.push((format!("agent:{r}"), "gate:merge-request".into(), "reviews".into()));
+            edges.push((format!("agent:{r}"), "gate:merge-request".into(), "reviews".into(), 0));
         }
     }
-    edges.push(("gate:merge-request".into(), "human".into(), "escalates".into()));
+    edges.push(("gate:merge-request".into(), "human".into(), "escalates".into(), 0));
     let command_ids: Vec<String> = nodes
         .values()
         .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("command"))
         .filter_map(|n| n.get("id").and_then(|i| i.as_str()).map(|s| s.to_string()))
         .collect();
     for cmd_id in &command_ids {
-        edges.push(("human".into(), cmd_id.clone(), "invokes".into()));
+        edges.push(("human".into(), cmd_id.clone(), "invokes".into(), 0));
         if let Some(file) = nodes
             .get(cmd_id)
             .and_then(|n| n.get("file"))
             .and_then(|f| f.as_str())
         {
             if let Ok(body) = fs::read_to_string(root.join(file)) {
+                // every ".claude/scripts/<name>.py" reference counts, whether or
+                // not the script file exists yet - the edge records the wiring
                 let norm = body.replace('\\', "/");
-                for s in &script_names {
-                    if norm.contains(&format!("scripts/{s}.py")) {
-                        edges.push((cmd_id.clone(), format!("script:{s}"), "runs".into()));
+                let mut start = 0;
+                while let Some(i) = norm[start..].find("scripts/") {
+                    let at = start + i + "scripts/".len();
+                    let name: String = norm[at..]
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+                        .collect();
+                    start = at + name.len().max(1);
+                    if !name.is_empty() && norm[start.min(norm.len())..].starts_with(".py") {
+                        edges.push((cmd_id.clone(), format!("script:{name}"), "runs".into(), 0));
                     }
                 }
             }
@@ -521,7 +560,13 @@ pub fn scan(root: &Path) -> Value {
     let node_list: Vec<Value> = nodes.into_values().collect();
     let edge_list: Vec<Value> = edges
         .into_iter()
-        .map(|(f, t, ty)| json!({"from": f, "to": t, "type": ty}))
+        .map(|(f, t, ty, refs)| {
+            let mut e = json!({"from": f, "to": t, "type": ty});
+            if refs > 0 {
+                e["refs"] = json!(refs);
+            }
+            e
+        })
         .collect();
     json!({"version": 1, "nodes": node_list, "edges": edge_list})
 }

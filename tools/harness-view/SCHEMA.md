@@ -19,16 +19,21 @@ two-space indent, trailing newline, never a timestamp.
 `hook:`, `script:`, `mod:`, `task:`, plus the singletons `settings`,
 `gate:merge-request`, `human`.
 
-| type | id example | fields |
+**Every node carries `label` and `disabled`** (false when not applicable).
+Label forms: commands are `/<name>`, the synthetic gate is `Merge request`,
+the human node is `Human`, settings is `settings.json`, scripts are
+`<name>.py`, modules are the module path, everything else the bare name.
+
+| type | id example | additional fields |
 |---|---|---|
-| agent | `agent:code-reviewer` | `label`, `file`, `disabled`, `meta` (`model`, `effort`, `maxTurns`, `tools`) |
-| rule | `rule:testing` | `file`, `disabled`, `meta` (`scoped`, `paths` when scoped) |
-| command | `cmd:deploy` | `file`, `disabled` |
-| hook | `hook:protect-secrets` | `label`, `file` (.sh flavor preferred), `disabled`, `meta` (`registered`, `event`, `matcher`, `blocking`) |
-| settings | `settings` | `file` (present only when settings.json exists) |
-| script | `script:code-graph` | `file` |
-| module | `mod:src/app` | `meta` (`files`, `owner`) from code-graph.json |
-| task | `task:TASK-042` | `file` (capped at 60 tasks) |
+| agent | `agent:code-reviewer` | `file`, `meta` (`model`, `effort`, `maxTurns`, `tools`) |
+| rule | `rule:testing` | `file`, `meta` (`scoped`, `paths` when scoped; glob values unquoted) |
+| command | `cmd:deploy` | `file` |
+| hook | `hook:protect-secrets` | `file` (the .sh flavor when both exist, else the .ps1), `meta` (`registered`, `event`, `matcher`, `blocking`) |
+| settings | `settings` | `file`; no meta (present only when settings.json exists) |
+| script | `script:code-graph` | `file` (every `*.py` under `.claude/scripts/`) |
+| module | `mod:src/app` | `meta` with BOTH `files` (count) and `owner` (agent name or `-`) |
+| task | `task:TASK-042` | `file` (every `TASK-*.md` under `docs/tasks/**`, capped at 60) |
 | gate | `gate:merge-request` | `synthetic: true` |
 | human | `human` | `synthetic: true` |
 
@@ -48,7 +53,7 @@ nodes, with `disabled: true` and `file` pointing at the quarantine path.
 | `reviews` | a reviewer seat gates the merge request |
 | `escalates` | the merge-request gate ends at the human |
 | `invokes` | commands are human entry points |
-| `runs` | the command executes the script |
+| `runs` | the command references the script; one edge per referenced `.claude/scripts/*.py`, so a command may run several |
 | `owns` | the agent owns the module (code-graph owner) |
 | `references` | module imports module; task mentions module |
 
