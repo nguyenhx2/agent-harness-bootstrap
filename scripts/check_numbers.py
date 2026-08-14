@@ -223,7 +223,8 @@ def main() -> int:
             a, b = int(m.group(1)), int(m.group(2))
             ctx = text[max(0, m.start() - 120):m.start() + 60].lower()
             if a == b and a != c["eval_cases"] and a != 2 * c["eval_cases"] \
-                    and re.search(r"eval|guardrail|payload", ctx) \
+                    and re.search(r"eval|guardrail|payload|forbidden|permitted|judged|"
+                                  r"floor hold|proof|禁止|許可|bị cấm", ctx) \
                     and not re.search(r"adapter|port|self-test", ctx) \
                     and not re.search(r"->|→|\bwas\b|from", ctx):
                 line = text[:m.start()].count("\n") + 1
@@ -267,9 +268,14 @@ def main() -> int:
             a, b = int(m.group(1)), int(m.group(2))
             # Only a pair sitting near the words eval/guardrail/payload is the eval badge; "5/5"
             # next to "adapter" is the port self-test, and equal pairs elsewhere are not claims.
-            ctx = text[max(0, m.start() - 120):m.start() + 40].lower()
+            # The window reaches further forward than the prose one: in the deck the number is a
+            # slide-data value and the words that identify it ("forbidden", "floor hold", "proof")
+            # follow it rather than precede it. A badge that sat just outside the old window is
+            # exactly how the v1.8.0 deck kept claiming 40/40 after the suite reached 68.
+            ctx = text[max(0, m.start() - 120):m.start() + 200].lower()
             if a == b and a != c["eval_cases"] \
-                    and re.search(r"eval|guardrail|payload|ペイロード|ガードレール", ctx) \
+                    and re.search(r"eval|guardrail|payload|ペイロード|ガードレール|forbidden|"
+                                  r"permitted|judged|floor hold|proof|禁止|許可|bị cấm", ctx) \
                     and "adapter" not in ctx and "5/5" != m.group(0):
                 line = text[:m.start()].count("\n") + 1
                 print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
