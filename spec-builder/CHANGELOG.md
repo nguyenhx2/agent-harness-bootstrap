@@ -6,6 +6,43 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.8.0] - 2026-08-14
+
+### Added
+
+- A design-system section (`14-design-system.md`) with stable IDs for design tokens (`DT-nn`) and
+  components (`DS-nn`), a source-of-truth link for the design file, and a mapping to the usability
+  requirements. It cross-references the wireframe section in both directions when both are selected.
+- A folder form for any section that outgrows one file: `05-functional-requirements/` with an index
+  plus one file per requirement, anchors preserved. The threshold and the migration rule are written
+  down rather than left to taste.
+- A routing table for input material: an idea, a transcript, a pile of legacy documents, or an
+  existing partial spec each get a named handling path with the reason it was chosen.
+
+### Changed
+
+- Sections are selected, not always generated. A core set (index, overview, glossary, functional
+  requirements, non-functional requirements, assumptions and open issues, revision history) is
+  always written; the other sections are chosen from what the input material actually contains. A
+  project with no user interface no longer receives a wireframe section to repurpose.
+- The questionnaire asks for the output language, which sections to build, and whether you want the
+  full standards synthesis or a lighter profile, in batched questions that skip anything you already
+  answered.
+- Cross-section links are conditional, so a smaller selection produces no dead links and no table
+  columns that cannot be filled.
+- The quality gate checks the sections you selected rather than asserting a fixed file count.
+- The reference documentation states each rule once. The identifier scheme, the never-invent
+  rationale, and the standards table each have a single home now, with pointers from everywhere else.
+
+### Fixed
+
+- `/spec-ingest` described unknowns as blank cells, which the writing rules and the quality gate both
+  reject; it now names the required unknown-with-open-issue form. Its section mapping for business
+  rules pointed at the wrong section.
+- The identifier scanner missed sub-categorized non-functional requirements (`NFR-SEC-01`) and
+  assumptions (`AS-01`), so those never appeared in the traceability graph.
+- The scaffolder's help text described the sibling skill rather than this one.
+
 ## [1.7.0] - 2026-08-06
 
 No functional changes to this skill. Version bumped to stay in step with `harness-bootstrap`, which

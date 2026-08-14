@@ -5,6 +5,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.8.0
+
+A fitted harness instead of a fixed one, a map of what got built, and runtime control over it.
+
+- **The roster fits the project.** Planning and history seats ship only for long-running work, the
+  database seats are separate choices, small projects can merge the two reviewers into one, and
+  testing is a question with a real "none" answer rather than an always-on assumption. A default
+  install is materially smaller than before.
+- **See the harness you built.** A canonical `harness-graph.json` records every agent, rule,
+  command, hook, and their typed relationships; the viewer gained a layered Flow view beside the
+  force-directed one; and both graphs rebuild themselves as soon as you change the harness or the
+  docs.
+- **Turn things off without hand-editing.** `/harness-toggle` disables and re-enables rules,
+  commands, and hooks through a committed ledger that survives scaffold re-runs, with a typed
+  confirmation guarding the controls that matter most.
+- **A native viewer.** `tools/harness-view` is an optional Rust binary that reads the same graph
+  contract and serves the same two views, with a file watcher and a toggle panel. The bundled HTML
+  viewer still needs nothing installed.
+- **Specs you actually asked for.** `spec-builder` now selects sections from the input material
+  instead of always writing thirteen, adds a design-system section with token and component IDs,
+  and can split a long section into a folder.
+- **Safety fixes worth naming.** The scaffolder rejects mistyped flags that used to leave every
+  guardrail silently dead; the toggle refuses path traversal; a corrupt ledger aborts instead of
+  resurrecting disabled controls; and the generated graph page escapes repository content.
+
+Guardrail eval: 68/68 per hook flavor, 136/136 across both. Read path 45 percent below the
+predecessor skill. Figures from `eval/guardrail_eval.py` and `benchmark/benchmark.py`.
+
 ## v1.7.0
 
 Wider skill sourcing, current-version presets, a value-free path to local env files, and two
