@@ -1,0 +1,14 @@
+{
+  "modules": {
+    "src/app": {
+      "files": 3,
+      "owner": "app-dev"
+    },
+    "src/lib": {
+      "files": 2
+    }
+  },
+  "edges": [
+    ["src/app", "src/lib"]
+  ]
+}
