@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.8.1
+
+- The presentation deck claimed the old `40/40` guardrail-eval result after the suite reached
+  68 cases. The figure checker missed it because its eval-badge scan only covered Markdown, and
+  in the deck the identifying words follow the number instead of preceding it. Both are fixed,
+  and the checker now proves it catches this exact drift.
+
 ## v1.8.0
 
 A fitted harness instead of a fixed one, a map of what got built, and runtime control over it.

@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.8.1] - 2026-08-14
+
+### Fixed
+
+- Published figure correction: the presentation deck still showed the previous guardrail-eval
+  result. No change to the skill itself.
+
 ## [1.8.0] - 2026-08-14
 
 ### Added
