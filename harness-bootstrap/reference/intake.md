@@ -125,6 +125,15 @@ exists.
 
     Full allocation and reasoning: [`cost-model.md`](cost-model.md). Record the chosen profile in
     `docs/context/tool-changelog.md`.
+    **[AQ, 4 options, batched with Q16]** **Agent-run history detail** - how much of each finished
+    subagent run does the `agent-history` hook archive under `.claude/state/history/`?
+    - **summary (Recommended)** - per-run file, prompt/response truncated to 1500 chars, newest 200
+      kept. Enough for `/board-audit`'s unlogged-completion sweep without unbounded disk growth.
+    - **full** - whole prompt and final response per run. Note: PII in prompts lands on disk.
+    - **minimal** - one index line per run, no per-run files.
+    - **off** - no archive; the unlogged-completion sweep loses its evidence source.
+    Sets `{{HISTORY_LEVEL}}` and `{{HISTORY_KEEP}}` (200 for summary/full, 0 for minimal/off).
+    Changed later with `/harness-tune` dial 6.
 17. **[chat]** **Operations posture.** Uptime/availability target ("best effort" is honest);
     observability stack (logs/metrics/traces); feature-flag mechanism; incident severity ladder - who is
     paged, at what severity; a cloud/infra budget ceiling bounding `devops`'s recommendations, if any. No
@@ -224,6 +233,7 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 14 methodology | flag `tdd` and/or `ddd` - gates `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
 | 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md`'s "Retention and egress" practice or `known-issues.md` if unknown |
 | 16 effort profile | no var - the roster allocation; record the choice in `docs/context/tool-changelog.md` |
+| agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook |
 | 17 operations posture | no var - into `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (set at Q27) |
 | 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands; approver-availability - no var, informs whether `deploy_ask` is realistic |
 | 19 DB agents + seed policy | roster seats (`data-modeler`, `db-engineer`, `db-seeder`); `/seed-db` and `db-seeder` scope |

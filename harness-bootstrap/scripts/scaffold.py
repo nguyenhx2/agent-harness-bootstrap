@@ -3,8 +3,10 @@
 
 Copies asset files into a target repo, substituting {{VARS}} and resolving
 conditional blocks. Never overwrites an existing file unless --force: existing
-files are reported as KEEP (identical) or CONFLICT (differs), which is what
-brownfield reconciliation needs.
+files are reported as KEPT (identical) or CONFLICT (differs), which is what
+brownfield reconciliation needs. Entries listed in the target's
+.claude/disabled.json (written by harness-toggle.py) are reported as
+DISABLED and skipped, so a re-run never resurrects a toggled-off control.
 
 Stdlib only. No dependencies.
 
@@ -119,10 +121,28 @@ def main() -> int:
     target = args.target.resolve()
     target.mkdir(parents=True, exist_ok=True)
 
+    # harness-toggle.py quarantines items and lists them here; a re-run must
+    # not resurrect them. The `from` paths are dest-relative by contract.
+    disabled_dests: set[str] = set()
+    dj = target / ".claude" / "disabled.json"
+    if dj.is_file():
+        try:
+            for e in json.loads(dj.read_text(encoding="utf-8")).get("disabled", []):
+                if isinstance(e, dict) and e.get("from"):
+                    frm = str(e["from"]).replace("\\", "/")
+                    disabled_dests.add(frm)
+                    stem = frm.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+                    if e.get("kind") == "hook":  # both flavors of the seat
+                        base = frm.rsplit("/", 1)[0]
+                        disabled_dests.update({f"{base}/{stem}.sh", f"{base}/{stem}.ps1"})
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     added: list[str] = []
     kept: list[str] = []
     conflicts: list[str] = []
     skipped: list[str] = []
+    disabled_skips: list[str] = []
     all_missing: dict[str, set[str]] = {}
 
     for entry in manifest:
@@ -139,6 +159,9 @@ def main() -> int:
 
         dest_rel = entry["dest"]
         dest_rel, _ = substitute(dest_rel, variables, src_rel)  # dest may be parameterised
+        if dest_rel.replace("\\", "/") in disabled_dests:
+            disabled_skips.append(dest_rel)
+            continue
         dest = target / dest_rel
 
         do_subst = entry.get("subst", True)
@@ -182,6 +205,8 @@ def main() -> int:
     show("KEPT (already identical)", kept)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
+    show("DISABLED (respected - listed in .claude/disabled.json, not re-added)",
+         disabled_skips)
     if skipped:
         print(f"\nSKIPPED by flags ({len(skipped)}): {', '.join(sorted(skipped)[:8])}"
               f"{' ...' if len(skipped) > 8 else ''}")
@@ -193,7 +218,9 @@ def main() -> int:
 
     print(
         f"\nSummary: {len(added)} written, {len(kept)} kept, "
-        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags."
+        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags"
+        + (f", {len(disabled_skips)} disabled (respected)." if disabled_skips
+           else ".")
     )
 
     if conflicts and not args.force:

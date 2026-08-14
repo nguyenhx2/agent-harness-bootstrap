@@ -22,6 +22,12 @@ Ask which dial to turn (AskUserQuestion, one batch), then apply only what was ch
 5. **Review gates** - toggle whether `security-reviewer` runs on every task or only on tasks touching
    `{{PII_OR_DATA}}` paths. Removing the code-review gate entirely is refused; that is a different
    repo, not a tuning.
+6. **Agent history detail** - edit `.claude/state/history-level` (line 1: `full`/`summary`/
+   `minimal`/`off`; line 2: how many per-run files to keep). Lowering is free; raising to `full`
+   gets a note that whole prompts and responses land on disk, PII included.
+
+Turning a whole rule, command, or hook off (or back on) is not a tune - route that to
+`/harness-toggle`, which quarantines reversibly and records why.
 
 Rules:
 - Show the exact settings/file diff and get a yes BEFORE writing. One dial per confirmation.

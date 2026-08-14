@@ -1,11 +1,16 @@
 # graph-stale.ps1
 # Event: PostToolUse   Matcher: Edit|Write
-# Non-blocking. When a SOURCE file is edited and a code graph has been built, records the path in
-# .claude/state/code-graph.stale so agents (and /code-graph --check) know the graph no longer
-# matches the code. The rebuild itself is deliberate (/code-graph), never a side effect of an edit.
-# Once the drift is large (more than 20 edited files since the last build), this ALSO emits
-# hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
-# specs-reminder.ps1's fixed-literal JSON. Never blocks: always exit 0.
+# Non-blocking graph maintenance, three tiers by cost of the rebuild:
+#   1. HARNESS edits (.claude/ agents, rules, commands, hooks, settings.json, disabled.json):
+#      regenerate .claude/state/harness-graph.json + harness-graph.html IMMEDIATELY - the scan
+#      is ~50 small files, cheap enough to rebuild as a side effect.
+#   2. DOCS edits (docs/**/*.md, only when a docs graph was already built): regenerate the docs
+#      graph + HTML immediately - docs trees are small too.
+#   3. SOURCE edits: record the path in .claude/state/code-graph.stale; the rebuild stays
+#      deliberate (/code-graph). Past 20 accumulated edits this ALSO emits
+#      hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
+#      specs-reminder.ps1's fixed-literal JSON.
+# Never blocks: always exit 0.
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -17,7 +22,42 @@ if (-not $path) { exit 0 }
 $base = $payload.cwd
 if (-not $base) { $base = "." }
 
+# Runs the first available interpreter: python, python3, or the Windows py launcher.
+function Invoke-Py {
+    param([string[]]$PyArgs)
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { & $cmd.Source @PyArgs *> $null; return }
+    $cmd = Get-Command python3 -ErrorAction SilentlyContinue
+    if ($cmd) { & $cmd.Source @PyArgs *> $null; return }
+    $cmd = Get-Command py -ErrorAction SilentlyContinue
+    if ($cmd) { & $cmd.Source -3 @PyArgs *> $null; return }
+}
+
 $norm = $path -replace '\\', '/'
+
+# Tier 1: harness wiring changed - rebuild the harness graph now.
+if ($norm -match '(^|/)\.claude/(agents|rules|commands)/[^/]+\.md$' -or
+    $norm -match '(^|/)\.claude/hooks/[^/]+\.(sh|ps1)$' -or
+    $norm -match '(^|/)\.claude/(settings|disabled)\.json$') {
+    $scanner = Join-Path $base ".claude/scripts/harness-graph.py"
+    if (Test-Path $scanner) {
+        Invoke-Py @($scanner, '--target', $base, '--html', '--quiet')
+    }
+    exit 0
+}
+
+# Tier 2: a docs file changed and a docs graph exists - rebuild it now.
+if ($norm -match '(^|/)docs/.+\.md$') {
+    $docsJson = Join-Path $base ".claude/state/docs-graph.json"
+    $docsScript = Join-Path $base ".claude/scripts/docs-graph.py"
+    if ((Test-Path $docsJson) -and (Test-Path $docsScript)) {
+        Invoke-Py @($docsScript, '--target', $base)
+        Invoke-Py @((Join-Path $base ".claude/scripts/graph-html.py"), '--target', $base)
+    }
+    exit 0
+}
+
+# Tier 3: only source files invalidate the code graph.
 $srcExts = @('.py', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.go', '.java', '.cs', '.rb', '.php', '.rs')
 $ext = [System.IO.Path]::GetExtension($norm)
 if ($srcExts -notcontains $ext) { exit 0 }

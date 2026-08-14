@@ -195,6 +195,10 @@
       "dest": ".claude/commands/harness-update.md"
     },
     {
+      "src": "claude/commands/harness-toggle.md",
+      "dest": ".claude/commands/harness-toggle.md"
+    },
+    {
       "src": "claude/commands/code-graph.md",
       "dest": ".claude/commands/code-graph.md"
     },
@@ -373,6 +377,20 @@
       "src": "scripts/docs-graph.py",
       "dest": ".claude/scripts/docs-graph.py",
       "subst": false
+    },
+    {
+      "src": "scripts/harness-graph.py",
+      "dest": ".claude/scripts/harness-graph.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/harness-toggle.py",
+      "dest": ".claude/scripts/harness-toggle.py",
+      "subst": false
+    },
+    {
+      "src": "claude/state/history-level",
+      "dest": ".claude/state/history-level"
     },
     {
       "src": "scripts/graph-html.py",

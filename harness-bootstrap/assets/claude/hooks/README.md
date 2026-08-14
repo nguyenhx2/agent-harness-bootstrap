@@ -13,11 +13,21 @@ into `.claude/settings.json`). The two flavors are behaviorally equivalent by co
 | `guard-agent-spawn` | PreToolUse | `Agent\|Task` | Three checks on every subagent dispatch: 1) roster membership - `subagent_type` must have a `.claude/agents/<type>.md` or be on the `spawn-allowlist`; 2) model pinning - a spawn cannot override a roster seat's `model:`; 3) task linkage - a write-capable seat (`Edit`/`Write` in `tools:`) must name a registered `TASK-NNN` in the dispatch prompt. | Allowlist is `.claude/hooks/spawn-allowlist` (one type per line, `#` comments); ships with `Explore` and `Plan`. |
 | `guard-agent-scope` | PreToolUse | `Edit\|Write` | Nothing - **advisory, not enforced**. The Edit/Write payload names no calling subagent (see the hook's header and "Gotchas" below), so it cannot block a write to a module a different seat owns. Instead it emits `additionalContext` when a write falls outside the sole Active task's declared "Related files and modules" AND the target module's owner (`.claude/state/code-graph.json`) differs from the task's `owner:`. Silent whenever the picture is ambiguous. | Non-blocking, always exit 0. Needs perl or python3 for the graph comparison; jq alone cannot express it (same call as `agent-history`'s transcript parsing). |
 | `specs-reminder` | PostToolUse | `Edit\|Write` | Nothing. Emits `additionalContext` when `docs/specs/` changes: update `13-revision-history.md`, sync the PRD. | Non-blocking, always exit 0. |
-| `graph-stale` | PostToolUse | `Edit\|Write` | Nothing. Appends every edited source file to `.claude/state/code-graph.stale` when a code graph exists, so `/code-graph --check` and `/board-audit` see the graph lagging the code; past 20 accumulated edits it also emits `additionalContext` nudging `/code-graph`. | Non-blocking, always exit 0. Rebuild is deliberate (`/code-graph`), never a side effect of an edit. |
-| `agent-history` | SubagentStop | `*` | Nothing. Archives each finished subagent run (prompt + final response) to `.claude/state/history/`. | Non-blocking, always exit 0. |
+| `graph-stale` | PostToolUse | `Edit\|Write` | Nothing. Three tiers by edited path: a harness file (`.claude/` agents/rules/commands/hooks, `settings.json`, `disabled.json`) regenerates `harness-graph.json` + its HTML immediately (cheap scan); a `docs/**/*.md` edit regenerates the docs graph + HTML; a source file is appended to `.claude/state/code-graph.stale`, with an `additionalContext` nudge past 20 accumulated edits - full code scans stay deliberate (`/code-graph`). | Non-blocking, always exit 0. Script-driven mutations (scaffold re-runs, `harness-toggle.py`) do not fire this hook - those tools regenerate the graph themselves. |
+| `agent-history` | SubagentStop | `*` | Nothing. Archives each finished subagent run to `.claude/state/history/` at the detail level set in `.claude/state/history-level` (line 1: `full`/`summary`/`minimal`/`off`; line 2: retention count - only the newest N per-run files are kept, `index.md` never pruned). Missing/unreadable config means `full`/200, the historical behavior. | Non-blocking, always exit 0. Change the level with `/harness-tune` dial 6. |
 
 `protect-repos` (PreToolUse `Edit|Write`, blocks writes into product-repo dirs) ships only with the
 audit workspace - see `assets/audit/hooks/`.
+
+## Disabling a hook
+
+Never delete a hook file or hand-edit its `settings.json` registration to silence it. The sanctioned
+path is `/harness-toggle` (`python .claude/scripts/harness-toggle.py disable hook/<name>`): it moves
+both flavor files to `.claude/disabled/hooks/`, removes the registration objects and saves them
+verbatim in `.claude/disabled.json` so `enable` restores them exactly, and scaffold re-runs respect
+the list instead of resurrecting the hook. `protect-secrets` and `guard-agent-spawn` are
+HARD-protected - the script refuses without a literal user-typed confirmation phrase. If a `--force`
+scaffold or a hand edit brings a disabled hook back, `harness-toggle.py reapply` is the repair verb.
 
 ## Contract
 

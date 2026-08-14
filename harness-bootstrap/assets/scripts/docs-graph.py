@@ -30,8 +30,8 @@ from collections import defaultdict
 DOC_DIRS = ("docs",)
 SKIP_PARTS = {"node_modules", ".git", "context"}  # context/ holds generated graphs - never self-scan
 ID_RE = re.compile(
-    r"\b(FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|R)-\d{1,5}\b")
-DEFINING_HINT = re.compile(r"^\s*(?:#{1,6}\s.*|\|\s*)?\b(?P<id>(?:FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|R)-\d{1,5})\b")
+    r"\b(FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|DS|DT|R)-\d{1,5}\b")
+DEFINING_HINT = re.compile(r"^\s*(?:#{1,6}\s.*|\|\s*)?\b(?P<id>(?:FR|NFR|BR|US|UC|OI|ADR|TASK|DP|CO|INT|SCR|BF|SH|DS|DT|R)-\d{1,5})\b")
 
 
 def doc_files(root: pathlib.Path) -> list[pathlib.Path]:

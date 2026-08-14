@@ -30,7 +30,9 @@ of scrolling past in a longer board.
 
 Then read `docs/tasks/master-plan.md`. Unfinished work takes priority: read the task file's session
 log and continue from the recorded state. **The task files, not conversation memory, are the source of
-truth** - this is what makes the base survive compaction.
+truth** - this is what makes the base survive compaction. For harness wiring questions (which seats,
+rules, hooks, and commands exist and how they connect), `.claude/state/harness-graph.json` is the
+machine-readable source of truth - read it instead of re-scanning `.claude/` by hand.
 
 Validate the mission's premises against git and the board BEFORE registering or dispatching anything:
 task codes free, HEAD/branch as stated, no uncommitted WIP from another session. The board allocates

@@ -147,14 +147,18 @@ show its output in the response - never report a check as passed without having 
 the loop end to end: create one real task file, register it in master-plan, append a session-log row,
 and `/task-resume` it, then validate the board you just
 created: `python .claude/scripts/board-check.py` must exit 0 (it is what `/board-audit` runs first).
-Finally, build BOTH knowledge graphs and their HTML exports - this is exactly what the installed
+Finally, build the knowledge graphs and their HTML exports - this is exactly what the installed
 `/code-graph` and `/docs-graph` commands do, so run them (or their scripts directly:
-`python .claude/scripts/code-graph.py`, `python .claude/scripts/docs-graph.py`, then
-`python .claude/scripts/graph-html.py`). The result is the two interactive files the user opens in
-a browser: `docs/context/harness-graph.html` (agents, hooks, rules, commands, settings, modules,
-and the docs that bind them) and `docs/context/specs-graph.html` (document-to-document
-traceability). On a greenfield repo with no source yet, the code graph waits for the first module;
-the docs graph works as soon as specs exist.
+`python .claude/scripts/code-graph.py`, `python .claude/scripts/docs-graph.py`,
+`python .claude/scripts/harness-graph.py`, then `python .claude/scripts/graph-html.py`).
+The result is the canonical wiring file `.claude/state/harness-graph.json` (machine-readable,
+consumed by external viewers too) plus the two interactive files the user opens in a browser:
+`docs/context/harness-graph.html` (Flow and Graph views of agents, hooks, rules, commands,
+settings, modules, and the docs that bind them) and `docs/context/specs-graph.html`
+(document-to-document traceability). After this first build the `graph-stale` hook keeps the
+harness and docs graphs fresh automatically; only the code graph rebuild stays deliberate. On a
+greenfield repo with no source yet, the code graph waits for the first module; the docs graph
+works as soon as specs exist.
 
 **8. Port to the other tools selected in step 1.** If the intake selected Cursor or Codex, run the
 porter after scaffolding - `--tool cursor`, `--tool codex`, or `--tool all`:
@@ -170,7 +174,7 @@ rules and the Bash-based guards port exactly. `AGENTS.md` is already read native
 
 **Structure**
 - [ ] `.claude/` has `settings.json`, `rules/`, `agents/`, `commands/`, `hooks/` (+README),
-      `scripts/` (code-graph, docs-graph, graph-html, board-check), and `docs/`
+      `scripts/` (code-graph, docs-graph, harness-graph, graph-html, board-check), and `docs/`
       has `README.md`, `specs/`, `requirements/`, `architecture/`, `tasks/` (master-plan + active +
       pending + done), `context/`, `templates/`.
 - [ ] Every path referenced by an agent, command, or rule exists. No references to agents that were not
