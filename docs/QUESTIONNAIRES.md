@@ -13,8 +13,8 @@ a **real question** (nothing to infer from). Real questions are either closed-ch
 `AskUserQuestion` (max 4 options, a recommended one labeled first), or open `chat` text when the
 answer is a name, a number, or a policy position with no safe default. An **express path** ("use
 defaults") skips straight to defaults for everything with one, printing the assumed table once for
-confirmation - except project identity, the deploy-rights half of the control-level question, and
-Batch H, which express mode never touches.
+confirmation - except project identity, the deploy-rights half of the control-level question,
+Batch G (audit mode - scope cannot be defaulted), and Batch H, which express mode never touches.
 
 ```mermaid
 flowchart TD
@@ -26,7 +26,7 @@ flowchart TD
     C --> G{"Express intake"}
     E --> G
     F --> G
-    G -->|"yes"| H["Skip to default, except identity / deploy rights / Batch H"]
+    G -->|"yes"| H["Skip to default, except identity / deploy rights / Batch G / Batch H"]
     G -->|"no"| I["Ask every batch A through H in full"]
     H --> J["Batch H - governance, always asked, never defaulted"]
     I --> J
@@ -39,7 +39,7 @@ flowchart TD
 | A - project identity | Name, domain, docs language, whether specs already exist, target AI tools | Sets the vocabulary for every generated file and which tool-specific output (Cursor, Codex) gets ported |
 | B - tech stack | Language/framework (version-checked against `tech-presets.md`, never recalled from memory), DB + ORM, integrations and their fallback/update cadence, product internationalization, authorization model and tenancy, environments and who owns each, dev OS | Drives which rules load, the `db` flag, which hook flavor - Windows or POSIX - actually fires, and the locale/tenancy facts `tech-stack.md` and `data-model.md` are authored against |
 | C - git and CI | Platform, commit identity, any bot with existing merge rights, default branch, commit convention and scopes | Feeds the main-commit guard and the PR/MR terminology; a wrong identity misattributes commits, and an unflagged auto-merge bot can bypass `merge-manager`'s gate |
-| D - quality and safety | Test agent + frameworks, methodology (DDD default, TDD opt-in), data sensitivity and the compliance regime that binds it (GDPR/CCPA/HIPAA/PCI-DSS/SOC2/ISO 27001/APPI/Decree 13) plus retention and deletion rights, effort profile, operations posture (uptime, observability, incident ladder), control level | Sets the delivery discipline, the AI/PII/compliance guardrail strictness, the ops baseline, and whether deploy rights sit in `deny` or `ask` |
+| D - quality and safety | Roster shape (project horizon - flag `long`; role granularity - split reviewers or merged `reviewer`, flag `solo_review`; priority), testing choice (unit+e2e / unit only / e2e only / none - flags `unit`, `e2e`, `tests`) and frameworks, methodology (DDD default, TDD, TDD+DDD, or Lightweight opt-out - flag `light`), data sensitivity and the compliance regime that binds it (GDPR/CCPA/HIPAA/PCI-DSS/SOC2/ISO 27001/APPI/Decree 13) plus retention and deletion rights, effort profile, agent-run history detail (full/summary/minimal/off), operations posture (uptime, observability, incident ladder), control level | Sets the roster size and review shape, the delivery discipline, whether `qa-test`/`/test`/`rules/testing.md` ship at all, the AI/PII/compliance guardrail strictness, how much of each agent run is archived, the ops baseline, and whether deploy rights sit in `deny` or `ask` |
 | E - DB operations and seed | DB agent roster, seed policy, the real destructive DB command | Turns a reset command into an enforceable `permissions.deny` entry instead of a guess |
 | F - branding and frontend | Brand assets, icon policy, accessibility target | Feeds `rules/frontend.md` and the a11y bar agents build against |
 | G - audit mode | Repo scope, standards per repo, scanner strategy | Defines a read-only control plane's boundary; never eligible for express intake because scope cannot be guessed |
@@ -72,7 +72,7 @@ flowchart TD
 
 | Question batch | Extracts | Why it matters |
 |---|---|---|
-| Scope | Purpose, must-have features, explicit non-goals, output language | Becomes the draft FR list section 02 onward is built from - a wrong list costs twelve documents |
+| Scope | Purpose, must-have features, explicit non-goals, output language | Becomes the draft FR list section 02 onward is built from - a wrong list costs every downstream section |
 | People | User groups, roles, authorization model and tenancy isolation, who decides, who signs off | Role *names* can be inferred; permission *scope* (Own/Team/All), the RBAC/ABAC model, and any break-glass path almost never can - they are asked, not guessed |
 | Data and systems | Entities, retention and deletion rights, volumes, integrations and their fallback if unavailable, identity provider, product locale support, legacy-system cutover | Feeds the data dictionary (08) and the integration NFRs (09); a volume or retention guess is a design decision in disguise |
 | Constraints | Security/compliance obligations (the regime named, not just "secure"), deadlines, budget, stack constraints | Section 07's security NFRs are mandatory and are never left "TBD" - an unanswered one becomes a named, owned open issue instead |

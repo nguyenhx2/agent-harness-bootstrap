@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
-"""Deterministic scaffolder for harness-bootstrap.
+"""Deterministic scaffolder for spec-builder.
 
-Copies asset files into a target repo, substituting {{VARS}} and resolving
-conditional blocks. Never overwrites an existing file unless --force: existing
-files are reported as KEEP (identical) or CONFLICT (differs), which is what
-brownfield reconciliation needs.
+Twin fork of harness-bootstrap/scripts/scaffold.py - same engine, separate
+manifest. A fix to the engine belongs in both files.
+
+Copies the spec section templates into a target repo, substituting {{VARS}} and
+resolving conditional blocks. Never overwrites an existing file unless --force:
+existing files are reported as KEPT (identical) or CONFLICT (differs), which is
+what reconciliation on an existing spec set needs.
 
 Stdlib only. No dependencies.
 
 Usage:
     python scaffold.py --target <repo> --vars vars.json [--dry-run] [--force]
-    python scaffold.py --target <repo> --vars vars.json --only claude/rules
+    python scaffold.py --target <repo> --vars vars.json --only specs/
 
 vars.json shape:
     {
-      "vars":  { "PROJECT_NAME": "acme", "DEFAULT_BRANCH": "main", ... },
-      "flags": ["ui", "db", "posix"]
+      "vars":  { "PROJECT_NAME": "acme", "PROJECT_SLUG": "acme",
+                 "PROJECT_PURPOSE": "...", "DOC_OWNER": "..." },
+      "flags": ["ai", "ui", "db", "flows", "access", "integration",
+                "assumptions", "feasibility", "design", "stakeholders"]
     }
 
 Template syntax inside asset files:
@@ -97,7 +102,7 @@ def wanted(entry: dict, flags: set[str]) -> bool:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Scaffold an agent harness into a repo.")
+    ap = argparse.ArgumentParser(description="Scaffold the spec section set into a repo.")
     ap.add_argument("--target", required=True, type=Path, help="repo root to write into")
     ap.add_argument("--vars", required=True, type=Path, help="path to vars.json")
     ap.add_argument("--assets", type=Path, default=None, help="assets dir (default: ../assets)")

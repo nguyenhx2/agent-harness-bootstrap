@@ -13,7 +13,8 @@
     {
       "src": "specs/02-stakeholders.md",
       "dest": "docs/specs/02-stakeholders.md",
-      "subst": true
+      "subst": true,
+      "when": ["stakeholders"]
     },
     {
       "src": "specs/03-glossary.md",
@@ -23,7 +24,8 @@
     {
       "src": "specs/04-business-flows.md",
       "dest": "docs/specs/04-business-flows.md",
-      "subst": true
+      "subst": true,
+      "when": ["flows"]
     },
     {
       "src": "specs/05-functional-requirements.md",
@@ -33,7 +35,8 @@
     {
       "src": "specs/06-access-control.md",
       "dest": "docs/specs/06-access-control.md",
-      "subst": true
+      "subst": true,
+      "when": ["access"]
     },
     {
       "src": "specs/07-non-functional-requirements.md",
@@ -43,17 +46,20 @@
     {
       "src": "specs/08-data-model.md",
       "dest": "docs/specs/08-data-model.md",
-      "subst": true
+      "subst": true,
+      "when": ["db"]
     },
     {
       "src": "specs/09-integration-interface.md",
       "dest": "docs/specs/09-integration-interface.md",
-      "subst": true
+      "subst": true,
+      "when": ["integration"]
     },
     {
       "src": "specs/10-ui-ux-wireframes.md",
       "dest": "docs/specs/10-ui-ux-wireframes.md",
-      "subst": true
+      "subst": true,
+      "when": ["ui"]
     },
     {
       "src": "specs/11-assumptions-constraints.md",
@@ -63,12 +69,19 @@
     {
       "src": "specs/12-technical-feasibility.md",
       "dest": "docs/specs/12-technical-feasibility.md",
-      "subst": true
+      "subst": true,
+      "when": ["feasibility"]
     },
     {
       "src": "specs/13-revision-history.md",
       "dest": "docs/specs/13-revision-history.md",
       "subst": true
+    },
+    {
+      "src": "specs/14-design-system.md",
+      "dest": "docs/specs/14-design-system.md",
+      "subst": true,
+      "when": ["design"]
     },
     {
       "src": "commands/spec-ingest.md",

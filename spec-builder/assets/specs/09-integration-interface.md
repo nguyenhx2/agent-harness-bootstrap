@@ -71,7 +71,7 @@ flowchart LR
 ### Environment availability
 
 <!-- The question that decides your test plan: is there a sandbox? If the answer is "we test
-     against production", that is a risk for [12](12-technical-feasibility.md), not a detail. -->
+     against production", that is a risk for section 12, not a detail. -->
 
 | Environment | Available | Notes |
 |-------------|-----------|-------|

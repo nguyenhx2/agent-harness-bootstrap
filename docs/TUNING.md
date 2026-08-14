@@ -3,18 +3,22 @@
 `harness-bootstrap` picks a starting posture at intake and writes it into `.claude/`. Real projects
 drift from that posture - a deploy command earns trust, a seat needs a tool it does not have, the
 board needs a health check, the skill ships a new asset you want to pick up, the code shifted enough
-that the module map is stale. Seven commands, installed into every bootstrapped repo, cover that drift. This page is the full reference for each: what it
+that the module map is stale. Eight commands, installed into every bootstrapped repo, cover that drift. This page is the full reference for each: what it
 does, when to reach for it, a worked example, and the invariants it will not let you break.
 
-None of the five edit hook *logic*. They edit data - lists, caps, seat frontmatter, `vars.json` - the
-same way any other reviewed change would. If what you want requires rewriting a `.sh`/`.ps1` hook,
-that is a normal code change, not a tuning.
+None of the eight edit hook *logic*. They edit data - lists, caps, seat frontmatter, `vars.json`,
+the disabled ledger - the same way any other reviewed change would. If what you want requires
+rewriting a `.sh`/`.ps1` hook, that is a normal code change, not a tuning.
 
 ## `/board-audit`
 
-**What it does.** Read-only sweep of `docs/tasks/` against reality: git worktrees, branches, and
-`.claude/state/history/` runs. It never fixes anything - it reports `WHAT | WHERE | SUGGESTED ACTION`
-and ends with `BOARD CLEAN` or a finding count.
+**What it does.** Runs `python .claude/scripts/board-check.py` first - stdlib-only validation of
+every task file's frontmatter enums (`status`, `attempts`, `priority`, `human_gate`) and a
+dependency-cycle check on `deps:` chains. A non-zero exit there means the board itself is
+malformed, and that findings list is reported verbatim before anything else runs, because the
+sweeps below assume well-formed frontmatter. Only then does it sweep `docs/tasks/` against
+reality: git worktrees, branches, and `.claude/state/history/` runs. It never fixes anything - it
+reports `WHAT | WHERE | SUGGESTED ACTION` and ends with `BOARD CLEAN` or a finding count.
 
 **When to reach for it.** Before resuming work after a crash or a long gap, before a release, or any
 time a task's status feels stale. It catches:
@@ -55,8 +59,9 @@ Fix nothing yourself: `/board-audit` only sees. The orchestrator or the user rec
 ## `/harness-tune`
 
 **What it does.** The sanctioned path for loosening or tightening control after bootstrap: deployment
-rights, destructive-command posture, the spawn allowlist, attempt/turn caps, and review-gate scope.
-Every change shows as a diff and lands only after an explicit yes.
+rights, destructive-command posture, the spawn allowlist, attempt/turn caps, review-gate scope, and
+agent-history detail. Six dials in total. Every change shows as a diff and lands only after an
+explicit yes.
 
 **When to reach for it.** The team's risk appetite changed since intake - you trust the agent with
 staging deploys now, or a seat keeps hitting its turn cap on legitimately long tasks.
@@ -86,8 +91,61 @@ Every accepted change is recorded in `docs/context/tool-changelog.md` - what cha
 asked.
 
 **What it refuses.** Removing the code-review gate entirely. `/harness-tune` can narrow *which* tasks
-route through `security-reviewer` (every task vs. only tasks touching PII/data paths), but it will not
-delete the gate - that is a different repo, not a tuning.
+route through the review seat, but it will not delete the gate - that is a different repo, not a
+tuning. The dial's shape depends on the roster: with the split reviewers (default, no
+`solo_review`), it narrows whether `security-reviewer` runs on every task or only on tasks touching
+PII/data paths, and `code-reviewer` keeps running unconditionally. With `solo_review` set, the two
+gates are merged into the single `reviewer` agent, and the dial instead tunes how deep that merged
+pass goes on tasks that do not touch PII/data paths - it cannot be tuned away on paths that do.
+
+## `/harness-toggle`
+
+**What it does.** Turns a single rule, command, or hook off or back on, reversibly, without deleting
+anything or rewriting `settings.json` by hand. `python .claude/scripts/harness-toggle.py` is the
+only mutator: it moves the file(s) under `.claude/disabled/`, removes (or restores) the matching
+`settings.json` registration, records the change in `.claude/disabled.json`, and regenerates
+`harness-graph.json` plus the HTML view so disabled items render greyed out. Agents are refused
+entirely - roster changes go through `/harness-update` instead.
+
+**When to reach for it.** A rule or hook does not fit this repo and you want it off without losing
+the file, or a scaffold re-run resurrected something the team had deliberately disabled.
+
+**Worked example.**
+
+```text
+/harness-toggle
+```
+
+```text
+python .claude/scripts/harness-toggle.py list
+  active:   15 rules, 22 commands, 9 hooks
+  disabled: none
+
+Disable which item? protect-adr (hook)
+Reason: this repo has no docs/adr/ directory yet
+```
+
+```text
+python .claude/scripts/harness-toggle.py disable protect-adr --yes
+  moved .claude/hooks/protect-adr.sh -> .claude/disabled/hooks/protect-adr.sh
+  removed settings.json PreToolUse registration
+  recorded in .claude/disabled.json (reason: no docs/adr/ directory yet)
+  regenerated harness-graph.json + harness-graph.html
+```
+
+**Safety tiers.** Two, enforced by the script itself, not by convention:
+
+- **HARD** - `protect-secrets`, `guard-agent-spawn`, `security-privacy`, `agent-guardrails`,
+  `/review-changes`: refused (exit 2) unless the invocation carries `--confirm "disable <name>"`
+  with that exact phrase, and the phrase must be the user's own words from this conversation, never
+  composed on their behalf.
+- **SOFT** - `guard-main-commit`, `check-commit-msg`, `protect-adr`, `ai-governance`: refused until
+  `--yes` is passed, after the user has explicitly confirmed.
+
+**What survives a scaffold re-run.** `.claude/disabled.json` is committed and shared with the team;
+`/harness-update` and a fresh `scaffold.py` run both read it, so a disabled item does not silently
+come back. If one does resurface (a hand edit, a merge), run
+`python .claude/scripts/harness-toggle.py reapply` rather than disabling it a second time.
 
 ## `/agent-permissions`
 
@@ -120,10 +178,10 @@ Apply? [y/N]
 
 **What it refuses (invariants, not warnings - no confirmation prompt offered to override them):**
 
-- **Reviewers never gain `Edit` or `Write`.** `code-reviewer`, `security-reviewer`, and
-  `spec-guardian` are gates. A gate that can edit is a dev agent that lost its independence. If a
-  review finding should be auto-applied, dispatch a dev agent with that finding - that is a task, not
-  a permission change.
+- **Reviewers never gain `Edit` or `Write`.** `code-reviewer`, `security-reviewer` (or the merged
+  `reviewer`, on a `solo_review` roster), and `spec-guardian` are gates. A gate that can edit is a
+  dev agent that lost its independence. If a review finding should be auto-applied, dispatch a dev
+  agent with that finding - that is a task, not a permission change.
 - **Only the orchestrator holds `Agent`.** A second spawner is a second uncontrolled dispatch point;
   the scaffolder itself fails the build if one appears.
 - **`model:` and `effort:` are not permissions.** Changing them is a cost/roster decision -
@@ -200,9 +258,15 @@ Changed since the last build:
   This is either a missing interface or a boundary violation - review before merging.
 ```
 
-**What it never does.** Rebuild silently as a side effect of an edit - only `graph-stale` reacts to
-edits, and it only marks the graph stale, never rebuilds it. And it does not replace the review a new
-cross-module edge deserves; it surfaces the edge so a human or reviewer looks at it.
+**What it never does.** Rebuild the *code* graph silently as a side effect of an edit - `graph-stale`
+only marks it stale for a source-file edit, deliberately, since a full source scan on every write
+would tax every session. (The harness graph and the docs graph are different: `graph-stale` rebuilds
+those two immediately on `.claude/` and `docs/` edits, because both scans are cheap. Only the code
+graph stays deferred to an explicit `/code-graph` run.) And `/code-graph` does not replace the review
+a new cross-module edge deserves; it surfaces the edge so a human or reviewer looks at it. Running it
+also refreshes `.claude/state/harness-graph.json` and both HTML exports
+(`docs/context/harness-graph.html`, `docs/context/specs-graph.html`), since module owners feed into
+the harness graph.
 
 ## `/docs-graph`
 
@@ -275,8 +339,9 @@ to open issues, never silently deleted). See `spec-builder/SKILL.md`.
 
 | Command | Changes | Confirmation |
 |---|---|---|
-| `/board-audit` | Nothing - read-only | N/A |
-| `/harness-tune` | Control-level dials: deploy rights, destructive-command posture, spawn allowlist, caps, review-gate scope | Diff shown, yes required, one dial at a time |
+| `/board-audit` | Nothing - read-only (runs `board-check.py` first) | N/A |
+| `/harness-tune` | Control-level dials: deploy rights, destructive-command posture, spawn allowlist, caps, review-gate scope, agent-history detail | Diff shown, yes required, one dial at a time |
+| `/harness-toggle` | Enables/disables one rule, command, or hook; updates `.claude/disabled.json` and the harness graph | HARD items need a typed confirm phrase; SOFT items need `--yes`; agents refused |
 | `/agent-permissions` | One tool on one seat | Diff shown, yes required (invariant violations refuse instead) |
 | `/harness-update` | Re-syncs `.claude/` with the current skill version and codebase | `CONFLICT` queue, resolved by hand |
 | `/code-graph` | Rebuilds `.claude/state/code-graph.json` and `docs/context/code-graph.md`, clears the stale log | None - regenerates derived files, nothing hand-authored is touched |
@@ -288,8 +353,8 @@ to open issues, never silently deleted). See `spec-builder/SKILL.md`.
 However you reach them - `/harness-tune`, `/agent-permissions`, or a hand edit reviewed like any
 other change - three things do not move:
 
-1. **Reviewers never gain write access.** `code-reviewer`, `security-reviewer`, `spec-guardian` stay
-   read-only gates.
+1. **Reviewers never gain write access.** `code-reviewer`, `security-reviewer` (or `reviewer`, when
+   merged under `solo_review`), `spec-guardian` stay read-only gates.
 2. **Only the orchestrator spawns.** One dispatch point, enforced by the scaffolder's build check and
    by `guard-agent-spawn`.
 3. **The code-review gate cannot be removed**, only rescoped to which paths trigger it.

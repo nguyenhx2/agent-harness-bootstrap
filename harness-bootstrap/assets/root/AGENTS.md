@@ -77,8 +77,9 @@ Routing:
 {{ROUTING_TABLE}}
 
 The standard feature flow, and none of it is optional: `spec-guardian` locks the scope, the
-specialist implements against the locked criteria ({{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}), `qa-test` runs the suites, `code-reviewer` and
-`security-reviewer` run in parallel, `/secret-scan` runs, and only then is the {{PR_OR_MR}} opened.
+specialist implements against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}), {{#IF_TESTS}}`qa-test` runs the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` runs
+(code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and
+`security-reviewer` run in parallel{{/IF_SOLO_REVIEW}}, `/secret-scan` runs, and only then is the {{PR_OR_MR}} opened.
 Run it with `/implement-fr FR-NN`.
 
 ## Commands
@@ -89,17 +90,20 @@ Run it with `/implement-fr FR-NN`.
 | `/new-task <title>`, `/task-resume <TASK-NNN>` | Task control |
 | `/review-changes` | The review gate on the current diff |
 | `/secret-scan` | Secret and sensitive-data scan; never skipped |
-| `/test` | Lint plus the unit and end-to-end suites |
-| `/brainstorm <topic>`, `/new-adr <title>` | Decisions |
-| `/new-spec-section`, `/sync-context` | Documentation upkeep |
-| `/db-migration <name>`, `/seed-db` | Database work, local and development only |
-| `/scaffold-feature <slug>` | Feature skeleton |
+{{#IF_TESTS}}| `/test` | Lint plus the automated suites |
+{{/IF_TESTS}}{{#IF_LONG}}| `/brainstorm <topic>`, `/new-adr <title>` | Decisions |
+{{/IF_LONG}}{{^IF_LONG}}| `/new-adr <title>` | Decisions |
+{{/IF_LONG}}| `/new-spec-section`, `/sync-context` | Documentation upkeep |
+{{#IF_DB}}| `/db-migration <name>`{{#IF_DB_SEEDER}}, `/seed-db`{{/IF_DB_SEEDER}} | Database work, local and development only |
+{{/IF_DB}}| `/scaffold-feature <slug>` | Feature skeleton |
 | `/deploy` | Gated. Explicit user request only, after approval and merge |
+| `/board-audit`, `/harness-tune`, `/harness-toggle`, `/harness-update`, `/agent-permissions` | Harness upkeep: board sweep, dials, on/off toggles, re-scaffold, per-seat tools |
+| `/code-graph`, `/docs-graph`, `/skill-wire` | Graphs and skill wiring |
 
 ## Testing
 
-{{UNIT_FRAMEWORK}} for unit tests, {{E2E_FRAMEWORK}} for end-to-end tests, coverage target
-{{COVERAGE_TARGET}}. Tests are written before the implementation and name the acceptance criterion
+{{#IF_TESTS}}{{#IF_UNIT}}{{UNIT_FRAMEWORK}} for unit tests{{#IF_E2E}}, {{E2E_FRAMEWORK}} for end-to-end tests{{/IF_E2E}}, coverage target
+{{COVERAGE_TARGET}}{{/IF_UNIT}}{{^IF_UNIT}}{{E2E_FRAMEWORK}} for end-to-end tests over the critical user flows{{/IF_UNIT}}. Tests {{#IF_TDD}}are written before the implementation and {{/IF_TDD}}name the acceptance criterion
 they prove.
 
 External providers are always mocked. A test that makes a real network call is a defect, not a
@@ -107,7 +111,10 @@ passing test. Never edit a test to make it pass: a failing test is either a real
 expectation, and deciding which is the entire point.
 
 `{{TEST_CMD}}` and `{{LINT_CMD}}` pass locally before a {{PR_OR_MR}} is opened. The
-{{CI_PLATFORM}} pipeline is green, in a terminal state, before it is merged. Pending is not green.
+{{CI_PLATFORM}} pipeline is green, in a terminal state, before it is merged. Pending is not green.{{/IF_TESTS}}{{^IF_TESTS}}This project runs no automated test suite by agent decision. Every acceptance criterion is
+verified by hand before review, and the session log records how. `{{LINT_CMD}}` still passes
+locally before a {{PR_OR_MR}} is opened, and the {{CI_PLATFORM}} pipeline is green, in a terminal
+state, before it is merged.{{/IF_TESTS}}
 
 ## Git
 

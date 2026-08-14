@@ -19,10 +19,10 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 
 ## Summary
 
-| ID | Requirement | Priority (MoSCoW) | Actor | Flow | Feasibility |
-|----|-------------|-------------------|-------|------|-------------|
-| [FR-01](#fr-01) | <one-line statement> | Must | <role> | [BF-01](04-business-flows.md) | [12](12-technical-feasibility.md) |
-| [FR-02](#fr-02) | <one-line statement> | Should | <role> | [BF-01](04-business-flows.md) | [12](12-technical-feasibility.md) |
+| ID | Requirement | Priority (MoSCoW) | Actor |{{#IF_FLOWS}} Flow |{{/IF_FLOWS}}{{#IF_FEASIBILITY}} Feasibility |{{/IF_FEASIBILITY}}
+|----|-------------|-------------------|-------|{{#IF_FLOWS}}------|{{/IF_FLOWS}}{{#IF_FEASIBILITY}}-------------|{{/IF_FEASIBILITY}}
+| [FR-01](#fr-01) | <one-line statement> | Must | <role> |{{#IF_FLOWS}} [BF-01](04-business-flows.md) |{{/IF_FLOWS}}{{#IF_FEASIBILITY}} [12](12-technical-feasibility.md) |{{/IF_FEASIBILITY}}
+| [FR-02](#fr-02) | <one-line statement> | Should | <role> |{{#IF_FLOWS}} [BF-01](04-business-flows.md) |{{/IF_FLOWS}}{{#IF_FEASIBILITY}} [12](12-technical-feasibility.md) |{{/IF_FEASIBILITY}}
 
 <!-- MoSCoW: Must (the release is pointless without it), Should (painful to omit, possible to
      defer), Could (nice, first to be cut), Won't (explicitly out for this release - keep the row,
@@ -32,13 +32,13 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 ## FR-01 <requirement name> {#fr-01}
 
 **Priority**: Must
-**Actor**: <role from [02](02-stakeholders.md)>
+**Actor**: <role{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}>
 **Trigger**: <what causes this to happen>
 
 ### Description
 
 <!-- What the system does, in the business's language. Two to five sentences. Resist restating the
-     UI - the screen belongs in [10](10-ui-ux-wireframes.md). -->
+     UI - the screen belongs in section 10. -->
 
 ### Input and output
 
@@ -47,7 +47,7 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 | Input | <data, its source, and its format> |
 | Validation | <what makes an input invalid, and what the user sees when it is> |
 | Output | <what the system produces, and where it goes> |
-| Persistence | <what is stored - entities in [08](08-data-model.md)> |
+| Persistence | <what is stored{{#IF_DB}} - entities in [08](08-data-model.md){{/IF_DB}}> |
 
 {{#IF_AI}}
 ### What the model does vs what the human does
@@ -89,7 +89,7 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 
 ### Dependencies
 
-- Depends on: <other FRs, integrations from [09](09-integration-interface.md), or nothing>
+- Depends on: <other FRs{{#IF_INTEGRATION}}, integrations from [09](09-integration-interface.md){{/IF_INTEGRATION}}, or nothing>
 - Blocked by: <open issues from [11](11-assumptions-constraints.md), or nothing>
 
 ---
@@ -176,6 +176,6 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 <!-- The check that makes this spec set worth writing. Every FR appears in every column, or the
      gap is deliberate and named. A blank cell is a question, not a formatting problem. -->
 
-| FR | Flow (04) | Use case | User story | Screen (10) | Entities (08) | Feasibility (12) |
-|----|-----------|----------|------------|-------------|---------------|------------------|
-| [FR-01](#fr-01) | BF-01 | UC-01 | US-01 | [SCR-01](10-ui-ux-wireframes.md) | <entity> | [12](12-technical-feasibility.md) |
+| FR |{{#IF_FLOWS}} Flow (04) |{{/IF_FLOWS}} Use case | User story |{{#IF_UI}} Screen (10) |{{/IF_UI}}{{#IF_DB}} Entities (08) |{{/IF_DB}}{{#IF_FEASIBILITY}} Feasibility (12) |{{/IF_FEASIBILITY}}
+|----|{{#IF_FLOWS}}-----------|{{/IF_FLOWS}}----------|------------|{{#IF_UI}}-------------|{{/IF_UI}}{{#IF_DB}}---------------|{{/IF_DB}}{{#IF_FEASIBILITY}}------------------|{{/IF_FEASIBILITY}}
+| [FR-01](#fr-01) |{{#IF_FLOWS}} BF-01 |{{/IF_FLOWS}} UC-01 | US-01 |{{#IF_UI}} [SCR-01](10-ui-ux-wireframes.md) |{{/IF_UI}}{{#IF_DB}} <entity> |{{/IF_DB}}{{#IF_FEASIBILITY}} [12](12-technical-feasibility.md) |{{/IF_FEASIBILITY}}

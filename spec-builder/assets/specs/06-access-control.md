@@ -16,13 +16,13 @@ tags: [specs, security, access-control, {{PROJECT_SLUG}}]
 
 ## Roles
 
-| Role (English, canonical) | Description | Held by (from [02](02-stakeholders.md)) | Assigned by |
+| Role (English, canonical) | Description | Held by{{#IF_STAKEHOLDERS}} (from [02](02-stakeholders.md)){{/IF_STAKEHOLDERS}} | Assigned by |
 |---------------------------|-------------|----------------------------------------|-------------|
 | `<role_name>` | <what this role exists to do> | <group> | <who grants it> |
 
 ## Permission matrix
 
-<!-- One row per entity from [08](08-data-model.md), one column pair per role. Cell format:
+<!-- One row per entity (from section 08 when selected), one column pair per role. Cell format:
      the operations allowed, then the scope in parentheses.
        C R U D  = create / read / update / delete
        (Own)    = only records the user created or is assigned to
@@ -66,7 +66,7 @@ tags: [specs, security, access-control, {{PROJECT_SLUG}}]
 | Identity provider | <SSO provider, local accounts, or "undecided - OI-nn"> |
 | Session lifetime | <duration, and what ends it> |
 | Multi-factor | <required for which roles> |
-| Service-to-service | <how [09](09-integration-interface.md) callers authenticate> |
+| Service-to-service | <how {{#IF_INTEGRATION}}[09](09-integration-interface.md) {{/IF_INTEGRATION}}{{^IF_INTEGRATION}}external {{/IF_INTEGRATION}}callers authenticate> |
 
 <!-- If the identity provider is not decided, that is an open issue, not a placeholder to be filled
      with whatever the team used last time. Register it in 11. -->

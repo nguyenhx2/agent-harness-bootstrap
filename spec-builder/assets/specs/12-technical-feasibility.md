@@ -90,7 +90,7 @@ this before the PoC runs, or the result will be interpreted by whoever wanted it
 
 | Requirement group | Indicative effort | Assumes |
 |-------------------|-------------------|---------|
-| <group of FRs> | <range> | <team size, stack, availability of [INT-01](09-integration-interface.md)> |
+| <group of FRs> | <range> | <team size, stack{{#IF_INTEGRATION}}, availability of [INT-01](09-integration-interface.md){{/IF_INTEGRATION}}> |
 
 ## Coverage check
 

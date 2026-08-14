@@ -217,7 +217,7 @@ class HarnessBootstrap(Scene):
         caption(self, "各担当席がskills.shを検索できる - 信頼基準と内容の必読が全ての導入をゲートする。", hold=1.1, y=-3.35, size=19)
         self.play(Create(br2), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
         self.play(Create(br3), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
-        caption(self, "決定事項はvars.jsonに入る - 方法論フラグも含む: 既定はDDD、TDDはオプトイン。", hold=1.5, y=-3.35, size=20)
+        caption(self, "決定事項はvars.jsonに入る - 方法論も含む: 既定はDDD、他にTDD、TDD+DDD、Lightweightも選べる。", hold=1.5, y=-3.35, size=20)
         self.play(FadeOut(VGroup(roster, rs, skills, sks, osd, oss, vj, vjs, br1, br2, br3, b1)), run_time=0.4)
 
         # ================= Beat 6: scaffold (GREEN) =======================

@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""Scan .claude/ and emit the canonical machine-readable harness graph.
+
+Output: .claude/state/harness-graph.json - schema version 1, documented in
+docs/HARNESS-GRAPH-SCHEMA.md at the skill repo (and summarized here):
+
+  { "version": 1,
+    "nodes": [ {"id", "type", "label", "file"?, "disabled", "synthetic"?, "meta"?} ],
+    "edges": [ {"from", "to", "type", "refs"?} ] }
+
+Node types (closed set):  agent | rule | command | hook | settings | script |
+                          module | task | gate | human
+Edge types (closed enum): gates | triggers | enforces | reviews | owns | spawns |
+                          runs | invokes | escalates | references
+
+The file is DETERMINISTIC: nodes and edges are sorted, keys are sorted, and it
+carries no timestamp - two runs over the same tree are byte-identical, so the
+graph-stale hook can regenerate it on every harness edit without dirtying bytes.
+
+This scanner is the single source of truth for harness wiring. graph-html.py
+renders this JSON; external tools (for example a native viewer) read the same
+file. Anything that mutates .claude/ outside Edit/Write hooks (scaffold re-runs,
+toggle scripts) must re-run this scanner itself.
+
+Usage:
+  python .claude/scripts/harness-graph.py [--target <repo>] [--html] [--quiet]
+
+  --html   after writing the JSON, re-render docs/context/harness-graph.html by
+           loading graph-html.py from the same directory
+  --quiet  print nothing on success
+
+Stdlib only. Never fails the caller for a malformed input file: unreadable
+settings.json or code-graph.json just narrows the graph.
+"""
+from __future__ import annotations
+
+import json
+import pathlib
+import re
+import sys
+
+NODE_TYPES = ("agent", "rule", "command", "hook", "settings", "script",
+              "module", "task", "gate", "human")
+EDGE_TYPES = ("gates", "triggers", "enforces", "reviews", "owns", "spawns",
+              "runs", "invokes", "escalates", "references")
+
+# Which rule each hook exists to enforce. This relationship lives in prose
+# (hooks/README.md, the rules themselves); the table makes it machine-readable.
+# graph-stale is informational and enforces nothing.
+ENFORCES = {
+    "protect-secrets": "security-privacy",
+    "check-commit-msg": "conventional-commits",
+    "guard-main-commit": "conventional-commits",
+    "protect-adr": "docs-workflow",
+    "specs-reminder": "docs-workflow",
+    "guard-agent-scope": "agent-guardrails",
+    "guard-agent-spawn": "agent-guardrails",
+    "agent-history": "task-tracking",
+    "protect-repos": "security-privacy",
+}
+
+# Seats that gate the merge request (edge agent -reviews-> gate:merge-request).
+REVIEW_SEATS = {"code-reviewer", "security-reviewer", "spec-guardian",
+                "reviewer", "merge-manager"}
+
+
+def read_text(p: pathlib.Path, limit: int | None = None) -> str:
+    try:
+        t = p.read_text(encoding="utf-8", errors="replace")
+        return t[:limit] if limit else t
+    except OSError:
+        return ""
+
+
+def frontmatter_field(head: str, key: str) -> str | None:
+    m = re.search(rf"^{key}:\s*(.+?)\s*$", head, re.M)
+    return m.group(1) if m else None
+
+
+def load_disabled(claude: pathlib.Path) -> dict[str, dict]:
+    """-> {'<kind>/<name>': entry} from .claude/disabled.json (absent = empty)."""
+    out: dict[str, dict] = {}
+    f = claude / "disabled.json"
+    if f.is_file():
+        try:
+            data = json.loads(read_text(f))
+            for e in data.get("disabled", []):
+                if isinstance(e, dict) and e.get("kind") and e.get("name"):
+                    out[f"{e['kind']}/{e['name']}"] = e
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return out
+
+
+def hook_registrations(claude: pathlib.Path) -> dict[str, dict]:
+    """-> {hook stem: {'event','matcher'}} parsed from settings.json.
+
+    A settings.json that is still a template (unresolved conditionals) simply
+    parses as nothing - every hook then reports registered false, which is the
+    honest answer for an unscaffolded tree.
+    """
+    reg: dict[str, dict] = {}
+    f = claude / "settings.json"
+    if not f.is_file():
+        return reg
+    try:
+        data = json.loads(read_text(f))
+    except (json.JSONDecodeError, TypeError):
+        return reg
+    for event, groups in (data.get("hooks") or {}).items():
+        if not isinstance(groups, list):
+            continue
+        for g in groups:
+            matcher = g.get("matcher", "*") if isinstance(g, dict) else "*"
+            for h in (g.get("hooks") or []) if isinstance(g, dict) else []:
+                cmd = h.get("command", "") if isinstance(h, dict) else ""
+                m = re.search(r"hooks/([\w-]+)\.(?:sh|ps1)", cmd)
+                if m and m.group(1) not in reg:
+                    reg[m.group(1)] = {"event": event, "matcher": matcher}
+    return reg
+
+
+def build(root: pathlib.Path) -> dict:
+    claude = root / ".claude"
+    nodes: dict[str, dict] = {}
+    edges: set[tuple[str, str, str, int]] = set()
+
+    def add_node(id_: str, type_: str, label: str, file: str | None = None,
+                 disabled: bool = False, synthetic: bool = False,
+                 meta: dict | None = None) -> None:
+        n: dict = {"id": id_, "type": type_, "label": label, "disabled": disabled}
+        if file:
+            n["file"] = file
+        if synthetic:
+            n["synthetic"] = True
+        if meta:
+            n["meta"] = meta
+        nodes[id_] = n
+
+    def add_edge(frm: str, to: str, type_: str, refs: int = 0) -> None:
+        edges.add((frm, to, type_, refs))
+
+    def rel(p: pathlib.Path) -> str:
+        return p.relative_to(root).as_posix()
+
+    disabled_entries = load_disabled(claude)
+
+    # settings (no meta by contract: id/type/label/file/disabled only)
+    if (claude / "settings.json").is_file():
+        add_node("settings", "settings", "settings.json",
+                 file=".claude/settings.json")
+
+    # agents (active + disabled are both nodes; disabled agents are not a
+    # supported toggle, but a file parked there still deserves visibility)
+    agent_dirs = [(claude / "agents", False), (claude / "disabled" / "agents", True)]
+    agents: list[str] = []
+    for d, dis in agent_dirs:
+        for a in sorted(d.glob("*.md")) if d.is_dir() else []:
+            head = read_text(a, 700)
+            meta: dict = {"model": frontmatter_field(head, "model") or "inherit"}
+            eff = frontmatter_field(head, "effort")
+            if eff:
+                meta["effort"] = eff
+            mt = frontmatter_field(head, "maxTurns")
+            if mt and mt.isdigit():
+                meta["maxTurns"] = int(mt)
+            tools = frontmatter_field(head, "tools")
+            if tools:
+                meta["tools"] = [t.strip() for t in tools.split(",") if t.strip()]
+            add_node(f"agent:{a.stem}", "agent", a.stem, file=rel(a),
+                     disabled=dis, meta=meta)
+            if not dis:
+                agents.append(a.stem)
+    if "orchestrator" in agents:
+        for name in agents:
+            if name != "orchestrator":
+                add_edge("agent:orchestrator", f"agent:{name}", "spawns")
+
+    # rules
+    for d, dis in [(claude / "rules", False), (claude / "disabled" / "rules", True)]:
+        for rl in sorted(d.glob("*.md")) if d.is_dir() else []:
+            head = read_text(rl, 400)
+            scoped = head.startswith("---") and "paths:" in head[3:].split("---", 1)[0]
+            meta = {"scoped": bool(scoped)}
+            if scoped:
+                pm = re.findall(r"^\s*-\s*['\"]?([^'\"\n]+?)['\"]?\s*$",
+                                head.split("paths:", 1)[1].split("---", 1)[0], re.M)
+                if pm:
+                    meta["paths"] = pm[:8]
+            entry = disabled_entries.get(f"rule/{rl.stem}")
+            add_node(f"rule:{rl.stem}", "rule", rl.stem, file=rel(rl),
+                     disabled=dis or bool(entry), meta=meta)
+            if not dis and not scoped:
+                for name in agents:
+                    add_edge(f"rule:{rl.stem}", f"agent:{name}", "gates")
+
+    # scripts: complete inventory of .claude/scripts/*.py by contract, whether or
+    # not any command references them
+    scripts_dir = claude / "scripts"
+    for sp in sorted(scripts_dir.glob("*.py")) if scripts_dir.is_dir() else []:
+        add_node(f"script:{sp.stem}", "script", sp.name, file=rel(sp))
+
+    # commands (+ a runs edge for EVERY .claude/scripts/<name>.py reference)
+    for d, dis in [(claude / "commands", False), (claude / "disabled" / "commands", True)]:
+        for c in sorted(d.glob("*.md")) if d.is_dir() else []:
+            add_node(f"cmd:{c.stem}", "command", "/" + c.stem, file=rel(c), disabled=dis)
+            body = read_text(c)
+            for s in sorted(set(re.findall(r"\.claude/scripts/([\w-]+)\.py", body))):
+                # nodes are the on-disk inventory; a reference to a script that
+                # does not exist stays a dangling edge (the viewers tolerate it)
+                add_edge(f"cmd:{c.stem}", f"script:{s}", "runs")
+            if not dis:
+                add_edge("human", f"cmd:{c.stem}", "invokes")
+
+    # hooks (a hook is one seat with up to two flavor files)
+    reg = hook_registrations(claude)
+    hook_files: dict[str, list[pathlib.Path]] = {}
+    for d, dis in [(claude / "hooks", False), (claude / "disabled" / "hooks", True)]:
+        if not d.is_dir():
+            continue
+        for hf in sorted(list(d.glob("*.sh")) + list(d.glob("*.ps1"))):
+            hook_files.setdefault(hf.stem, []).append(hf)
+    for stem in sorted(hook_files):
+        files = hook_files[stem]
+        dis = all("disabled" in f.parts for f in files)
+        # File tie-break by contract: the .sh flavor if present, else the .ps1;
+        # an active flavor beats a disabled one at equal extension.
+        files = sorted(files, key=lambda f: (f.suffix != ".sh",
+                                             "disabled" in f.parts, f.name))
+        r = reg.get(stem)
+        meta = {"registered": bool(r)}
+        if r:
+            meta["event"] = r["event"]
+            meta["matcher"] = r["matcher"]
+            meta["blocking"] = r["event"] == "PreToolUse"
+        entry = disabled_entries.get(f"hook/{stem}")
+        add_node(f"hook:{stem}", "hook", stem, file=rel(files[0]),
+                 disabled=dis or bool(entry), meta=meta)
+        if r and "settings" in nodes:
+            add_edge("settings", f"hook:{stem}", "triggers")
+        target_rule = ENFORCES.get(stem)
+        if target_rule and f"rule:{target_rule}" in nodes:
+            add_edge(f"hook:{stem}", f"rule:{target_rule}", "enforces")
+
+    # synthetic flow nodes
+    add_node("gate:merge-request", "gate", "Merge request", synthetic=True)
+    add_node("human", "human", "Human", synthetic=True)
+    add_edge("gate:merge-request", "human", "escalates")
+    for name in sorted(REVIEW_SEATS & set(agents)):
+        add_edge(f"agent:{name}", "gate:merge-request", "reviews")
+
+    # code modules (from code-graph.py) + ownership
+    cg = claude / "state" / "code-graph.json"
+    if cg.is_file():
+        try:
+            g = json.loads(read_text(cg))
+        except (json.JSONDecodeError, TypeError):
+            g = {}
+        for mod, info in (g.get("modules") or {}).items():
+            owner = info.get("owner", "-") or "-"
+            add_node(f"mod:{mod}", "module", mod,
+                     meta={"files": len(info.get("files", [])), "owner": owner})
+            if owner != "-" and f"agent:{owner}" in nodes:
+                add_edge(f"agent:{owner}", f"mod:{mod}", "owns")
+        for e in g.get("edges") or []:
+            f_, t_ = f"mod:{e.get('from')}", f"mod:{e.get('to')}"
+            if f_ in nodes and t_ in nodes:
+                add_edge(f_, t_, "references", int(e.get("refs", 1)))
+
+    # tasks: EVERY TASK-*.md under docs/tasks/** is a node by contract;
+    # references edges only where the body names a module path
+    tasks_dir = root / "docs" / "tasks"
+    if tasks_dir.is_dir():
+        mod_names = [(n["label"], n["label"].split("/")[-1])
+                     for n in nodes.values() if n["type"] == "module"]
+        for t in sorted(tasks_dir.rglob("TASK-*.md")):
+            add_node(f"task:{t.stem}", "task", t.stem, file=rel(t))
+            body = read_text(t)
+            for m in [m for m, base in mod_names if base and base in body]:
+                add_edge(f"task:{t.stem}", f"mod:{m}", "references")
+
+    edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r else {})}
+                 for (f, t, ty, r) in edges
+                 if f in nodes and (t in nodes or ty == "runs")]
+    edge_list.sort(key=lambda e: (e["from"], e["to"], e["type"]))
+    return {"version": 1,
+            "nodes": sorted(nodes.values(), key=lambda n: n["id"]),
+            "edges": edge_list}
+
+
+def main() -> int:
+    argv = sys.argv[1:]
+    root = pathlib.Path(argv[argv.index("--target") + 1]).resolve() \
+        if "--target" in argv else pathlib.Path(".").resolve()
+    quiet = "--quiet" in argv
+
+    if not (root / ".claude").is_dir():
+        if not quiet:
+            print("harness-graph: no .claude/ directory here - nothing to scan")
+        return 1
+
+    graph = build(root)
+    out = root / ".claude" / "state" / "harness-graph.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(graph, indent=2, sort_keys=True) + "\n",
+                   encoding="utf-8")
+    if not quiet:
+        print(f"harness-graph: {len(graph['nodes'])} nodes, "
+              f"{len(graph['edges'])} edges -> {out.relative_to(root).as_posix()}")
+
+    if "--html" in argv:
+        # graph-html.py has a hyphen in its name, so import it by path.
+        import importlib.util
+        gh = pathlib.Path(__file__).with_name("graph-html.py")
+        if gh.is_file():
+            spec = importlib.util.spec_from_file_location("graph_html", gh)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            res = mod.harness_graph(root)
+            if res and not quiet:
+                print(f"harness-graph: wrote {res}")
+        elif not quiet:
+            print("harness-graph: graph-html.py not found beside this script - JSON only")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

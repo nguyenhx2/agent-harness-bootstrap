@@ -87,7 +87,7 @@ Whatever that statement says, two consequences hold for this repo:
 
 ## The check on a diff
 
-Runnable by `code-reviewer` and `security-reviewer` on any diff, before merge:
+Runnable by any reviewer seat on any diff, before merge:
 
 1. **Did the manifest or lockfile change?** If yes, list every added package (direct AND transitive)
    and resolve each licence: `npm ls --all` + `license-checker` / `pip-licenses` / `go-licenses` /

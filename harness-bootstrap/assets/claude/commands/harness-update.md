@@ -25,10 +25,16 @@ Procedure:
      unreachable, a routing row without a seat is a dispatch to nowhere.
    - Retiring an agent: remove the routing row first, confirm no Active task names it as owner
      (`/board-audit`), then delete the seat file.
-4. **Re-port** if the repo is also used from Cursor or Codex:
+4. **Respect the toggle state.** If `.claude/disabled.json` exists, run
+   `python .claude/scripts/harness-toggle.py reapply` after resolving conflicts - a `--force`
+   overwrite or a hand edit can resurrect a deliberately disabled control; `reapply` re-quarantines
+   it and re-strips its `settings.json` registration.
+5. **Re-port** if the repo is also used from Cursor or Codex:
    `python <skill>/scripts/port.py --target . --tool all`
-5. **Verify**: the scaffolder's spawn-boundary lint passed (exit 0), the routing table covers every
-   seat, and the hooks still fire (run one known-bad payload by hand). Record what changed in
+6. **Verify**: the scaffolder's spawn-boundary lint passed (exit 0), the routing table covers every
+   seat, and the hooks still fire (run one known-bad payload by hand). Regenerate the harness graph
+   (`python .claude/scripts/harness-graph.py --html`) - script-driven changes do not fire the
+   Edit/Write hooks that normally keep it current. Record what changed in
    `docs/context/tool-changelog.md`.
 
 What this never does: rewrite `tech-stack.md`, `coding-standards.md`, scopes, or any authored

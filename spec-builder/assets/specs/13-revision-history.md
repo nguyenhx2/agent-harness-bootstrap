@@ -47,4 +47,4 @@ tags: [specs, history, {{PROJECT_SLUG}}]
 
 | Version | Reviewed by | Approved by | Date |
 |---------|-------------|-------------|------|
-| 1.0 | <roles from [02](02-stakeholders.md)> | {{DOC_OWNER}} | <YYYY-MM-DD> |
+| 1.0 | <roles{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}> | {{DOC_OWNER}} | <YYYY-MM-DD> |

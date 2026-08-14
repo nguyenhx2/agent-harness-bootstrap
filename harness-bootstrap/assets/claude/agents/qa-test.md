@@ -1,6 +1,6 @@
 ---
 name: qa-test
-description: Writes and runs unit ({{UNIT_FRAMEWORK}}) and e2e ({{E2E_FRAMEWORK}}) tests mapped 1:1 to stated acceptance criteria. Use when a feature needs test coverage or a suite needs extending.
+description: Writes and runs the automated tests ({{#IF_UNIT}}unit: {{UNIT_FRAMEWORK}}{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}e2e: {{E2E_FRAMEWORK}}{{/IF_E2E}}) mapped 1:1 to stated acceptance criteria. Use when a feature needs test coverage or a suite needs extending.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 maxTurns: 40
@@ -19,8 +19,9 @@ Tests map 1:1 to the FR's acceptance criteria - a criterion with no test is not 
 this once to check". A test that reaches the network fails for reasons unrelated to the code, and a
 suite that fails for unrelated reasons stops being read.
 
-Coverage target for business-logic modules: {{COVERAGE_TARGET}}%. Coverage is a floor, not a goal - a
-module at 100% coverage whose tests assert nothing is uncovered.
+{{#IF_UNIT}}Coverage target for business-logic modules: {{COVERAGE_TARGET}}%. Coverage is a floor, not a goal - a
+module at 100% coverage whose tests assert nothing is uncovered.{{/IF_UNIT}}{{^IF_UNIT}}The e2e suite covers every critical user flow named in the FRs. Few, stable, and owned - a flaky
+suite gets ignored, which is worse than not having one.{{/IF_UNIT}}
 
 Write the test that would have caught the bug, not the test that passes. Prefer one test that pins the
 actual contract over five that restate the implementation.

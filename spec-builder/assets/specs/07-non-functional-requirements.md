@@ -45,7 +45,7 @@ tags: [specs, nfr, security, {{PROJECT_SLUG}}]
 <!-- Which fields are personal, sensitive, or regulated. You cannot choose an encryption or
      retention rule until this table exists, which is why it comes first. -->
 
-| Entity.field (from [08](08-data-model.md)) | Classification | Basis | Handling |
+| Entity.field{{#IF_DB}} (from [08](08-data-model.md)){{/IF_DB}} | Classification | Basis | Handling |
 |--------------------------------------------|----------------|-------|----------|
 | `<Entity>.<field>` | Public / Internal / Confidential / PII / Sensitive PII | <why: regulation, contract, policy> | <masking, redaction in logs and exports> |
 
@@ -65,7 +65,7 @@ tags: [specs, nfr, security, {{PROJECT_SLUG}}]
 
 | ID | Requirement |
 |----|-------------|
-| NFR-SEC-05 | Authorisation is enforced server-side on every request. The permission matrix in [06](06-access-control.md) is the single source; the UI hiding a control is a convenience, never a control. |
+| NFR-SEC-05 | Authorisation is enforced server-side on every request. {{#IF_ACCESS}}The permission matrix in [06](06-access-control.md) is the single source{{/IF_ACCESS}}{{^IF_ACCESS}}The permission model recorded in this section is the single source{{/IF_ACCESS}}; the UI hiding a control is a convenience, never a control. |
 | NFR-SEC-06 | Scope filters (Own/Team/All) are applied in the data layer, so a crafted request cannot widen scope. |
 | NFR-SEC-07 | <privileged action> is logged with actor, target, and timestamp, and the log is not writable by the actor. |
 
@@ -103,7 +103,7 @@ tags: [specs, nfr, security, {{PROJECT_SLUG}}]
 |----|-------------|--------|
 | NFR-SEC-16 | Input validation and output encoding | <injection classes explicitly covered> |
 | NFR-SEC-17 | Dependency and vulnerability management | <scan cadence; severity that blocks a release> |
-| NFR-SEC-18 | Compliance obligations | <regulation or standard that binds this system, or "none identified - confirmed by [SH-nn](02-stakeholders.md)"> |
+| NFR-SEC-18 | Compliance obligations | <regulation or standard that binds this system, or "none identified{{#IF_STAKEHOLDERS}} - confirmed by [SH-nn](02-stakeholders.md){{/IF_STAKEHOLDERS}}"> |
 | NFR-SEC-19 | Data retention and deletion | <how long each classification is kept; how a deletion request is honoured> |
 
 ## Reliability {#nfr-reliability}
@@ -113,10 +113,10 @@ tags: [specs, nfr, security, {{PROJECT_SLUG}}]
 | NFR-REL-01 | Availability | <e.g. 99.5% during business hours; define the window> | <what counts as downtime> |
 | NFR-REL-02 | Recovery point objective (RPO) | <max acceptable data loss> | <backup frequency that satisfies it> |
 | NFR-REL-03 | Recovery time objective (RTO) | <max acceptable outage> | <the restore procedure, and whether it has been tested> |
-| NFR-REL-04 | Degraded operation | <what still works when <dependency> is down> | <see [09](09-integration-interface.md)> |
+| NFR-REL-04 | Degraded operation | <what still works when <dependency> is down> | <{{#IF_INTEGRATION}}see [09](09-integration-interface.md){{/IF_INTEGRATION}}{{^IF_INTEGRATION}}per-dependency fallback{{/IF_INTEGRATION}}> |
 
 <!-- An RTO nobody has rehearsed is an aspiration. If the restore has never been run, say so - it
-     belongs in [12](12-technical-feasibility.md) as a risk. -->
+     belongs in section 12 as a risk. -->
 
 ## Usability {#nfr-usability}
 

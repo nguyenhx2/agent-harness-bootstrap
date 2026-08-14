@@ -43,6 +43,10 @@ import subprocess
 import sys
 import tempfile
 
+# Cases the suite runs per hook flavor. Asserted against the real count at the end of
+# main(), and read by scripts/check_numbers.py to police every published badge.
+CASES_PER_FLAVOR = 68
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
 
@@ -71,8 +75,12 @@ VARS = {
         "DEP_MANIFEST_GLOBS": '"package.json"',
         "RESTRICTED_DENIES": '"Read(**/.restricted/**)",',
         "GLOSSARY_SEED": "| - | seeded at bootstrap | - | - |",
+        "DOC_LANGUAGE": "English",
+        "HISTORY_LEVEL": "full", "HISTORY_KEEP": "200",
     }.items()},
-    "flags": ["posix", "ui", "db", "ai", "ddd"],
+    # tests/unit/e2e keep qa-test on the roster (the spawn cases need the seat to exist);
+    # long keeps history-tracker on it (the model-escalation case names that seat).
+    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long"],
 }
 
 # (name, hook, expected_exit, payload_builder, assertions={})  exit 2 = BLOCKED, 0 = allowed.
@@ -81,9 +89,25 @@ VARS = {
 #                              additionalContext actually fired, not just that it didn't crash.
 #   {"not_contains": "text"}  stdout must NOT contain this substring - proves an advisory hook
 #                              stayed quiet when nothing warranted a nudge.
+# File-state assertions (paths and globs are relative to the flavor's repo):
+#   {"setup_files": {rel: content}}   written BEFORE the hook runs (per-case fixture state)
+#   {"delete_files": [rel]}           removed BEFORE the hook runs
+#   {"file_exists": rel}              file must exist after the run
+#   {"file_not_contains": [rel, s]}   file must exist and NOT contain s (e.g. a stale marker
+#                                      that a regeneration is expected to replace)
+#   {"glob_count": [pattern, n]}      exactly n matches after the run
+#   {"glob_contains": [pattern, s]}   at least one match, and the first must contain s
+#   {"glob_not_contains": [pattern, s]} at least one match, and the first must NOT contain s
 def suite(repo: str, feature_repo: str) -> list[tuple]:
     def p(tool: str, cwd: str = repo, **ti) -> str:
         return json.dumps({"cwd": cwd, "tool_name": tool, "tool_input": ti})
+
+    # SubagentStop payload (agent-history): a different shape from PreToolUse/PostToolUse -
+    # no tool_name/tool_input, and the transcript path points at the shared JSONL fixture.
+    def sp(agent_type: str) -> str:
+        return json.dumps({"cwd": repo, "agent_type": agent_type,
+                           "agent_id": f"id-{agent_type}",
+                           "agent_transcript_path": repo + "/.claude/state/transcript-fixture.jsonl"})
 
     return [
         # --- the four things a rogue or careless agent does that actually hurt ---
@@ -132,6 +156,42 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         # --- graph-stale: past 20 accumulated edits it also nudges /code-graph ---
         ("advisory: graph-stale nudges past 20 edits", "graph-stale", 0,
          p("Edit", file_path="src/other/thing.py"), {"contains": "/code-graph"}),
+
+        # --- graph-stale tier 1/2 (v1.8.0): harness edits regenerate the harness graph
+        #     immediately; docs edits refresh the docs graph. Neither may ever block. ---
+        ("allow: harness edit regenerates graph", "graph-stale", 0,
+         p("Edit", file_path=".claude/agents/foo.md"),
+         {"file_exists": ".claude/state/harness-graph.json"}),
+        ("allow: docs edit refreshes docs graph", "graph-stale", 0,
+         p("Edit", file_path="docs/specs/05-functional-requirements.md"),
+         {"file_not_contains": [".claude/state/docs-graph.json", "seeded-stale-marker"]}),
+
+        # --- agent-history detail levels (v1.8.0): .claude/state/history-level drives what a
+        #     SubagentStop archives. Distinct agent_type per case isolates the file assertions. ---
+        ("history: off writes nothing", "agent-history", 0, sp("off-agent"),
+         {"setup_files": {".claude/state/history-level": "off\n200\n"},
+          "glob_count": [".claude/state/history/*", 0]}),
+        ("history: minimal writes one index line", "agent-history", 0, sp("min-agent"),
+         {"setup_files": {".claude/state/history-level": "minimal\n200\n"},
+          "glob_count": [".claude/state/history/*-min-agent-*.md", 0],
+          "glob_contains": [".claude/state/history/index.md", "min-agent"]}),
+        ("history: summary truncates at 1500", "agent-history", 0, sp("sum-agent"),
+         {"setup_files": {".claude/state/history-level": "summary\n200\n"},
+          "glob_count": [".claude/state/history/*-sum-agent-*.md", 1],
+          "glob_contains": [".claude/state/history/*-sum-agent-*.md",
+                            "[truncated - full transcript:"]}),
+        ("history: missing config means full", "agent-history", 0, sp("full-agent"),
+         {"delete_files": [".claude/state/history-level"],
+          "glob_count": [".claude/state/history/*-full-agent-*.md", 1],
+          "glob_not_contains": [".claude/state/history/*-full-agent-*.md",
+                                "[truncated - full transcript:"]}),
+        # Two pre-seeded old runs + cap 1: after this write, only the newest per-run file
+        # survives (index.md is never pruned and is excluded by the digit-prefix glob).
+        ("history: retention prunes to cap", "agent-history", 0, sp("ret-agent"),
+         {"setup_files": {".claude/state/history-level": "full\n1\n",
+                          ".claude/state/history/20200101-000000-old-a-zzzz.md": "# old a\n",
+                          ".claude/state/history/20200101-000001-old-b-zzzz.md": "# old b\n"},
+          "glob_count": [".claude/state/history/[0-9]*.md", 1]}),
 
         ("allow: read source",               "protect-secrets",  0, p("Read", file_path="src/index.ts")),
         ("allow: run tests",                 "protect-secrets",  0, p("Bash", command="npm test")),
@@ -197,6 +257,20 @@ def build_fixtures(repo: pathlib.Path) -> None:
     #    to this file first.
     (state / "code-graph.stale").write_text(
         "".join(f"src/seed/f{i}.py\n" for i in range(20)), encoding="utf-8")
+    #  - graph-stale tier 2 only refreshes an EXISTING docs graph; seed one carrying a marker
+    #    that a real regeneration is guaranteed to remove.
+    (state / "docs-graph.json").write_text(
+        '{"seeded-stale-marker": true, "ids": {}, "edges": []}\n', encoding="utf-8")
+    #  - agent-history parses a JSONL transcript: first user turn = prompt, last assistant turn =
+    #    response. Both bodies exceed 1500 chars so the summary level provably truncates.
+    long_prompt = "eval fixture prompt\n" + ("p" * 2200)
+    long_response = "eval fixture response\n" + ("r" * 2200)
+    (state / "transcript-fixture.jsonl").write_text(
+        json.dumps({"type": "user", "message": {"role": "user", "content": [
+            {"type": "text", "text": long_prompt}]}}) + "\n" +
+        json.dumps({"type": "assistant", "message": {"role": "assistant", "content": [
+            {"type": "text", "text": long_response}]}}) + "\n",
+        encoding="utf-8")
     for cmd in (["git", "init", "-q", "-b", "main", "."],
                 ["git", "config", "user.email", "eval@local"],
                 ["git", "config", "user.name", "eval"],
@@ -224,15 +298,35 @@ def build_feature_branch_repo(path: pathlib.Path) -> None:
     subprocess.run(["git", "commit", "-qm", "chore: fixture"], cwd=str(path), capture_output=True)
 
 
-def scaffold_repo(workdir: pathlib.Path, flavor: str) -> pathlib.Path | None:
-    """Scaffold one harness for the given hook flavor ('sh' or 'ps1') and return its repo path, or
-    None if scaffolding failed (caller reports and aborts that flavor)."""
-    v = json.loads(json.dumps(VARS))  # deep copy - each flavor mutates its own vars
+def base_vars(flavor: str) -> dict:
+    """Deep copy of VARS, mutated for the given hook flavor ('sh' or 'ps1'). Shared by the main
+    scaffold and the flag/derivation regression suites below, so every caller starts from the same
+    known-good baseline and only overrides what a specific case needs."""
+    v = json.loads(json.dumps(VARS))
     if flavor == "ps1":
         v["flags"] = ["windows" if f == "posix" else f for f in v["flags"]]
         v["vars"]["HOOK_RUNNER"] = "powershell -NoProfile -ExecutionPolicy Bypass -File"
         v["vars"]["HOOK_EXT"] = "ps1"
+    return v
 
+
+def run_scaffold(workdir: pathlib.Path, name: str, v: dict) -> tuple[subprocess.CompletedProcess, pathlib.Path]:
+    """Write `v` to its own vars file and run scaffold.py against a fresh --target `name`, WITHOUT
+    aborting on failure (unlike scaffold_repo) - callers of this helper often expect exit 1."""
+    vf = workdir / f"vars-{name}.json"
+    vf.write_text(json.dumps(v), encoding="utf-8")
+    target = workdir / name
+    r = subprocess.run(
+        [sys.executable, str(SKILL / "scripts/scaffold.py"),
+         "--target", str(target), "--vars", str(vf)],
+        capture_output=True, text=True)
+    return r, target
+
+
+def scaffold_repo(workdir: pathlib.Path, flavor: str) -> pathlib.Path | None:
+    """Scaffold one harness for the given hook flavor ('sh' or 'ps1') and return its repo path, or
+    None if scaffolding failed (caller reports and aborts that flavor)."""
+    v = base_vars(flavor)
     vf = workdir / f"vars-{flavor}.json"
     vf.write_text(json.dumps(v), encoding="utf-8")
     repo = workdir / f"repo-{flavor}"
@@ -281,14 +375,354 @@ def run_flavor(workdir: pathlib.Path, flavor: str, ps_bin: str | None = None) ->
             argv = [ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass",
                     "-File", f".claude/hooks/{hook}.ps1"]
 
+        for rel, content in assertions.get("setup_files", {}).items():
+            f = repo / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(content, encoding="utf-8")
+        for rel in assertions.get("delete_files", []):
+            (repo / rel).unlink(missing_ok=True)
+
         pr = subprocess.run(argv, input=payload, capture_output=True, text=True, cwd=str(repo))
         ok = pr.returncode == want
         if ok and "contains" in assertions:
             ok = assertions["contains"] in pr.stdout
         if ok and "not_contains" in assertions:
             ok = assertions["not_contains"] not in pr.stdout
+        if ok and "file_exists" in assertions:
+            ok = (repo / assertions["file_exists"]).is_file()
+        if ok and "file_not_contains" in assertions:
+            rel, s = assertions["file_not_contains"]
+            f = repo / rel
+            ok = f.is_file() and s not in f.read_text(encoding="utf-8", errors="replace")
+        if ok and "glob_count" in assertions:
+            pattern, n = assertions["glob_count"]
+            ok = len(list(repo.glob(pattern))) == n
+        if ok and "glob_contains" in assertions:
+            pattern, s = assertions["glob_contains"]
+            hits = sorted(repo.glob(pattern))
+            ok = bool(hits) and s in hits[0].read_text(encoding="utf-8", errors="replace")
+        if ok and "glob_not_contains" in assertions:
+            pattern, s = assertions["glob_not_contains"]
+            hits = sorted(repo.glob(pattern))
+            ok = bool(hits) and s not in hits[0].read_text(encoding="utf-8", errors="replace")
         results.append({"name": name, "hook": hook, "flavor": flavor, "want": want,
                         "got": pr.returncode, "status": "pass" if ok else "FAIL"})
+
+    # The toggle suite runs LAST: its cases move hook files in and out of quarantine, which
+    # would invalidate any hook case that fired afterward.
+    results += run_toggle_suite(repo, flavor)
+
+    # scaffold.py's own CLI contract - flag validation, methodology contradictions, and
+    # HOOK_RUNNER/HOOK_EXT derivation - is exercised against fresh, disposable targets, so it can
+    # run any time; the ledger-security and graph-resilience suites mutate the shared `repo` (and
+    # restore it), so they run after everything else that depends on its state.
+    results += run_scaffold_validation_suite(workdir, flavor)
+    results += run_ledger_security_suite(workdir, flavor, repo)
+    results += run_graph_resilience_suite(repo, flavor)
+    return results
+
+
+def run_toggle_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
+    """harness-toggle.py is a python script, not a hook, so its safety contract is flavor-
+    independent - but it moves the FLAVOR's hook files and edits the same settings.json the
+    hooks are registered in, so it is exercised once per scaffolded flavor for uniform counting.
+    Exit 2 = safety refusal, mirroring the hook convention."""
+    script = repo / ".claude/scripts/harness-toggle.py"
+    settings = repo / ".claude/settings.json"
+    results: list[dict] = []
+
+    def run(*args: str):
+        return subprocess.run([sys.executable, str(script), *args, "--target", str(repo)],
+                              capture_output=True, text=True)
+
+    def rec(name: str, ok: bool, want: int, got: int) -> None:
+        results.append({"name": name, "hook": "harness-toggle", "flavor": flavor,
+                        "want": want, "got": got, "status": "pass" if ok else "FAIL"})
+
+    if not script.is_file():
+        rec("toggle: script installed", False, 0, -1)
+        return results
+    hook_file = repo / f".claude/hooks/protect-secrets.{flavor}"
+    quarantined = repo / f".claude/disabled/hooks/protect-secrets.{flavor}"
+
+    r = run("disable", "hook/protect-secrets")
+    s = settings.read_text(encoding="utf-8")
+    ok = r.returncode == 2 and hook_file.is_file() and "protect-secrets" in s
+    rec("toggle: HARD refusal without confirm", ok, 2, r.returncode)
+
+    r = run("disable", "hook/protect-secrets", "--confirm", "disable protect-secrets")
+    s = settings.read_text(encoding="utf-8")
+    ok = (r.returncode == 0 and quarantined.is_file() and not hook_file.is_file()
+          and "protect-secrets" not in s and "check-commit-msg" in s)
+    rec("toggle: HARD disable with typed phrase", ok, 0, r.returncode)
+
+    r = run("enable", "hook/protect-secrets")
+    s1 = settings.read_bytes()
+    ok = r.returncode == 0 and hook_file.is_file() and b"protect-secrets" in s1
+    # second full cycle: after the first toggle normalized the formatting, disable+enable
+    # must round-trip settings.json byte-exactly
+    r2 = run("disable", "hook/protect-secrets", "--confirm", "disable protect-secrets")
+    r3 = run("enable", "hook/protect-secrets")
+    ok = ok and r2.returncode == 0 and r3.returncode == 0 and settings.read_bytes() == s1
+    rec("toggle: enable restores byte-exactly", ok, 0, r.returncode)
+
+    ccm = repo / f".claude/hooks/check-commit-msg.{flavor}"
+    r = run("disable", "hook/check-commit-msg")
+    ok = r.returncode == 2 and ccm.is_file()
+    rec("toggle: SOFT refusal without --yes", ok, 2, r.returncode)
+
+    r = run("disable", "hook/check-commit-msg", "--yes")
+    r2 = run("enable", "hook/check-commit-msg")
+    ok = r.returncode == 0 and r2.returncode == 0 and ccm.is_file()
+    rec("toggle: SOFT disable with --yes, enable back", ok, 0, r.returncode)
+
+    r = run("disable", "agent/orchestrator")
+    ok = r.returncode != 0 and (repo / ".claude/agents/orchestrator.md").is_file()
+    rec("toggle: agent kind refused", ok, 1, r.returncode)
+    return results
+
+
+def run_scaffold_validation_suite(workdir: pathlib.Path, flavor: str) -> list[dict]:
+    """scaffold.py's flag validation, methodology contradictions, and HOOK_RUNNER/HOOK_EXT
+    derivation. Flavor-independent behavior (validate_flags() and the OS-derivation check don't
+    care which flavor is asking) but run once per flavor call for uniform counting, same
+    convention as run_toggle_suite. Each case scaffolds into its OWN fresh --target under
+    `workdir`, never the shared per-flavor `repo` - these are standalone CLI invocations, not
+    hook payloads."""
+    results: list[dict] = []
+    os_flag = "windows" if flavor == "ps1" else "posix"
+
+    def rec(name: str, hook: str, ok: bool, want: int, got: int) -> None:
+        results.append({"name": name, "hook": hook, "flavor": flavor,
+                        "want": want, "got": got, "status": "pass" if ok else "FAIL"})
+
+    # --- flag validation: unknown flags, missing/doubled OS flag, valid payload ---
+    for bad_flag in ("posx", "sold_review"):
+        v = base_vars(flavor)
+        v["flags"] = [os_flag, bad_flag]
+        r, _ = run_scaffold(workdir, f"flagcheck-unknown-{bad_flag}-{flavor}", v)
+        ok = r.returncode == 1 and bad_flag in r.stderr
+        rec(f"flags: unknown flag named in error ({bad_flag})", "scaffold-flags",
+            ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    v["flags"] = ["windows", "posix"]
+    r, _ = run_scaffold(workdir, f"flagcheck-both-os-{flavor}", v)
+    ok = r.returncode == 1 and "exactly one of" in r.stderr
+    rec("flags: both windows and posix rejected", "scaffold-flags", ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    v["flags"] = ["ui", "db"]  # no OS flag at all
+    r, _ = run_scaffold(workdir, f"flagcheck-neither-os-{flavor}", v)
+    ok = r.returncode == 1 and "exactly one of" in r.stderr
+    rec("flags: neither windows nor posix rejected", "scaffold-flags", ok, 1, r.returncode)
+
+    v = base_vars(flavor)  # unmodified - the same flags the real per-flavor scaffold uses
+    r, _ = run_scaffold(workdir, f"flagcheck-valid-{flavor}", v)
+    rec("flags: valid payload still succeeds", "scaffold-flags",
+        r.returncode == 0, 0, r.returncode)
+
+    # --- contradictory methodology combinations ---
+    v = base_vars(flavor)
+    v["flags"] = [f for f in v["flags"] if f != "ddd"] + ["light", "tdd"]
+    r, _ = run_scaffold(workdir, f"flagcheck-light-tdd-{flavor}", v)
+    ok = r.returncode == 1 and "light" in r.stderr and "tdd" in r.stderr
+    rec("methodology: light+tdd rejected", "scaffold-methodology", ok, 1, r.returncode)
+
+    v = base_vars(flavor)  # baseline already carries ddd
+    v["flags"] = v["flags"] + ["light"]
+    r, _ = run_scaffold(workdir, f"flagcheck-light-ddd-{flavor}", v)
+    ok = r.returncode == 1 and "light" in r.stderr and "ddd" in r.stderr
+    rec("methodology: light+ddd rejected", "scaffold-methodology", ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    v["flags"] = [f for f in v["flags"] if f not in ("tests", "unit", "e2e")] + ["tdd"]
+    r, _ = run_scaffold(workdir, f"flagcheck-tdd-no-tests-{flavor}", v)
+    ok = r.returncode == 1 and "tdd" in r.stderr and "requires 'tests'" in r.stderr
+    rec("methodology: tdd without tests rejected", "scaffold-methodology", ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    v["flags"] = [f for f in v["flags"] if f not in ("tests", "unit", "e2e")] + ["unit"]
+    r, _ = run_scaffold(workdir, f"flagcheck-unit-no-tests-{flavor}", v)
+    ok = r.returncode == 1 and "unit" in r.stderr and "requires 'tests'" in r.stderr
+    rec("methodology: unit without tests rejected", "scaffold-methodology", ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    v["flags"] = [os_flag, "light"]
+    r, _ = run_scaffold(workdir, f"flagcheck-light-alone-{flavor}", v)
+    rec("methodology: light alone succeeds", "scaffold-methodology",
+        r.returncode == 0, 0, r.returncode)
+
+    # --- HOOK_RUNNER/HOOK_EXT: derived from the OS flag, never a silent override ---
+    v = base_vars(flavor)
+    other = "sh" if flavor == "ps1" else "ps1"
+    v["vars"]["HOOK_RUNNER"] = base_vars(other)["vars"]["HOOK_RUNNER"]
+    r, _ = run_scaffold(workdir, f"flagcheck-runner-contradiction-{flavor}", v)
+    ok = r.returncode == 1 and "HOOK_RUNNER" in r.stderr
+    rec("hook-runner: contradicting HOOK_RUNNER rejected", "scaffold-hookrunner",
+        ok, 1, r.returncode)
+
+    v = base_vars(flavor)
+    del v["vars"]["HOOK_RUNNER"]
+    del v["vars"]["HOOK_EXT"]
+    r, target = run_scaffold(workdir, f"flagcheck-runner-absent-{flavor}", v)
+    want_runner = "powershell -NoProfile -ExecutionPolicy Bypass -File" if flavor == "ps1" else "bash"
+    want_ext = "ps1" if flavor == "ps1" else "sh"
+    settings = target / ".claude/settings.json"
+    ok = (r.returncode == 0 and settings.is_file()
+          and f"{want_runner} .claude/hooks/protect-secrets.{want_ext}" in
+              settings.read_text(encoding="utf-8"))
+    rec("hook-runner: vars absent derives correct runner", "scaffold-hookrunner",
+        ok, 0, r.returncode)
+
+    return results
+
+
+def run_ledger_security_suite(workdir: pathlib.Path, flavor: str,
+                              repo: pathlib.Path) -> list[dict]:
+    """Ledger/quarantine edge cases that must not be reachable: case-insensitive HARD-tier
+    bypass, a corrupt disabled.json aborting instead of being treated as empty, poisoned
+    disabled.json entries (a 'from' outside the toggleable directories) being ignored rather than
+    honored, enable() refusing to drop its record when settings.json cannot be read, and path
+    traversal in an item name. Runs against the ALREADY-SCAFFOLDED shared `repo` (post
+    run_toggle_suite, which leaves it in a clean enabled/valid state) because these need real
+    quarantine-capable files, a real settings.json, and a real disabled.json - each step restores
+    what it perturbed before the next one runs."""
+    script = repo / ".claude/scripts/harness-toggle.py"
+    claude = repo / ".claude"
+    disabled_json = claude / "disabled.json"
+    settings_json = claude / "settings.json"
+    vars_file = workdir / f"vars-{flavor}.json"
+    results: list[dict] = []
+
+    def toggle(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(script), *args, "--target", str(repo)],
+                              capture_output=True, text=True)
+
+    def scaffold_rerun() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(SKILL / "scripts/scaffold.py"),
+             "--target", str(repo), "--vars", str(vars_file)],
+            capture_output=True, text=True)
+
+    def rec(name: str, hook: str, ok: bool, want: int, got: int) -> None:
+        results.append({"name": name, "hook": hook, "flavor": flavor,
+                        "want": want, "got": got, "status": "pass" if ok else "FAIL"})
+
+    # --- case-insensitive HARD tier: wrong-case names must still refuse, and refuse WITHOUT
+    #     moving anything (proves the guard fires before the case-insensitive file lookup can be
+    #     exploited on a case-insensitive filesystem) ---
+    hook_file = repo / f".claude/hooks/protect-secrets.{flavor}"
+    r = toggle("disable", "hook/Protect-Secrets")
+    ok = (r.returncode == 2 and hook_file.is_file()
+          and "protect-secrets" in settings_json.read_text(encoding="utf-8"))
+    rec("toggle: wrong-case HARD hook still refuses", "harness-toggle", ok, 2, r.returncode)
+
+    rule_file = repo / ".claude/rules/security-privacy.md"
+    r = toggle("disable", "rule/Security-Privacy")
+    ok = r.returncode == 2 and rule_file.is_file()
+    rec("toggle: wrong-case HARD rule still refuses", "harness-toggle", ok, 2, r.returncode)
+
+    # --- corrupt ledger: read_disabled() must raise, never silently return []. Prove BOTH
+    #     scripts refuse instead of resurrecting/dropping quarantine state. ---
+    clean_disabled = disabled_json.read_text(encoding="utf-8") if disabled_json.is_file() \
+        else json.dumps({"disabled": [], "version": 1}, indent=2, sort_keys=True) + "\n"
+    ccm_file = repo / f".claude/hooks/check-commit-msg.{flavor}"
+    disabled_json.write_text("{not valid json", encoding="utf-8")
+
+    r = toggle("disable", "hook/check-commit-msg", "--yes")
+    ok = (r.returncode == 1 and ccm_file.is_file()
+          and disabled_json.read_text(encoding="utf-8") == "{not valid json")
+    rec("toggle: corrupt ledger aborts without mutation", "harness-toggle", ok, 1, r.returncode)
+
+    r = scaffold_rerun()
+    ok = r.returncode == 1 and "unreadable" in r.stderr
+    rec("scaffold: corrupt ledger aborts, not treated as empty", "scaffold", ok, 1, r.returncode)
+
+    disabled_json.write_text(clean_disabled, encoding="utf-8")
+
+    # --- poisoned ledger entries: a 'from' outside .claude/{rules,commands,hooks}/ must be
+    #     ignored (with a warning), and the named asset must still be installed by scaffold. ---
+    poisoned = {
+        "disabled": [
+            {"kind": "rule", "name": "security-privacy", "from": ".claude/settings.json",
+             "reason": ""},
+            {"kind": "hook", "name": "protect-secrets", "from": "CLAUDE.md", "reason": ""},
+        ],
+        "version": 1,
+    }
+    disabled_json.write_text(json.dumps(poisoned, indent=2) + "\n", encoding="utf-8")
+
+    r = scaffold_rerun()
+    ok = (r.returncode == 0 and "ignored" in r.stderr and rule_file.is_file())
+    rec("ledger: poisoned rule entry ignored, asset kept", "scaffold-ledger", ok, 0, r.returncode)
+    ok = (r.returncode == 0 and "ignored" in r.stderr and hook_file.is_file())
+    rec("ledger: poisoned hook entry ignored, asset kept", "scaffold-ledger", ok, 0, r.returncode)
+
+    disabled_json.write_text(clean_disabled, encoding="utf-8")
+
+    # --- enable() must refuse (and keep both the disabled.json record and the quarantined
+    #     files) when its saved registration cannot be restored because settings.json is gone ---
+    r = toggle("disable", "hook/protect-secrets", "--confirm", "disable protect-secrets")
+    quarantined = repo / f".claude/disabled/hooks/protect-secrets.{flavor}"
+    settings_backup = settings_json.read_bytes()
+    settings_json.unlink()
+
+    r = toggle("enable", "hook/protect-secrets")
+    ok = (r.returncode != 0 and "protect-secrets" in disabled_json.read_text(encoding="utf-8")
+          and quarantined.is_file())
+    rec("toggle: enable with missing settings.json fails safe", "harness-toggle",
+        ok, 1, r.returncode)
+
+    settings_json.write_bytes(settings_backup)
+    toggle("enable", "hook/protect-secrets")  # best-effort: restore repo to a clean enabled
+    # state for the case after this one; not itself a locked-in case (not one of the 9 asked for).
+
+    # --- path traversal: a '..'-bearing item name must be refused, and nothing outside
+    #     .claude/<kind>/ - especially the real repo-root file it is impersonating - moves ---
+    agents_md = repo / "AGENTS.md"
+    before = agents_md.read_bytes() if agents_md.is_file() else None
+    r = toggle("disable", "rule/../../AGENTS")
+    ok = r.returncode != 0 and agents_md.is_file() and agents_md.read_bytes() == before
+    rec("toggle: path traversal in item name refused", "harness-toggle", ok, 1, r.returncode)
+
+    return results
+
+
+def run_graph_resilience_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
+    """harness-graph.py and graph-html.py must never fail the caller over a malformed
+    .claude/state/code-graph.json - that is the documented contract (both scripts' docstrings).
+    Corrupts the fixture, runs both scripts, and restores it."""
+    results: list[dict] = []
+    cg = repo / ".claude/state/code-graph.json"
+    backup = cg.read_text(encoding="utf-8") if cg.is_file() else None
+    cg.write_text("{ not valid json", encoding="utf-8")
+
+    def rec(name: str, hook: str, ok: bool, got: int) -> None:
+        results.append({"name": name, "hook": hook, "flavor": flavor,
+                        "want": 0, "got": got, "status": "pass" if ok else "FAIL"})
+
+    hg = repo / ".claude/scripts/harness-graph.py"
+    out = repo / ".claude/state/harness-graph.json"
+    r = subprocess.run([sys.executable, str(hg), "--target", str(repo), "--html", "--quiet"],
+                       capture_output=True, text=True)
+    ok = r.returncode == 0 and out.is_file()
+    rec("graph: malformed code-graph.json does not crash harness-graph.py",
+        "harness-graph", ok, r.returncode)
+
+    gh = repo / ".claude/scripts/graph-html.py"
+    html_out = repo / "docs/context/harness-graph.html"
+    r = subprocess.run([sys.executable, str(gh), "--target", str(repo)],
+                       capture_output=True, text=True)
+    ok = r.returncode == 0 and html_out.is_file()
+    rec("graph: malformed code-graph.json does not crash graph-html.py",
+        "graph-html", ok, r.returncode)
+
+    if backup is not None:
+        cg.write_text(backup, encoding="utf-8")
+    else:
+        cg.unlink(missing_ok=True)
+
     return results
 
 
@@ -325,6 +759,7 @@ def main() -> int:
             fn(path)
         shutil.rmtree(workdir, onexc=_force)
     workdir.mkdir(parents=True, exist_ok=True)
+    ran_both = False
     try:
         results = run_flavor(workdir, "sh")
         if results is None:
@@ -335,6 +770,7 @@ def main() -> int:
             if ps1_results is None:
                 return 1
             results += ps1_results
+            ran_both = True
     finally:
         if not os.environ.get("KEEP_EVAL_WORKDIR"):
             shutil.rmtree(workdir, ignore_errors=True)
@@ -356,7 +792,7 @@ def main() -> int:
         fresults = [x for x in results if x.get("flavor") == flavor]
         if not fresults:
             continue
-        blocked = [x for x in fresults if x.get("want") == 2]
+        blocked = [x for x in fresults if x.get("want") not in (0, None)]
         allowed = [x for x in fresults if x.get("want") == 0]
         print(f"\n  --- {label} ---")
         print("\n  MUST BLOCK (a cheap model must be unable to do these):")
@@ -371,6 +807,18 @@ def main() -> int:
               f"POSIX results above are unaffected.")
 
     print(f"\n  {npass}/{len(results)} passed.")
+
+    # CASES_PER_FLAVOR is what the badges in the README, the deck and the videos quote, and
+    # scripts/check_numbers.py reads it from this file. Most cases are generated at run time,
+    # so no static scan can count them - instead the declared number is asserted against the
+    # real one here. Add a case, this fails, and the constant (and the badges) must follow.
+    expected = CASES_PER_FLAVOR * (2 if ran_both else 1)
+    if len(results) != expected:
+        print(f"\n  FIGURE DRIFT: ran {len(results)} cases, but CASES_PER_FLAVOR says "
+              f"{expected} for this run. Update CASES_PER_FLAVOR at the top of this file "
+              f"and re-run scripts/check_numbers.py to refresh every badge.", file=sys.stderr)
+        return 1
+
     if nfail == 0:
         print("\n  Every one of these is enforced by a shell script and an exit code.")
         print("  No model is consulted. Swap opus -> haiku and the result is byte-identical:")

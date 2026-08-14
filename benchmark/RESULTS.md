@@ -18,15 +18,15 @@ is counted from the files on disk (see [Methodology](#methodology)) and reproduc
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 128,072 | -45% |
+| Read path (bytes the model must pull into context) | 234,196 | 129,638 | -45% |
 | Read path (files read) | 24 | 10 | -58% |
 | Write path (bytes the model must author) | 95,064 | 13,881 | -85% |
-| Session tax kept out of every launch | - | 66% | - |
+| Session tax kept out of every launch | - | 65% | - |
 | Scaffold time | - | ~0.2s | - |
 
 ## Goal 1 - Cheap sessions
 
-66% of rule content stays out of the default session: 6 unconditional rules load every time; 9
+65% of rule content stays out of the default session: 6 unconditional rules load every time; 9
 path-scoped rules load only when Claude actually touches a matching file. The database agent no
 longer carries the frontend rules; the UI agent no longer carries the migration-safety rules.
 
@@ -35,13 +35,13 @@ xychart-beta
     title "Rule bytes loaded per session: always vs on demand"
     x-axis ["Unconditional - 6 rules, every session", "Path-scoped - 9 rules, on demand"]
     y-axis "Bytes" 0 --> 60000
-    bar [26902, 52011]
+    bar [27805, 52131]
 ```
 
 | | Rules | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
-| Unconditional (always loaded) | 6 | 26,902 | ~7,500 |
-| Path-scoped (loaded on demand) | 9 | 52,011 | ~14,400 |
+| Unconditional (always loaded) | 6 | 27,805 | ~7,700 |
+| Path-scoped (loaded on demand) | 9 | 52,131 | ~14,500 |
 
 The six that stay unconditional are the ones no glob can scope: `00-overview`, `agent-guardrails`,
 `task-tracking`, `conventional-commits` (governs commit *messages*, not files, so no `paths:` pattern
@@ -69,13 +69,13 @@ xychart-beta
     title "Read path: bytes pulled into context per bootstrap"
     x-axis ["project-bootstrap (before)", "harness-bootstrap (after)"]
     y-axis "Bytes" 0 --> 250000
-    bar [234196, 128072]
+    bar [234196, 129638]
 ```
 
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 10 | 128,072 | ~35,600 |
+| harness-bootstrap | 10 | 129,638 | ~36,000 |
 | **Reduction** | **-58%** | **-45%** | **-45%** |
 
 ## Goal 3 - Safe writes

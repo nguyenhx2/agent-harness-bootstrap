@@ -133,7 +133,7 @@ prompt stop being the interface."*
 
 | Skill | What it produces | The problem it retires |
 |---|---|---|
-| **`spec-builder`** | The input an AI can understand: a 13-section spec set under `docs/specs/`, stable IDs, acceptance criteria, a data model, mandatory security NFRs | The AI is guessing what to build |
+| **`spec-builder`** | The input an AI can understand: a selective spec set under `docs/specs/` (6 core sections always, up to 9 optional), stable IDs, acceptance criteria, a data model, mandatory security NFRs | The AI is guessing what to build |
 | **`harness-bootstrap`** | The harness the AI runs inside: `.claude/` with agents, rules, hooks, a deny list, plus a task board | Nothing constrains what it does, nothing survives when it forgets |
 
 **Why "tailored" is the load-bearing word:**
@@ -285,8 +285,8 @@ shape behaviour; they do not enforce it.
 
 ### The strongest claim in the talk
 
-`eval/guardrail_eval.py` scaffolds a real harness and fires **25 known-bad and known-good payloads**
-at it: **11 must-block, 14 must-allow, 33/33 correct.**
+`eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
+at it: **15 must-block, 25 must-allow, 68/68 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -331,7 +331,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 > **The default roster costs 32% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 15 rules are path-scoped, keeping **66% of rule content out of the
+Context is the other lever: 9 of 15 rules are path-scoped, keeping **65% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -370,7 +370,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
    - `git commit` on `main` → blocked, with the hook's message
    - Edit an Accepted ADR → blocked
 6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **33/33** in seconds. Say it: *"No model was consulted. These are exit codes."*
+   **68/68** in seconds. Say it: *"No model was consulted. These are exit codes."*
 7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
    session and watch it pick up mid-task.
 
@@ -389,7 +389,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **33/33** (11 blocked, 14 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **68/68** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **5/5** | `port.py --self-test` |
 
@@ -397,17 +397,17 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **107,311** | **-45%** |
-| Read path (files read) | 24 | **9** | **-58%** |
+| Read path (bytes pulled into context) | 234,196 | **129,638** | **-45%** |
+| Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **13,881** | **-85%** |
 
 ### Session tax (paid on every request, of every agent, forever)
 
 | | Rules | Bytes |
 |---|---:|---:|
-| Unconditional (always loaded) | 6 | 25,667 |
-| Path-scoped (on demand) | 9 | 51,785 |
-| **Kept out of the default session** | | **66%** |
+| Unconditional (always loaded) | 6 | 27,805 |
+| Path-scoped (on demand) | 9 | 52,131 |
+| **Kept out of the default session** | | **65%** |
 
 ### Cost per feature (modelled)
 
@@ -504,12 +504,12 @@ prompt problem is the part the audience has not heard before.
 
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
-- **15** agents (+1 dev-agent template), **15** rules, **20** commands, **8** hooks
-- **6** rules unconditional, **9** path-scoped → **66%** of rule content stays out of session
-- Always-RAM rules **25,667 bytes**; path-scoped **51,785 bytes**
-- Read path **-45%** (234,196 → 107,311 bytes), files read **-58%** (24 → 9)
+- **16** agents (+1 dev-agent template), **15** rules, **22** commands, **9** hooks
+- **6** rules unconditional, **9** path-scoped → **65%** of rule content stays out of session
+- Always-RAM rules **27,805 bytes**; path-scoped **52,131 bytes**
+- Read path **-45%** (234,196 → 129,638 bytes), files read **-58%** (24 → 10)
 - Write path **-85%** (95,064 → 13,881 bytes)
-- Guardrail eval **33/33** (11 must-block, 14 must-allow), model-independent
+- Guardrail eval **68/68** (15 must-block, 25 must-allow), model-independent
 - Port adapter self-test **5/5**
 - Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
 - Scaffold **~0.2s**, 73 paths, idempotent on re-run

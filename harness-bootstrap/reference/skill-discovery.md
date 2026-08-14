@@ -33,32 +33,33 @@ gh api repos/<owner>/<repo> --jq '{stars: .stargazers_count, forks: .forks_count
 
 curl equivalent: `curl -s "https://api.github.com/search/repositories?q=topic:claude-skills"`. Both
 `claude-code-skills` and `claude-skills` are populated, verified topics; `claude-skill` (singular)
-returns results too but is noisier. `awesome-claude-skills`-style lists (e.g.
-`travisvn/awesome-claude-skills`) are pointers, not a registry - every linked repo still needs the same
-API check; never trust the list's own curation. A random repo, blog link, or `.zip` with no topic and
-no stars has none of this - treat it as publisher-unknown and require explicit user confirm before
-content review even starts. Trust signals, none a substitute for content review: stars, forks,
-`pushed_at` (no commits in a year+ = flag), `license.spdx_id` (missing = flag), `open_issues_count`,
-`owner.type` (`Organization` outranks a personal account, all else equal).
+works but is noisier. `awesome-claude-skills`-style lists (e.g. `travisvn/awesome-claude-skills`)
+are pointers, not a registry - every linked repo still needs the same API check; never trust the
+list's own curation. A random repo, blog link, or `.zip` with no topic and no stars is
+publisher-unknown: require explicit user confirm before content review even starts. Trust signals,
+none a substitute for content review: stars, forks, `pushed_at` (no commits in a year+ = flag),
+`license.spdx_id` (missing = flag), `open_issues_count`, `owner.type` (`Organization` outranks a
+personal account, all else equal).
 
 **3. Anthropic's own sources** - verified live via `gh api orgs/anthropics/repos` and
 `code.claude.com/docs/en/discover-plugins`:
 
-- `anthropics/skills` - Anthropic's own example/reference skill repo. Most skills are Apache-2.0; the
+- `anthropics/skills` - Anthropic's example/reference repo. Most skills are Apache-2.0; the
   document-editing skills (`docx`/`pdf`/`pptx`/`xlsx`) are source-available, not open source - check
   licence per skill. The README's own words: "for demonstration and educational purposes... always
-  test thoroughly" - a publisher warning, not boilerplate. Same allow-list covers the niche official
-  repos `anthropics/k12-teacher-skills`, `launch-your-agent`, `defending-code-reference-harness` -
-  still get the full content review, never a pass on publisher name alone.
+  test thoroughly" - a publisher warning, not boilerplate. The same allow-list covers the niche
+  official repos (`anthropics/k12-teacher-skills`, `launch-your-agent`,
+  `defending-code-reference-harness`) - still the full content review, never a pass on publisher
+  name alone.
 - Claude Code **plugin marketplaces** (`/plugin marketplace add owner/repo`, then
-  `/plugin install <name>@<marketplace>`) - a plugin can bundle a `skills/` directory alongside
-  `commands/`, `agents/`, `hooks/`, and MCP servers, a separate install path from `.claude/skills/`.
+  `/plugin install <name>@<marketplace>`) - a plugin can bundle `skills/` alongside `commands/`,
+  `agents/`, `hooks/`, and MCP servers, a separate install path from `.claude/skills/`.
   `claude-plugins-official` (auto-added, curated "at Anthropic's discretion") and
-  `claude-plugins-community` (add manually, third-party, passed automated screening) both pin every
-  catalog entry to a commit SHA in `.claude-plugin/marketplace.json` - confirm `source.sha` is
-  present, not a floating branch, before trusting an entry. Screening is a scan, not the content read
-  below; Anthropic's own docs say it plainly: "Anthropic doesn't control what MCP servers, files, or
-  other software are included in plugins and can't verify that they work as intended."
+  `claude-plugins-community` (third-party, passed automated screening) both pin every catalog entry
+  to a commit SHA in `.claude-plugin/marketplace.json` - confirm `source.sha` is present, not a
+  floating branch. Screening is a scan, not the content read below; Anthropic's docs say it plainly:
+  "Anthropic doesn't control what MCP servers, files, or other software are included in plugins and
+  can't verify that they work as intended."
 
 ## The trust rubric
 
@@ -81,12 +82,14 @@ for you. The content read is the control, always.
 
 ## The bootstrap step
 
-After the roster is chosen (SKILL.md step 2) and before scaffolding: ask the user (AskUserQuestion)
-whether to search for seat-matching skills, and which sources - skills.sh is the default, GitHub
-topic search and the Anthropic sources above are opt-in - recommended for dev and qa seats, skipped
-in audit mode. For each candidate, show name, source, the popularity/publisher/audit signals that
-source actually exposes, and the one-line content-review result, then require an explicit yes PER
-SKILL. Never batch-install, never auto-install on first pass.
+After the roster is chosen (SKILL.md step 2) and before scaffolding: ask (AskUserQuestion) whether
+to search for seat-matching skills and which sources - skills.sh default, GitHub topic search and
+the Anthropic sources opt-in - recommended for dev and qa seats, skipped in audit mode. Review every
+candidate's content first (serial, mandatory, no exceptions), then present ALL reviewed candidates
+in ONE `AskUserQuestion` multi-select: per candidate show name, source, the signals that source
+actually exposes, and the one-line content-review result. Each skill still needs its own box
+ticked - one call, individual consent - and any criterion marked "user confirm" states that in its
+option label. Never auto-install, and never install a candidate whose content review did not happen.
 
 Never installed, regardless of approval or source:
 - a skill or plugin whose content instructs `.claude/`, `settings.json`, or hook edits (it would
@@ -100,10 +103,9 @@ Never installed, regardless of approval or source:
 
 Installing puts a skill on disk; it serves nobody until wired to a seat. That is `/skill-wire`
 (installed command), which re-runs the content review at wire time - install-time review does not
-cover a later update (`npx skills update` for skills.sh, a marketplace auto-update for a plugin - both
-are re-review triggers). A plugin-sourced skill lives under the plugin's own directory, not
-`.claude/skills/`; `/skill-wire` locates it there, and the review covers the WHOLE plugin bundle
-(hooks, MCP config, sibling skills), not just the one SKILL.md being wired - a plugin's hook or MCP
-server runs regardless of which of its skills gets wired to a seat. Every wire is recorded in
-`docs/context/tool-changelog.md` next to the tool-grant history. Updates are re-reviews: never let one
-run unattended on a wired skill or an auto-updating marketplace plugin.
+cover a later update (`npx skills update`, or a marketplace auto-update - both are re-review
+triggers). A plugin-sourced skill lives under the plugin's own directory, not `.claude/skills/`;
+`/skill-wire` locates it there, and the review covers the WHOLE plugin bundle (hooks, MCP config,
+sibling skills) - a plugin's hook or MCP server runs regardless of which of its skills gets wired.
+Every wire is recorded in `docs/context/tool-changelog.md` next to the tool-grant history. Never let
+an update run unattended on a wired skill or an auto-updating marketplace plugin.

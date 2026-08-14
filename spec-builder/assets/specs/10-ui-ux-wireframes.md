@@ -43,9 +43,9 @@ flowchart TD
 
 ## SCR-01 <screen name>
 
-**Actor**: `<role>` (see [06](06-access-control.md) for what they may do here)
+**Actor**: `<role>`{{#IF_ACCESS}} (see [06](06-access-control.md) for what they may do here){{/IF_ACCESS}}
 **Serves**: [FR-01](05-functional-requirements.md#fr-01)
-**Entities shown**: `<Entity>` (see [08](08-data-model.md))
+**Entities shown**: `<Entity>`{{#IF_DB}} (see [08](08-data-model.md)){{/IF_DB}}
 
 ### Layout
 
@@ -65,10 +65,10 @@ flowchart TD
 
 ### Elements
 
-| Element | Type | Bound to | Behaviour | Visible to |
-|---------|------|----------|-----------|------------|
-| <field name> | input / select / table / button | `<Entity>.<field>` | <validation, per [FR-01](05-functional-requirements.md#fr-01)> | `<role>` |
-| <primary action> | button | - | <what it does; is it irreversible?> | `<role>` |
+| Element | Type | Bound to | Behaviour | Visible to |{{#IF_DESIGN}} Component |{{/IF_DESIGN}}
+|---------|------|----------|-----------|------------|{{#IF_DESIGN}}-----------|{{/IF_DESIGN}}
+| <field name> | input / select / table / button | `<Entity>.<field>` | <validation, per [FR-01](05-functional-requirements.md#fr-01)> | `<role>` |{{#IF_DESIGN}} [DS-nn](14-design-system.md) |{{/IF_DESIGN}}
+| <primary action> | button | - | <what it does; is it irreversible?> | `<role>` |{{#IF_DESIGN}} [DS-nn](14-design-system.md) |{{/IF_DESIGN}}
 
 <!-- "Visible to" is not a substitute for authorisation - hiding a button is a convenience, and the
      server still enforces [NFR-SEC-05](07-non-functional-requirements.md#nfr-security). But the
@@ -144,4 +144,6 @@ flowchart TD
 
 - [ ] Every screen names at least one FR it serves.
 - [ ] Every FR with a user-facing surface names at least one screen.
-- [ ] Every screen's actor holds a role that exists in [06](06-access-control.md).
+- [ ] Every screen's actor holds a role that exists in {{#IF_ACCESS}}[06](06-access-control.md){{/IF_ACCESS}}{{^IF_ACCESS}}the roles table in [03](03-glossary.md){{/IF_ACCESS}}.
+{{#IF_DESIGN}}- [ ] Every reusable component named in an Elements table has a `DS-nn` row in [14](14-design-system.md).
+{{/IF_DESIGN}}
