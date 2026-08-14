@@ -33,7 +33,8 @@ def section(changelog: pathlib.Path, version: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
-def build(version: str) -> str:
+def build(version: str) -> str | None:
+    """The assembled body, or None when no skill has an entry for this version."""
     parts = []
     for skill in SKILLS:
         body = section(ROOT / skill / "CHANGELOG.md", version)
@@ -45,11 +46,7 @@ def build(version: str) -> str:
         parts.append(f"### `{skill}`\n\n{body}")
 
     if not parts:
-        return (
-            f"Release v{version}.\n\n"
-            "(No CHANGELOG entry found for this version in either skill - add one under "
-            f"`## [{version}] - YYYY-MM-DD` in the skill's CHANGELOG.md before releasing.)"
-        )
+        return None
 
     return "\n\n---\n\n".join(parts)
 
@@ -62,6 +59,16 @@ def main() -> int:
 
     version = args.version.lstrip("vV")
     notes = build(version)
+
+    if notes is None:
+        # Publishing a release whose body is a placeholder is exactly the failure this script
+        # replaced - fail loudly instead, so CI stops before `gh release create`.
+        print(
+            f"ERROR: no CHANGELOG entry for {version} in any skill - add one under "
+            f"`## [{version}] - YYYY-MM-DD` in each changed skill's CHANGELOG.md before releasing.",
+            file=sys.stderr,
+        )
+        return 1
 
     if args.out:
         pathlib.Path(args.out).write_text(notes + "\n", encoding="utf-8")

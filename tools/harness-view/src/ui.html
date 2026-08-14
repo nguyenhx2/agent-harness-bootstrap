@@ -210,18 +210,45 @@ function select(n) {
   const rows = [["id", n.id], ["type", n.type], ["file", n.file || "-"],
     ["disabled", n.disabled ? "yes" : "no"]];
   for (const [k, v] of Object.entries(n.meta || {})) rows.push([k, Array.isArray(v) ? v.join(", ") : String(v)]);
-  d.innerHTML = "<h3>" + label(n) + "</h3><table>" +
-    rows.map(([k, v]) => "<tr><td>" + k + "</td><td class='" + (k === "disabled" && v === "yes" ? "off" : "") + "'>" + v + "</td></tr>").join("") +
-    "</table>";
+  // built with DOM APIs, never innerHTML: meta values come from arbitrary
+  // repo frontmatter and must not become markup
+  d.textContent = "";
+  const h3 = document.createElement("h3");
+  h3.textContent = label(n);
+  d.append(h3);
+  const table = document.createElement("table");
+  for (const [k, v] of rows) {
+    const tr = document.createElement("tr");
+    const tdk = document.createElement("td");
+    tdk.textContent = k;
+    const tdv = document.createElement("td");
+    if (k === "disabled" && v === "yes") tdv.className = "off";
+    tdv.textContent = v;
+    tr.append(tdk, tdv);
+    table.append(tr);
+  }
+  d.append(table);
   if (["rule", "command", "hook"].includes(n.type)) {
     const b = document.createElement("button");
     b.className = "toggle-btn";
     b.textContent = n.disabled ? "Enable " + label(n) : "Disable " + label(n);
     b.onclick = async () => {
       const bare = n.id.split(":").slice(1).join(":");
-      const res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: n.type, name: bare, enable: !!n.disabled }) });
-      const txt = await res.text();
+      const payload = { kind: n.type, name: bare, enable: !!n.disabled };
+      let res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload) });
+      let txt = await res.text();
+      if (res.status === 409 && !payload.enable) {
+        // SOFT-protected: the server refused pending an explicit confirmation
+        if (window.confirm(txt + "
+
+Disable it anyway?")) {
+          payload.confirm_soft = true;
+          res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload) });
+          txt = await res.text();
+        }
+      }
       if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }
       else { d.classList.remove("open"); sel = null; await load(); }
       fit();

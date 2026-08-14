@@ -1,7 +1,7 @@
 ---
 name: spec-builder
 version: 1.7.0
-description: Build the requirements contract for a project - a selective set of numbered BA spec sections under docs/specs/ with stable IDs (FR/NFR/BR/UC/US/DS/DT), acceptance criteria, and grep-verifiable traceability. The core (overview, glossary, FRs, NFRs, revision history, index) always; stakeholders, business flows, access control, data model, integrations, UI wireframes, assumptions, feasibility, and a design-system appendix when selected. Do NOT use it to digest documents into a knowledge base, to build the .claude agent harness (that is harness-bootstrap), or to write code or ADRs. Works from any raw input - an idea, meeting notes, a transcript, a PRD, legacy docs, or a codebase - in the user's language. Use this WHENEVER the user wants requirements written, structured, or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して" - and their equivalents in any language. It never invents a requirement; anything unstated becomes a flagged open issue instead of a guess.
+description: Build the requirements contract for a project - a selective set of numbered BA spec sections under docs/specs/ with stable IDs (FR/NFR/BR/UC/US/DS/DT), acceptance criteria, and grep-verifiable traceability. The core (overview, glossary, FRs, NFRs, open issues, revision history, index) always; stakeholders, business flows, access control, data model, integrations, UI wireframes, feasibility, and a design-system appendix when selected. Do NOT use it to digest documents into a knowledge base, to build the .claude agent harness (that is harness-bootstrap), or to write code or ADRs. Works from any raw input - an idea, meeting notes, a transcript, a PRD, legacy docs, or a codebase - in the user's language. Use this WHENEVER the user wants requirements written, structured, or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して" - and their equivalents in any language. It never invents a requirement; anything unstated becomes a flagged open issue instead of a guess.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---
 
@@ -76,14 +76,16 @@ python scripts/scaffold.py --target <repo> --vars vars.json
     "PROJECT_PURPOSE": "one line, the user's language",
     "DOC_OWNER": "..."
   },
-  "flags": ["ai", "ui", "db", "flows", "access", "integration", "assumptions", "feasibility"]
+  "flags": ["ai", "ui", "db", "flows", "access", "integration", "feasibility"]
 }
 ```
 
 Two kinds of flags, all lowercase in `vars.json` (markers inside templates are UPPERCASE):
 
 - **Section flags** (from step 2): `stakeholders`, `flows`, `access`, `db` (08), `integration`,
-  `ui` (10), `assumptions`, `feasibility`, `design` (14). An unset flag skips the file.
+  `ui` (10), `feasibility`, `design` (14). An unset flag skips the file. Section 11 is core, not
+  flagged - it is where every `AS-nn`/`OI-nn` lives, and the never-invent rule needs that registry
+  in every render.
 - **Content flags**: `ai` (model consumes or produces content - switches on the AI/human boundary
   table in 05, the untrusted-content NFRs in 07, model feasibility in 12), and `ui`/`db` also gate
   conditional blocks inside other sections. Set only what is true.
@@ -174,7 +176,7 @@ unresolved `{{VAR}}`s, and `{{FR_LIST}}` is one of them - build it from 05 verba
 
 **Completeness**
 - [ ] Every SELECTED section exists with frontmatter and at least one filled block; the core is
-      always present (`README`, 01, 03, 05, 07, 13). Verify: list `docs/specs/`, compare against
+      always present (`README`, 01, 03, 05, 07, 11, 13). Verify: list `docs/specs/`, compare against
       the recorded selection from step 2; count includes any section that became a folder.
 - [ ] Any `AS-`/`OI-`/`CO-` ID anywhere implies section 11 exists and defines it. Verify:
       `grep -o` the three prefixes across `docs/specs/`; if found and 11 is absent, the gate fails.

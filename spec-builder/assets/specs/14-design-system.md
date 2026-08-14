@@ -12,8 +12,8 @@ tags: [specs, design, {{PROJECT_SLUG}}]
      wireframes in 10 stay structural, and the visual decisions live here instead - one home each. -->
 
 The visual contract for {{PROJECT_NAME}}: the tokens every screen consumes, the components screens
-are assembled from, and where the source of truth lives. Section [10](10-ui-ux-wireframes.md) says
-*what* is on a screen; this section says what it looks and behaves like when it gets there.
+are assembled from, and where the source of truth lives. {{#IF_UI}}Section [10](10-ui-ux-wireframes.md) says
+*what* is on a screen; this{{/IF_UI}}{{^IF_UI}}This{{/IF_UI}} section says what it looks and behaves like when it gets there.
 
 ## Source of truth
 
@@ -36,7 +36,7 @@ are assembled from, and where the source of truth lives. Section [10](10-ui-ux-w
 | ID | Token | Category | Value | Used for | Source |
 |----|-------|----------|-------|----------|--------|
 | DT-01 | `color.primary` | color | <hex/ref> | <primary actions, links> | <who decided / brand guide> |
-| DT-02 | `color.danger` | color | <hex/ref> | <destructive actions, per [10](10-ui-ux-wireframes.md)'s destructive-action rule> | <source> |
+| DT-02 | `color.danger` | color | <hex/ref> | <destructive actions{{#IF_UI}}, per [10](10-ui-ux-wireframes.md)'s destructive-action rule{{/IF_UI}}> | <source> |
 | DT-03 | `font.body` | typography | <family, size, line-height> | <all body text> | <source> |
 | DT-04 | `space.unit` | spacing | <px/rem base> | <the spacing scale multiplier> | <source> |
 | DT-05 | `radius.default` | radius | <px> | <inputs, cards, buttons> | <source> |
@@ -51,9 +51,9 @@ are assembled from, and where the source of truth lives. Section [10](10-ui-ux-w
 
 | ID | Component | Variants | States | Accessibility | Appears in |
 |----|-----------|----------|--------|---------------|------------|
-| DS-01 | <Button> | <primary / secondary / danger> | <default, hover, focus, disabled, loading> | <focus ring, min target size, per [NFR-USE-02](07-non-functional-requirements.md#nfr-usability)> | [SCR-01](10-ui-ux-wireframes.md) |
-| DS-02 | <Form field> | <text / select / date> | <default, error, disabled> | <label bound to input, error announced> | [SCR-01](10-ui-ux-wireframes.md) |
-| DS-03 | <Table> | <plain / selectable> | <empty, loading, error> | <header scope, keyboard navigation> | [SCR-02](10-ui-ux-wireframes.md) |
+| DS-01 | <Button> | <primary / secondary / danger> | <default, hover, focus, disabled, loading> | <focus ring, min target size, per [NFR-USE-02](07-non-functional-requirements.md#nfr-usability)> | {{#IF_UI}}[SCR-01](10-ui-ux-wireframes.md){{/IF_UI}}{{^IF_UI}}<where it appears>{{/IF_UI}} |
+| DS-02 | <Form field> | <text / select / date> | <default, error, disabled> | <label bound to input, error announced> | {{#IF_UI}}[SCR-01](10-ui-ux-wireframes.md){{/IF_UI}}{{^IF_UI}}<where it appears>{{/IF_UI}} |
+| DS-03 | <Table> | <plain / selectable> | <empty, loading, error> | <header scope, keyboard navigation> | {{#IF_UI}}[SCR-02](10-ui-ux-wireframes.md){{/IF_UI}}{{^IF_UI}}<where it appears>{{/IF_UI}} |
 
 ## Brand assets
 
@@ -86,6 +86,7 @@ are assembled from, and where the source of truth lives. Section [10](10-ui-ux-w
 
 ## Coverage check
 
-- [ ] Every component named in a screen's Elements table in 10 has a `DS-nn` row here.
+{{#IF_UI}}- [ ] Every component named in a screen's Elements table in 10 has a `DS-nn` row here.
+{{/IF_UI}}
 - [ ] Every `DT-nn` and `DS-nn` cell is filled or carries `<unknown - OI-nn>`.
 - [ ] Every NFR-USE row that constrains the UI appears in the accessibility mapping.

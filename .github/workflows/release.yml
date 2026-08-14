@@ -36,7 +36,10 @@ jobs:
         id: v
         run: |
           if [ -n "${{ github.event.inputs.version }}" ]; then
+            # Strip a leading v here too - a "v1.8.0" dispatch input would otherwise produce
+            # artifact names like harness-bootstrap-vv1.8.0.zip and fail the VERSION assert.
             V="${{ github.event.inputs.version }}"
+            V="${V#v}"
           else
             V="${GITHUB_REF_NAME#v}"
           fi
@@ -54,13 +57,16 @@ jobs:
       - name: Gate - preflight (semver, CHANGELOG section, manifest)
         run: python scripts/package.py --version "${{ steps.v.outputs.version }}" --check
 
+      - name: Gate - per-skill CHANGELOGs valid and carry this version
+        run: python scripts/validate_release.py "${{ steps.v.outputs.version }}"
+
       # --- build ---
 
       - name: Build artifacts
         run: python scripts/package.py --version "${{ steps.v.outputs.version }}"
 
       # Every release carries the eval and benchmark output for the exact commit it was cut from,
-      # so the "15/15" and the numbers are provable per version, not just at head. package.py wipes
+      # so the "40/40" and the numbers are provable per version, not just at head. package.py wipes
       # dist/ on build, so these are written AFTER it. They ship as release assets, not installables.
       - name: Capture the eval and benchmark for this release
         run: |

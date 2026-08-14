@@ -16,13 +16,17 @@ hand.
    - Write for the person reading the GitHub release page, not the PR reviewer: what changed and
      why it matters to them, not the commit subject line. No em-dashes, plain hyphens.
    - Also add a `## vX.Y.Z` section to the repo-root `CHANGELOG.md` - a separate, pre-existing
-     narrative changelog that `scripts/package.py --check` still gates on independently.
+     narrative changelog that `scripts/package.py --version X.Y.Z --check` still gates on
+     independently.
 3. **Validate.**
    ```bash
-   py -3.13 scripts/validate_release.py
+   py -3.13 scripts/validate_release.py X.Y.Z
    ```
-   Fails on a missing CHANGELOG, a malformed or out-of-order entry, a skill whose newest CHANGELOG
-   version does not match its own `SKILL.md`, or the two skills disagreeing on the version.
+   Fails on a missing CHANGELOG, a malformed, duplicate, or out-of-order entry, a skill whose
+   newest CHANGELOG version does not match its own `SKILL.md`, the two skills disagreeing on the
+   version, or (with the version argument) a skill that has no entry for the version being
+   released. Without the argument it runs the structure and sync checks only - that form runs in
+   CI on every push.
 4. **Tag.**
    ```bash
    git tag -a vX.Y.Z -m "vX.Y.Z"
@@ -37,14 +41,14 @@ hand.
 
 | Rule | Enforced by |
 | --- | --- |
-| Every skill has a CHANGELOG entry for the release version | `scripts/validate_release.py` |
+| Every skill has a CHANGELOG entry for the release version | `scripts/validate_release.py X.Y.Z` (release-job gate) and `scripts/release_notes.py` (exits non-zero when no skill has one) |
 | Entries are `## [X.Y.Z] - YYYY-MM-DD`, newest-first | `scripts/validate_release.py` |
 | A skill's CHANGELOG version matches its own `SKILL.md` `version:` | `scripts/validate_release.py` |
 | Both skills agree on the repo version | `scripts/validate_release.py` |
 | The sync check above runs on every push, not just at release time | `.github/workflows/eval.yml` (`guardrails` job) |
 | The release body is assembled from the CHANGELOGs, not hand-typed | `scripts/release_notes.py`, called from `.github/workflows/release.yml` |
-| The tag's `SKILL.md` version matches the tag itself | `scripts/package.py --check` (`release` job gate) |
-| The repo-root `CHANGELOG.md` has a section for the release version | `scripts/package.py --check` (unchanged, separate from the per-skill files above) |
+| The tag's `SKILL.md` version matches the tag itself | `scripts/package.py --version X.Y.Z --check` (`release` job gate) |
+| The repo-root `CHANGELOG.md` has a section for the release version | `scripts/package.py --version X.Y.Z --check` (unchanged, separate from the per-skill files above) |
 | Every archive carries a `VERSION` file matching the tag | `.github/workflows/release.yml` ("Assert VERSION is inside every archive") |
 | A re-run of the release job does not fail on an existing release | `gh release edit` + `gh release upload --clobber` in `release.yml` |
 | No em-dashes in any generated or written content | convention - checked by review, not tooling |

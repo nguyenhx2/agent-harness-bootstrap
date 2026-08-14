@@ -107,7 +107,7 @@ stateDiagram-v2
 | Store | <engine, or "undecided - [OI-nn](11-assumptions-constraints.md)"> |
 | Migration path | <existing data to migrate? volume? source system?> |
 | Soft delete | <does the domain need history, or is a delete a delete?> |
-| Auditing | <which entities keep a change history, per [06](06-access-control.md)> |
+| Auditing | <which entities keep a change history{{#IF_ACCESS}}, per [06](06-access-control.md){{/IF_ACCESS}}> |
 {{/IF_DB}}
 
 ## Data sources and migration

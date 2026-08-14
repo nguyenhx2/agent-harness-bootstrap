@@ -54,11 +54,28 @@ It uses the same contract as the harness's `/harness-toggle` command:
   no dates.
 
 Safety model: **agents are never toggleable** (roster changes go through
-`/harness-update`), and HARD-protected controls - the `protect-secrets` and
+`/harness-update`). HARD-protected controls - the `protect-secrets` and
 `guard-agent-spawn` hooks, the `security-privacy` and `agent-guardrails` rules,
-and the `/review-changes` command - are refused here with HTTP 403. Disabling
+and the `/review-changes` command - are refused here with HTTP 403; disabling
 one of those requires the `/harness-toggle` command, where the user must type
-the confirmation phrase themselves.
+the confirmation phrase themselves. SOFT-protected controls - the
+`guard-main-commit`, `check-commit-msg` and `protect-adr` hooks and the
+`ai-governance` rule - refuse with HTTP 409 until the request carries
+`confirm_soft: true`; the UI asks for that confirmation explicitly.
+
+### The endpoint
+
+`POST /toggle` with a JSON body:
+
+```json
+{"kind": "rule|command|hook", "name": "<bare name>", "enable": false,
+ "reason": "optional", "confirm_soft": false}
+```
+
+The endpoint only accepts same-origin browser requests: a request with a
+foreign `Origin` or a `Sec-Fetch-Site` other than `same-origin`/`none`, or
+without `Content-Type: application/json`, is refused with 403. This stops a
+page open in another tab from silently mutating `.claude/` while `serve` runs.
 
 ## Development
 

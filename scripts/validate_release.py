@@ -9,9 +9,14 @@ Checks (all cheap, all deterministic):
   5. both skills' SKILL.md frontmatter agree on the version - they are released together as one
      repo version, so one skill bumped without the other is a half-finished release
 
+With a version argument, additionally:
+  6. every skill has an entry for exactly that version - the release gate CI runs before
+     publishing, so a tag can never ship a placeholder body
+
 Exit 0 = clean (prints one summary line). Exit 1 = problems (printed one per line).
 
-    py -3.13 scripts/validate_release.py
+    py -3.13 scripts/validate_release.py           # structure + sync only
+    py -3.13 scripts/validate_release.py 1.8.0     # plus: both skills carry a 1.8.0 entry
 """
 from __future__ import annotations
 
@@ -23,6 +28,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILLS = ("harness-bootstrap", "spec-builder")
 
 ENTRY = re.compile(r"^##\s*\[(\d+\.\d+\.\d+)\]\s*-\s*(\d{4}-\d{2}-\d{2})\s*$", re.M)
+# Any bracketed version heading, valid or not - the delta against ENTRY is a malformed heading
+# (usually a bad or missing date) that release_notes.py would happily extract; catch it here with
+# a clear message instead of letting the two scripts disagree about what counts as an entry.
+LOOSE_ENTRY = re.compile(r"^##\s*\[(\d+\.\d+\.\d+)\][^\n]*$", re.M)
 
 
 def ver_tuple(v: str) -> tuple[int, int, int]:
@@ -38,6 +47,11 @@ def skill_md_version(path: pathlib.Path) -> str | None:
 
 
 def main() -> int:
+    required = sys.argv[1].lstrip("vV") if len(sys.argv) > 1 else None
+    if required and not re.fullmatch(r"\d+\.\d+\.\d+", required):
+        print(f"usage error: '{sys.argv[1]}' is not a semver version (X.Y.Z)")
+        return 1
+
     errs: list[str] = []
     changelog_versions: dict[str, str] = {}
     skill_md_versions: dict[str, str] = {}
@@ -60,7 +74,22 @@ def main() -> int:
             errs.append(f"{skill}/CHANGELOG.md is missing")
             continue
 
-        entries = ENTRY.findall(changelog.read_text(encoding="utf-8"))
+        text = changelog.read_text(encoding="utf-8")
+        entries = ENTRY.findall(text)
+        loose = LOOSE_ENTRY.findall(text)
+
+        strict_versions = [v for v, _ in entries]
+        for v in loose:
+            if v not in strict_versions:
+                errs.append(f"{skill}/CHANGELOG.md: heading for {v} is malformed - the required "
+                            "form is '## [X.Y.Z] - YYYY-MM-DD'")
+        seen: set[str] = set()
+        for v in strict_versions:
+            if v in seen:
+                errs.append(f"{skill}/CHANGELOG.md: duplicate entry for {v} - merge the two "
+                            "sections, release notes would silently use only the first")
+            seen.add(v)
+
         if not entries:
             errs.append(f"{skill}/CHANGELOG.md: no '## [X.Y.Z] - YYYY-MM-DD' entry found")
             continue
@@ -71,6 +100,10 @@ def main() -> int:
             errs.append(f"{skill}/CHANGELOG.md: entries are not newest-first")
 
         changelog_versions[skill] = newest_version
+
+        if required and required not in strict_versions:
+            errs.append(f"{skill}/CHANGELOG.md: no entry for {required} - every skill needs one "
+                        "for the version being released (a no-op note is fine)")
 
         skill_v = skill_md_versions.get(skill)
         if skill_v is not None and skill_v != newest_version:

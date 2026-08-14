@@ -19,23 +19,23 @@ invented - anything not stated by a stakeholder or clearly implied by source mat
 | # | Section | What it answers |
 |---|---------|-----------------|
 | 01 | [Overview](01-overview.md) | Why the system exists, what is in and out of scope, how success is measured |
-| 02 | [Stakeholders](02-stakeholders.md) | Who cares, who decides, who is affected |
-| 03 | [Glossary](03-glossary.md) | The domain vocabulary - one term, one meaning |
-| 04 | [Business flows](04-business-flows.md) | How work moves through the system end to end |
-| 05 | [Functional requirements](05-functional-requirements.md) | What the system must do (FR-nn), plus use cases and user stories |
-| 06 | [Access control](06-access-control.md) | Roles and the permission matrix |
-| 07 | [Non-functional requirements](07-non-functional-requirements.md) | Performance, security, reliability, usability, scalability |
-| 08 | [Data model](08-data-model.md) | Entities, relationships, and the data dictionary |
-| 09 | [Integration interface](09-integration-interface.md) | External systems, protocols, and auth |
-| 10 | [UI/UX wireframes](10-ui-ux-wireframes.md) | Screens, and the requirements each one serves |
-| 11 | [Assumptions and constraints](11-assumptions-constraints.md) | What we assumed, what binds us, what is still open |
-| 12 | [Technical feasibility](12-technical-feasibility.md) | Can each requirement actually be built, and at what risk |
-| 13 | [Revision history](13-revision-history.md) | What changed, when, and by whom |
-| 14 | [Design system](14-design-system.md) | Optional appendix - tokens, components, and brand assets |
-
-Not every project carries every section: the core (README, 01, 03, 05, 07, 13) always exists;
-the rest were selected against the input material when this set was created. A row above whose
-file is absent was deliberately not selected - it can be added later by re-running the scaffolder.
+{{#IF_STAKEHOLDERS}}| 02 | [Stakeholders](02-stakeholders.md) | Who cares, who decides, who is affected |
+{{/IF_STAKEHOLDERS}}| 03 | [Glossary](03-glossary.md) | The domain vocabulary - one term, one meaning |
+{{#IF_FLOWS}}| 04 | [Business flows](04-business-flows.md) | How work moves through the system end to end |
+{{/IF_FLOWS}}| 05 | [Functional requirements](05-functional-requirements.md) | What the system must do (FR-nn), plus use cases and user stories |
+{{#IF_ACCESS}}| 06 | [Access control](06-access-control.md) | Roles and the permission matrix |
+{{/IF_ACCESS}}| 07 | [Non-functional requirements](07-non-functional-requirements.md) | Performance, security, reliability, usability, scalability |
+{{#IF_DB}}| 08 | [Data model](08-data-model.md) | Entities, relationships, and the data dictionary |
+{{/IF_DB}}{{#IF_INTEGRATION}}| 09 | [Integration interface](09-integration-interface.md) | External systems, protocols, and auth |
+{{/IF_INTEGRATION}}{{#IF_UI}}| 10 | [UI/UX wireframes](10-ui-ux-wireframes.md) | Screens, and the requirements each one serves |
+{{/IF_UI}}| 11 | [Assumptions and constraints](11-assumptions-constraints.md) | What we assumed, what binds us, what is still open |
+{{#IF_FEASIBILITY}}| 12 | [Technical feasibility](12-technical-feasibility.md) | Can each requirement actually be built, and at what risk |
+{{/IF_FEASIBILITY}}| 13 | [Revision history](13-revision-history.md) | What changed, when, and by whom |
+{{#IF_DESIGN}}| 14 | [Design system](14-design-system.md) | Optional appendix - tokens, components, and brand assets |
+{{/IF_DESIGN}}
+Not every project carries every section: the core (README, 01, 03, 05, 07, 11, 13) always exists;
+the rest were selected against the input material when this set was created. A number missing from
+the table above was deliberately not selected - it can be added later by re-running the scaffolder.
 A section that outgrew one file is a folder of the same name with a `README.md` index inside.
 
 ## Reading guide
@@ -80,12 +80,11 @@ anchored wherever the target carries one:
 flowchart LR
   US["User story (05)"] --> FR["FR-nn (05)"]
   UC["Use case (05)"] --> FR
-  FR --> SCR["Screen (10)"]
-  FR --> FEAS["Feasibility row (12)"]
-  FR --> DATA["Entity (08)"]
+  FR --> HOME["Its row in each selected section - screen, entity, feasibility"]
 ```
 
-If an FR is missing from 12, or a screen serves no FR, the set is broken - fix it before review.
+When 12 is selected, an FR missing from it is a broken set; when 10 is selected, a screen serving
+no FR is the same defect. Fix either before review.
 
 <!-- Authoring: keep this README last-updated by hand. Do not add a generated-on date; these files
      are prompt-cache prefix content and one volatile byte cold-misses the cache downstream. -->

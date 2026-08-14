@@ -22,7 +22,13 @@ const ENFORCES: &[(&str, &str)] = &[
     ("specs-reminder", "docs-workflow"),
 ];
 
-const REVIEWERS: &[&str] = &["code-reviewer", "reviewer", "security-reviewer", "spec-guardian"];
+const REVIEWERS: &[&str] = &[
+    "code-reviewer",
+    "merge-manager",
+    "reviewer",
+    "security-reviewer",
+    "spec-guardian",
+];
 
 
 /// Minimal line-based YAML-subset frontmatter parser: `key: value` pairs and
@@ -151,15 +157,37 @@ fn hook_name_from_command(cmd: &str) -> Option<String> {
     }
 }
 
+/// "<kind>/<name>" keys listed in .claude/disabled.json - OR-ed into the
+/// disabled flag for rules and hooks, like harness-graph.py.
+fn disabled_entries(claude: &Path) -> std::collections::BTreeSet<String> {
+    let mut out = std::collections::BTreeSet::new();
+    if let Ok(txt) = fs::read_to_string(claude.join("disabled.json")) {
+        if let Ok(v) = serde_json::from_str::<Value>(&txt) {
+            for e in v.get("disabled").and_then(|d| d.as_array()).cloned().unwrap_or_default() {
+                if let (Some(k), Some(n)) = (
+                    e.get("kind").and_then(|x| x.as_str()),
+                    e.get("name").and_then(|x| x.as_str()),
+                ) {
+                    out.insert(format!("{k}/{n}"));
+                }
+            }
+        }
+    }
+    out
+}
+
 pub fn scan(root: &Path) -> Value {
     let claude = root.join(".claude");
     let mut nodes: BTreeMap<String, Value> = BTreeMap::new();
     let mut edges: Vec<(String, String, String, i64)> = Vec::new();
+    let listed = disabled_entries(&claude);
 
-    // --- agents (never toggleable, so no disabled variant) ---
+    // --- agents: never toggleable, but a file parked under disabled/agents
+    // still deserves visibility (harness-graph.py scans both trees) ---
     let mut agent_names: Vec<String> = Vec::new();
-    for name in md_stems(&claude.join("agents")) {
-        let path = claude.join("agents").join(format!("{name}.md"));
+    for (dir_tail, dis) in [(".claude/agents", false), (".claude/disabled/agents", true)] {
+        for name in md_stems(&root.join(dir_tail)) {
+        let path = root.join(dir_tail).join(format!("{name}.md"));
         let text = fs::read_to_string(&path).unwrap_or_default();
         let fm = frontmatter(&text);
         let mut meta = Map::new();
@@ -193,17 +221,25 @@ pub fn scan(root: &Path) -> Value {
                 "id": format!("agent:{name}"),
                 "type": "agent",
                 "label": name,
-                "file": rel(root, &format!(".claude/agents/{name}.md")),
-                "disabled": false,
+                "file": rel(root, &format!("{dir_tail}/{name}.md")),
+                "disabled": dis,
                 "meta": Value::Object(meta),
             }),
         );
-        agent_names.push(name);
+        if !dis {
+            agent_names.push(name);
+        }
+        }
     }
 
     // --- rules, commands: active tree plus the disabled/ quarantine tree ---
+    // gating_rules: unconditional rules in the ACTIVE tree - only these emit
+    // gates edges (harness-graph.py: `if not dis and not scoped`). Same for
+    // active_commands and their invokes edges.
+    let mut gating_rules: Vec<String> = Vec::new();
+    let mut active_commands: Vec<String> = Vec::new();
     for (kind, sub, prefix) in [("rule", "rules", "rule"), ("command", "commands", "cmd")] {
-        for (dir_tail, disabled) in [
+        for (dir_tail, dir_disabled) in [
             (format!(".claude/{sub}"), false),
             (format!(".claude/disabled/{sub}"), true),
         ] {
@@ -215,6 +251,10 @@ pub fn scan(root: &Path) -> Value {
                 } else {
                     name.clone()
                 };
+                // disabled.json ORs into the flag for rules (and hooks below);
+                // commands follow the directory only, like harness-graph.py
+                let disabled = dir_disabled
+                    || (kind == "rule" && listed.contains(&format!("rule/{name}")));
                 let mut node = Map::new();
                 node.insert("id".into(), json!(id));
                 node.insert("type".into(), json!(kind));
@@ -225,11 +265,14 @@ pub fn scan(root: &Path) -> Value {
                     let text = fs::read_to_string(root.join(&file)).unwrap_or_default();
                     let fm = frontmatter(&text);
                     let mut meta = Map::new();
+                    let mut scoped = false;
                     match fm.get("paths") {
                         Some(v) => {
-                            let paths = as_list(v);
-                            meta.insert("scoped".into(), json!(!paths.is_empty()));
-                            if !paths.is_empty() {
+                            let mut paths = as_list(v);
+                            paths.truncate(8);
+                            scoped = !paths.is_empty();
+                            meta.insert("scoped".into(), json!(scoped));
+                            if scoped {
                                 meta.insert(
                                     "paths".into(),
                                     Value::Array(paths.into_iter().map(Value::String).collect()),
@@ -241,14 +284,22 @@ pub fn scan(root: &Path) -> Value {
                         }
                     }
                     node.insert("meta".into(), Value::Object(meta));
+                    if !dir_disabled && !scoped {
+                        gating_rules.push(id.clone());
+                    }
+                } else if !dir_disabled {
+                    active_commands.push(id.clone());
                 }
                 nodes.insert(id, Value::Object(node));
             }
         }
     }
 
-    // --- hooks: one node per name, across both flavors and the quarantine ---
-    let mut hook_files: BTreeMap<String, (String, bool)> = BTreeMap::new();
+    // --- hooks: one node per name, across both flavors and the quarantine.
+    // A hook counts as disabled only when ALL its flavor files are quarantined;
+    // the representative file is the .sh if present, an active flavor beating a
+    // disabled one at equal extension (harness-graph.py's tie-break). ---
+    let mut hook_variants: BTreeMap<String, Vec<(String, bool)>> = BTreeMap::new();
     for (dir_tail, disabled) in [
         (".claude/hooks".to_string(), false),
         (".claude/disabled/hooks".to_string(), true),
@@ -260,25 +311,21 @@ pub fn scan(root: &Path) -> Value {
                 .collect();
             entries.sort();
             for fname in entries {
-                let (stem, is_hook) = match fname.rsplit_once('.') {
-                    Some((s, "sh")) => (s.to_string(), true),
-                    Some((s, "ps1")) => (s.to_string(), true),
-                    _ => (String::new(), false),
+                let stem = match fname.rsplit_once('.') {
+                    Some((s, "sh")) | Some((s, "ps1")) => s.to_string(),
+                    _ => continue,
                 };
-                if !is_hook {
-                    continue;
-                }
                 let file = format!("{dir_tail}/{fname}");
-                // prefer the .sh flavor as the representative file
-                let e = hook_files.entry(stem).or_insert((file.clone(), disabled));
-                if e.0.ends_with(".ps1") && file.ends_with(".sh") {
-                    e.0 = file;
-                }
-                if disabled {
-                    e.1 = true;
-                }
+                hook_variants.entry(stem).or_default().push((file, disabled));
             }
         }
+    }
+    let mut hook_files: BTreeMap<String, (String, bool)> = BTreeMap::new();
+    for (stem, mut files) in hook_variants {
+        let all_disabled = files.iter().all(|(_, d)| *d);
+        files.sort_by_key(|(f, d)| (!f.ends_with(".sh"), *d, f.clone()));
+        let dis = all_disabled || listed.contains(&format!("hook/{stem}"));
+        hook_files.insert(stem, (files[0].0.clone(), dis));
     }
 
     // --- settings.json: which hooks are registered, and under what ---
@@ -445,7 +492,7 @@ pub fn scan(root: &Path) -> Value {
         }
     }
 
-    // --- tasks (capped, like the Python twin) ---
+    // --- tasks: every TASK-*.md under docs/tasks/** is a node by contract ---
     let mut task_files: Vec<(String, String)> = Vec::new();
     fn walk_tasks(dir: &Path, out: &mut Vec<(String, String)>, root: &Path) {
         if let Ok(rd) = fs::read_dir(dir) {
@@ -493,18 +540,7 @@ pub fn scan(root: &Path) -> Value {
             edges.push((format!("hook:{hook}"), format!("rule:{rule}"), "enforces".into(), 0));
         }
     }
-    let unconditional_rules: Vec<String> = nodes
-        .values()
-        .filter(|n| {
-            n.get("type").and_then(|t| t.as_str()) == Some("rule")
-                && n.get("meta")
-                    .and_then(|m| m.get("scoped"))
-                    .and_then(|s| s.as_bool())
-                    == Some(false)
-        })
-        .filter_map(|n| n.get("id").and_then(|i| i.as_str()).map(|s| s.to_string()))
-        .collect();
-    for rule_id in &unconditional_rules {
+    for rule_id in &gating_rules {
         for agent in &agent_names {
             edges.push((rule_id.clone(), format!("agent:{agent}"), "gates".into(), 0));
         }
@@ -517,18 +553,23 @@ pub fn scan(root: &Path) -> Value {
         }
     }
     for r in REVIEWERS {
-        if nodes.contains_key(&format!("agent:{r}")) {
+        // active seats only - a parked agent file reviews nothing
+        if agent_names.iter().any(|a| a == r) {
             edges.push((format!("agent:{r}"), "gate:merge-request".into(), "reviews".into(), 0));
         }
     }
     edges.push(("gate:merge-request".into(), "human".into(), "escalates".into(), 0));
+    // invokes edges only for active commands; runs edges for every command
+    // node including quarantined ones (harness-graph.py emits runs for both)
+    for cmd_id in &active_commands {
+        edges.push(("human".into(), cmd_id.clone(), "invokes".into(), 0));
+    }
     let command_ids: Vec<String> = nodes
         .values()
         .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("command"))
         .filter_map(|n| n.get("id").and_then(|i| i.as_str()).map(|s| s.to_string()))
         .collect();
     for cmd_id in &command_ids {
-        edges.push(("human".into(), cmd_id.clone(), "invokes".into(), 0));
         if let Some(file) = nodes
             .get(cmd_id)
             .and_then(|n| n.get("file"))
@@ -571,10 +612,29 @@ pub fn scan(root: &Path) -> Value {
     json!({"version": 1, "nodes": node_list, "edges": edge_list})
 }
 
-/// Canonical serialization: sorted keys (serde_json's default map is ordered),
-/// two-space indent, trailing newline, no timestamps.
+/// Recursively rebuild a Value with object keys in sorted order. serde_json is
+/// compiled with preserve_order (settings.json needs its key order kept), so
+/// canonical outputs must sort explicitly.
+pub fn sort_keys_deep(v: &Value) -> Value {
+    match v {
+        Value::Object(m) => {
+            let mut keys: Vec<&String> = m.keys().collect();
+            keys.sort();
+            let mut out = Map::new();
+            for k in keys {
+                out.insert(k.clone(), sort_keys_deep(&m[k]));
+            }
+            Value::Object(out)
+        }
+        Value::Array(a) => Value::Array(a.iter().map(sort_keys_deep).collect()),
+        _ => v.clone(),
+    }
+}
+
+/// Canonical serialization: sorted keys at every depth, two-space indent,
+/// trailing newline, no timestamps.
 pub fn to_canonical_json(v: &Value) -> String {
-    let mut s = serde_json::to_string_pretty(v).unwrap_or_else(|_| "{}".into());
+    let mut s = serde_json::to_string_pretty(&sort_keys_deep(v)).unwrap_or_else(|_| "{}".into());
     s.push('\n');
     s
 }

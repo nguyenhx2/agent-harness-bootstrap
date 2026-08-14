@@ -64,8 +64,7 @@
     {
       "src": "specs/11-assumptions-constraints.md",
       "dest": "docs/specs/11-assumptions-constraints.md",
-      "subst": true,
-      "when": ["assumptions"]
+      "subst": true
     },
     {
       "src": "specs/12-technical-feasibility.md",

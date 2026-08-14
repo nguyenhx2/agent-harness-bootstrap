@@ -147,12 +147,12 @@ One `AskUserQuestion` call, before scaffolding (skip any part the request alread
 - **Output language** (single choice): Vietnamese / Japanese / English / other. Prose follows it;
   codes and IDs stay English per writing-rules.md.
 - **Sections to create** (multi-select): the core is fixed and not offered (README, 01, 03, 05, 07,
-  13). Offer each optional section with a one-line description, pre-selecting the ones the source
-  material shows to be real: stakeholder map -> 02, process handoffs -> 04, roles with scopes -> 06,
-  owned persistent data -> 08, external systems -> 09, screens -> 10, known unknowns -> 11,
-  buildability risk -> 12, an existing or planned design system -> 14. Recommend, never force: an
-  unselected section can be added later by re-running the scaffolder. Section 11 joins the
-  selection automatically the moment the first `AS-nn`/`OI-nn` is recorded.
+  11, 13 - section 11 is core because every `AS-nn`/`OI-nn` needs its registry). Offer each
+  optional section with a one-line description, pre-selecting the ones the source material shows to
+  be real: stakeholder map -> 02, process handoffs -> 04, roles with scopes -> 06, owned persistent
+  data -> 08, external systems -> 09, screens -> 10, buildability risk -> 12, an existing or
+  planned design system -> 14. Recommend, never force: an unselected section can be added later by
+  re-running the scaffolder.
 - **Standards profile** (single choice): full synthesis (Recommended - the complete quality gate)
   / lightweight (core sections, gate limited to completeness + grounding; traceability checks run
   only over what exists). Lightweight changes the gate's breadth, never the never-invent rule.
@@ -187,7 +187,7 @@ soon you ask and how many at once, never whether you ask.
 
 ## The confirmation gate
 
-Before writing sections 02-13, echo back:
+Before writing sections 02-14, echo back:
 
 - the FR list with proposed MoSCoW priorities (marked as *proposed*),
 - the roles,

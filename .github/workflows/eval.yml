@@ -15,7 +15,7 @@ on:
 
 jobs:
   guardrails:
-    name: guardrail eval (15 payloads)
+    name: guardrail eval (40 payloads)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,16 +52,17 @@ jobs:
           PUPPETEER_SKIP_DOWNLOAD: "true"
         run: python scripts/check_mermaid.py
 
+      # A skill's SKILL.md version, its own CHANGELOG.md, and the other skill's version can drift
+      # apart independently - each is edited by hand. This is the sync check for all three, run on
+      # every push so drift is caught long before the release tag is pushed. It runs BEFORE the
+      # figure check so a release-structure failure is never masked by a stale badge number.
+      - name: CHANGELOGs and SKILL.md versions must stay in sync
+        run: python scripts/validate_release.py
+
       # "No invented numbers" is a contributing rule. A rule nobody checks drifts: the session-tax
       # figure was once wrong in two files at the same time. This one is checked.
       - name: Figures in the docs must match what the scripts print
         run: python scripts/check_numbers.py
-
-      # A skill's SKILL.md version, its own CHANGELOG.md, and the other skill's version can drift
-      # apart independently - each is edited by hand. This is the sync check for all three, run on
-      # every push so drift is caught long before the release tag is pushed.
-      - name: CHANGELOGs and SKILL.md versions must stay in sync
-        run: python scripts/validate_release.py
 
       # The Cursor/Codex porter's hook adapter must actually block, not just render. It scaffolds a
       # harness, ports it, and fires sample Cursor payloads at the adapter.

@@ -33,7 +33,7 @@ the human node is `Human`, settings is `settings.json`, scripts are
 | settings | `settings` | `file`; no meta (present only when settings.json exists) |
 | script | `script:code-graph` | `file` (every `*.py` under `.claude/scripts/`) |
 | module | `mod:src/app` | `meta` with BOTH `files` (count) and `owner` (agent name or `-`) |
-| task | `task:TASK-042` | `file` (every `TASK-*.md` under `docs/tasks/**`, capped at 60) |
+| task | `task:TASK-042` | `file` (every `TASK-*.md` under `docs/tasks/**`) |
 | gate | `gate:merge-request` | `synthetic: true` |
 | human | `human` | `synthetic: true` |
 
@@ -42,7 +42,9 @@ nodes, with `disabled: true` and `file` pointing at the quarantine path.
 
 ## Edges
 
-`{"from": id, "to": id, "type": <enum>}`. The type enum is closed:
+`{"from": id, "to": id, "type": <enum>, "refs"?: int}`. `refs` appears only on
+module-to-module `references` edges, carrying the import count from
+code-graph.json. The type enum is closed:
 
 | type | meaning |
 |---|---|
@@ -67,15 +69,21 @@ nodes, with `disabled: true` and `file` pointing at the quarantine path.
      "reason": "noisy during prototype phase"},
     {"kind": "hook", "name": "specs-reminder", "from": ".claude/hooks/specs-reminder.sh",
      "reason": "...",
-     "registration": [{"event": "PostToolUse", "matcher": "Edit|Write", "index": 0,
-                       "hook": {"type": "command", "command": "bash .claude/hooks/specs-reminder.sh"}}]}
+     "registration": [{"event": "PostToolUse", "matcher": "Edit|Write",
+                       "group_index": 0, "hook_index": 0,
+                       "hook": {"command": "bash .claude/hooks/specs-reminder.sh", "type": "command"}}]}
   ]
 }
 ```
 
-`registration[].index` records the matcher group's position inside the event
-array so enabling restores `settings.json` byte-exactly. Entries are sorted by
-`kind/name`. The file is committed; it must never contain a date.
+`registration[].group_index` records the matcher group's position inside the
+event array and `hook_index` the hook object's position inside the group, so
+enabling restores `settings.json` byte-exactly (the same shape
+harness-toggle.py writes - the two tools share one record). Entries are sorted
+by `kind/name`. The file is committed; it must never contain a date. Note the
+`hook` object is stored with sorted keys because the whole file is written
+canonically; `settings.json` itself is always written with its key order
+preserved.
 
 ## Versioning
 

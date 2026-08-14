@@ -35,13 +35,12 @@ tags: [specs, glossary, {{PROJECT_SLUG}}]
 
 ## Roles
 
-<!-- Names only, defined here once; the permission matrix lives in
-     [06-access-control.md](06-access-control.md). Two documents naming roles differently is the
-     most common defect in a spec set. -->
+<!-- Names only, defined here once; the permission matrix lives in section 06 when it is
+     selected. Two documents naming roles differently is the most common defect in a spec set. -->
 
-| Role (English, canonical) | Who holds it | Defined in |
-|---------------------------|--------------|------------|
-| `<role_name>` | <group from [02](02-stakeholders.md)> | [06](06-access-control.md) |
+| Role (English, canonical) | Who holds it |{{#IF_ACCESS}} Defined in |{{/IF_ACCESS}}
+|---------------------------|--------------|{{#IF_ACCESS}}------------|{{/IF_ACCESS}}
+| `<role_name>` | <group{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}> |{{#IF_ACCESS}} [06](06-access-control.md) |{{/IF_ACCESS}}
 
 ## Abbreviations
 

@@ -1,31 +1,35 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(./**/.env)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "command": "bash .claude/hooks/graph-stale.sh",
             "type": "command"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/specs-reminder.sh"
           }
-        ],
-        "matcher": "Edit|Write"
+        ]
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "Read|Edit|Write|Bash",
         "hooks": [
           {
-            "command": "bash .claude/hooks/protect-secrets.sh",
-            "type": "command"
+            "type": "command",
+            "command": "bash .claude/hooks/protect-secrets.sh"
           }
-        ],
-        "matcher": "Read|Edit|Write|Bash"
+        ]
       }
-    ]
-  },
-  "permissions": {
-    "deny": [
-      "Read(./**/.env)"
     ]
   }
 }

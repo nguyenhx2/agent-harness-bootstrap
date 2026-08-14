@@ -6,14 +6,14 @@ allowed-tools: Read, Grep, Glob, Write, Edit, AskUserQuestion, Bash(python:*), B
 Fold a new information source into `docs/specs/` without regenerating anything. Usage:
 `/spec-ingest <path-or-pasted-source>`.
 
-The rules that govern spec writing keep governing here: nothing is invented, every unknown stays a
-blank cell with a question (`OI-nn`), IDs are stable forever, and the source of truth is the spec
-section - never the raw source being ingested.
+The rules that govern spec writing keep governing here: nothing is invented, every unknown is
+written as `<unknown - OI-nn>` in its cell (never left blank), IDs are stable forever, and the
+source of truth is the spec section - never the raw source being ingested.
 
 Procedure:
 
 1. **Read the source whole**, then map each extractable statement to its home section (03 glossary
-   term, 05 FR, 07 business rule, 02 stakeholder, ...). A section may be a single file or a folder
+   term, 05 FR or business rule, 07 NFR, 02 stakeholder, ...). A section may be a single file or a folder
    (`05-functional-requirements/` with `FR-nn-<slug>.md` files and a `README.md` index) - in folder
    form, an FR statement lands in its FR's own file and the index tables update in the same change.
    A statement mapping to a section that was not selected at creation is a finding: surface it and

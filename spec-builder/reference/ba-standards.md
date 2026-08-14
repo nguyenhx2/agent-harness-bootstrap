@@ -68,7 +68,7 @@ the security reviewer actually cites.
 | 14 | Design system (optional appendix) | Design tokens (DT-nn), component inventory (DS-nn), brand assets, accessibility mapping | Design-token practice (W3C Design Tokens Community Group draft); WCAG via the NFR-USE mapping; no requirements standard covers this | Synthesis. 10 stays structural on purpose; when a design system is real, its decisions need one home with IDs, or every screen re-decides the palette. 13 remains the last mandatory section |
 | - | README | Index, reading guide, ID schemes, the traceability diagram | Synthesis | The entry point a human and an agent both read first |
 
-**Section selection.** Only `README`, 01, 03, 05, 07, and 13 are unconditional. The rest are
+**Section selection.** Only `README`, 01, 03, 05, 07, 11, and 13 are unconditional. The rest are
 installed when the input material shows they are real (the setup batch in `elicitation.md`); an
 empty section erodes trust in the filled ones. Numbers are stable whether or not neighbors exist,
 and a skipped section can be added later by re-running the scaffolder.
