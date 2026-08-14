@@ -21,7 +21,9 @@ What exists after a build:
 Procedure:
 
 1. Build: `python .claude/scripts/docs-graph.py`. Show the doc/ID/edge/orphan counts it prints.
-2. Export HTML: `python .claude/scripts/graph-html.py`.
+2. Export HTML: `python .claude/scripts/graph-html.py`. (After the first build, the
+   `graph-stale` hook re-runs both steps automatically on every `docs/**/*.md` edit, so a manual
+   rebuild is only needed when the hook is disabled or the graph was never built.)
 3. Report what CHANGED (`git diff docs/context/docs-graph.md`): a new orphan ID is unstarted work
    or a dead reference - name it and say which; an ID whose defining document moved usually means
    a requirement got rewritten in place - check the revision history caught it.

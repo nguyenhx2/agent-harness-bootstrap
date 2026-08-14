@@ -1,0 +1,277 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>harness-view</title>
+<style>
+  :root { --bg:#f8fafc; --panel:#ffffff; --ink:#0f172a; --line:#cbd5e1; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 13px/1.4 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--ink); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header b { margin-right: 8px; }
+  button { font: inherit; padding: 4px 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
+  button.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+  #legend { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+  #legend label { display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+  #legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  main { flex: 1; display: flex; min-height: 0; }
+  canvas { flex: 1; display: block; }
+  #detail { width: 300px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; }
+  #detail.open { display: block; }
+  #detail h3 { font-size: 14px; margin-bottom: 6px; word-break: break-all; }
+  #detail table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  #detail td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; word-break: break-all; }
+  #detail .off { color: #b91c1c; }
+  #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
+  .toggle-btn { margin-top: 8px; width: 100%; }
+  footer { padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: #64748b; display: flex; gap: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <b>harness-view</b>
+  <button id="btn-flow">Flow</button>
+  <button id="btn-graph">Graph</button>
+  <button id="btn-reload" title="Re-scan now">Reload</button>
+  <label><input type="checkbox" id="auto"> auto-refresh 10s</label>
+  <div id="legend"></div>
+</header>
+<main>
+  <canvas id="cv"></canvas>
+  <aside id="detail"></aside>
+</main>
+<footer><span id="stats"></span><span>edges: solid with type label; disabled items grey and dashed</span></footer>
+<script>
+"use strict";
+const COLORS = {
+  agent: "#2563eb", rule: "#ea580c", command: "#16a34a", hook: "#ca8a04",
+  settings: "#e11d48", state: "#64748b", script: "#7c3aed", module: "#0891b2",
+  task: "#475569", doc: "#0d9488", gate: "#c2410c", human: "#0f766e"
+};
+const FLOW_COL = { rule: 0, hook: 1, settings: 1, agent: 2, gate: 3, human: 4, command: 5, script: 6, module: 6, task: 7 };
+const HIDE_DEFAULT = new Set(["module", "task", "script"]);
+let graph = { nodes: [], edges: [] };
+let view = localStorage.getItem("hv-view") || "flow";
+let hidden = new Set(JSON.parse(localStorage.getItem("hv-hidden") || "null") || [...HIDE_DEFAULT]);
+let pos = {}, sel = null, drag = null, panzoom = { x: 0, y: 0, k: 1 };
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+
+function fit() { const r = cv.parentElement.getBoundingClientRect(); cv.width = r.width - (document.getElementById("detail").classList.contains("open") ? 300 : 0); cv.height = r.height; draw(); }
+window.addEventListener("resize", fit);
+
+async function load() {
+  const res = await fetch("graph.json");
+  graph = await res.json();
+  document.getElementById("stats").textContent = graph.nodes.length + " nodes, " + graph.edges.length + " edges";
+  buildLegend(); layout(); draw();
+}
+function types() { return [...new Set(graph.nodes.map(n => n.type))].sort(); }
+function visible(n) { return !hidden.has(n.type); }
+function label(n) { return n.label || n.id.split(":").slice(1).join(":") || n.id; }
+
+function buildLegend() {
+  const el = document.getElementById("legend"); el.innerHTML = "";
+  for (const t of types()) {
+    const l = document.createElement("label");
+    const c = document.createElement("input"); c.type = "checkbox"; c.checked = !hidden.has(t);
+    c.onchange = () => { c.checked ? hidden.delete(t) : hidden.add(t); localStorage.setItem("hv-hidden", JSON.stringify([...hidden])); layout(); draw(); };
+    const i = document.createElement("i"); i.style.background = COLORS[t] || "#94a3b8";
+    l.append(c, i, t); el.append(l);
+  }
+}
+
+function layout() {
+  const vis = graph.nodes.filter(visible);
+  if (view === "flow") {
+    const cols = {};
+    for (const n of vis) { const c = FLOW_COL[n.type] ?? 7; (cols[c] = cols[c] || []).push(n); }
+    const W = Math.max(...Object.keys(cols).map(Number), 0) + 1;
+    const cw = Math.max(190, (cv.width - 80) / W);
+    for (const [c, ns] of Object.entries(cols)) {
+      ns.sort((a, b) => a.id.localeCompare(b.id));
+      const orch = ns.findIndex(n => n.id === "agent:orchestrator");
+      if (orch > 0) { const [o] = ns.splice(orch, 1); ns.splice(Math.floor(ns.length / 2), 0, o); }
+      const gap = Math.max(34, (cv.height - 60) / (ns.length + 1));
+      ns.forEach((n, i) => { pos[n.id] = { x: 60 + c * cw, y: 40 + (i + 1) * gap }; });
+    }
+  } else {
+    const N = vis.length || 1, R = Math.min(cv.width, cv.height) / 2 - 60;
+    vis.forEach((n, i) => {
+      if (!pos[n.id] || pos[n.id].flow) pos[n.id] = { x: cv.width / 2 + R * Math.cos(2 * Math.PI * i / N), y: cv.height / 2 + R * Math.sin(2 * Math.PI * i / N) };
+    });
+    forceSim(vis, 200);
+  }
+  if (view === "flow") for (const n of vis) pos[n.id].flow = true; else for (const n of vis) pos[n.id].flow = false;
+}
+function forceSim(vis, iters) {
+  const ids = new Set(vis.map(n => n.id));
+  const es = graph.edges.filter(e => ids.has(e.from) && ids.has(e.to));
+  for (let it = 0; it < iters; it++) {
+    for (const a of vis) for (const b of vis) {
+      if (a.id >= b.id) continue;
+      const pa = pos[a.id], pb = pos[b.id];
+      let dx = pb.x - pa.x, dy = pb.y - pa.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
+      const rep = 2600 / d2, fx = dx / d * rep, fy = dy / d * rep;
+      pa.x -= fx; pa.y -= fy; pb.x += fx; pb.y += fy;
+    }
+    for (const e of es) {
+      const pa = pos[e.from], pb = pos[e.to];
+      let dx = pb.x - pa.x, dy = pb.y - pa.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+      const f = (d - 130) * 0.015, fx = dx / d * f, fy = dy / d * f;
+      pa.x += fx; pa.y += fy; pb.x -= fx; pb.y -= fy;
+    }
+    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
+  }
+}
+
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.translate(panzoom.x, panzoom.y); ctx.scale(panzoom.k, panzoom.k);
+  const byId = Object.fromEntries(graph.nodes.map(n => [n.id, n]));
+  for (const e of graph.edges) {
+    const a = byId[e.from], b = byId[e.to];
+    if (!a || !b || !visible(a) || !visible(b)) continue;
+    const pa = pos[a.id], pb = pos[b.id]; if (!pa || !pb) continue;
+    const off = a.disabled || b.disabled;
+    ctx.strokeStyle = off ? "#cbd5e1" : "#94a3b8"; ctx.lineWidth = 1.2;
+    ctx.setLineDash(off ? [4, 3] : []);
+    ctx.beginPath();
+    const mx = (pa.x + pb.x) / 2;
+    if (view === "flow") { ctx.moveTo(pa.x, pa.y); ctx.bezierCurveTo(mx, pa.y, mx, pb.y, pb.x, pb.y); }
+    else { ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); }
+    ctx.stroke(); ctx.setLineDash([]);
+    const ang = Math.atan2(pb.y - (view === "flow" ? pb.y : pa.y), pb.x - (view === "flow" ? mx : pa.x));
+    ctx.beginPath();
+    ctx.moveTo(pb.x - 10 * Math.cos(ang - 0.4), pb.y - 10 * Math.sin(ang - 0.4));
+    ctx.lineTo(pb.x, pb.y);
+    ctx.lineTo(pb.x - 10 * Math.cos(ang + 0.4), pb.y - 10 * Math.sin(ang + 0.4));
+    ctx.stroke();
+    if (view === "flow" || panzoom.k >= 1.2) {
+      const lx = mx, ly = (pa.y + pb.y) / 2;
+      const w = ctx.measureText(e.type).width + 8;
+      ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#e2e8f0";
+      ctx.beginPath(); ctx.roundRect(lx - w / 2, ly - 8, w, 14, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#64748b"; ctx.textAlign = "center"; ctx.fillText(e.type, lx, ly + 3);
+    }
+  }
+  for (const n of graph.nodes) {
+    if (!visible(n)) continue;
+    const p = pos[n.id]; if (!p) continue;
+    const text = label(n);
+    ctx.font = "12px ui-monospace, Consolas, monospace";
+    const w = Math.max(60, ctx.measureText(text).width + 18);
+    ctx.fillStyle = n.disabled ? "#9ca3af" : (COLORS[n.type] || "#94a3b8");
+    ctx.strokeStyle = sel === n.id ? "#0f172a" : "rgba(0,0,0,0.15)";
+    ctx.lineWidth = sel === n.id ? 2 : 1;
+    ctx.setLineDash(n.disabled ? [4, 3] : []);
+    ctx.globalAlpha = n.disabled ? 0.55 : 1;
+    ctx.beginPath(); ctx.roundRect(p.x - w / 2, p.y - 12, w, 24, 6); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.fillText(text, p.x, p.y + 4);
+    n._w = w;
+  }
+}
+
+function hit(mx, my) {
+  const x = (mx - panzoom.x) / panzoom.k, y = (my - panzoom.y) / panzoom.k;
+  for (const n of [...graph.nodes].reverse()) {
+    if (!visible(n)) continue;
+    const p = pos[n.id]; if (!p) continue;
+    const w = n._w || 80;
+    if (x >= p.x - w / 2 && x <= p.x + w / 2 && y >= p.y - 12 && y <= p.y + 12) return n;
+  }
+  return null;
+}
+cv.addEventListener("mousedown", ev => {
+  const n = hit(ev.offsetX, ev.offsetY);
+  if (n) { drag = { id: n.id, dx: ev.offsetX, dy: ev.offsetY }; select(n); }
+  else drag = { pan: true, dx: ev.offsetX, dy: ev.offsetY };
+});
+cv.addEventListener("mousemove", ev => {
+  if (!drag) return;
+  if (drag.pan) { panzoom.x += ev.offsetX - drag.dx; panzoom.y += ev.offsetY - drag.dy; }
+  else { const p = pos[drag.id]; p.x += (ev.offsetX - drag.dx) / panzoom.k; p.y += (ev.offsetY - drag.dy) / panzoom.k; }
+  drag.dx = ev.offsetX; drag.dy = ev.offsetY; draw();
+});
+window.addEventListener("mouseup", () => drag = null);
+cv.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  const k = Math.max(0.3, Math.min(3, panzoom.k * (ev.deltaY < 0 ? 1.1 : 0.9)));
+  panzoom.x = ev.offsetX - (ev.offsetX - panzoom.x) * k / panzoom.k;
+  panzoom.y = ev.offsetY - (ev.offsetY - panzoom.y) * k / panzoom.k;
+  panzoom.k = k; draw();
+});
+
+function select(n) {
+  sel = n.id;
+  const d = document.getElementById("detail");
+  d.classList.add("open");
+  const rows = [["id", n.id], ["type", n.type], ["file", n.file || "-"],
+    ["disabled", n.disabled ? "yes" : "no"]];
+  for (const [k, v] of Object.entries(n.meta || {})) rows.push([k, Array.isArray(v) ? v.join(", ") : String(v)]);
+  // built with DOM APIs, never innerHTML: meta values come from arbitrary
+  // repo frontmatter and must not become markup
+  d.textContent = "";
+  const h3 = document.createElement("h3");
+  h3.textContent = label(n);
+  d.append(h3);
+  const table = document.createElement("table");
+  for (const [k, v] of rows) {
+    const tr = document.createElement("tr");
+    const tdk = document.createElement("td");
+    tdk.textContent = k;
+    const tdv = document.createElement("td");
+    if (k === "disabled" && v === "yes") tdv.className = "off";
+    tdv.textContent = v;
+    tr.append(tdk, tdv);
+    table.append(tr);
+  }
+  d.append(table);
+  if (["rule", "command", "hook"].includes(n.type)) {
+    const b = document.createElement("button");
+    b.className = "toggle-btn";
+    b.textContent = n.disabled ? "Enable " + label(n) : "Disable " + label(n);
+    b.onclick = async () => {
+      const bare = n.id.split(":").slice(1).join(":");
+      const payload = { kind: n.type, name: bare, enable: !!n.disabled };
+      let res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload) });
+      let txt = await res.text();
+      if (res.status === 409 && !payload.enable) {
+        // SOFT-protected: the server refused pending an explicit confirmation
+        if (window.confirm(txt + "
+
+Disable it anyway?")) {
+          payload.confirm_soft = true;
+          res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload) });
+          txt = await res.text();
+        }
+      }
+      if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }
+      else { d.classList.remove("open"); sel = null; await load(); }
+      fit();
+    };
+    d.append(b);
+  }
+  fit(); draw();
+}
+
+document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorage.setItem("hv-view", view); sync(); };
+document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
+document.getElementById("btn-reload").onclick = load;
+const auto = document.getElementById("auto");
+auto.checked = localStorage.getItem("hv-auto") === "1";
+let timer = null;
+function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(load, 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
+auto.onchange = syncAuto;
+function sync() {
+  document.getElementById("btn-flow").classList.toggle("active", view === "flow");
+  document.getElementById("btn-graph").classList.toggle("active", view === "graph");
+  layout(); draw();
+}
+load().then(() => { fit(); sync(); syncAuto(); });
+</script>
+</body>
+</html>

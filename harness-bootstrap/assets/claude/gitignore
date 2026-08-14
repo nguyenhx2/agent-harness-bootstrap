@@ -7,8 +7,15 @@
 worktrees/
 
 # Machine state: the subagent-run archive, the code and docs graphs, the staleness log. Derived,
-# per-machine, and regenerated on demand (/code-graph, /docs-graph).
-state/
+# per-machine, and regenerated on demand (/code-graph, /docs-graph). `state/*` rather than
+# `state/` because git cannot re-include a file whose parent DIRECTORY is excluded, and one
+# file below must be re-included.
+state/*
+
+# EXCEPTION: history-level is configuration, not state - it is chosen at intake and tuned by
+# /harness-tune dial 6. If it were ignored, every fresh clone would silently revert to the
+# most PII-exposing default (level=full), so the team's choice must travel with the repo.
+!state/history-level
 
 # Local overrides a developer may keep beside the shared settings.
 settings.local.json

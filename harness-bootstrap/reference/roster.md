@@ -1,17 +1,15 @@
 # Roster - which agents to field, and how to configure each one
 
-Decides the formation ("đội hình") and its per-agent configuration. The reasoning behind the `model:`
-and `effort:` columns is in [`cost-model.md`](cost-model.md) - read that first if you are tempted to
-deviate. Agent bodies live in `assets/claude/agents/`; the scaffolder copies them, so you set the
-roster, not the prose.
-
-The chosen roster must appear 1:1 in the orchestrator's routing table and the CLAUDE.md agent table.
-No orphan agents, no unrouted work.
+Decides the formation ("đội hình") and its per-agent configuration. The reasoning behind the
+`model:` and `effort:` columns is in [`cost-model.md`](cost-model.md) - read it before deviating.
+Agent bodies live in `assets/claude/agents/`; the scaffolder copies them, so you set the roster, not
+the prose. The chosen roster must appear 1:1 in the orchestrator's routing table and the AGENTS.md
+roster table: no orphan agents, no unrouted work.
 
 ## The allocation table
 
-Every generated agent carries `model:` and `effort:` explicitly. Never leave either unset - unset
-`model:` means `inherit`, which silently bills mechanical work at the caller's tier.
+Every generated agent carries `model:` and `effort:` explicitly - unset `model:` means `inherit`,
+which silently bills mechanical work at the caller's tier.
 
 | Agent | model | effort | tools | maxTurns | Why |
 |---|---|---|---|---|---|
@@ -19,7 +17,8 @@ Every generated agent carries `model:` and `effort:` explicitly. Never leave eit
 | `debugger` | `opus` | `xhigh` | `Read, Grep, Glob, Bash` | 30 | Root-cause under incomplete information is the hardest single-agent task on the roster, and it is low-volume. The one seat that earns `xhigh` unconditionally. Read-only: it diagnoses, the owner fixes |
 | `code-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | The safety net. Read-only forever - a reviewer that edits code has become a dev agent and lost its independence |
 | `security-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | Secrets/PII/authz gate. Read-only |
-| `merge-manager` (optional) | `opus` | `high` | `Read, Grep, Glob, Bash` | 20 | A gate, not an author. Only field it with the strict gate below |
+| `reviewer` (flag `solo_review`) | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | The merged code+security gate for preset S: one pass, both lenses. Replaces the two seats above; never fielded alongside them |
+| `merge-manager` (installed unconditionally; ACTIVE only with the strict gate below) | `opus` | `high` | `Read, Grep, Glob, Bash` | 20 | A gate, not an author. Only field it with the strict gate below |
 | `<domain>-dev` / `app-dev` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | Implementation against a settled spec. Raise to `xhigh` for a known-hard refactor, not by default |
 | `frontend-ui-dev` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | As above, scoped to UI |
 | `data-modeler` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | Schema design follows the ERD; judgment is bounded by the data dictionary |
@@ -42,11 +41,11 @@ name. Record the pick in `docs/context/tool-changelog.md`.
 
 ### Tool grants: the two rules that matter
 
-- **Reviewers never get `Edit` or `Write`.** Not "usually don't" - never. This is what makes their
-  finding trustworthy and it is checked in the quality gate.
-- **Never omit `tools:`.** Omitting it inherits everything, including every MCP server on the
-  machine. That is thousands of tokens of tool schema on every request, for tools the agent will
-  never call. If the project has MCP servers an agent shouldn't touch, add `disallowedTools`.
+- **Reviewers never get `Edit` or `Write`.** Not "usually don't" - never. It is what makes their
+  finding trustworthy, and the quality gate checks it.
+- **Never omit `tools:`.** Omitting inherits everything, including every MCP server on the machine -
+  thousands of tokens of tool schema on every request, for tools the agent will never call. If the
+  project has MCP servers an agent shouldn't touch, add `disallowedTools`.
 
 ## Tiers - what to field
 
@@ -56,7 +55,7 @@ name. Record the pick in `docs/context/tool-changelog.md`.
 |---|---|
 | `orchestrator` | The entry point that makes the base *operate* under orchestration. Without it the roster is a folder of files |
 | `code-reviewer` | The review gate |
-| `security-reviewer` | Secrets/data gate. On a tiny project it may merge with `code-reviewer` into one reviewer - but the security **checklist** never disappears |
+| `security-reviewer` | Secrets/data gate. On a tiny project the two reviewer seats merge into one `reviewer` (flag `solo_review`) - but the security **checklist** never disappears |
 | `spec-guardian` | Requirement-drift check, before and after every feature |
 | At least ONE dev agent | Someone has to write code. Minimum viable: a single `app-dev` owning all of `src/` |
 
@@ -64,31 +63,40 @@ name. Record the pick in `docs/context/tool-changelog.md`.
 
 `qa-test` (any logic worth testing - i.e. almost always) · `debugger` (a test suite or CI exists) ·
 `ba-analyst` (specs live in the repo) · `devops` (a CI pipeline or a hosting target exists) ·
-`merge-manager` (only with the gate below).
+`merge-manager` (its seat file always installs; route merges to it only with the gate below,
+otherwise the human merges and the seat stays idle).
 
 ### Tier 2 - conditional by stack
 
-`frontend-ui-dev` (project has UI) · `data-modeler`, `db-engineer`, `db-seeder` (project has a DB -
-start with `data-modeler` alone and add the others when migrations and seeding become real work) ·
+`frontend-ui-dev` (project has UI) · `data-modeler` (flag `db` alone), then `db-engineer` (flag
+`db_engineer`) and `db-seeder` (flag `db_seeder`) - start with `data-modeler` and add the flags when
+migrations and seeding become real work; intake Q19 asks exactly this ·
 a shared-layer agent such as `llm-integration-dev` (an external provider layer that *multiple* domains
 call - shared layers get an owner so ownership is unambiguous) · one `<domain>-dev` per feature domain.
 
-### Tier 3 - planning and audit (multi-week projects)
+### Tier 3 - planning and audit (multi-week projects; flag `long`)
 
 `brainstormer` + `tech-researcher` (structured decisions feeding ADRs) · `history-tracker` (curates the
-run archive written by the `agent-history` hook).
+run archive written by the `agent-history` hook). Shipped only when the `long` flag is set - the
+roster-shape question in intake asks for the project horizon; a short project pays for these seats
+without using them.
 
 ## Presets
 
 Pick the closest, then adjust with the tiers.
 
-- **S - script / CLI / library, single domain (5-6 agents).** `orchestrator`, `app-dev`, `qa-test`,
-  `code-reviewer`, `security-reviewer` (or one merged reviewer), `spec-guardian`. **This is the
-  floor** - below it the standard feature flow has missing seats.
+- **S - script / CLI / library, single domain (5-6 ACTIVE seats).** `orchestrator`, `app-dev`,
+  `qa-test` (if tests are chosen), `reviewer` (the merged gate, flag `solo_review` - the
+  recommended shape here; split reviewers remain the alternative), `spec-guardian`. **This is the
+  floor** - below it the standard feature flow has missing seats. Honesty note: the manifest also
+  installs `debugger`, `ba-analyst`, `devops`, and `merge-manager` unconditionally; on preset S
+  they simply receive no routing missions until the project grows into them.
 - **M - web/API app with a DB (9-12).** Tier 0 + `qa-test`, `debugger`, `ba-analyst`, `devops`,
-  + `frontend-ui-dev` (if UI) + `data-modeler` (+ the other two as DB work grows) + 1-3 `<domain>-dev`.
+  + `frontend-ui-dev` (if UI) + `data-modeler` (+ `db_engineer`/`db_seeder` flags as DB work grows)
+  + 1-3 `<domain>-dev`. Split reviewers recommended.
 - **L - AI product / multi-domain platform (14+).** Preset M + a shared provider-layer agent + one dev
-  agent per FR cluster + the planning pair + `history-tracker`.
+  agent per FR cluster + the `long` flag (the planning pair + `history-tracker`). This is the preset
+  that sets `long` by default.
 
 ## Deriving the dev-agent lineup
 
@@ -102,26 +110,26 @@ the first `/implement-fr` already has an owner and a place to put the code.
 
 **Greenfield with no specs:** field Preset S with a single `app-dev` scoped to `src/`, plus a
 registered P1 task "split `app-dev` by domain once modules emerge". Do **not** invent speculative
-domain agents for code that does not exist - an agent whose scope matches nothing real is noise in the
-routing table and tokens in every dispatch.
+domain agents for code that does not exist - a scope matching nothing real is noise in the routing
+table and tokens in every dispatch.
 
-Rule of thumb: a dev agent should own something describable in one sentence ("the scoring engine",
-"the ingestion pipeline"). More than ~5 dev agents at bootstrap time is speculative splitting; fewer
-than one per 2-3 FRs on a large product produces a future grab-bag.
+Rule of thumb: a dev agent owns something describable in one sentence ("the scoring engine"). More
+than ~5 dev agents at bootstrap is speculative splitting; fewer than one per 2-3 FRs on a large
+product produces a future grab-bag.
 
 ## `merge-manager` - the optional delegated merge gate
 
-Field it when parallel dev agents produce a steady stream of PRs and manual merging is the bottleneck.
-Skip it on a solo or low-volume project. What makes it safe:
+Field it when parallel dev agents produce a steady stream of PRs and manual merging is the
+bottleneck; skip it on a solo or low-volume project. What makes it safe:
 
-- **Read-only on product code, plus Bash.** It runs git and CI queries and it merges. It never authors.
-- **A merge passes only if ALL hold:** CI green (polled to a terminal state, not presumed) · no conflict
-  with the *live* mainline tip · the required reviews actually ran, verified in the task file's session
-  log rather than claimed in the PR body · the secret scan is clean on the diff · the diff touches no
-  rule file, agent file, hook, settings file, or Accepted ADR. A diff touching any governance file
-  escalates to the owner - those cannot be self-merged.
+- **Read-only on product code, plus Bash.** It runs git and CI queries and it merges. Never authors.
+- **A merge passes only if ALL hold:** CI green (polled to a terminal state, not presumed) · no
+  conflict with the *live* mainline tip · the required reviews verified in the task file's session
+  log, not claimed in the PR body · the secret scan clean on the diff · the diff touches no rule
+  file, agent file, hook, settings file, or Accepted ADR - a governance-file diff escalates to the
+  owner, never self-merged.
 - **Dispatched only by the orchestrator, one PR at a time, serialized.** Never two merges in flight
-  against the same mainline; that is how work gets silently dropped.
+  against the same mainline.
 - **Never touches a branch with a live worktree**, and never merges a change it authored (it authors
   nothing).
 
@@ -134,23 +142,23 @@ by exactly one agent:
 |---|---|---|
 | Lock scope + criteria | requirement gate | `spec-guardian` |
 | Implement (per the chosen methodology) | owner | the `<domain>-dev` for that FR |
-| Tests | quality | `qa-test` (or the dev agent, if declined - say so) |
-| Review diff | code gate | `code-reviewer` |
-| Review secrets/data | security gate | `security-reviewer` |
+| Tests | quality | `qa-test` (or manual verification when testing was declined - say so) |
+| Review diff | code gate | `code-reviewer` (or `reviewer` under `solo_review`) |
+| Review secrets/data | security gate | `security-reviewer` (or `reviewer` under `solo_review`) |
 | Open PR/MR, CI | pipeline | `devops` (or the dev agent on Preset S - say so) |
 | Failure diagnosis | root cause | `debugger` (or the user - say so) |
 | Decide + record | planning | `brainstormer`/`tech-researcher` → ADR (or the user) |
 | Route, supervise, record | control | `orchestrator` |
 
-If a seat is intentionally unfilled, CLAUDE.md must name who covers it instead. An unnamed seat is how
+If a seat is intentionally unfilled, AGENTS.md must name who covers it instead. An unnamed seat is how
 gates get silently skipped.
 
 ## Growth path
 
-- **Split a dev agent** when its scope spans two domains that change for different reasons. Splitting =
-  new agent file + routing-table row + CLAUDE.md row + moved module ownership, in one MR.
-- **Add the planning pair** at the first contested technical decision. The trigger is "we argued about
-  a library in chat" - that argument should have been a `/brainstorm` → ADR.
+- **Split a dev agent** when its scope spans two domains changing for different reasons. Splitting =
+  new agent file + routing-table row + AGENTS.md roster row + moved module ownership, in one MR.
+- **Add the planning pair** at the first contested technical decision - "we argued about a library
+  in chat" should have been a `/brainstorm` → ADR.
 - **Never grow reviewers' tools.** See above.
-- Batch roster changes rather than trickling them: every change to an agent's `tools:` invalidates that
-  agent's prompt cache (see [`cost-model.md`](cost-model.md)).
+- Batch roster changes rather than trickling them: every `tools:` change invalidates that agent's
+  prompt cache ([`cost-model.md`](cost-model.md)).

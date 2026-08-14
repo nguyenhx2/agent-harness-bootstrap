@@ -23,7 +23,7 @@ tags: [specs, flows, {{PROJECT_SLUG}}]
 ## BF-01 <flow name>
 
 **Trigger**: <the event that starts this flow, in the real world>
-**Actors**: <roles from [02](02-stakeholders.md)>
+**Actors**: <roles{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}>
 **Preconditions**: <what must already be true>
 **Outcome (success)**: <what is true when it ends well>
 **Outcome (failure)**: <what is true when it does not, and who is left holding it>
@@ -78,4 +78,4 @@ sequenceDiagram
 
 | Step today | Step after launch | Who is affected |
 |------------|-------------------|-----------------|
-| <manual step> | <automated or changed step> | <group from [02](02-stakeholders.md)> |
+| <manual step> | <automated or changed step> | <group{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}> |

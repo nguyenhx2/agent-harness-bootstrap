@@ -8,15 +8,23 @@ Run this BEFORE the intake questionnaire. Never generate a file before the repor
 
 ## Phase A - discover
 
-Sweep the repo read-only (Glob/Grep/Read; dispatch an `Explore` agent on a large tree). Record a file
-path as proof for every finding - never guess:
+Sweep the repo read-only (Glob/Grep/Read). Record a file path as proof for every finding - never
+guess.
+
+**Dispatch the sweep in parallel.** The ten passes below are mutually independent: past ~50 source
+files, dispatch THREE `Explore` agents in ONE message and merge their reports -
+- agent 1: passes 1, 2, 7 (stack, layout and modules, conventions in force);
+- agent 2: passes 3, 4, 5, 6 (data layer, async and infra, integrations, configuration surface);
+- agent 3: passes 8, 9, 10 (risky operations, existing agent surface, git reality).
+
+Each prompt names its passes verbatim from the list below and requires evidence paths. A smaller
+repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism.
 
 1. **Stack** - manifests (`package.json`, `pyproject.toml`, `go.mod`, `*.csproj`, `pom.xml`) →
    language, framework, test runner, lint/format tools, pinned versions. Lockfile → package manager.
-   The scripts block → the real test/lint/build/deploy commands. What is actually installed always
-   wins over any preset - see [`tech-presets.md`](tech-presets.md) for the currency rule (verify
-   versions against the registry, never from memory) and for how a preset that contradicts installed
-   reality becomes a migration proposal, not a silent rewrite.
+   The scripts block → the real test/lint/build/deploy commands. Installed reality always beats any
+   preset - see [`tech-presets.md`](tech-presets.md) for the currency rule and how a contradicting
+   preset becomes a migration proposal, not a silent rewrite.
 2. **Layout and modules** - source dirs one and two levels deep (`src/*`, `app/*`, `lib/*`,
    `packages/*`). Per module: purpose, rough size, and the dependencies visible cheaply.
 3. **Data layer** - ORM and schema files (`schema.prisma`, `models/`, `migrations/`, `*.sql`); the DB
@@ -83,17 +91,17 @@ Present ONE report, about two screens:
 Get explicit confirmation or corrections before moving on. Corrections override findings.
 
 **The report is a hypothesis, not ground truth.** It is evidence-seeded but produced by a fast
-survey; the deep work that follows is expected to VALIDATE it and sometimes to invert it - a control
-assumed present may prove entirely absent, a severity may escalate once its real blast radius is
-seen. Contradicting the report later is a success of the process. Let evidence win: update the
-master-plan, the severity, and the report itself, and never argue the evidence back into agreement.
+survey; the deep work that follows is expected to VALIDATE it and sometimes invert it - a control
+assumed present may prove absent, a severity may escalate once its blast radius is seen.
+Contradicting the report later is a success of the process. Let evidence win: update the
+master-plan, the severity, and the report itself; never argue the evidence back into agreement.
 
 ## Phase C - flags and globs
 
 The analysis emits two things the scaffolder cannot infer and the user should not have to type. Both
 are load-bearing: **path-scoped rules are the harness's main recurring token saving**
-([`cost-model.md`](cost-model.md)), and a rule scoped to a path that does not exist never loads at
-all - a silently dead guardrail.
+([`cost-model.md`](cost-model.md)), and a rule scoped to a nonexistent path never loads - a silently
+dead guardrail.
 
 **Flags** - set from evidence, confirmed at intake:
 
@@ -123,11 +131,10 @@ structure the code does not have.
 ## Phase D - mapping tables
 
 **Modules → dev agents.** One dev agent per cohesive feature domain, NOT per directory. Merge tiny
-related modules; split a grab-bag `lib/` by domain. A cross-cutting layer that everything calls (an LLM
-client, an integrations dir) gets its own owner, so ownership is unambiguous. UI gets ONE frontend agent
-regardless of page count. Feeds `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, and the roster
-([`roster.md`](roster.md)) - the routing table must cover every agent and every module: no orphan
-modules, no orphan agents.
+related modules; split a grab-bag `lib/` by domain. A cross-cutting layer everything calls (an LLM
+client, an integrations dir) gets its own owner. UI gets ONE frontend agent regardless of page
+count. Feeds `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, and the roster ([`roster.md`](roster.md)) -
+the routing table must cover every agent and every module: no orphans either way.
 
 **Conventions → rules.** Write `coding-standards`, `frontend`, `data-model`, `testing` from the OBSERVED
 conventions. Where observation contradicts good practice (no strict mode, hardcoded colors), do NOT

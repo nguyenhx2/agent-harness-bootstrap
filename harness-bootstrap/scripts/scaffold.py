@@ -3,8 +3,10 @@
 
 Copies asset files into a target repo, substituting {{VARS}} and resolving
 conditional blocks. Never overwrites an existing file unless --force: existing
-files are reported as KEEP (identical) or CONFLICT (differs), which is what
-brownfield reconciliation needs.
+files are reported as KEPT (identical) or CONFLICT (differs), which is what
+brownfield reconciliation needs. Entries listed in the target's
+.claude/disabled.json (written by harness-toggle.py) are reported as
+DISABLED and skipped, so a re-run never resurrects a toggled-off control.
 
 Stdlib only. No dependencies.
 
@@ -28,7 +30,19 @@ Manifest (assets/manifest.json) entries:
      "when": ["ui"], "subst": true, "mode": "644"}
   - "when" is an AND over flags; omit for unconditional.
   - "when_any" is an OR over flags.
+  - "when_not" skips the entry if ANY listed flag is set (e.g. the split
+    reviewers carry "when_not": ["solo_review"]).
   - "subst": false copies bytes verbatim (use for anything containing literal braces).
+
+Flag validation: flags are checked against the closed set below and the run
+fails (exit 1) on an unknown name, a missing or doubled OS flag, or a
+contradictory combination (light with tdd/ddd; tdd/unit/e2e without tests).
+HOOK_RUNNER and HOOK_EXT are DERIVED from the OS flag (windows -> powershell/
+ps1, posix -> bash/sh); a conflicting value in vars.json is an error, not an
+override - the hook flavor and its registration must never disagree.
+
+Twin note: spec-builder/scripts/scaffold.py is a fork of this file with its own
+manifest. Behavior fixes should land in both.
 """
 
 from __future__ import annotations
@@ -54,6 +68,51 @@ BLOCK_RE = re.compile(
 
 class ScaffoldError(Exception):
     pass
+
+
+# The closed flag set. Keep in sync with assets/manifest.json's schema comment,
+# SKILL.md, and reference/intake.md - the auditors check all four agree.
+KNOWN_FLAGS = {
+    "ui", "db", "db_engineer", "db_seeder", "ai", "audit", "tdd", "ddd",
+    "light", "unit", "e2e", "tests", "deploy_ask", "long", "solo_review",
+    "windows", "posix",
+}
+
+# OS flag -> the derived hook runner/extension vars. The flavor of the shipped
+# hook files and the commands registered in settings.json must never disagree;
+# deriving both from one flag makes the mismatch unrepresentable.
+OS_DERIVED = {
+    "windows": {
+        "HOOK_RUNNER": "powershell -NoProfile -ExecutionPolicy Bypass -File",
+        "HOOK_EXT": "ps1",
+    },
+    "posix": {"HOOK_RUNNER": "bash", "HOOK_EXT": "sh"},
+}
+
+
+def validate_flags(flags: set[str]) -> list[str]:
+    """-> list of human-readable problems; empty means the flag set is sane."""
+    problems: list[str] = []
+    unknown = sorted(flags - KNOWN_FLAGS)
+    if unknown:
+        problems.append(
+            f"unknown flag(s): {', '.join(unknown)}. "
+            f"Valid flags: {', '.join(sorted(KNOWN_FLAGS))}")
+    os_flags = flags & {"windows", "posix"}
+    if len(os_flags) != 1:
+        problems.append(
+            "exactly one of 'windows' or 'posix' is required "
+            f"(got: {', '.join(sorted(os_flags)) or 'neither'}). "
+            "Without it the hooks never register and every guardrail is dead.")
+    if "light" in flags and (flags & {"tdd", "ddd"}):
+        problems.append("'light' contradicts 'tdd'/'ddd': lightweight means no "
+                        "methodology rule. Drop one side.")
+    for f in ("tdd", "unit", "e2e"):
+        if f in flags and "tests" not in flags:
+            problems.append(f"'{f}' requires 'tests' (tests is the derived "
+                            "master switch; intake sets it whenever unit or "
+                            "e2e is chosen).")
+    return problems
 
 
 def resolve_blocks(text: str, flags: set[str]) -> str:
@@ -89,9 +148,12 @@ def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
+    need_none = entry.get("when_not") or []
     if need_all and not set(need_all).issubset(flags):
         return False
     if need_any and not (set(need_any) & flags):
+        return False
+    if need_none and (set(need_none) & flags):
         return False
     return True
 
@@ -114,15 +176,73 @@ def main() -> int:
     cfg = json.loads(args.vars.read_text(encoding="utf-8"))
     variables: dict[str, str] = cfg.get("vars", {})
     flags: set[str] = {f.lower() for f in cfg.get("flags", [])}
+
+    problems = validate_flags(flags)
+    if problems:
+        print("FAIL: invalid flag set in vars.json:", file=sys.stderr)
+        for p in problems:
+            print(f"  - {p}", file=sys.stderr)
+        return 1
+
+    # HOOK_RUNNER / HOOK_EXT are derived from the OS flag (see docstring).
+    os_flag = "windows" if "windows" in flags else "posix"
+    for key, derived in OS_DERIVED[os_flag].items():
+        supplied = variables.get(key)
+        if supplied is not None and supplied != derived:
+            print(f"FAIL: vars.json sets {key}={supplied!r} but flag "
+                  f"'{os_flag}' requires {derived!r}. Remove the var or fix "
+                  "the flag - a mismatched hook flavor never fires.",
+                  file=sys.stderr)
+            return 1
+        variables[key] = derived
+
     manifest: list[dict] = json.loads(manifest_path.read_text(encoding="utf-8"))["files"]
 
     target = args.target.resolve()
     target.mkdir(parents=True, exist_ok=True)
 
+    # harness-toggle.py quarantines items and lists them here; a re-run must
+    # not resurrect them. The `from` paths are dest-relative by contract.
+    # Only toggleable kinds inside their own directories are honored: this file
+    # is committed, so a hostile or corrupted entry naming settings.json or a
+    # root file must never silently withhold that asset from a scaffold.
+    TOGGLE_PREFIX = {"rule": ".claude/rules/", "command": ".claude/commands/",
+                     "hook": ".claude/hooks/"}
+    disabled_dests: set[str] = set()
+    dj = target / ".claude" / "disabled.json"
+    if dj.is_file():
+        try:
+            for e in json.loads(dj.read_text(encoding="utf-8")).get("disabled", []):
+                if not (isinstance(e, dict) and e.get("from")):
+                    continue
+                frm = str(e["from"]).replace("\\", "/")
+                kind = e.get("kind")
+                prefix = TOGGLE_PREFIX.get(kind)
+                if (prefix is None or not frm.startswith(prefix)
+                        or ".." in frm or "/" in frm[len(prefix):]):
+                    print(f"  [warn] disabled.json entry ignored (kind "
+                          f"`{kind}`, from `{frm}`): only rules, commands, "
+                          "and hooks inside their own .claude/ directories "
+                          "can be disabled.", file=sys.stderr)
+                    continue
+                disabled_dests.add(frm)
+                stem = frm.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+                if kind == "hook":  # both flavors of the seat
+                    base = frm.rsplit("/", 1)[0]
+                    disabled_dests.update({f"{base}/{stem}.sh", f"{base}/{stem}.ps1"})
+        except (json.JSONDecodeError, TypeError):
+            # Treating a corrupt quarantine ledger as empty would resurrect
+            # every disabled control on this run. Fail loudly instead.
+            print(f"FAIL: {dj} is unreadable - fix or delete it before "
+                  "re-running (a corrupt ledger must not resurrect disabled "
+                  "controls).", file=sys.stderr)
+            return 1
+
     added: list[str] = []
     kept: list[str] = []
     conflicts: list[str] = []
     skipped: list[str] = []
+    disabled_skips: list[str] = []
     all_missing: dict[str, set[str]] = {}
 
     for entry in manifest:
@@ -139,6 +259,9 @@ def main() -> int:
 
         dest_rel = entry["dest"]
         dest_rel, _ = substitute(dest_rel, variables, src_rel)  # dest may be parameterised
+        if dest_rel.replace("\\", "/") in disabled_dests:
+            disabled_skips.append(dest_rel)
+            continue
         dest = target / dest_rel
 
         do_subst = entry.get("subst", True)
@@ -182,6 +305,8 @@ def main() -> int:
     show("KEPT (already identical)", kept)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
+    show("DISABLED (respected - listed in .claude/disabled.json, not re-added)",
+         disabled_skips)
     if skipped:
         print(f"\nSKIPPED by flags ({len(skipped)}): {', '.join(sorted(skipped)[:8])}"
               f"{' ...' if len(skipped) > 8 else ''}")
@@ -193,7 +318,9 @@ def main() -> int:
 
     print(
         f"\nSummary: {len(added)} written, {len(kept)} kept, "
-        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags."
+        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags"
+        + (f", {len(disabled_skips)} disabled (respected)." if disabled_skips
+           else ".")
     )
 
     if conflicts and not args.force:

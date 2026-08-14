@@ -9,8 +9,9 @@ Triage every finding with `status: New` under `docs/findings/`.
 If $1 names a repo, restrict the triage to `docs/findings/$1/`. If $1 is empty, triage the findings
 of every repo in the workspace.
 
-1. Confirm or reject each finding. Dispatch `security-reviewer`, or `perf-reviewer` or
-   `code-reviewer` according to the finding type. A rejected finding is set to
+1. Confirm or reject each finding. Dispatch {{#IF_SOLO_REVIEW}}`reviewer` (it holds both the
+   security and the quality checklist), or `perf-reviewer` for performance findings{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`security-reviewer`, or `perf-reviewer` or
+   `code-reviewer` according to the finding type{{/IF_SOLO_REVIEW}}. A rejected finding is set to
    `status: False-positive` and KEEPS the reasoning in its file. Nothing is deleted: the next scan
    will raise it again, and the recorded reasoning is what stops the team from re-triaging it.
 2. Confirmed findings get a severity on the project scale, then `spec-guardian` anchors each one:

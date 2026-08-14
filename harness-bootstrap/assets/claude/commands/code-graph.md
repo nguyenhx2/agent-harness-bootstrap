@@ -20,7 +20,8 @@ Procedure:
 1. Check first: `python .claude/scripts/code-graph.py --check`. Up to date: say so, stop.
 2. Rebuild with the recorded engine (builtin: `python .claude/scripts/code-graph.py`; external:
    the MCP tool, writing the same files). This rewrites both outputs and clears the stale log.
-   Show the module/edge counts. Then refresh the HTML exports:
+   Show the module/edge counts. Then refresh the canonical wiring graph and the HTML exports:
+   `python .claude/scripts/harness-graph.py` (module owners feed into it), then
    `python .claude/scripts/graph-html.py`.
 3. Read the regenerated `docs/context/code-graph.md` and report anything structural that CHANGED
    since the last build (`git diff docs/context/code-graph.md`): a new cross-module edge, a module
@@ -38,7 +39,10 @@ How agents use it (this is the point of the graph):
 Two graphs, two purposes: this command maps DEPENDENCY (what breaks if I change this module);
 `/docs-graph` maps TRACEABILITY (which documents talk about the same requirement). Run both;
 `graph-html.py` exports both as self-contained interactive HTML
-(`docs/context/harness-graph.html` + `docs/context/specs-graph.html`).
+(`docs/context/harness-graph.html` + `docs/context/specs-graph.html`). The harness page renders
+from `.claude/state/harness-graph.json`, the canonical machine-readable wiring file written by
+`harness-graph.py` - the `graph-stale` hook regenerates it automatically whenever a harness file
+(agent, rule, command, hook, settings) is edited, so it is normally already fresh.
 
 Engine choice - ask the user once and record it in `docs/context/tool-changelog.md`:
 

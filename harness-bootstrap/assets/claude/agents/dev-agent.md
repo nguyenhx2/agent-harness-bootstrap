@@ -24,8 +24,8 @@ through their published interface, never by importing their internals. See `.cla
 `docs/context/code-graph.md`. A new cross-module edge is an interface decision, not a convenience -
 if it surprises the graph, stop and report instead of shipping it.
 
-**Rules you obey**: `.claude/rules/00-overview.md`, `coding-standards.md`, `testing.md`,
-`agent-guardrails.md`. Path-scoped rules load automatically when you touch matching files.
+**Rules you obey**: `.claude/rules/00-overview.md`, `coding-standards.md`, {{#IF_TESTS}}`testing.md`,
+{{/IF_TESTS}}`agent-guardrails.md`. Path-scoped rules load automatically when you touch matching files.
 
 **Read before working**: the FR in the specs, the PRD in `docs/requirements/`, and the task file.
 

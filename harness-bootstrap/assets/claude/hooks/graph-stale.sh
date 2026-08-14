@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # graph-stale.sh
 # Event: PostToolUse   Matcher: Edit|Write
-# Non-blocking. When a SOURCE file is edited and a code graph has been built, records the path in
-# .claude/state/code-graph.stale so agents (and /code-graph --check) know the graph no longer
-# matches the code. The rebuild itself is deliberate (/code-graph), never a side effect of an edit:
-# a hook that rebuilds a whole graph on every write would tax every session for a map most turns
-# never read. Once the drift is large (more than 20 edited files since the last build), the map is
-# probably steering dispatch decisions wrong rather than just slightly behind, so this ALSO emits
-# hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
-# specs-reminder.sh's fixed-literal JSON. Never blocks: always exit 0.
+# Non-blocking graph maintenance, three tiers by cost of the rebuild:
+#   1. HARNESS edits (.claude/ agents, rules, commands, hooks, settings.json, disabled.json):
+#      regenerate .claude/state/harness-graph.json + harness-graph.html IMMEDIATELY - the scan
+#      is ~50 small files, cheap enough to rebuild as a side effect, and a stale wiring map is
+#      worse than the ~100ms it costs.
+#   2. DOCS edits (docs/**/*.md, only when a docs graph was already built): regenerate the docs
+#      graph + HTML immediately - docs trees are small too.
+#   3. SOURCE edits: record the path in .claude/state/code-graph.stale so agents (and
+#      /code-graph --check) know the graph lags the code. The rebuild itself stays deliberate
+#      (/code-graph): a full source scan on every write would tax every session for a map most
+#      turns never read. Past 20 accumulated edits this ALSO emits
+#      hookSpecificOutput.additionalContext nudging /code-graph.
+# Never blocks: always exit 0.
 #
 # Contract: reads the PostToolUse JSON payload on stdin. Exit 0 = allow, always.
 
@@ -91,8 +96,39 @@ base_cwd="${JF[1]}"
 [ -z "$base_cwd" ] && base_cwd="."
 base_cwd=$(norm_path "$base_cwd")
 
-# Only source files invalidate the graph, and only if a graph exists to invalidate.
 norm=${path//\\//}
+
+# Tier 1: harness wiring changed - rebuild the harness graph now. Requires the scanner to be
+# installed; a repo scaffolded before harness-graph.py existed just falls through harmlessly.
+case "$norm" in
+  */.claude/agents/*.md|*/.claude/rules/*.md|*/.claude/commands/*.md|\
+  */.claude/hooks/*.sh|*/.claude/hooks/*.ps1|*/.claude/settings.json|*/.claude/disabled.json|\
+  .claude/agents/*.md|.claude/rules/*.md|.claude/commands/*.md|\
+  .claude/hooks/*.sh|.claude/hooks/*.ps1|.claude/settings.json|.claude/disabled.json)
+    if [ -f "$base_cwd/.claude/scripts/harness-graph.py" ]; then
+      if command -v python3 >/dev/null 2>&1; then PY=python3
+      elif command -v python >/dev/null 2>&1; then PY=python
+      else exit 0; fi
+      "$PY" "$base_cwd/.claude/scripts/harness-graph.py" --target "$base_cwd" --html --quiet >/dev/null 2>&1
+    fi
+    exit 0 ;;
+esac
+
+# Tier 2: a docs file changed and a docs graph exists - rebuild it now.
+case "$norm" in
+  */docs/*.md|docs/*.md)
+    if [ -f "$base_cwd/.claude/state/docs-graph.json" ] && \
+       [ -f "$base_cwd/.claude/scripts/docs-graph.py" ]; then
+      if command -v python3 >/dev/null 2>&1; then PY=python3
+      elif command -v python >/dev/null 2>&1; then PY=python
+      else exit 0; fi
+      "$PY" "$base_cwd/.claude/scripts/docs-graph.py" --target "$base_cwd" >/dev/null 2>&1
+      "$PY" "$base_cwd/.claude/scripts/graph-html.py" --target "$base_cwd" >/dev/null 2>&1
+    fi
+    exit 0 ;;
+esac
+
+# Tier 3: only source files invalidate the code graph, and only if a graph exists to invalidate.
 case "$norm" in
   *.py|*.js|*.jsx|*.ts|*.tsx|*.mjs|*.cjs|*.go|*.java|*.cs|*.rb|*.php|*.rs) : ;;
   *) exit 0 ;;

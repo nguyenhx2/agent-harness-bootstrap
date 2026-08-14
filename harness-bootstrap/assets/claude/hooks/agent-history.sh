@@ -21,6 +21,16 @@
 # final response) as one markdown file under .claude/state/history/ (gitignore .claude/state/).
 # The history-tracker agent reads and curates the archive.
 #
+# Detail level and retention come from .claude/state/history-level (2 lines: level, keep-count).
+#   full    - whole prompt + response per run (the historical behavior; default when unreadable)
+#   summary - per-run file, prompt/response truncated to 1500 chars + transcript pointer
+#   minimal - one index line per run in state/history/index.md, no per-run file
+#   off     - record nothing
+# After a per-run write, only the newest <keep-count> files are kept (filenames start with the
+# timestamp, so name order is age order; index.md is never pruned). keep-count 0 means
+# NEVER PRUNE, not keep-none - minimal/off write no per-run files, so 0 is their natural
+# value and nothing accumulates.
+#
 # Contract: ALWAYS exits 0. This hook must never block a run and never throw.
 
 {
@@ -145,10 +155,47 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
     RESPONSE_TXT="${out[1]:-}"
   }
 
+  # Windows-bash path normalization: the payload's cwd and transcript paths arrive as
+  # "C:\..." or "C:/...", which this bash cannot address directly (it would silently create
+  # a literal "C:" directory and archive into it). Same contract as the other .sh hooks.
+  norm_path() {
+    local p d rest
+    p=$(printf '%s' "$1" | tr '\\' '/')
+    case "$p" in
+      [A-Za-z]:/*) ;;
+      *) printf '%s' "$p"; return ;;
+    esac
+    if command -v wslpath >/dev/null 2>&1; then
+      wslpath -u "$p" 2>/dev/null && return
+    fi
+    if command -v cygpath >/dev/null 2>&1; then
+      cygpath -u "$p" 2>/dev/null && return
+    fi
+    d=$(printf '%s' "${p%%:*}" | tr 'A-Z' 'a-z')
+    rest=${p#*:}
+    if [ -d "/mnt/$d" ]; then printf '/mnt/%s%s' "$d" "$rest"
+    elif [ -d "/$d" ]; then printf '/%s%s' "$d" "$rest"
+    else printf '%s' "$p"
+    fi
+  }
+
   # --- resolve the archive dir against the payload's cwd -------------------------------------
   json_fields cwd agent_type agent_id agent_transcript_path transcript_path
   base="${JF[0]}"
   [ -z "$base" ] && base=$(pwd)
+  base=$(norm_path "$base")
+
+  # --- detail level + retention: .claude/state/history-level, 2 lines ------------------------
+  level='full'; keep=200
+  cfg="$base/.claude/state/history-level"
+  if [ -f "$cfg" ]; then
+    l1=$(sed -n 1p "$cfg" | tr -d ' \r')
+    l2=$(sed -n 2p "$cfg" | tr -d ' \r')
+    case "$l1" in full|summary|minimal|off) level="$l1" ;; esac
+    case "$l2" in ''|*[!0-9]*) ;; *) keep=$l2 ;; esac
+  fi
+  [ "$level" = 'off' ] && exit 0
+
   dir="$base/.claude/state/history"
   mkdir -p "$dir" || exit 0
 
@@ -157,8 +204,9 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
 
   tp="${JF[3]}"
   [ -z "$tp" ] && tp="${JF[4]}"
+  tp=$(norm_path "$tp")
   case "$tp" in
-    ''|/*|[A-Za-z]:/*) ;;
+    ''|/*) ;;
     *) tp="$base/$tp" ;;
   esac
 
@@ -177,6 +225,25 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
   [ -z "$desc" ] && desc='run'
   slug=$(printf '%s' "$desc" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' | cut -c1-48 | sed -E 's/-+$//')
   [ -z "$slug" ] && slug='run'
+
+  # --- minimal: one index line, no per-run file ----------------------------------------------
+  if [ "$level" = 'minimal' ]; then
+    printf '%s | %s | %s | %.120s\n' "$(date +%Y%m%d-%H%M%S)" "$agent" "$agent_id" "$desc" \
+      >> "$dir/index.md"
+    exit 0
+  fi
+
+  # --- summary: cap both bodies, keep the pointer to the full transcript ---------------------
+  if [ "$level" = 'summary' ]; then
+    if [ "${#prompt}" -gt 1500 ]; then
+      prompt="${prompt:0:1500}
+[truncated - full transcript: $tp]"
+    fi
+    if [ "${#response}" -gt 1500 ]; then
+      response="${response:0:1500}
+[truncated - full transcript: $tp]"
+    fi
+  fi
 
   rand=$(tr -dc 'a-z' < /dev/urandom 2>/dev/null | head -c 4)
   [ -z "$rand" ] && rand=$(printf '%04d' $((RANDOM % 10000)))
@@ -202,5 +269,15 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
     printf '%s\n' "$response"
     echo '```'
   } > "$file"
+
+  # --- retention: keep only the newest $keep per-run files (never index.md) -------------------
+  if [ "$keep" -gt 0 ] 2>/dev/null; then
+    count=$(ls -1 "$dir"/*.md 2>/dev/null | grep -cv '/index\.md$')
+    excess=$((count - keep))
+    if [ "$excess" -gt 0 ]; then
+      ls -1 "$dir"/*.md 2>/dev/null | grep -v '/index\.md$' | sort | sed -n "1,${excess}p" \
+        | while IFS= read -r old; do rm -f "$old"; done
+    fi
+  fi
 } 2>/dev/null
 exit 0

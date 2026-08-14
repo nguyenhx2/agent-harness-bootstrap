@@ -19,21 +19,32 @@ implement. Do not guess.
 
 {{ROUTING_TABLE}}
 
+{{#IF_TESTS}}
 {{#IF_TDD}}
-5. Implement test-first: {{UNIT_FRAMEWORK}} for the business rules, {{E2E_FRAMEWORK}} for the
-   user-visible flow. The test names the acceptance criterion it proves and fails before the
+5. Implement test-first: {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the
+   user-visible flow{{/IF_E2E}}. The test names the acceptance criterion it proves and fails before the
    implementation exists.
 {{/IF_TDD}}
 {{^IF_TDD}}
 5. Implement against the locked acceptance criteria, and ship the proving tests in the same change:
-   {{UNIT_FRAMEWORK}} for the business rules, {{E2E_FRAMEWORK}} for the user-visible flow. Each
+   {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the user-visible flow{{/IF_E2E}}. Each
    test names the criterion it proves.
 {{/IF_TDD}}
+{{/IF_TESTS}}
+{{^IF_TESTS}}
+5. Implement against the locked acceptance criteria. This project runs no automated test suite:
+   record in the session log how each criterion was verified by hand, and name the command or
+   screen used to prove it.
+{{/IF_TESTS}}
 {{#IF_DDD}}
    Keep the change inside the FR's bounded context. A new domain term enters
    `docs/context/glossary.md` before it enters the code (`.claude/rules/ddd.md`).
 {{/IF_DDD}}
+{{#IF_LIGHT}}
+   Lightweight mode: no methodology ceremony beyond the acceptance criteria. Small commits,
+   working software first - but the review gate below is never skipped.
+{{/IF_LIGHT}}
 6. Comply with `.claude/rules/`. The change is a proposal: a human reviews and decides.
-7. Run `/test`, then `/review-changes`.
+7. Run {{#IF_TESTS}}`/test`, then {{/IF_TESTS}}`/review-changes`.
 8. Do not deploy. Append the session-log rows to the task file and report which acceptance
    criteria are now met and which are not.

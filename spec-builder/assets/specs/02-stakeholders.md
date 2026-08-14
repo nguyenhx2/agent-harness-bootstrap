@@ -27,7 +27,7 @@ tags: [specs, stakeholders, {{PROJECT_SLUG}}]
      Each group here should map to a role in 06-access-control.md - if a group has no role, either
      the role is missing or the group is not a user. -->
 
-| Group | Size (approx.) | Technical comfort | Primary tasks | Role in [06](06-access-control.md) |
+| Group | Size (approx.) | Technical comfort | Primary tasks | Role in {{#IF_ACCESS}}[06](06-access-control.md){{/IF_ACCESS}}{{^IF_ACCESS}}[03](03-glossary.md)'s roles table{{/IF_ACCESS}} |
 |-------|----------------|-------------------|---------------|-------------------------------------|
 | <group> | <n, or "unknown - OI-nn"> | Low / Medium / High | <what they come to the system to do> | <role name> |
 

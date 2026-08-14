@@ -26,7 +26,7 @@ Behavioral constraints on the agent itself are in agent-guardrails.md.
 - **Encryption**: TLS in transit with verification ON; sensitive data encrypted at rest; secrets
   never logged, never echoed in an error message.
 - **No personal data in logs, metrics, traces, commits, branch names, or fixtures.** Tests use
-  synthetic data (testing.md).
+  synthetic data{{#IF_TESTS}} (testing.md){{/IF_TESTS}}.
 - **Retention and egress**: sensitive data leaves the system only along a documented path. Minimize
   what is sent to any third party, and record what is retained and for how long.
 

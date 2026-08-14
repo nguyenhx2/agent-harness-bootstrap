@@ -2,8 +2,8 @@
 
 Three questions this file answers:
 
-1. Which recognised body of practice does each of the thirteen sections come from?
-2. Why this shape - thirteen numbered files with stable IDs - and not something else?
+1. Which recognised body of practice does each numbered section come from?
+2. Why this shape - numbered files with stable IDs, selected per project - and not something else?
 3. How is the output ready to be consumed by `harness-bootstrap`?
 
 ## The honest framing, before anything else
@@ -11,7 +11,7 @@ Three questions this file answers:
 **This is an opinionated synthesis, not a certified implementation of any single standard.**
 
 No clause of ISO/IEC/IEEE 29148 requires a file named `05-functional-requirements.md`. No auditor will
-accept this spec set as evidence of conformance to anything. What the thirteen sections do is borrow
+accept this spec set as evidence of conformance to anything. What the sections do is borrow
 the *content model* of the requirements-engineering standards, the *quality-attribute taxonomy* of
 ISO/IEC 25010, the *elicitation and traceability discipline* of BABOK, and the *security verification
 posture* of OWASP - and arrange them so that a language model and a team of coding agents can be held
@@ -65,7 +65,13 @@ the security reviewer actually cites.
 | 11 | Assumptions and constraints | AS-nn, CO-nn, OI-nn, DP-nn, and what is explicitly not specified | BABOK *Requirements Life Cycle Management* (an unresolved requirement is tracked, not silently closed); 29148's *feasible* and *correct* characteristics | The pressure-release valve. This is the section that makes "never invent a requirement" a workable rule instead of a slogan - the gap has somewhere to go |
 | 12 | Technical feasibility | Every FR rated Yes / Partial / No, with a reason, a confidence, and a mitigation; risks; PoCs | 29148's *feasible* characteristic, made into a per-requirement artefact; BABOK *Solution Evaluation* | Synthesis in its form. No standard asks for a feasibility table keyed by requirement ID. It is here because "Partial" and "No" are cheap in week one and ruinous in month four - and because it is the greenfield equivalent of the brownfield gap list |
 | 13 | Revision history | Versioned change log of the **contract**, plus the requirement lifecycle (withdrawn / superseded) | BABOK *Requirements Life Cycle Management*; 29148 requirements-management and baselining | Git records file edits. This records *contract* movements - the ones that invalidate an estimate someone else made |
+| 14 | Design system (optional appendix) | Design tokens (DT-nn), component inventory (DS-nn), brand assets, accessibility mapping | Design-token practice (W3C Design Tokens Community Group draft); WCAG via the NFR-USE mapping; no requirements standard covers this | Synthesis. 10 stays structural on purpose; when a design system is real, its decisions need one home with IDs, or every screen re-decides the palette. 13 remains the last mandatory section |
 | - | README | Index, reading guide, ID schemes, the traceability diagram | Synthesis | The entry point a human and an agent both read first |
+
+**Section selection.** Only `README`, 01, 03, 05, 07, 11, and 13 are unconditional. The rest are
+installed when the input material shows they are real (the setup batch in `elicitation.md`); an
+empty section erodes trust in the filled ones. Numbers are stable whether or not neighbors exist,
+and a skipped section can be added later by re-running the scaffolder.
 
 ### 07's categories against ISO/IEC 25010:2023
 
@@ -92,16 +98,18 @@ an oversight to gloss over:
 
 ## Part 2 - Why this shape, and not something else
 
-### Why thirteen files, and not one SRS document
+### Why numbered files, and not one SRS document
 
-29148 and IEEE 830 both describe a *document*. This is thirteen files. Four reasons, in order of how
-much they actually matter:
+29148 and IEEE 830 both describe a *document*. This is a set of files. Four reasons, in order of
+how much they actually matter:
 
 - **An agent can load one section.** This is the argument that does not exist in the 1998 literature
   and dominates here. A dev agent implementing FR-03 needs section 05 and maybe 08. It does not need
   the stakeholder map, the revision history, or the wireframes. A single 2,000-line SRS is loaded in
-  full or not at all, and the tokens are spent on every dispatch. Thirteen files make the read
-  selective, and `docs/specs/` becomes cacheable prefix content rather than a tax.
+  full or not at all, and the tokens are spent on every dispatch. Separate files make the read
+  selective, and `docs/specs/` becomes cacheable prefix content rather than a tax. The same argument
+  is why a section that outgrows one file splits into a folder (writing-rules.md), and why sections
+  the project does not need are not installed at all.
 - **Diffability.** A change to the permission matrix produces a diff in `06-access-control.md`. In a
   monolithic SRS it produces a diff in "the SRS", and the reviewer has to find it. The reviewer who
   has to find it does not find it.
@@ -110,16 +118,13 @@ much they actually matter:
 - **Reviewability.** "Has the security section been filled in" is a question you can answer by opening
   one file. That is what makes the quality gate in `SKILL.md` mechanical rather than aspirational.
 
-The cost is real and worth stating: thirteen files can drift apart in a way one document cannot. That
-cost is paid by the ID scheme and the traceability rules below, and by the link-resolution check in
-the quality gate. Without those, the split would be a downgrade.
+The cost is real and worth stating: separate files can drift apart in a way one document cannot.
+That cost is paid by the ID scheme and the traceability rules below, and by the link-resolution
+check in the quality gate. Without those, the split would be a downgrade.
 
 ### Why stable IDs and anchors
 
-`FR-nn`, `NFR-XXX-nn`, `UC-xx`, `US-xx`, `BR-xx`, `AS-xx`, `OI-xx`, `SCR-xx`, `INT-xx`, `CO-xx`,
-`DP-xx`, `R-xx`, `BF-xx` - each with a relative-path link convention, and an anchor form for the ones
-addressed directly and often enough to need one (`{#fr-01}`, `{#oi-01}`, the NFR category anchors
-like `{#nfr-security}`). The rest are linked by a plain file link; see writing-rules.md.
+The full prefix inventory and anchor forms live in writing-rules.md, the single authoring home.
 
 BABOK and 29148 both call for traceability. Neither says how. The position taken here:
 
@@ -164,59 +169,28 @@ handling and provider retention terms - must all be filled before the set is rev
 organisation has not decided, that becomes an open issue with a named owner and a date. It is still
 not a blank cell.
 
-The failure mode, stated plainly:
+The failure mode, stated plainly: **a security requirement deferred to implementation is a security
+requirement nobody writes.** It gets decided by a developer at 4pm on a Thursday who needs the
+feature to work, and the choice becomes load-bearing and undocumented. Nothing breaks - a missing
+encryption-at-rest requirement produces no test failure and no ticket, only a breach eighteen
+months later with no author. A blank permission-matrix cell is the same failure with a shorter
+fuse: it is read as "allowed" by whoever implements it. And classification comes *first* (08's
+column, enforced by NFR-SEC-01) because no encryption, retention, or redaction rule can be chosen
+before knowing which fields are PII.
 
-**A security requirement deferred to implementation is a security requirement nobody writes.** It does
-not get deferred to a security engineer. It gets deferred to a developer at 4pm on a Thursday who
-needs the feature to work, who picks whatever makes it work, and whose choice is then load-bearing and
-undocumented. Nobody ever comes back for it, because nothing is broken - a missing encryption-at-rest
-requirement produces no test failure, no error, and no ticket. It produces a breach, eighteen months
-later, and by then the decision has no author.
-
-A blank cell in a permission matrix is the same failure with a shorter fuse: it is read as "allowed"
-by whoever implements it.
-
-This is why the classification column in 08 is not optional either. You cannot choose an encryption
-rule, a retention period, or a log-redaction rule until you know which fields are PII - which is why
-classification comes *first* in 07 and is enforced by NFR-SEC-01.
-
-For a system where user or third-party content reaches an LLM, `NFR-SEC-11` through `NFR-SEC-15` are
-not hardening extras. They are the requirements that stop a document upload from becoming a command
-channel. They correspond to `LLM01:2025` (prompt injection - untrusted content is data, never
-instructions), `LLM05:2025` (improper output handling - model output is validated against a schema
-before it reaches a database, a shell, a browser, or another API), and `LLM06:2025` (excessive agency
-- the model's tool permissions are minimal and irreversible actions need a human step). `NFR-SEC-14`,
-the provider's data-retention terms, is a **contractual fact, not a guess**: if nobody has read the
-terms, that is an open issue with an owner, not a sentence you write from memory of the vendor's
-marketing page.
+Where user or third-party content reaches an LLM, `NFR-SEC-11`..`NFR-SEC-15` are what stop a
+document upload from becoming a command channel: `LLM01:2025` (untrusted content is data, never
+instructions), `LLM05:2025` (model output validated against a schema before it reaches a database,
+shell, browser, or API), `LLM06:2025` (minimal tool permissions; irreversible actions need a human
+step). `NFR-SEC-14`, the provider's retention terms, is a **contractual fact, not a guess** - if
+nobody has read the terms, that is an OI with an owner.
 
 ### Why "never invent a requirement" is the hardest rule
 
-It is the hardest because it runs directly against what a language model is for. Filling a gap with
-something plausible is the core competence. Here it is the primary failure mode.
-
-The economics are asymmetric and that asymmetry is the whole argument:
-
-- A **missing** requirement is *visible*. Work stalls. Someone asks. It gets answered. Cost: one
-  conversation.
-- A **plausible invented** requirement is *invisible*. It is estimated, built, tested against itself,
-  and every downstream document - the feasibility table, the PRD, the task board, the test plan -
-  treats it as settled. It surfaces in UAT, in front of the one person who always knew it was wrong.
-
-There is a tell: you find yourself writing a requirement that reads well and that nobody said.
-
-What goes in 11 instead:
-
-- Proceeding on it, and it would change the design if false? **AS-nn**, with an impact-if-false and a
-  named owner who can confirm. "Confirmed" flips to Yes only when a person says yes - not because the
-  assumption seems increasingly likely, and not because the sprint started.
-- Not proceeding on it, and something is blocked? **OI-nn**, with the question stated so it can be
-  answered yes/no or with a number, plus an owner (a person, not a team) and a needed-by date.
-- Imposed from outside and not negotiable? **CO-nn**. A decision the *team* made is not a constraint;
-  it is an ADR, and filing it here disguises it as immovable.
-
-A spec set with no open issues is almost always a fabricated one. Real projects have unknowns, and a
-document showing none has hidden them.
+The full argument - the asymmetric economics, the tell, and the AS/OI/CO routing into 11 - lives in
+`elicitation.md`, which is the single home of that rationale. The one structural point that belongs
+here: section 11 is what makes the rule *workable* rather than a slogan, because the gap has
+somewhere to go, and a spec set with no open issues is almost always a fabricated one.
 
 ### What this is not - the limits
 
@@ -237,7 +211,7 @@ Read this list before quoting this document at anyone.
   assumptions attached, and that is deliberately as far as it goes.
 - **The ID scheme is flat.** `FR-01`..`FR-nn` with no hierarchy or sub-numbering. That is fine at the
   scale this is built for - tens of requirements, not thousands. Past a few hundred FRs you want a
-  requirements management tool with real link types, not thirteen markdown files.
+  requirements management tool with real link types, not a folder of markdown files.
 
 ## Part 3 - How it is ready for harness-bootstrap
 
@@ -299,15 +273,9 @@ flowchart LR
 
 ### 05 functional requirements to the dev-agent roster
 
-`roster.md`, under "Deriving the dev-agent lineup", is explicit:
-
-> **Greenfield with specs:** cluster the FR list into feature domains - FRs sharing data entities, a
-> pipeline stage, or an external provider belong to one domain. One dev agent per cluster, scoped to
-> the *planned* module path (`src/lib/<domain>/`).
-
-So the clustering key comes straight out of 05 and 08: shared entities (the `Persistence` row of each
-FR and the ERD in 08), shared pipeline stage (the flows in 04), shared provider (the integrations in
-09). A worked example of the mapping:
+The clustering key comes straight out of 05 and 08: FRs sharing data entities (the `Persistence`
+row and 08's ERD), a pipeline stage (04's flows), or an external provider (09's integrations)
+belong to one domain, one dev agent per cluster. A worked example:
 
 | FR cluster (from 05) | Feature domain | Dev agent | Scope |
 |---------------------|----------------|-----------|-------|
@@ -315,45 +283,23 @@ FR and the ERD in 08), shared pipeline stage (the flows in 04), shared provider 
 | FR-03, FR-04 - both call INT-01, neither persists | External sync | `sync-dev` | `src/lib/sync/` |
 | FR-06 - reporting reads across every entity | Reporting | `reporting-dev` | `src/lib/reporting/` |
 
-Downstream of that one clustering decision:
+Downstream of that one decision: the orchestrator's routing table, the commit scope list, and the
+roster preset (roughly one dev agent per 2-3 FRs; more than ~5 at bootstrap is speculative
+splitting). Without 05, the fallback is a single `app-dev` owning everything - no routing, no
+ownership - which is the direct, measurable cost of skipping the specs.
 
-- the **orchestrator's routing table** (`{{ROUTING_TABLE}}`), which every `/implement-fr` dispatch
-  reads to pick the owning agent,
-- the **commit scope list** (`{{COMMIT_SCOPES}}`) - intake question 12 asks for "one scope per module
-  or FR area",
-- the **roster preset**: `roster.md`'s rule of thumb is roughly one dev agent per 2-3 FRs on a large
-  product, and more than about five dev agents at bootstrap is speculative splitting. An FR count is
-  what makes that judgment possible.
+### 08 data model to the `db` flag; 10 UI/UX to the `ui` flag
 
-Without 05, `roster.md`'s fallback applies: a single `app-dev` scoped to `src/`, plus a registered
-task to split it later. That is a *worse harness* - one agent owning everything, no routing, no
-ownership - and it is the direct, measurable cost of skipping the specs.
-
-### 08 data model to the `db` flag and the DB seats
-
-- The presence of a real ERD and data dictionary in 08 sets the **`db` flag** (intake question 5).
-- The `db` flag gates `rules/data-model.md`, the `/db-migration` command, and the `data-modeler`,
-  `db-engineer`, and `db-seeder` seats (`roster.md` Tier 2: "start with `data-modeler` alone and add
-  the others when migrations and seeding become real work").
-- The entity list in 08 becomes the entity section of `rules/data-model.md`. `harness-bootstrap`'s
-  SKILL.md says `data-model.md` ships with generic migration-safety discipline and that "you still
-  fill in this project's actual entities" - 08 is where those come from.
-- 08's `Volume estimate` column and 07's `NFR-SCA-01` are what tell `data-modeler` whether an index
-  strategy is a design concern or a non-issue.
-
-### 10 UI/UX to the `ui` flag and the frontend seat
-
-- Screens in 10 set the **`ui` flag** (intake batch F).
-- The `ui` flag gates `rules/frontend.md` and the **`frontend-ui-dev`** seat (`roster.md` Tier 2:
-  "project has UI").
-- `NFR-USE-02` in 07 carries the accessibility target, which is exactly what intake question 21 asks
-  for (default WCAG 2.1 AA). When 07 is filled, that question is already answered.
-- 10's "Serves" column is what lets `spec-guardian` tell a UI change that implements an FR from a UI
-  change that is unreviewed scope.
+A real ERD in 08 sets `db`, which gates `rules/data-model.md`, `/db-migration`, and the DB seats;
+08's entity list is what fills the rule's entity section, and its volume column (with `NFR-SCA-01`)
+tells `data-modeler` whether indexing is a design concern. Screens in 10 set `ui`, gating
+`rules/frontend.md` and the frontend seat; `NFR-USE-02` pre-answers the accessibility intake
+question, and 10's "Serves" column is what lets `spec-guardian` tell an FR-implementing UI change
+from unreviewed scope.
 
 ### 07 security NFRs and data classification to settings and rule strictness
 
-This is the highest-value handoff, and it needs the most honesty about what is and is not automatic.
+The highest-value handoff, and the one needing the most honesty about what is automatic.
 
 | From 07 / 06 | Consumed by | How |
 |--------------|-------------|-----|
@@ -369,32 +315,19 @@ come from intake questions 19 and 6, **not** from the specs. The specs set the *
 
 ### The `ai` flag and the prompt-injection clauses
 
-If the system feeds user or third-party content to an LLM, the `ai` flag is set (intake questions 6
-and 15). The signal is in the specs: 01's "AI in this system" table, 05's model-versus-human boundary
-table, and above all 07's `NFR-SEC-11`..`NFR-SEC-15`. The flag then pulls in:
-
-- `rules/security-privacy.md`'s "prompt injection and agentic hygiene" section, anchored to
-  `LLM01:2025`, `LLM03:2025`, `LLM06:2025`, and the Agentic Top 10,
-- the human-in-the-loop guardrails in `agent-guardrails.md`,
-- 12's model-feasibility table, which is what stops "the model can probably do this" from becoming an
-  estimate.
-
-The chain is tight: 05's "who does what" table names the actions that must not auto-execute;
-`NFR-SEC-13` requires a human step for irreversible actions; the harness enforces it with deny rules
-and hooks. Break the first link and the last two are enforcing nothing in particular.
+User or third-party content reaching an LLM sets `ai`. The signal is in the specs: 01's "AI in this
+system" table, 05's model-versus-human boundary table, and above all `NFR-SEC-11`..`NFR-SEC-15`.
+The flag pulls in `security-privacy.md`'s prompt-injection section, the human-in-the-loop
+guardrails, and 12's model-feasibility table. The chain is tight: 05 names the actions that must
+not auto-execute, `NFR-SEC-13` requires the human step, the harness enforces it with deny rules and
+hooks - break the first link and the others enforce nothing in particular.
 
 ### 12 feasibility to the master-plan Phase 1 backlog
 
-`harness-bootstrap` step 6: "In brownfield, seed Phase 1 from the analysis gap list - one registered
-task per gap - so the orchestrator finds real work on its first session."
-
-**Section 12 is the greenfield equivalent of that gap list - by analogy, not by a wired mechanism.**
-Unlike 03, 05, 07, 08, and 10, `harness-bootstrap`'s intake and scaffolder have no step that reads
-`12-technical-feasibility.md`: there is no `{{VAR}}` it fills and no flag it sets. Turning 12 into a
-Phase 1 backlog is manual work you do while running `harness-bootstrap`, using the table below as the
-checklist - it is the one entry in this consumption map that stays judgment on the harness side too,
-not only on the spec-builder side. It is still the most valuable section for that purpose, because it
-produces work items rather than descriptions:
+**Section 12 is the greenfield equivalent of brownfield's analysis gap list - by analogy, not by a
+wired mechanism.** Unlike 03, 05, 07, 08, and 10, nothing in `harness-bootstrap` reads 12: no
+`{{VAR}}`, no flag. Turning it into the Phase 1 backlog is manual work done while running the
+harness bootstrap, with this table as the checklist:
 
 | Row in 12 | Becomes |
 |-----------|---------|
@@ -409,22 +342,13 @@ empty board.
 
 ### spec-guardian - why the specs are load-bearing at runtime
 
-`spec-guardian` is Tier 0 in `roster.md`: unconditional, every project. Its agent definition states
-its sources of truth in order: `docs/specs/` first, then `docs/requirements/`. It has `Read, Grep,
-Glob` and nothing else - no Bash, no Edit. It reads the specs and it reads the diff. That is the whole
-job.
-
-Which means:
-
-**Without the specs, spec-guardian has nothing to guard.** It is dispatched before every feature (to
-lock the contract) and after (to check for drift), and it reports `met` / `not met` / `drifted` per
-acceptance criterion. Every one of those verdicts is a comparison against a written criterion. Remove
-the criteria and the agent degrades into a second code reviewer with an opinion - and **requirement
-drift becomes undetectable**, because there is no longer anything for the code to drift *from*.
-
-The same argument applies to the shipped `specs-reminder` hook, which fires `PostToolUse` on any edit
-under `docs/specs/` and names `13-revision-history.md` by path. The harness ships infrastructure that
-assumes this file layout exists.
+`spec-guardian` (Tier 0, every project, `Read/Grep/Glob` only) reads the specs and the diff -
+that is the whole job. It reports `met` / `not met` / `drifted` per acceptance criterion, and every
+verdict is a comparison against a written criterion. **Without the specs it has nothing to guard**:
+it degrades into a second code reviewer with an opinion, and requirement drift becomes undetectable
+because there is nothing for the code to drift *from*. The shipped `specs-reminder` hook (fires on
+any edit under `docs/specs/`, names `13-revision-history.md`) assumes this layout exists for the
+same reason.
 
 ### What harness-bootstrap does not get from the specs
 
@@ -440,12 +364,5 @@ For honesty, and so nobody goes looking:
 
 ### The seeding handoff, once 03 and 05 are filled
 
-`spec-builder`'s SKILL.md already specifies this, and it is the mechanical part of the contract:
-
-- `docs/requirements/PRD-FR-NN-<slug>.md` - one stub per FR, from `docs/templates/PRD.md`, with
-  `Source requirement` pointing back at `../specs/05-functional-requirements.md#fr-nn`.
-- `docs/context/glossary.md` - from section 03.
-- `docs/context/business-rules.md` - from the `BR-nn` tables in section 05.
-
-Seed, do not duplicate. The spec section stays the source of truth; the context file links back to it.
-Two copies of a business rule means one of them is wrong within a month, and nobody knows which.
+Specified in SKILL.md ("Composes with harness-bootstrap"): PRD stubs per FR, the glossary copy, the
+business-rules copy - seeded, never duplicated; the spec section stays the source of truth.

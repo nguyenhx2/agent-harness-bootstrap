@@ -45,12 +45,31 @@ The distinction that matters: **infer structure, ask for decisions.** You may de
 approver is, whether they may approve their own submission, or what happens if they are on leave -
 those are decisions.
 
+## Routing by input type
+
+Classify the source first; the route decides how much you ask and in what order. Every route ends
+at the same gate: the confirmed FR list plus the section selection.
+
+| Source | Route | Reason |
+|--------|-------|--------|
+| A one-line idea | Guided elicitation, all four batches | Nothing can be inferred; asking is the work |
+| Transcript or meeting notes | Extraction pass, then confirm the FR list | The facts exist; the risk is over-reading them |
+| An existing PRD or spec | Map onto the sections, gaps become the questions | Structure exists; security, data, and feasibility usually do not |
+| Legacy doc pile | Per-doc mapping table, then reconcile | Multiple sources disagree; the diff is the finding |
+| Existing codebase | Read schema and route layer as evidence, ask intent | Code shows behaviour, never intent |
+| Existing partial specs | Reconcile mode - diff, never overwrite | `/spec-ingest`'s discipline applies from the first read |
+
+For a heavy multi-document pile (scanned decks, mixed formats, diagram-dense sources): if a
+document-digestion skill of the docs-to-knowledge class is installed, delegating the digestion to
+it first and ingesting its output is cheaper and more auditable than reading raw sources inline.
+Optional - never required.
+
 ## By input type
 
 ### A one-line idea
 
 Expect to ask the most. Do not compensate by filling the gaps yourself - a spec set built on one
-line plus your imagination is thirteen documents of fiction with a table of contents.
+line plus your imagination is a spec set of fiction with a table of contents.
 
 Ask in batches (max 4 questions per `AskUserQuestion` call), in this order:
 
@@ -77,7 +96,7 @@ The richest input, and the one most likely to be over-read. Discipline:
 
 ### An existing PRD or spec
 
-- Map it onto the 13 sections; do not restructure its content, and do not "improve" a requirement
+- Map it onto the numbered sections; do not restructure its content, and do not "improve" a requirement
   while moving it. Preserve the original ID if it has one and note the mapping.
 - The gaps are the deliverable. A PRD almost always has functional requirements and almost never
   has: security NFRs, data classification, permission scope, failure behaviour for integrations, or
@@ -121,6 +140,26 @@ Suggested batches:
 4. **Constraints**: security and compliance obligations (name the regime, not just "secure"),
    deadlines, budget, stack constraints.
 
+## The setup batch - language, sections, profile
+
+One `AskUserQuestion` call, before scaffolding (skip any part the request already answered):
+
+- **Output language** (single choice): Vietnamese / Japanese / English / other. Prose follows it;
+  codes and IDs stay English per writing-rules.md.
+- **Sections to create** (multi-select): the core is fixed and not offered (README, 01, 03, 05, 07,
+  11, 13 - section 11 is core because every `AS-nn`/`OI-nn` needs its registry). Offer each
+  optional section with a one-line description, pre-selecting the ones the source material shows to
+  be real: stakeholder map -> 02, process handoffs -> 04, roles with scopes -> 06, owned persistent
+  data -> 08, external systems -> 09, screens -> 10, buildability risk -> 12, an existing or
+  planned design system -> 14. Recommend, never force: an unselected section can be added later by
+  re-running the scaffolder.
+- **Standards profile** (single choice): full synthesis (Recommended - the complete quality gate)
+  / lightweight (core sections, gate limited to completeness + grounding; traceability checks run
+  only over what exists). Lightweight changes the gate's breadth, never the never-invent rule.
+
+The selection is recorded in the step 2 confirmation gate and is what the quality gate verifies
+against.
+
 If the user cannot answer a batch, that is a result: each unanswered question becomes an OI with an
 owner and a needed-by date. A spec set full of well-formed open issues is a good deliverable. A
 spec set with no open issues is almost always a fabricated one - real projects have unknowns, and a
@@ -148,7 +187,7 @@ soon you ask and how many at once, never whether you ask.
 
 ## The confirmation gate
 
-Before writing sections 02-13, echo back:
+Before writing sections 02-14, echo back:
 
 - the FR list with proposed MoSCoW priorities (marked as *proposed*),
 - the roles,

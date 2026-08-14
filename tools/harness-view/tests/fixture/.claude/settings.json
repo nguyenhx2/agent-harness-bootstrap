@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./**/.env)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "command": "bash .claude/hooks/graph-stale.sh",
+            "type": "command"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/specs-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/protect-secrets.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

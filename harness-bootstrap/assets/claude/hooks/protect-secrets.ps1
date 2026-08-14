@@ -55,7 +55,7 @@ if ($cmd) {
         exit 2
     }
     if ($cmd -match $dbResetPattern) {
-        [Console]::Error.WriteLine("BLOCKED: destructive DB command. Migrations only via the controlled /db-migration flow; DB resets must be run by the user themselves.")
+        [Console]::Error.WriteLine("BLOCKED: destructive DB command. Schema changes go through the controlled migration flow; DB resets must be run by the user themselves.")
         exit 2
     }
 }

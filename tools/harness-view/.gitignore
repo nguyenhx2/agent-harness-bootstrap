@@ -1,0 +1,3 @@
+target/
+tests/fixture/.claude/state/harness-graph.json
+tests/fixture/.claude/disabled.json

@@ -5,6 +5,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.8.0
+
+A fitted harness instead of a fixed one, a map of what got built, and runtime control over it.
+
+- **The roster fits the project.** Planning and history seats ship only for long-running work, the
+  database seats are separate choices, small projects can merge the two reviewers into one, and
+  testing is a question with a real "none" answer rather than an always-on assumption. A default
+  install is materially smaller than before.
+- **See the harness you built.** A canonical `harness-graph.json` records every agent, rule,
+  command, hook, and their typed relationships; the viewer gained a layered Flow view beside the
+  force-directed one; and both graphs rebuild themselves as soon as you change the harness or the
+  docs.
+- **Turn things off without hand-editing.** `/harness-toggle` disables and re-enables rules,
+  commands, and hooks through a committed ledger that survives scaffold re-runs, with a typed
+  confirmation guarding the controls that matter most.
+- **A native viewer.** `tools/harness-view` is an optional Rust binary that reads the same graph
+  contract and serves the same two views, with a file watcher and a toggle panel. The bundled HTML
+  viewer still needs nothing installed.
+- **Specs you actually asked for.** `spec-builder` now selects sections from the input material
+  instead of always writing thirteen, adds a design-system section with token and component IDs,
+  and can split a long section into a folder.
+- **Safety fixes worth naming.** The scaffolder rejects mistyped flags that used to leave every
+  guardrail silently dead; the toggle refuses path traversal; a corrupt ledger aborts instead of
+  resurrecting disabled controls; and the generated graph page escapes repository content.
+
+Guardrail eval: 68/68 per hook flavor, 136/136 across both. Read path 45 percent below the
+predecessor skill. Figures from `eval/guardrail_eval.py` and `benchmark/benchmark.py`.
+
 ## v1.7.0
 
 Wider skill sourcing, current-version presets, a value-free path to local env files, and two
@@ -203,13 +231,13 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 21 commands, 9 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (`15 agents, 15 rules, 21 commands, 9 hooks`, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
 - 9 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
-- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 33/33 correct. The guardrails are shell scripts, so the result does not change with the model.
+- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: `33/33` correct. The guardrails are shell scripts, so the result does not change with the model.
 
 **State on disk, not in context**
 
@@ -218,7 +246,7 @@ the harness the agent runs inside.
 **Cost as a decision**
 
 - Every agent carries an explicit `model:`, `effort:`, a narrow `tools:` grant and `maxTurns`. An unset `model:` inherits the caller's tier, which bills mechanical work at Opus rates.
-- 9 of 15 rules are path-scoped, keeping 66% of rule content out of the default session.
+- 9 of 15 rules are path-scoped, keeping `66%` of rule content out of the default session.
 - Assets are real files copied by `scripts/scaffold.py` rather than prose the model retypes: 64% less to read and 85% less to author than the predecessor skill. Figures from `benchmark/benchmark.py`.
 
 **Governance**

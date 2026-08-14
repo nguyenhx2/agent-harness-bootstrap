@@ -1,7 +1,7 @@
 # Writing rules
 
-The conventions every file under `docs/specs/` follows. They exist so that thirteen documents read
-as one document, and so that a link written in month one still resolves in month nine.
+The conventions every file under `docs/specs/` follows. They exist so that the selected sections
+read as one document, and so that a link written in month one still resolves in month nine.
 
 ## Output language
 
@@ -55,6 +55,13 @@ tags: [specs, requirements, <project-slug>]
 | `SCR-xx` | Screen | - |
 | `INT-xx` | Integration | - |
 | `SH-xx` | Stakeholder | - |
+| `DS-xx` | Design-system component (14) | - |
+| `DT-xx` | Design token (14) | - |
+
+This table is the single authoring home of the ID scheme. The shipped `assets/specs/README.md`
+carries the project-facing copy for downstream readers; when a prefix is added here, add it there
+and in harness-bootstrap's `docs-graph.py` ID regex in the same change - the graph cannot trace an
+ID it does not scan for.
 
 **IDs are stable and are never reused.** A withdrawn requirement keeps its number, is marked
 withdrawn, and is recorded in `13-revision-history.md`. Somewhere there is a task, a commit, or a
@@ -76,6 +83,29 @@ exists, so the reader lands on the requirement and not at the top of a 400-line 
 
 Never restate content that lives in another section. Link to it. Two copies of a business rule
 means one of them is wrong within a month, and nobody knows which.
+
+## When a section outgrows its file
+
+Any numbered section may become a folder once the single file would exceed ~400 lines or ~25 KB:
+
+```
+docs/specs/05-functional-requirements/
+  README.md            # the summary table, UC-xx, US-xx, and the traceability matrix
+  FR-01-<slug>.md      # one file per FR (or per small FR cluster)
+  FR-02-<slug>.md
+```
+
+- The folder is named exactly like the file it replaces (`NN-<name>/`), so the section number and
+  every reading-guide reference stay valid.
+- The `README.md` index keeps everything that spans FRs; each `FR-nn-<slug>.md` carries the full FR
+  block, and the anchor `{#fr-nn}` moves with it.
+- Update every inbound link in the same change (`05-functional-requirements.md#fr-03` becomes
+  `05-functional-requirements/FR-03-<slug>.md#fr-03`). A split that leaves stale links is worse
+  than the long file.
+- The same pattern applies to any other section that grows past the threshold (07 by NFR category,
+  09 by integration, 04 by flow). Split by the section's own ID unit, never by arbitrary halves.
+- Do not split early. Under the threshold, one file beats a folder: fewer reads for an agent,
+  simpler diffs for a human.
 
 ## Diagrams
 

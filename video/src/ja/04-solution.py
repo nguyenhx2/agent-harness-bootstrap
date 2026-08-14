@@ -150,7 +150,7 @@ class Solution(Scene):
         # ============ Beat 2: spec-builder writes the contract ==========
         raw = box("アイデア / メモ / 書き起こし / 旧ドキュメント", NEUTRAL, DIM, w=6.6, h=0.72, fs=18)
         sb = box("spec-builder", PURPLE, PURPLE_HI, w=4.0, h=0.82, fs=24)
-        specs = box("docs/specs/  -  13セクション", NEUTRAL, WHITE, w=5.6, h=0.82, fs=20)
+        specs = box("docs/specs/  -  選択式セクション", NEUTRAL, WHITE, w=5.6, h=0.82, fs=20)
         stack = VGroup(raw, sb, specs).arrange(DOWN, buff=0.72).move_to([RX, 1.35, 0])
         a1 = down_arrow(raw.get_bottom(), sb.get_top())
         a2 = down_arrow(sb.get_bottom(), specs.get_top())
@@ -187,10 +187,10 @@ class Solution(Scene):
         a4 = down_arrow(reads.get_bottom(), claude.get_top())
 
         grid = VGroup(
-            box("エージェント15\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("エージェント16\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
             box("ルール15\n常時6、スコープ9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
-            box("コマンド21", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("ブロッキングフック9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("コマンド22", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("フック9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  クラッシュを生き延びるボード", NEUTRAL, WHITE, w=6.8, h=0.7, fs=17).move_to(
@@ -275,7 +275,7 @@ class Solution(Scene):
         caption(self, "契約書、強制、永続する状態、選ばれた請求額。", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("ガードレール評価 33/33", GREEN_HI, fs=19),
+            tag("ガードレール評価 68/68", GREEN_HI, fs=19),
             tag("Opus -> Haiku: バイト単位で同一の安全性", GREEN_HI, fs=19),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
