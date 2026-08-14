@@ -3,6 +3,10 @@
 Documentation written for humans and AI agents alike. Each folder has a read level: how often an
 agent is expected to open it.
 
+**Documentation language: {{DOC_LANGUAGE}}.** Prose authored under `docs/` is written in that
+language. Agent-facing files (`.claude/*`, `AGENTS.md`, `CLAUDE.md`), codes, enums, IDs, and
+filenames stay English regardless.
+
 | Folder | Read level | Content |
 |--------|-----------|---------|
 | `specs/` | Always | The BA analysis: source of truth for requirements (FRs, NFRs, data model, access control) |

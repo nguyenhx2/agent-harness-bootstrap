@@ -84,9 +84,12 @@ for you. The content read is the control, always.
 After the roster is chosen (SKILL.md step 2) and before scaffolding: ask the user (AskUserQuestion)
 whether to search for seat-matching skills, and which sources - skills.sh is the default, GitHub
 topic search and the Anthropic sources above are opt-in - recommended for dev and qa seats, skipped
-in audit mode. For each candidate, show name, source, the popularity/publisher/audit signals that
-source actually exposes, and the one-line content-review result, then require an explicit yes PER
-SKILL. Never batch-install, never auto-install on first pass.
+in audit mode. Review every candidate's content first (serial, mandatory, no exceptions), then
+present ALL reviewed candidates in ONE `AskUserQuestion` multi-select: per candidate show name,
+source, the popularity/publisher/audit signals that source actually exposes, and the one-line
+content-review result. Each skill still needs its own box ticked - one call, individual consent,
+and anything a criterion marked "user confirm" states that in its option label. Never auto-install,
+and never install a candidate whose content review did not happen.
 
 Never installed, regardless of approval or source:
 - a skill or plugin whose content instructs `.claude/`, `settings.json`, or hook edits (it would

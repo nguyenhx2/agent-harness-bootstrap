@@ -1,5 +1,5 @@
 {
-  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR. Flags: ui, db, ai, audit, tdd, ddd, deploy_ask, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
+  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR; 'when_not' skips when ANY listed flag is set. Flags: ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests, deploy_ask, long, solo_review, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
   "files": [
     {
       "src": "claude/agents/ba-analyst.md",
@@ -7,11 +7,17 @@
     },
     {
       "src": "claude/agents/brainstormer.md",
-      "dest": ".claude/agents/brainstormer.md"
+      "dest": ".claude/agents/brainstormer.md",
+      "when": [
+        "long"
+      ]
     },
     {
       "src": "claude/agents/code-reviewer.md",
-      "dest": ".claude/agents/code-reviewer.md"
+      "dest": ".claude/agents/code-reviewer.md",
+      "when_not": [
+        "solo_review"
+      ]
     },
     {
       "src": "claude/agents/data-modeler.md",
@@ -24,14 +30,16 @@
       "src": "claude/agents/db-engineer.md",
       "dest": ".claude/agents/db-engineer.md",
       "when": [
-        "db"
+        "db",
+        "db_engineer"
       ]
     },
     {
       "src": "claude/agents/db-seeder.md",
       "dest": ".claude/agents/db-seeder.md",
       "when": [
-        "db"
+        "db",
+        "db_seeder"
       ]
     },
     {
@@ -44,7 +52,10 @@
     },
     {
       "src": "claude/agents/history-tracker.md",
-      "dest": ".claude/agents/history-tracker.md"
+      "dest": ".claude/agents/history-tracker.md",
+      "when": [
+        "long"
+      ]
     },
     {
       "src": "claude/agents/merge-manager.md",
@@ -56,11 +67,24 @@
     },
     {
       "src": "claude/agents/qa-test.md",
-      "dest": ".claude/agents/qa-test.md"
+      "dest": ".claude/agents/qa-test.md",
+      "when": [
+        "tests"
+      ]
+    },
+    {
+      "src": "claude/agents/reviewer.md",
+      "dest": ".claude/agents/reviewer.md",
+      "when": [
+        "solo_review"
+      ]
     },
     {
       "src": "claude/agents/security-reviewer.md",
-      "dest": ".claude/agents/security-reviewer.md"
+      "dest": ".claude/agents/security-reviewer.md",
+      "when_not": [
+        "solo_review"
+      ]
     },
     {
       "src": "claude/agents/spec-guardian.md",
@@ -68,7 +92,10 @@
     },
     {
       "src": "claude/agents/tech-researcher.md",
-      "dest": ".claude/agents/tech-researcher.md"
+      "dest": ".claude/agents/tech-researcher.md",
+      "when": [
+        "long"
+      ]
     },
     {
       "src": "claude/rules/00-overview.md",
@@ -137,11 +164,17 @@
     },
     {
       "src": "claude/rules/testing.md",
-      "dest": ".claude/rules/testing.md"
+      "dest": ".claude/rules/testing.md",
+      "when": [
+        "tests"
+      ]
     },
     {
       "src": "claude/commands/brainstorm.md",
-      "dest": ".claude/commands/brainstorm.md"
+      "dest": ".claude/commands/brainstorm.md",
+      "when": [
+        "long"
+      ]
     },
     {
       "src": "claude/commands/db-migration.md",
@@ -218,7 +251,8 @@
       "src": "claude/commands/seed-db.md",
       "dest": ".claude/commands/seed-db.md",
       "when": [
-        "db"
+        "db",
+        "db_seeder"
       ]
     },
     {
@@ -231,7 +265,10 @@
     },
     {
       "src": "claude/commands/test.md",
-      "dest": ".claude/commands/test.md"
+      "dest": ".claude/commands/test.md",
+      "when": [
+        "tests"
+      ]
     },
     {
       "src": "claude/hooks/agent-history.ps1",

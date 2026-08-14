@@ -8,8 +8,19 @@ Run this BEFORE the intake questionnaire. Never generate a file before the repor
 
 ## Phase A - discover
 
-Sweep the repo read-only (Glob/Grep/Read; dispatch an `Explore` agent on a large tree). Record a file
-path as proof for every finding - never guess:
+Sweep the repo read-only (Glob/Grep/Read). Record a file path as proof for every finding - never
+guess.
+
+**Dispatch the sweep in parallel.** The ten passes below are mutually independent: on any repo past
+~50 source files, dispatch THREE `Explore` agents in ONE message and merge their reports into the
+Inventory Report -
+- agent 1: passes 1, 2, 7 (stack, layout and modules, conventions in force);
+- agent 2: passes 3, 4, 5, 6 (data layer, async and infra, integrations, configuration surface);
+- agent 3: passes 8, 9, 10 (risky operations, existing agent surface, git reality).
+
+Each prompt names its passes verbatim from the list below and requires evidence paths. A small repo
+(under ~50 source files) is cheaper single-pass inline - the dispatch overhead outweighs the
+parallelism.
 
 1. **Stack** - manifests (`package.json`, `pyproject.toml`, `go.mod`, `*.csproj`, `pom.xml`) →
    language, framework, test runner, lint/format tools, pinned versions. Lockfile → package manager.

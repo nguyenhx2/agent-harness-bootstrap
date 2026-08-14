@@ -38,7 +38,7 @@ Invariants (refusals, not warnings):
 
 - **No skill that instructs config edits** (`.claude/`, `settings.json`, hooks) is wired to ANY
   seat. That is the config-edit-without-asking bypass, smuggled in as a skill.
-- **Reviewers get read-only skills only.** `code-reviewer`, `security-reviewer`, `spec-guardian`:
+- **Reviewers get read-only skills only.** `code-reviewer`, `security-reviewer`, `reviewer`, `spec-guardian`:
   no skill whose instructions imply writing, even with `tools:` unchanged - write-shaped
   instructions get followed regardless of grants.
 - **Only the orchestrator may hold a skill that finds or installs other skills** (find-skills

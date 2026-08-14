@@ -30,7 +30,12 @@ Manifest (assets/manifest.json) entries:
      "when": ["ui"], "subst": true, "mode": "644"}
   - "when" is an AND over flags; omit for unconditional.
   - "when_any" is an OR over flags.
+  - "when_not" skips the entry if ANY listed flag is set (e.g. the split
+    reviewers carry "when_not": ["solo_review"]).
   - "subst": false copies bytes verbatim (use for anything containing literal braces).
+
+Twin note: spec-builder/scripts/scaffold.py is a fork of this file with its own
+manifest. Behavior fixes should land in both.
 """
 
 from __future__ import annotations
@@ -91,9 +96,12 @@ def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
+    need_none = entry.get("when_not") or []
     if need_all and not set(need_all).issubset(flags):
         return False
     if need_any and not (set(need_any) & flags):
+        return False
+    if need_none and (set(need_none) & flags):
         return False
     return True
 

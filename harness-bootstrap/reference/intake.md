@@ -4,6 +4,10 @@ The questionnaire is mandatory - a wrong answer here is baked into every generat
 back a **one-screen setup plan** - what will be created, kept, and modified, plus the roster with each
 agent's model and effort - and get confirmation before writing anything.
 
+**Solo developer or small project? Offer the express path first** (next section) - it asks only the
+questions with no safe default and confirms the rest as one table, which is usually the right trade
+below preset M.
+
 ## Asking mechanics, and the express path
 
 Tags below: **AQ** = `AskUserQuestion` (closed choice, max 4 options, recommended option first labeled
@@ -25,7 +29,8 @@ eligible for express intake - scope cannot be guessed.
    directory is a candidate to suggest, never to assume silently.
 2. **[AQ]** **Documentation language** for `docs/` content (Vietnamese / Japanese / English / other -
    max 4 options). Regardless, ALL agent-facing files (`CLAUDE.md`, `AGENTS.md`, `.claude/*`) are
-   English; codes, enums, and filenames are always English.
+   English; codes, enums, and filenames are always English. The scaffolded `docs/README.md` records
+   the chosen language so every later agent authors docs prose in it without re-asking.
 3. **[CONFIRM - presence of `docs/specs/`]** Do specs already exist? If not, invoke `spec-builder` via
    the `Skill` tool first (state the handoff if unavailable) - the bootstrap is better with FRs.
 
@@ -86,21 +91,46 @@ exists.
 
 ## Batch D - quality and safety
 
-13. **[AQ for the agent decision; CONFIRM frameworks/commands - test config/`package.json` scripts]**
-    **Test agent** - a dedicated `qa-test` agent (unit + e2e)? Which frameworks (default Vitest +
-    Playwright; pytest etc. per stack), and the actual test/lint/build commands. If declined, skip the
-    agent and `/test` but keep `rules/testing.md`.
-14. **[AQ, 3 options, "DDD (Recommended)" first]** **Development methodology** - how should the
-    dev seats be disciplined?
+**Roster shape - [AQ, 3 questions, one call, asked alongside the roster/preset step].** The user, not
+the preset table, decides how heavy the agent team is. Echo the resulting roster afterwards.
+- **Project horizon** - Short and focused (Recommended below preset L) / Long-term, multi-week (flag
+  `long`: adds `brainstormer` + `tech-researcher` for decision work and `history-tracker` to curate
+  the run archive - three seats that only pay for themselves on a project long enough to forget
+  its own decisions).
+- **Role granularity** - Split reviewers (Recommended for M/L: `code-reviewer` + `security-reviewer`,
+  two independent passes catch more) / One merged `reviewer` (flag `solo_review`: one pass, both
+  lenses - the lean choice for preset S and solo work).
+- **Priority** - Speed / Balanced / Highest quality. Not a flag: this steers the effort profile in
+  Q16 (Speed -> Economy, Highest quality -> Thorough) and how aggressively the roster is trimmed.
+  Cross-reference, do not re-ask Q16.
+
+13. **[AQ for what to automate; CONFIRM frameworks/commands - test config/`package.json` scripts]**
+    **Testing.** First, what should agents automate?
+    - **Unit + e2e (Recommended for products)** - flags `unit`, `e2e`, `tests`.
+    - **Unit only** - flags `unit`, `tests`.
+    - **E2e only** - flags `e2e`, `tests`; critical user journeys, no unit layer.
+    - **None** - no flags: no `qa-test` seat, no `/test`, no `rules/testing.md`; acceptance criteria
+      are verified by hand and the session log records how. Honest for prototypes; revisit with
+      `/harness-update` when the project grows.
+    Then, only for the selected kinds, the frameworks and commands: suggest per stack from
+    [`tech-presets.md`](tech-presets.md) (Vitest + Playwright for a Vite-based JS/TS stack, Jest
+    where it is already invested, pytest for Python - never present one framework as universal),
+    and CONFIRM the actual test/lint/build commands from the repo's scripts.
+14. **[AQ, 4 options, "DDD (Recommended)" first]** **Development methodology** - how should the
+    dev seats be disciplined? Purpose and cost of each, honestly:
     - **DDD (Recommended)** (flag `ddd`) - `rules/ddd.md`: the spec glossary becomes the ubiquitous
       language, each dev agent's scope is a bounded context, aggregate-root discipline applies.
       Tests ship in the same change as the implementation, proving the acceptance criteria - they
-      are not required to come first, which keeps delivery speed.
+      are not required to come first, which keeps delivery speed. Best default for products with a
+      real domain.
     - **TDD** (flag `tdd`) - red/green/refactor, tests strictly first. Stronger proof discipline,
       measurably slower delivery; pick it when correctness pressure outweighs pace.
     - **TDD + DDD** (both flags) - both disciplines at once. The strictest and slowest posture; the
       two can pull against each other (test-first pacing vs model-first design), so choose this
       deliberately, not as a default.
+    - **Lightweight** (flag `light`) - no methodology rule installed; small commits, working
+      software first, minimal ceremony. The review gate and guardrail hooks stay - lightweight
+      loosens process, never safety. For prototypes, spikes, and solo velocity.
 15. **[AQ, 3 sub-parts, one call; chat for lifecycle follow-up if a regime is named]** **Data
     sensitivity, compliance regime, and AI product.**
     - PII or regulated data (sets how strict `security-privacy.md`, `/secret-scan`'s PII patterns, and
@@ -159,8 +189,10 @@ Ask only if Batch B has a DB.
 
 19. **[AQ multi-select for the agent set; chat for seed sub-parts if `db-seeder` is chosen]** **DB
     agents and seed policy.** Which DB agents: `data-modeler` (schema design - recommended whenever a
-    schema exists), `db-engineer` (apply/troubleshoot migrations, query/index tuning, local docker env),
-    `db-seeder` + `/seed-db` (synthetic data for dev/demo/test). If chosen: seed-target environments
+    schema exists; the `db` flag alone ships only this seat), `db-engineer` (apply/troubleshoot
+    migrations, query/index tuning, local docker env - sets flag `db_engineer`), `db-seeder` +
+    `/seed-db` (synthetic data for dev/demo/test - sets flag `db_seeder`). Start with `data-modeler`
+    alone unless migration or seed work already exists. If seeding is chosen: seed-target environments
     (local docker / shared dev / staging), default seed scope (entities + volumes), locale mix, and the
     synthetic-only policy - real data never enters seeds, prod is never a target.
 20. **[CONFIRM if the ORM from Q5 has a known reset convention; chat otherwise, never guess]** The real
@@ -217,7 +249,7 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | Answer | Goes to |
 |---|---|
 | 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
-| 2 docs language | no var - sets the language of authored `docs/` prose only |
+| 2 docs language | `{{DOC_LANGUAGE}}` - recorded in the scaffolded `docs/README.md`; sets the language of authored `docs/` prose only |
 | 3 specs exist | `{{FR_LIST}}` (from the specs, if any); otherwise the `spec-builder` handoff |
 | target AI tools (Batch A) | no var - drives whether step 8 ports to Cursor / Codex via `port.py` |
 | 4 language/framework | `{{SOURCE_GLOBS}}` shape; `tech-stack.md` body; version checked at bootstrap per [`tech-presets.md`](tech-presets.md), never recalled from memory |
@@ -229,14 +261,15 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 10 dev OS | flag `windows` or `posix` → `{{HOOK_RUNNER}}`, `{{HOOK_EXT}}` |
 | 11 git platform + commit identity + CI bots | `{{PR_OR_MR}}`, `{{CI_PLATFORM}}`; identity: no var; bot answer: no var, `known-issues.md` + merge-manager exception if fielded |
 | 12 default branch + commit convention | `{{DEFAULT_BRANCH}}`; `{{COMMIT_TYPES}}`, `{{COMMIT_SCOPES}}` |
-| 13 test agent + frameworks + commands | `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` |
-| 14 methodology | flag `tdd` and/or `ddd` - gates `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
+| roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16, no var |
+| 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests` (gate `qa-test`, `/test`, `rules/testing.md`); `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` (framework vars only for the selected kinds; unselected ones take `-`) |
+| 14 methodology | flag `tdd` and/or `ddd`, or `light` (no methodology rule) - gates `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
 | 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md`'s "Retention and egress" practice or `known-issues.md` if unknown |
 | 16 effort profile | no var - the roster allocation; record the choice in `docs/context/tool-changelog.md` |
 | agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook |
 | 17 operations posture | no var - into `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (set at Q27) |
 | 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands; approver-availability - no var, informs whether `deploy_ask` is realistic |
-| 19 DB agents + seed policy | roster seats (`data-modeler`, `db-engineer`, `db-seeder`); `/seed-db` and `db-seeder` scope |
+| 19 DB agents + seed policy | flags `db_engineer`, `db_seeder` (with `db`, gate their seats and `/seed-db`); seed scope |
 | 20 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` |
 | 21-22 branding, icons, a11y | flag `ui`, `{{UI_GLOBS}}`; `rules/frontend.md` body |
 | 23 audit scope | flag `audit`, `{{WORKSPACE_ROOT}}`, `{{REPO_DIR_LIST}}` |
@@ -249,8 +282,10 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | - glossary seed rows (from spec section 03 when spec-builder hands off; `-` if none) | `{{GLOSSARY_SEED}}` |
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
 
-Flags are exactly: `ui`, `db`, `ai`, `audit`, `tdd`, `ddd`, `deploy_ask`, and exactly one of
-`windows`/`posix`. `ddd` is the default methodology; `tdd` is opt-in (alone or combined) - never assumed.
+Flags are exactly: `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`,
+`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, and exactly one of `windows`/`posix`.
+`ddd` is the default methodology; `tdd` is opt-in and `light` replaces both - never assumed. `tests`
+is derived: set it whenever `unit` or `e2e` is set, never alone.
 
 ### Restricted data paths (asked whenever any class above is Restricted)
 

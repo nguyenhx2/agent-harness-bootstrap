@@ -19,8 +19,9 @@ Ask which dial to turn (AskUserQuestion, one batch), then apply only what was ch
    any write-capable type: it runs outside every roster budget.
 4. **Attempt cap and turn caps** - raise or lower `maxTurns` per seat and the attempt cap in
    `task-control.md`. Lowering is free; raising gets a cost warning per `cost-model.md`.
-5. **Review gates** - toggle whether `security-reviewer` runs on every task or only on tasks touching
-   `{{PII_OR_DATA}}` paths. Removing the code-review gate entirely is refused; that is a different
+5. **Review gates** - {{#IF_SOLO_REVIEW}}tune how deep the merged `reviewer` pass goes on tasks that do not touch
+   `{{PII_OR_DATA}}` paths{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}toggle whether `security-reviewer` runs on every task or only on tasks touching
+   `{{PII_OR_DATA}}` paths{{/IF_SOLO_REVIEW}}. Removing the code-review gate entirely is refused; that is a different
    repo, not a tuning.
 6. **Agent history detail** - edit `.claude/state/history-level` (line 1: `full`/`summary`/
    `minimal`/`off`; line 2: how many per-run files to keep). Lowering is free; raising to `full`

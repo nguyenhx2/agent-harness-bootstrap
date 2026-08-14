@@ -54,8 +54,11 @@ phase, status).
 
 Task status is exactly one of: `Planned` | `Active` | `Blocked` | `Pending` | `Done`.
 
-Open decisions block planning. Run `/brainstorm` (dispatch `brainstormer`, add `tech-researcher` for
+{{#IF_LONG}}Open decisions block planning. Run `/brainstorm` (dispatch `brainstormer`, add `tech-researcher` for
 evidence) BEFORE implementation; capture stack-affecting outcomes via `/new-adr`.
+{{/IF_LONG}}{{^IF_LONG}}Open decisions block planning. Resolve them with the user BEFORE implementation; capture
+stack-affecting outcomes via `/new-adr`.
+{{/IF_LONG}}
 
 Dispatch `spec-guardian` to lock scope and criteria before any implementation task starts.
 
@@ -99,7 +102,7 @@ yourself. **Do not take "done" on faith.** An agent's "done" / "passed" / "merge
 against git and the task file, never a fact. Verify against `git diff` and `git log`, not against the
 agent's summary - status reports can reference branches or work that do not exist.
 
-Quality gates, in order: `qa-test` (green) → `code-reviewer` + `security-reviewer` in parallel →
+Quality gates, in order: {{#IF_TESTS}}`qa-test` (green) → {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality + security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` + `security-reviewer` in parallel{{/IF_SOLO_REVIEW}} →
 `/secret-scan` → {{PR_OR_MR}}. Never skip a gate. Report a gate as passed ONLY when the task file's
 session log records the run; an unlogged "reviewed" is unverified.
 

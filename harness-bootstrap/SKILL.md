@@ -76,8 +76,10 @@ bills mechanical work at the caller's tier. The allocation and the reasoning are
 Once the seats are known, ask (AskUserQuestion) whether to search [skills.sh](https://www.skills.sh/)
 for skills matching them - recommended for dev and qa seats, skipped in audit mode. Every candidate
 passes the trust rubric in the reference (installs, publisher, audit status, and a MANDATORY read of
-the skill's actual files - a skill is instructions from the internet), and each install needs an
-explicit yes per skill, never a batch. Installed skills serve nobody until `/skill-wire` maps them to
+the skill's actual files - a skill is instructions from the internet). The content review is serial
+and per skill, never skipped; the confirmations are then batched into ONE `AskUserQuestion`
+multi-select over the reviewed candidates - the user still says yes to each skill individually inside
+that one call, and nothing installs without its box ticked. Installed skills serve nobody until `/skill-wire` maps them to
 seats after bootstrap; the wire re-reviews content and records to `docs/context/tool-changelog.md`.
 
 **3. Detect the dev OS.** This gates the hook flavor and the settings registration; get it wrong and the
@@ -102,11 +104,17 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 }
 ```
 
-Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `ai`, `audit`, `tdd`,
-`ddd`, `deploy_ask`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default -
+Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `db_engineer`,
+`db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`,
+`solo_review`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default -
 `rules/ddd.md`'s bounded-context discipline, with tests shipping in the same change as the
 implementation. `tdd` (tests strictly first) is opt-in, alone or combined - it buys proof
-discipline at a real cost in delivery speed, so intake asks rather than assumes. `deploy_ask` moves `{{DEPLOY_CMD}}` from `permissions.deny` to
+discipline at a real cost in delivery speed, so intake asks rather than assumes; `light` replaces
+both with a minimal-ceremony posture that keeps the review gate. Testing is a choice, not a default:
+`unit`/`e2e` come from intake Q13 and `tests` is set whenever either is (it gates `qa-test`, `/test`,
+and `rules/testing.md`). `long` fields the planning pair and `history-tracker`; `solo_review` swaps
+the two reviewers for one merged `reviewer`; `db_engineer`/`db_seeder` extend `db`. `deploy_ask`
+moves `{{DEPLOY_CMD}}` from `permissions.deny` to
 `permissions.ask` - set it only when intake's control-level question chose agent-initiated deploys.
 
 The scaffolder **never overwrites an existing file**. It reports `ADDED` / `KEPT` (already identical) /
@@ -149,8 +157,9 @@ and `/task-resume` it, then validate the board you just
 created: `python .claude/scripts/board-check.py` must exit 0 (it is what `/board-audit` runs first).
 Finally, build the knowledge graphs and their HTML exports - this is exactly what the installed
 `/code-graph` and `/docs-graph` commands do, so run them (or their scripts directly:
-`python .claude/scripts/code-graph.py`, `python .claude/scripts/docs-graph.py`,
-`python .claude/scripts/harness-graph.py`, then `python .claude/scripts/graph-html.py`).
+`python .claude/scripts/code-graph.py` and `python .claude/scripts/docs-graph.py` concurrently -
+they are independent of each other - then `python .claude/scripts/harness-graph.py` and
+`python .claude/scripts/graph-html.py`, which read the earlier outputs).
 The result is the canonical wiring file `.claude/state/harness-graph.json` (machine-readable,
 consumed by external viewers too) plus the two interactive files the user opens in a browser:
 `docs/context/harness-graph.html` (Flow and Graph views of agents, hooks, rules, commands,

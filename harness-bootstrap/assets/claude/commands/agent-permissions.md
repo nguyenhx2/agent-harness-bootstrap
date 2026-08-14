@@ -15,7 +15,7 @@ Procedure:
 
 Invariants (refusals, not warnings):
 
-- **Reviewers never gain `Edit` or `Write`.** `code-reviewer`, `security-reviewer`, and
+- **Reviewers never gain `Edit` or `Write`.** `code-reviewer`, `security-reviewer`, `reviewer`, and
   `spec-guardian` are gates; a gate that edits is a dev agent that lost its independence. If review
   findings should be auto-applied, that is a dev agent's task, dispatched with the findings.
 - **Only the orchestrator holds `Agent`.** A second spawner is a second uncontrolled dispatch point;
