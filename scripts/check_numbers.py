@@ -73,9 +73,12 @@ def canonical() -> dict[str, int]:
                       if p.suffix in (".sh", ".ps1")}),
         # The eval case count, derived from the eval file itself - the "N/N" badge in the deck and
         # the intro videos bakes it, and it drifted twice before this check existed.
-        "eval_cases": len(re.findall(r'^\s*\("[^"]+",\s*"[\w-]+",\s*[02],',
-                                     (ROOT / "eval/guardrail_eval.py").read_text(encoding="utf-8"),
-                                     re.M)),
+        # Most eval cases are generated at run time, so counting them by scanning the source
+        # undercounts. The eval declares CASES_PER_FLAVOR and asserts it against the real count
+        # on every run, which makes the constant safe to read here.
+        "eval_cases": int(re.search(r'^CASES_PER_FLAVOR\s*=\s*(\d+)',
+                                    (ROOT / "eval/guardrail_eval.py").read_text(encoding="utf-8"),
+                                    re.M).group(1)),
     }
 
 

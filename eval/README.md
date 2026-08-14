@@ -2,16 +2,18 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **46/46 correct (18 must-block, 28 must-allow).**
+`python eval/guardrail_eval.py` -> **68/68 correct (33 must-block, 35 must-allow).**
 
-The count moved from 33 to 46 with the v1.8.0 surfaces: the graph-stale tiers that regenerate the
-harness and docs graphs (proven by file state, not just exit codes), the four agent-history detail
-levels plus retention pruning, and the `/harness-toggle` safety contract (HARD typed-phrase
-refusal, SOFT `--yes`, agent refusal, byte-exact settings.json restore). See
+The count moved from 46 to 68 with a round of security-refusal cases against `scaffold.py` and
+`harness-toggle.py` directly (not just the hooks): flag validation, contradictory methodology
+flags, HOOK_RUNNER/HOOK_EXT derivation, a case-insensitive HARD tier in `harness-toggle`, a corrupt
+quarantine ledger that must abort instead of being read as empty, poisoned ledger entries that must
+be ignored, `enable` failing safe when it cannot restore a saved registration, path traversal in an
+item name, and both graph scripts surviving a malformed `code-graph.json`. See
 [What changed](#what-changed).
 
 Pass `--flavor ps1` to ALSO run the identical payloads through the `.ps1` hooks (Windows parity),
-for **92/92** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+for **136/136** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
@@ -27,6 +29,14 @@ None of them consults the model.
 | Editing an Accepted ADR | `protect-adr` hook | No |
 | Spawning an off-roster agent, escalating a seat's model, or a write-capable dispatch naming no task | `guard-agent-spawn` hook | No |
 | Disabling a protection (protect-secrets, guard-agent-spawn, the review gate) without the user typing the confirmation phrase | `harness-toggle.py` exit 2 | No |
+| An unknown flag, both/neither OS flag, or a HOOK_RUNNER/HOOK_EXT that contradicts the OS flag in `vars.json` | `scaffold.py` `validate_flags()` exit 1 | No |
+| A contradictory methodology combo (`light`+`tdd`/`ddd`, or `tdd`/`unit`/`e2e` without `tests`) | `scaffold.py` `validate_flags()` exit 1 | No |
+| Disabling a HARD-tier control by typing its name in the wrong case | `harness-toggle.py` `canonical_name()` + case-folded tier check, exit 2 | No |
+| Any command proceeding on a corrupt `.claude/disabled.json` | `harness-toggle.py` `read_disabled()` raise / `scaffold.py` ledger read, exit 1 | No |
+| A `disabled.json` entry whose `from` points outside `.claude/{rules,commands,hooks}/` | `scaffold.py` ignored-with-warning, asset still installed | No |
+| `enable` dropping a quarantine record it cannot actually restore | `harness-toggle.py` `do_enable()` refuses before touching files, exit != 0 | No |
+| Path traversal (`..`) in a `disable`/`enable` item name | `harness-toggle.py` `parse_item()` exit 1 | No |
+| `harness-graph.py` / `graph-html.py` crashing on a malformed `code-graph.json` | try/except around the read, exit 0 with narrowed output | No |
 
 Swap `opus` for `haiku` in every agent and re-run: the result is byte-identical. The safety floor is
 model-independent.
@@ -37,6 +47,64 @@ hook at all: it looks like protection and provides none. This eval caught exactl
 during development, once when `jq` was absent and once under WSL.
 
 ## What changed
+
+**Security-refusal hardening (46 -> 68 per flavor).** These cases exercise `scaffold.py` and
+`harness-toggle.py` directly rather than firing a hook payload, following the same per-flavor
+convention as the existing `harness-toggle` cases (the scripts' behavior does not depend on which
+hook flavor is installed, but each is run once per flavor call for uniform counting). Each case
+scaffolds into its own disposable `--target` under `.eval-workdir/`, except the ones that need real
+quarantine state, which run against the shared per-flavor repo (after `run_toggle_suite`, so they
+inherit its clean, enabled baseline, and restore what they perturb before the next case runs):
+
+- **`scaffold.py` flag validation**: an unknown flag (e.g. `posx`, `sold_review`) names itself in
+  the error; both `windows` and `posix` present is rejected; neither present is rejected; a valid
+  payload still exits 0.
+- **Contradictory methodology flags**: `light`+`tdd`, `light`+`ddd`, `tdd` without `tests`, and
+  `unit` without `tests` are all rejected; `light` alone still exits 0.
+- **HOOK_RUNNER/HOOK_EXT derivation**: a `vars.json` whose `HOOK_RUNNER` contradicts the OS flag is
+  a hard error; with the vars absent entirely, the scaffolded `settings.json` still registers the
+  correct runner and extension for the flag (asserted against the actual rendered hook command
+  string, not just the exit code).
+- **Case-insensitive HARD tier**: `disable hook/Protect-Secrets` and `disable
+  rule/Security-Privacy` (wrong case) still refuse with exit 2 demanding the typed phrase, and
+  leave the real files and their `settings.json` registration untouched - proven by asserting file
+  state, not just the exit code, since `canonical_name()` resolving the case ahead of the safety
+  check is exactly the mechanism a case-insensitive filesystem could otherwise let slip past.
+- **Corrupt ledger abort**: a `.claude/disabled.json` containing invalid JSON makes
+  `harness-toggle.py` abort any subcommand with exit 1 and no mutation (asserted: the corrupt bytes
+  are unchanged and the target hook file never moves), and makes `scaffold.py` exit 1 instead of
+  silently treating the ledger as empty.
+- **Poisoned ledger entries**: a `disabled.json` entry whose `kind` is `rule`/`command`/`hook` but
+  whose `from` points outside `.claude/{rules,commands,hooks}/` (e.g. `.claude/settings.json` or
+  `CLAUDE.md`) is ignored with a warning, and the named asset is still installed by `scaffold.py`.
+- **`enable` with an unrestorable registration**: deleting `settings.json` after a HARD disable
+  (so the saved registration cannot be restored) makes `enable` exit non-zero while keeping BOTH
+  the `disabled.json` record and the quarantined files - nothing is lost.
+- **Path traversal**: `disable "rule/../../AGENTS"` is refused with a non-zero exit. This one is
+  more than a format check: reverting the guard and re-running the identical command against a
+  scratch copy actually moved the repo-root `AGENTS.md` into `.claude/disabled/rules/AGENTS.md` -
+  `..` in an item name resolves through `.claude/rules/../../` right back to the repo root, so the
+  name-format check is the only thing standing between a toggle command and a real file outside the
+  harness.
+- **Graph script resilience**: a malformed `.claude/state/code-graph.json` does not crash
+  `harness-graph.py` or `graph-html.py` - both still exit 0 and produce their output file, per the
+  "never fails the caller" contract in their own docstrings.
+
+Three of these were verified to actually catch a regression, not just to pass, by reverting the
+guard in a throwaway copy of the source file (never the repo's own `scaffold.py` or
+`harness-toggle.py`) and re-running the exact failing scenario:
+
+- Commenting out the unknown-flag check in `scaffold.py`'s `validate_flags()` and re-running the
+  `posx` payload: exit code changed from 1 to 0, and the scaffold completed as if the flag were
+  valid.
+- Replacing `read_disabled()`'s `raise CorruptLedger(...)` with `return []` in `harness-toggle.py`
+  and re-running `disable hook/check-commit-msg --yes` against a repo with a corrupt
+  `disabled.json`: exit code changed from 1 to 0, and the hook was actually quarantined - a corrupt
+  ledger silently accepted a real mutation instead of aborting.
+- Removing the `..`/separator rejection from `parse_item()` in `harness-toggle.py` and re-running
+  `disable "rule/../../AGENTS"` against a scaffolded repo: exit code changed from 1 to 0, and the
+  repo-root `AGENTS.md` was actually moved into `.claude/disabled/rules/AGENTS.md` - confirming the
+  traversal is a real file-mover, not just a cosmetic validation gap.
 
 **v1.8.0 surfaces (33 -> 46 per flavor).** Three new groups, each asserting FILE STATE after the
 run, not just the exit code (the framework gained `setup_files`/`delete_files` per-case fixtures
@@ -63,7 +131,7 @@ failed forever otherwise.
 hooks (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
 `guard-agent-spawn`) were audited against both sides. Only `guard-main-commit` had a gap - no
 must-allow case existed, so a hook broken to block every commit unconditionally would still have
-passed 33/33. The new case points the payload's `cwd` at a sibling git checkout on a non-default
+passed 68/68. The new case points the payload's `cwd` at a sibling git checkout on a non-default
 branch (`feat/allow-test`, with a real commit - `git rev-parse --abbrev-ref HEAD` fails on an unborn
 branch on current git, which would silently fall back to resolving the wrong repo's branch) and
 asserts the commit is allowed.

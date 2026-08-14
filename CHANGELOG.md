@@ -203,13 +203,13 @@ the harness the agent runs inside.
 **Skills**
 
 - `spec-builder` - a 13-section BA specification set under `docs/specs/`, built from an idea, a transcript, meeting notes, or legacy docs. Stable IDs and anchors, mandatory security NFRs, five-way traceability. It never invents a requirement: anything unstated becomes a flagged open issue. Standards basis in `ba-standards.md` (ISO/IEC/IEEE 29148, BABOK v3, ISO 25010:2023, MoSCoW, Cockburn, OWASP LLM Top 10).
-- `harness-bootstrap` - generates `.claude/` (15 agents, 15 rules, 21 commands, 9 hooks, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
+- `harness-bootstrap` - generates `.claude/` (`15 agents, 15 rules, 21 commands, 9 hooks`, `settings.json`), the `docs/` tree, and `AGENTS.md` + `CLAUDE.md`. Reads an existing codebase first and reconciles rather than overwrites. Has a read-only audit mode for source that agents must never modify.
 
 **Enforcement, not advice**
 
 - 9 hooks block bad actions before they happen: reading `.env` or a private key, committing to the default branch, editing an Accepted ADR, an AI-attribution trailer, a non-conventional commit message, or an off-roster agent spawn.
 - `permissions.deny` covers secrets and any path classified as Restricted, so an agent cannot send data it cannot open.
-- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: 33/33 correct. The guardrails are shell scripts, so the result does not change with the model.
+- `python eval/guardrail_eval.py` fires 21 payloads (11 must-block, 10 must-allow) at a real generated harness: `33/33` correct. The guardrails are shell scripts, so the result does not change with the model.
 
 **State on disk, not in context**
 
@@ -218,7 +218,7 @@ the harness the agent runs inside.
 **Cost as a decision**
 
 - Every agent carries an explicit `model:`, `effort:`, a narrow `tools:` grant and `maxTurns`. An unset `model:` inherits the caller's tier, which bills mechanical work at Opus rates.
-- 9 of 15 rules are path-scoped, keeping 66% of rule content out of the default session.
+- 9 of 15 rules are path-scoped, keeping `66%` of rule content out of the default session.
 - Assets are real files copied by `scripts/scaffold.py` rather than prose the model retypes: 64% less to read and 85% less to author than the predecessor skill. Figures from `benchmark/benchmark.py`.
 
 **Governance**

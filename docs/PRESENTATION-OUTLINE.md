@@ -286,7 +286,7 @@ shape behaviour; they do not enforce it.
 ### The strongest claim in the talk
 
 `eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **15 must-block, 25 must-allow, 40/40 correct.**
+at it: **15 must-block, 25 must-allow, 68/68 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -370,7 +370,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
    - `git commit` on `main` → blocked, with the hook's message
    - Edit an Accepted ADR → blocked
 6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **40/40** in seconds. Say it: *"No model was consulted. These are exit codes."*
+   **68/68** in seconds. Say it: *"No model was consulted. These are exit codes."*
 7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
    session and watch it pick up mid-task.
 
@@ -389,7 +389,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **40/40** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **68/68** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **5/5** | `port.py --self-test` |
 
@@ -509,7 +509,7 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - Always-RAM rules **27,805 bytes**; path-scoped **52,131 bytes**
 - Read path **-45%** (234,196 → 129,638 bytes), files read **-58%** (24 → 10)
 - Write path **-85%** (95,064 → 13,881 bytes)
-- Guardrail eval **40/40** (15 must-block, 25 must-allow), model-independent
+- Guardrail eval **68/68** (15 must-block, 25 must-allow), model-independent
 - Port adapter self-test **5/5**
 - Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
 - Scaffold **~0.2s**, 73 paths, idempotent on re-run
