@@ -271,10 +271,12 @@ _TEST_VARS = {
         "DOMAIN", "DOMAIN_DESCRIPTION", "MODULE_PATHS", "FR_LIST", "COMMIT_TYPES", "DB_RESET_PATTERN",
         "MODEL_PUBLIC", "MODEL_INTERNAL", "MODEL_CONFIDENTIAL", "MODEL_RESTRICTED", "DATA_RESIDENCY",
         "ALLOWED_LICENCES", "DENIED_LICENCES", "IP_OWNERSHIP_STATEMENT", "DEP_MANIFEST_GLOBS",
-        "GATED_ACTIONS", "INCIDENT_CONTACT",
+        "GATED_ACTIONS", "INCIDENT_CONTACT", "DOC_LANGUAGE",
     ]},
-    "flags": ["posix", "ui", "db", "ai"],
+    "flags": ["posix", "ui", "db", "ai", "tests", "unit", "e2e"],
 }
+_TEST_VARS["vars"]["HISTORY_LEVEL"] = "summary"
+_TEST_VARS["vars"]["HISTORY_KEEP"] = "200"
 _TEST_VARS["vars"]["DEFAULT_BRANCH"] = "main"
 _TEST_VARS["vars"]["HOOK_RUNNER"] = "bash"
 _TEST_VARS["vars"]["HOOK_EXT"] = "sh"

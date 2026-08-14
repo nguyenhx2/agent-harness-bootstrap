@@ -190,9 +190,10 @@ def measure_scaffold_time(new_root: pathlib.Path) -> dict:
             "MODEL_PUBLIC", "MODEL_INTERNAL", "MODEL_CONFIDENTIAL", "MODEL_RESTRICTED",
             "DATA_RESIDENCY", "ALLOWED_LICENCES", "DENIED_LICENCES", "IP_OWNERSHIP_STATEMENT",
             "DEP_MANIFEST_GLOBS", "GATED_ACTIONS", "INCIDENT_CONTACT",
-            "RESTRICTED_DENIES", "GLOSSARY_SEED",
+            "RESTRICTED_DENIES", "GLOSSARY_SEED", "DOC_LANGUAGE",
+            "HISTORY_LEVEL", "HISTORY_KEEP",
         ]},
-        "flags": ["posix", "ui", "db", "ai", "ddd"],
+        "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e"],
     }
     with tempfile.TemporaryDirectory() as td:
         tdp = pathlib.Path(td)
