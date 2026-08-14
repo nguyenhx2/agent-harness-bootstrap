@@ -53,8 +53,9 @@
     {
       "src": "claude/agents/history-tracker.md",
       "dest": ".claude/agents/history-tracker.md",
-      "when": [
-        "long"
+      "when_any": [
+        "long",
+        "audit"
       ]
     },
     {
@@ -372,6 +373,10 @@
         "posix"
       ],
       "exec": true
+    },
+    {
+      "src": "claude/hooks/README.md",
+      "dest": ".claude/hooks/README.md"
     },
     {
       "src": "claude/hooks/spawn-allowlist",

@@ -28,7 +28,7 @@ Applies when reading or writing anything under `docs/`.
   undocumented decision; find out which, and fix the one that is wrong. Never quietly diverge.
 - **Change the doc in the same pull request as the code.** A business-rule change updates
   `docs/context/business-rules.md`; an architectural decision gets an ADR; a schema change updates
-  the data dictionary (data-model.md). A documentation debt registered as a follow-up task is a
+  the data dictionary{{#IF_DB}} (data-model.md){{/IF_DB}}. A documentation debt registered as a follow-up task is a
   documentation debt that never gets paid.
 - **An accepted ADR is immutable.** Supersede it with a new ADR that references it; do not edit the
   decision after the fact. The hook enforces this, and it enforces it from the on-disk status, so

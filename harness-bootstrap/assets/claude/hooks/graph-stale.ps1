@@ -36,8 +36,8 @@ function Invoke-Py {
 $norm = $path -replace '\\', '/'
 
 # Tier 1: harness wiring changed - rebuild the harness graph now.
-if ($norm -match '(^|/)\.claude/(agents|rules|commands)/[^/]+\.md$' -or
-    $norm -match '(^|/)\.claude/hooks/[^/]+\.(sh|ps1)$' -or
+if ($norm -match '(^|/)\.claude/(agents|rules|commands)/.+\.md$' -or
+    $norm -match '(^|/)\.claude/hooks/.+\.(sh|ps1)$' -or
     $norm -match '(^|/)\.claude/(settings|disabled)\.json$') {
     $scanner = Join-Path $base ".claude/scripts/harness-graph.py"
     if (Test-Path $scanner) {

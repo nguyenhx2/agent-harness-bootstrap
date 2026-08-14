@@ -69,8 +69,9 @@ scaffold or a hand edit brings a disabled hook back, `harness-toggle.py reapply`
 
 ## Template variables
 
-Substituted at scaffold time: `{{DEFAULT_BRANCH}}`, `{{COMMIT_TYPES}}`, `{{DB_RESET_PATTERN}}`, and
-(audit only) `{{WORKSPACE_ROOT}}`, `{{REPO_DIR_LIST}}`.
+The hook bodies are parameterised at scaffold time with the default branch, the commit-types
+list, the DB reset pattern, and (audit only) the workspace root and repo list. The values shown
+in the table above are this repo's installed values.
 
 ## Testing
 

@@ -40,7 +40,6 @@ done.
 | Integration | Module plus its real adapters (a test database, a local queue) | Real datastore, mocked external providers. Reset state between tests; never share a database with a person |
 {{/IF_UNIT}}{{#IF_E2E}}| End to end | A critical user flow through the running system | Reserve for flows whose breakage is unacceptable. Few, stable, and owned - a flaky e2e suite gets ignored, which is worse than not having one |
 {{/IF_E2E}}
-
 ## Mock every external provider
 
 - **No test makes a real call to an external API.** Not to a paid one, not to a free one, not "just

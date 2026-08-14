@@ -27,7 +27,9 @@
 #   minimal - one index line per run in state/history/index.md, no per-run file
 #   off     - record nothing
 # After a per-run write, only the newest <keep-count> files are kept (filenames start with the
-# timestamp, so name order is age order; index.md is never pruned).
+# timestamp, so name order is age order; index.md is never pruned). keep-count 0 means
+# NEVER PRUNE, not keep-none - minimal/off write no per-run files, so 0 is their natural
+# value and nothing accumulates.
 #
 # Contract: ALWAYS exits 0. This hook must never block a run and never throw.
 

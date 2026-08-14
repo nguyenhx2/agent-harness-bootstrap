@@ -195,6 +195,9 @@ def measure_scaffold_time(new_root: pathlib.Path) -> dict:
         ]},
         "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e"],
     }
+    # scaffold.py cross-validates the hook flavor against the flag; "x" would fail
+    vars_payload["vars"]["HOOK_RUNNER"] = "bash"
+    vars_payload["vars"]["HOOK_EXT"] = "sh"
     with tempfile.TemporaryDirectory() as td:
         tdp = pathlib.Path(td)
         vf = tdp / "vars.json"

@@ -23,8 +23,10 @@ Rules for {{PROJECT_NAME}}. Every agent and every code change complies with this
    (model-policy.md). No approved model for a class means the work goes to a human, not to an agent.
 7. Adding a dependency is a licensing decision; agent-authored code is authored, not recalled
    (ip-compliance.md).
-8. Tests come before implementation for anything with behavior (testing.md).
-9. A finding is graded by consequence, not by taste (code-quality.md).
+{{#IF_TESTS}}{{#IF_TDD}}8. Tests come before implementation for anything with behavior (testing.md).
+{{/IF_TDD}}{{^IF_TDD}}8. Anything with behavior ships with its tests in the same change (testing.md).
+{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}8. Every acceptance criterion is verified by hand before a change is called done.
+{{/IF_TESTS}}9. A finding is graded by consequence, not by taste (code-quality.md).
 10. Style everywhere: English, no emoji, no em dash (write "-"), no AI-attribution trailers.
 
 ## Rule list
@@ -41,7 +43,7 @@ Loaded only when a matching file is touched:
 - security-privacy.md - vulnerability classes, secrets, standards anchoring.
 - ip-compliance.md - dependency licences, provenance, attribution, ownership.
 - performance.md - performance pattern tables and the evidence rule.
-- testing.md - test discipline, mocking, coverage.
-- data-model.md - schema and migration discipline.
-- frontend.md - UI conventions.
-- docs-workflow.md - where docs live and when they change.
+{{#IF_TESTS}}- testing.md - test discipline, mocking, coverage.
+{{/IF_TESTS}}{{#IF_DB}}- data-model.md - schema and migration discipline.
+{{/IF_DB}}{{#IF_UI}}- frontend.md - UI conventions.
+{{/IF_UI}}- docs-workflow.md - where docs live and when they change.

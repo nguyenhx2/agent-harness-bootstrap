@@ -48,8 +48,9 @@ extra keys; anything that writes it must preserve the guarantees below.
 Inventory rules:
 
 - **Scripts**: EVERY `*.py` under `.claude/scripts/` is a node, referenced by a command or not.
-  A script referenced by a command but missing on disk still becomes a node (keeps edge
-  endpoints valid).
+  Nodes are strictly the on-disk inventory: a script referenced by a command but missing on
+  disk gets NO node - the `runs` edge is kept dangling on purpose, and the HTML viewer renders
+  the missing endpoint as a greyed "(missing)" stub so the broken reference is diagnosable.
 - **Tasks**: EVERY `TASK-*.md` under `docs/tasks/**` is a node; `references` edges are added
   only where the task body names a module path.
 

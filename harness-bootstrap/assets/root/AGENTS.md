@@ -95,9 +95,10 @@ Run it with `/implement-fr FR-NN`.
 {{/IF_LONG}}{{^IF_LONG}}| `/new-adr <title>` | Decisions |
 {{/IF_LONG}}| `/new-spec-section`, `/sync-context` | Documentation upkeep |
 {{#IF_DB}}| `/db-migration <name>`{{#IF_DB_SEEDER}}, `/seed-db`{{/IF_DB_SEEDER}} | Database work, local and development only |
-{{/IF_DB}}
-| `/scaffold-feature <slug>` | Feature skeleton |
+{{/IF_DB}}| `/scaffold-feature <slug>` | Feature skeleton |
 | `/deploy` | Gated. Explicit user request only, after approval and merge |
+| `/board-audit`, `/harness-tune`, `/harness-toggle`, `/harness-update`, `/agent-permissions` | Harness upkeep: board sweep, dials, on/off toggles, re-scaffold, per-seat tools |
+| `/code-graph`, `/docs-graph`, `/skill-wire` | Graphs and skill wiring |
 
 ## Testing
 

@@ -10,51 +10,49 @@ below preset M.
 
 ## Asking mechanics, and the express path
 
-Tags below: **AQ** = `AskUserQuestion` (closed choice, max 4 options, recommended option first labeled
-`"(Recommended)"`, up to 4 questions batched per call); **chat** = free-text question in conversation;
+Tags: **AQ** = `AskUserQuestion` (closed choice, max 4 options, recommended first labeled
+`"(Recommended)"`, up to 4 questions batched per call); **chat** = free-text in conversation;
 **CONFIRM (source: X)** = [`codebase-analysis.md`](codebase-analysis.md) already answered it in
-brownfield/audit - present the finding as default, get a one-line correct-or-confirm, not a fresh
-interview. Never assume an answer silently - if skipped, state the default you will use and why.
+brownfield/audit - present the finding as default, get a one-line correct-or-confirm. Never assume
+an answer silently - if skipped, state the default you will use and why.
 
-**Express intake ("use defaults"):** ask only what has **no safe default** - project identity (Q1), the
-deployment-rights half of Q18, and all of Batch H (Q24-27, absolute and unaffected by express mode).
-Everything else silently takes the default already stated in its question (the CONFIRM finding where
-analysis ran, the labeled "Recommended" option otherwise); print the assumed defaults as one table for
-confirmation before writing anything - one pass, not one prompt per row. Batch G (audit mode) is never
-eligible for express intake - scope cannot be guessed.
+**Express intake ("use defaults"):** ask only what has **no safe default** - project identity (Q1),
+the deployment-rights half of Q18, and all of Batch H (Q24-27, absolute and unaffected by express
+mode). Everything else takes the default its question states (the CONFIRM finding where analysis
+ran, the labeled "Recommended" option otherwise); print the assumed defaults as ONE table for
+confirmation before writing anything. Batch G (audit mode) is never express - scope cannot be
+guessed.
 
 ## Batch A - project identity
 
 1. **[chat]** Project name, domain, one-line purpose. Brownfield: a manifest's `name` field or the repo
    directory is a candidate to suggest, never to assume silently.
 2. **[AQ]** **Documentation language** for `docs/` content (Vietnamese / Japanese / English / other -
-   max 4 options). Regardless, ALL agent-facing files (`CLAUDE.md`, `AGENTS.md`, `.claude/*`) are
-   English; codes, enums, and filenames are always English. The scaffolded `docs/README.md` records
-   the chosen language so every later agent authors docs prose in it without re-asking.
+   max 4 options). ALL agent-facing files (`CLAUDE.md`, `AGENTS.md`, `.claude/*`) plus codes, enums,
+   and filenames stay English. The scaffolded `docs/README.md` records the choice so later agents
+   author docs prose in it without re-asking.
 3. **[CONFIRM - presence of `docs/specs/`]** Do specs already exist? If not, invoke `spec-builder` via
    the `Skill` tool first (state the handoff if unavailable) - the bootstrap is better with FRs.
 
 **Target AI tools - [AQ, multi-select].** Detect which tools the repo already uses - `.claude/`/
 `CLAUDE.md` (Claude Code, always primary), `.cursor/`/`.cursorrules` (Cursor), `.codex/` (Codex), a
-shared `AGENTS.md` (both) - as the default, then ask which the harness must run in (sets whether step 8
-ports via `scripts/port.py --tool cursor|codex|all`); a team may want Cursor support before `.cursor/`
-exists.
+shared `AGENTS.md` (both) - as the default, then ask which the harness must run in (sets whether
+step 8 ports via `port.py`); a team may want Cursor support before `.cursor/` exists.
 
 ## Batch B - tech stack
 
 4. **[CONFIRM - manifests/lockfiles]** Language / framework (or "TBD via ADR"). Greenfield: propose
-   from [`tech-presets.md`](tech-presets.md), not a memorized version - check the real registry (`npm
-   view <pkg> version`, `pip index versions <pkg>`, `gh api .../releases/latest`) and record the version
-   plus check date in `docs/context/tech-stack.md`. Brownfield: analysis overrides the preset; a
-   contradiction is a migration-backlog proposal, not a silent swap.
+   from [`tech-presets.md`](tech-presets.md) - check the real registry per its currency rule and
+   record version + check date in `docs/context/tech-stack.md`. Brownfield: analysis overrides the
+   preset; a contradiction is a migration-backlog proposal, not a silent swap.
 5. **[CONFIRM - schema/ORM config files]** **Database + ORM** (e.g. PostgreSQL + Prisma / MySQL /
    MongoDB / none). Drives `db`, `rules/data-model.md`, `/db-migration`, and Batch E's DB agents.
 6. **[CONFIRM queue/integrations - analysis; chat for hosting if no deploy config; chat for
    fallback/update-cadence]** Async/queue layer, external providers (LLM gateway? OCR? storage?),
-   hosting target. An LLM provider whose output reaches users sets `ai`. Per load-bearing integration:
-   the fallback when down (documented / queued retry / hard failure) and the update cadence
-   (Dependabot/Renovate or manual). If Q15 named SOC2, ISO 27001, or PCI-DSS, confirm any SBOM
-   requirement.
+   hosting target. An LLM provider whose output reaches users sets `ai`. Per load-bearing
+   integration: the fallback when down (documented / queued retry / hard failure) and the update
+   cadence (Dependabot/Renovate or manual). If Q15 named SOC2, ISO 27001, or PCI-DSS, confirm any
+   SBOM requirement.
 7. **[AQ - single-locale default, no follow-up; chat sub-parts if multi-locale]** **Product
    internationalization.** Does the product (not `docs/`, see Q2) serve more than one user-facing
    language? If yes: locales, RTL need, timezone/currency/date convention, DB character set. No var -
@@ -63,11 +61,10 @@ exists.
    configuration** - which environments exist (local / dev / staging / production), who owns each, where
    secrets live per environment, and any auth/SSO providers. Drives `.env.example`.
 9. **[AQ, 3 options, "RBAC (Recommended)" first; chat sub-parts if multi-tenant]** **Authorization
-   model and tenancy.** RBAC (role-based) / ABAC (access depends on record attributes) / ownership-only
-   (no roles, own data only). If multi-tenant: isolation strategy (row-level tenant column /
-   schema-per-tenant / DB-per-tenant) and any break-glass admin path - who, and is it logged. No var -
-   feeds `data-model.md`'s entity notes; a break-glass path becomes a `settings.json` entry, authored
-   like Q18's.
+   model and tenancy.** RBAC (role-based) / ABAC (record-attribute based) / ownership-only (no
+   roles, own data only). If multi-tenant: isolation strategy (row-level tenant column /
+   schema-per-tenant / DB-per-tenant) and any break-glass admin path - who, and is it logged. No
+   var - feeds `data-model.md`'s entity notes; a break-glass path becomes a `settings.json` entry.
 10. **[AQ, auto-detected value first]** **Dev OS** - AUTO-DETECT from the environment (platform, shell,
     path separators) and confirm rather than ask cold; also ask if the team is mixed-OS. Sets
     `windows`/`posix`, gating hook flavor and settings lines - get it wrong and guardrails never fire,
@@ -76,12 +73,12 @@ exists.
 ## Batch C - git and CI
 
 11. **[CONFIRM - `git remote -v` + `git config user.name`/`user.email`; chat for the bot sub-part]**
-    **Git platform and commit identity.** Platform: GitHub / GitLab, cloud or self-hosted (ask which!) /
-    Bitbucket / none - drives the CLI (`gh`/`glab`), PR-vs-MR wording, and the CI file. Self-hosted
-    GitLab: capture the instance hostname and that CI secrets are masked + protected. Identity: name/
-    email on THAT platform - confirm it, a wrong email misattributes commits. Also: does a bot already
-    hold commit/merge rights on the default branch (Dependabot, Renovate, auto-merge)? No var - recorded
-    in `known-issues.md`, and as a `merge-manager` exception if that agent is fielded.
+    **Git platform and commit identity.** Platform: GitHub / GitLab, cloud or self-hosted (ask
+    which!) / Bitbucket / none - drives the CLI (`gh`/`glab`), PR-vs-MR wording, and the CI file.
+    Self-hosted GitLab: capture the hostname and that CI secrets are masked + protected. Identity:
+    name/email on THAT platform - a wrong email misattributes commits. Also: does a bot hold
+    commit/merge rights on the default branch (Dependabot, Renovate, auto-merge)? No var - into
+    `known-issues.md`, and a `merge-manager` exception if that agent is fielded.
 12. **[CONFIRM - `git symbolic-ref`/remote HEAD + `git log`; chat for the scope list]** **Default
     branch and commit convention.** Branch: default `main`, naming `feat/fix/chore/...` - feeds
     `guard-main-commit`. Convention: Conventional Commits is default - confirm the type list
@@ -95,13 +92,12 @@ exists.
 the preset table, decides how heavy the agent team is. Echo the resulting roster afterwards.
 - **Project horizon** - Short and focused (Recommended below preset L) / Long-term, multi-week (flag
   `long`: adds `brainstormer` + `tech-researcher` for decision work and `history-tracker` to curate
-  the run archive - three seats that only pay for themselves on a project long enough to forget
-  its own decisions).
+  the run archive - seats that only pay off on a project long enough to forget its own decisions).
 - **Role granularity** - Split reviewers (Recommended for M/L: `code-reviewer` + `security-reviewer`,
   two independent passes catch more) / One merged `reviewer` (flag `solo_review`: one pass, both
   lenses - the lean choice for preset S and solo work).
-- **Priority** - Speed / Balanced / Highest quality. Not a flag: this steers the effort profile in
-  Q16 (Speed -> Economy, Highest quality -> Thorough) and how aggressively the roster is trimmed.
+- **Priority** - Speed / Balanced / Highest quality. Not a flag: steers the Q16 effort profile
+  (Speed -> Economy, Highest quality -> Thorough) and how aggressively the roster is trimmed.
   Cross-reference, do not re-ask Q16.
 
 13. **[AQ for what to automate; CONFIRM frameworks/commands - test config/`package.json` scripts]**
@@ -109,25 +105,23 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
     - **Unit + e2e (Recommended for products)** - flags `unit`, `e2e`, `tests`.
     - **Unit only** - flags `unit`, `tests`.
     - **E2e only** - flags `e2e`, `tests`; critical user journeys, no unit layer.
-    - **None** - no flags: no `qa-test` seat, no `/test`, no `rules/testing.md`; acceptance criteria
-      are verified by hand and the session log records how. Honest for prototypes; revisit with
-      `/harness-update` when the project grows.
-    Then, only for the selected kinds, the frameworks and commands: suggest per stack from
-    [`tech-presets.md`](tech-presets.md) (Vitest + Playwright for a Vite-based JS/TS stack, Jest
-    where it is already invested, pytest for Python - never present one framework as universal),
-    and CONFIRM the actual test/lint/build commands from the repo's scripts.
+    - **None** - no flags: no `qa-test`, `/test`, or `rules/testing.md`; acceptance criteria are
+      verified by hand and the session log records how. Honest for prototypes; revisit via
+      `/harness-update`.
+    Then, only for the selected kinds, frameworks and commands: suggest per stack from
+    [`tech-presets.md`](tech-presets.md) (Vitest + Playwright for Vite-based JS/TS, Jest where
+    already invested, pytest for Python - never one framework as universal), and CONFIRM the real
+    test/lint/build commands from the repo's scripts.
 14. **[AQ, 4 options, "DDD (Recommended)" first]** **Development methodology** - how should the
     dev seats be disciplined? Purpose and cost of each, honestly:
     - **DDD (Recommended)** (flag `ddd`) - `rules/ddd.md`: the spec glossary becomes the ubiquitous
-      language, each dev agent's scope is a bounded context, aggregate-root discipline applies.
-      Tests ship in the same change as the implementation, proving the acceptance criteria - they
-      are not required to come first, which keeps delivery speed. Best default for products with a
-      real domain.
+      language, each dev agent's scope a bounded context, aggregate-root discipline applies. Tests
+      ship in the same change, proving the acceptance criteria - not required first, which keeps
+      delivery speed. Best default for products with a real domain.
     - **TDD** (flag `tdd`) - red/green/refactor, tests strictly first. Stronger proof discipline,
       measurably slower delivery; pick it when correctness pressure outweighs pace.
-    - **TDD + DDD** (both flags) - both disciplines at once. The strictest and slowest posture; the
-      two can pull against each other (test-first pacing vs model-first design), so choose this
-      deliberately, not as a default.
+    - **TDD + DDD** (both flags) - the strictest and slowest posture; the two can pull against each
+      other (test-first pacing vs model-first design), so choose it deliberately, never as default.
     - **Lightweight** (flag `light`) - no methodology rule installed; small commits, working
       software first, minimal ceremony. The review gate and guardrail hooks stay - lightweight
       loosens process, never safety. For prototypes, spikes, and solo velocity.
@@ -142,9 +136,9 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
       guardrails)?
 
     If a regime was named: ask (chat, never defaulted) retention period per class, deletion/erasure
-    support, and backup/restore expectation (RPO/RTO, or "none defined"). No var - authored into
-    `security-privacy.md`'s "Retention and egress" practice, or `known-issues.md` if unknown; record
-    "no regime" too, so the gap stays visible.
+    support, and backup/restore expectation (RPO/RTO, or "none defined"). No var - into
+    `security-privacy.md`'s "Retention and egress", or `known-issues.md` if unknown; record "no
+    regime" too, so the gap stays visible.
 16. **[AQ, 3 options, "Default (Recommended)" first]** **Effort profile** - how should the roster be
     tuned for cost vs depth?
     - **Default (Recommended)** - the per-agent allocation in [`roster.md`](roster.md) as written.
@@ -165,36 +159,36 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
     Sets `{{HISTORY_LEVEL}}` and `{{HISTORY_KEEP}}` (200 for summary/full, 0 for minimal/off).
     Changed later with `/harness-tune` dial 6.
 17. **[chat]** **Operations posture.** Uptime/availability target ("best effort" is honest);
-    observability stack (logs/metrics/traces); feature-flag mechanism; incident severity ladder - who is
-    paged, at what severity; a cloud/infra budget ceiling bounding `devops`'s recommendations, if any. No
-    var - feeds `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (Q27) to any production incident.
+    observability stack (logs/metrics/traces); feature-flag mechanism; incident severity ladder -
+    who is paged, at what severity; any cloud/infra budget ceiling bounding `devops`'s
+    recommendations. No var - feeds `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (Q27).
 18. **[AQ for deploy rights - no safe default even in express intake; chat for destructive commands, DB
     one CONFIRMED from Q20]** **Control level** - how much may agents do without a human in the loop?
     - **Deployment rights** - three answers:
-      - **Human-only (Recommended)** - `{{DEPLOY_CMD}}` sits in `permissions.deny`; `/deploy` prepares
-        and verifies but a human runs the command. No flag.
-      - **Agent, with approval** (flag `deploy_ask`) - `{{DEPLOY_CMD}}` moves from `deny` to `ask`: the
-        agent can initiate a deploy but every invocation stops for an explicit yes. Confirm the
-        approver's normal availability/timezone - an unanswered `ask` gate is a stall, not a control.
-      - **Agent, non-prod only** - keep the production command in `deny` and put the staging command in
-        `allow`; needs the two commands to actually differ, so confirm both.
+      - **Human-only (Recommended)** - `{{DEPLOY_CMD}}` sits in `permissions.deny`; `/deploy`
+        prepares and verifies but a human runs the command. No flag.
+      - **Agent, with approval** (flag `deploy_ask`) - `{{DEPLOY_CMD}}` moves from `deny` to `ask`:
+        every invocation stops for an explicit yes. Confirm the approver's normal availability/
+        timezone - an unanswered `ask` gate is a stall, not a control.
+      - **Agent, non-prod only** - production command stays in `deny`, staging command goes in
+        `allow`; the two commands must actually differ, so confirm both.
     - **Destructive commands** - confirm the deny list covers this stack's real reset/force commands
-      (Q20 already collects the DB one); ask if there are others (infra teardown, queue purge).
-    - Every dial here can be changed after bootstrap with `/harness-tune` - the answer sets the starting
-      posture, not a permanent one.
+      (Q20 collects the DB one); ask if there are others (infra teardown, queue purge).
+    - Every dial here is changeable later with `/harness-tune` - a starting posture, not a permanent
+      one.
 
 ## Batch E - database operations and seed data
 
 Ask only if Batch B has a DB.
 
 19. **[AQ multi-select for the agent set; chat for seed sub-parts if `db-seeder` is chosen]** **DB
-    agents and seed policy.** Which DB agents: `data-modeler` (schema design - recommended whenever a
-    schema exists; the `db` flag alone ships only this seat), `db-engineer` (apply/troubleshoot
-    migrations, query/index tuning, local docker env - sets flag `db_engineer`), `db-seeder` +
-    `/seed-db` (synthetic data for dev/demo/test - sets flag `db_seeder`). Start with `data-modeler`
-    alone unless migration or seed work already exists. If seeding is chosen: seed-target environments
-    (local docker / shared dev / staging), default seed scope (entities + volumes), locale mix, and the
-    synthetic-only policy - real data never enters seeds, prod is never a target.
+    agents and seed policy.** Which DB agents: `data-modeler` (schema design - the `db` flag alone
+    ships only this seat), `db-engineer` (migrations, query/index tuning, local docker - flag
+    `db_engineer`), `db-seeder` + `/seed-db` (synthetic data for dev/demo/test - flag `db_seeder`).
+    Start with `data-modeler` alone unless migration or seed work already exists. If seeding is
+    chosen: seed-target environments (local docker / shared dev / staging), default seed scope
+    (entities + volumes), locale mix, and the synthetic-only policy - real data never enters seeds,
+    prod is never a target.
 20. **[CONFIRM if the ORM from Q5 has a known reset convention; chat otherwise, never guess]** The real
     destructive DB command for this stack (`prisma migrate reset` / `rails db:reset` / `alembic
     downgrade`). It becomes a settings.json deny rule, so a wrong guess is worthless.
@@ -221,14 +215,14 @@ express intake - scope cannot be defaulted.
 ## Batch H - governance (model sovereignty and IP)
 
 Always asked, in full, even in express intake. **Never guess an answer here and never generate a
-default** - every answer is a policy position only the org can hold, and a plausible-looking invented one
-is worse than a blank, because it will be believed. If the user does not know, say so and register a
-task; do not fill it in for them. All four are **[chat]** - open text, not an enumerable choice.
+default** - each is a policy position only the org can hold, and a plausible invented one is worse
+than a blank, because it will be believed. If the user does not know, say so and register a task. All
+four are **[chat]** - open text, not an enumerable choice.
 
-24. **Model sovereignty** - for each data class the project actually handles (Public / Internal /
-    Confidential / Restricted), which model or provider may process it? Self-hosted, a specific vendor
-    under contract, or none. **"None" is a valid and common answer for Restricted** - it means that work
-    is not delegated to an agent at all. Fills `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`,
+24. **Model sovereignty** - per data class the project actually handles (Public / Internal /
+    Confidential / Restricted), which model or provider may process it? Self-hosted, a specific
+    vendor under contract, or none. **"None" is a valid and common answer for Restricted** - that
+    work is simply not delegated to an agent. Fills `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`,
     `{{MODEL_CONFIDENTIAL}}`, `{{MODEL_RESTRICTED}}`.
 25. **Residency** - which region or boundary must processing stay inside (`{{DATA_RESIDENCY}}`)?
 26. **Dependency licences** - which licence families are allowed, and which are denied
@@ -243,32 +237,32 @@ task; do not fill it in for them. All four are **[chat]** - open text, not an en
 
 ## Intake answers to `vars.json`
 
-The scaffolder (`../scripts/scaffold.py`) consumes `vars.json`. Every question above lands in exactly
-one variable or flag; the remaining variables come from the analysis, not from the user.
+The scaffolder (`../scripts/scaffold.py`) consumes `vars.json`. Every question lands in exactly one
+variable or flag; the remaining variables come from the analysis.
 
 | Answer | Goes to |
 |---|---|
-| 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
-| 2 docs language | `{{DOC_LANGUAGE}}` - recorded in the scaffolded `docs/README.md`; sets the language of authored `docs/` prose only |
+| 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{PROJECT_SLUG}}` (kebab-case of the name, used in `.env.example`), `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
+| 2 docs language | `{{DOC_LANGUAGE}}` - recorded in `docs/README.md`; authored `docs/` prose only |
 | 3 specs exist | `{{FR_LIST}}` (from the specs, if any); otherwise the `spec-builder` handoff |
 | target AI tools (Batch A) | no var - drives whether step 8 ports to Cursor / Codex via `port.py` |
-| 4 language/framework | `{{SOURCE_GLOBS}}` shape; `tech-stack.md` body; version checked at bootstrap per [`tech-presets.md`](tech-presets.md), never recalled from memory |
+| 4 language/framework | `{{SOURCE_GLOBS}}` shape; `tech-stack.md` body; version per [`tech-presets.md`](tech-presets.md), never from memory |
 | 5 database + ORM | flag `db`, `{{ORM}}`, `{{DB_GLOBS}}` |
 | 6 providers / hosting / fallback / update cadence | flag `ai`, `{{HOSTING}}`; fallback/cadence - no var, into `tech-stack.md` and `testing.md`'s provider-wrapper practice |
 | 7 product internationalization | no var - into `tech-stack.md`/`coding-standards.md`; DB character-set choice in `data-model.md` |
 | 8 environments, ownership, and configuration | `.env.example` groups (authored, not templated) |
 | 9 authorization model and tenancy | no var - into `data-model.md`'s entity notes; a break-glass path becomes a `settings.json` entry |
-| 10 dev OS | flag `windows` or `posix` → `{{HOOK_RUNNER}}`, `{{HOOK_EXT}}` |
+| 10 dev OS | flag `windows` or `posix`; `{{HOOK_RUNNER}}`/`{{HOOK_EXT}}` are DERIVED from the flag by the scaffolder - do not set them in vars.json |
 | 11 git platform + commit identity + CI bots | `{{PR_OR_MR}}`, `{{CI_PLATFORM}}`; identity: no var; bot answer: no var, `known-issues.md` + merge-manager exception if fielded |
 | 12 default branch + commit convention | `{{DEFAULT_BRANCH}}`; `{{COMMIT_TYPES}}`, `{{COMMIT_SCOPES}}` |
-| roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16, no var |
-| 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests` (gate `qa-test`, `/test`, `rules/testing.md`); `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` (framework vars only for the selected kinds; unselected ones take `-`) |
-| 14 methodology | flag `tdd` and/or `ddd`, or `light` (no methodology rule) - gates `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
-| 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md`'s "Retention and egress" practice or `known-issues.md` if unknown |
+| roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16; `{{AGENT_ROSTER_TABLE}}` (the confirmed roster, rendered as the AGENTS.md table) |
+| 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests`; `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` (framework vars only for selected kinds; unselected take `-`) |
+| 14 methodology | flags `tdd`/`ddd`/`light` - gate `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
+| 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md` or `known-issues.md` |
 | 16 effort profile | no var - the roster allocation; record the choice in `docs/context/tool-changelog.md` |
-| agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook |
+| agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook. `HISTORY_KEEP` counts per-run files to retain; `0` means never prune (minimal/off write no per-run files, so 0 is their natural value) |
 | 17 operations posture | no var - into `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (set at Q27) |
-| 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands; approver-availability - no var, informs whether `deploy_ask` is realistic |
+| 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands |
 | 19 DB agents + seed policy | flags `db_engineer`, `db_seeder` (with `db`, gate their seats and `/seed-db`); seed scope |
 | 20 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` |
 | 21-22 branding, icons, a11y | flag `ui`, `{{UI_GLOBS}}`; `rules/frontend.md` body |
@@ -276,7 +270,7 @@ one variable or flag; the remaining variables come from the analysis, not from t
 | 24 model sovereignty | `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`, `{{MODEL_CONFIDENTIAL}}`, `{{MODEL_RESTRICTED}}` |
 | 25 residency | `{{DATA_RESIDENCY}}` |
 | 26 licences + ownership | `{{ALLOWED_LICENCES}}`, `{{DENIED_LICENCES}}`, `{{IP_OWNERSHIP_STATEMENT}}` |
-| 27 gated actions + incident path | `{{GATED_ACTIONS}}`, `{{INCIDENT_CONTACT}}` (now any production incident, not only a shipped AI feature's) |
+| 27 gated actions + incident path | `{{GATED_ACTIONS}}`, `{{INCIDENT_CONTACT}}` (any production incident) |
 | - dependency manifests (from analysis) | `{{DEP_MANIFEST_GLOBS}}` |
 | - deploy command (from analysis or Q6) | `{{DEPLOY_CMD}}` |
 | - glossary seed rows (from spec section 03 when spec-builder hands off; `-` if none) | `{{GLOSSARY_SEED}}` |
@@ -291,14 +285,13 @@ is derived: set it whenever `unit` or `e2e` is set, never alone.
 
 **Q: Where does Restricted data live in this repo, as glob patterns?**
 
-This is the question that turns the classification table from advice into enforcement: the answers
-become `permissions.deny` entries on `Read(...)`, so agents cannot obtain the data - and what an agent
-cannot read, it cannot send to any provider.
+This question turns the classification table from advice into enforcement: the answers become
+`permissions.deny` entries on `Read(...)` - what an agent cannot read, it cannot send to any
+provider.
 
 - Format as ready-to-paste JSON array entries, each ending with a comma, for `{{RESTRICTED_DENIES}}`,
   e.g. `"Read(data/restricted/**)",` and `"Read(**/*.phi.json)",`.
 - No Restricted data in the repo is a normal answer - use the convention placeholder
   `"Read(**/.restricted/**)",` so the slot stays valid JSON.
 - **Never guess this.** A wrong glob is a control that looks present and is not. If the user does not
-  know, record it in `docs/context/known-issues.md` and say the classification table is advisory until
-  answered.
+  know, record it in `docs/context/known-issues.md` and say the table is advisory until answered.

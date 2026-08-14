@@ -77,7 +77,7 @@ Dynamic or loosened typing is not a defect by itself - report what it COSTS in t
 
 ## Reviewing tests
 
-Authoring rules are in testing.md. When reviewing:
+{{#IF_TESTS}}Authoring rules are in testing.md. {{/IF_TESTS}}When reviewing:
 
 **No tests exist** produces one Major finding, stated as risk, not morality: "No test files found.
 Every change to <named critical paths> is verified only by manual testing; regressions ship

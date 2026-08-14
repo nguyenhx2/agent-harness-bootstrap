@@ -7,7 +7,7 @@ This is the file that answers "it worked last week, what changed?" The answer is
 the application code. Record the change here at the time it is made, because reconstructing it
 afterwards from lockfile diffs and pipeline logs costs a day.
 
-Updated via `/sync-context`, and directly by `/db-migration` and `/deploy`.
+Updated via `/sync-context`, and directly by {{#IF_DB}}`/db-migration` and {{/IF_DB}}`/deploy`.
 
 | Date | Change | Why | Verified by |
 |------|--------|-----|-------------|

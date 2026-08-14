@@ -75,7 +75,18 @@ let W, H, scale = 1, ox = 0, oy = 0;
 function resize(){ W = cv.width = cv.clientWidth * devicePixelRatio; H = cv.height = cv.clientHeight * devicePixelRatio; layoutFlow(); }
 window.addEventListener('resize', () => { resize(); });
 const N = GRAPH.nodes, E = GRAPH.edges;
-const idx = {}; N.forEach((n,i)=>{ idx[n.id]=i;
+const idx = {}; N.forEach((n,i)=>{ idx[n.id]=i; });
+// An edge may reference a node that does not exist on disk (e.g. a command
+// running a script that was never installed). The scanner keeps such edges on
+// purpose; render the missing endpoint as a visible stub so it is diagnosable.
+const PREFIX_CAT = { cmd: 'command' };
+E.forEach(e => { [e.from, e.to].forEach(id => { if (idx[id] === undefined){
+  const p = id.split(':')[0];
+  N.push({ id: id, label: id.split(':').slice(1).join(':') + ' (missing)',
+           cat: PREFIX_CAT[p] || p, disabled: true, missing: true, meta: {}, file: '' });
+  idx[id] = N.length - 1;
+} }); });
+N.forEach((n,i)=>{
   n.x = (Math.cos(i*2.399963)*0.35+0.5)*innerWidth*devicePixelRatio;
   n.y = (Math.sin(i*2.399963)*0.35+0.5)*innerHeight*devicePixelRatio;
   n.vx = 0; n.vy = 0; n.deg = 0; });
@@ -94,12 +105,15 @@ function saveSets(){ localStorage.setItem(LS+'hf', JSON.stringify([...hiddenFlow
   localStorage.setItem(LS+'hg', JSON.stringify([...hiddenGraph])); }
 
 // ---- Flow layout: fixed left-to-right lanes, no physics ----
-const COLS = { rule:0, hook:1, settings:1, agent:2, gate:3, human:4, command:5, script:6, module:6, task:7 };
+// Column order follows the edge story so arrows read left to right:
+// settings triggers hooks, hooks enforce rules, rules gate agents, agents
+// review the merge-request gate, the human approves and invokes commands.
+const COLS = { settings:0, hook:1, rule:2, agent:3, gate:4, human:5, command:6, script:7, module:7, task:8 };
 function layoutFlow(){
   if (!HAS_FLOW) return;
   const vis = N.filter(visible);
   const byCol = {};
-  vis.forEach(n => { const c = (COLS[n.cat] !== undefined) ? COLS[n.cat] : 7;
+  vis.forEach(n => { const c = (COLS[n.cat] !== undefined) ? COLS[n.cat] : 8;
     (byCol[c] = byCol[c] || []).push(n); });
   const cols = Object.keys(byCol).map(Number).sort((a,b)=>a-b);
   const colW = Math.max(200*devicePixelRatio, (W - 120*devicePixelRatio) / Math.max(cols.length,1));
@@ -165,16 +179,22 @@ function drawFlow(){
   vis.forEach(n => { n.w = boxW(n); });
   links.filter(e => visIds.has(e.from) && visIds.has(e.to)).forEach(e => {
     const a = N[e.s], b = N[e.t];
-    const x0 = a.fx + a.w, y0 = a.fy + BH()/2, x3 = b.fx, y3 = b.fy + BH()/2;
+    const y0 = a.fy + BH()/2, y3 = b.fy + BH()/2;
+    // Anchor sides follow the actual direction: a rightward edge leaves the
+    // source's right side; a leftward or same-column edge leaves its left
+    // side, and the arrowhead follows the real vector - never hardcoded.
+    let x0, x3, dir;
+    if (b.fx >= a.fx + a.w){ x0 = a.fx + a.w; x3 = b.fx; dir = 1; }
+    else { x0 = a.fx; x3 = b.fx + b.w; dir = -1; }
     const bend = Math.max(50*devicePixelRatio, Math.abs(x3-x0)*0.45);
-    const x1 = x0 + bend, x2 = x3 - bend;
+    const x1 = x0 + dir*bend, x2 = x3 - dir*bend;
     const dis = N[e.s].disabled || N[e.t].disabled;
     ctx.globalAlpha = dis ? 0.35 : 1;
     ctx.strokeStyle = 'rgba(90,90,120,0.55)'; ctx.lineWidth = 1.2*devicePixelRatio;
     ctx.setLineDash(dis ? [4*devicePixelRatio,3*devicePixelRatio] : []);
     ctx.beginPath(); ctx.moveTo(x0,y0); ctx.bezierCurveTo(x1,y0,x2,y3,x3,y3); ctx.stroke();
     ctx.setLineDash([]);
-    arrow(x3, y3, 1, 0, 'rgba(90,90,120,0.8)');
+    arrow(x3, y3, dir, 0, 'rgba(90,90,120,0.8)');
     if (e.type){ pill(bez(0.5,x0,x1,x2,x3), bez(0.5,y0,y0,y3,y3), e.type); }
     ctx.globalAlpha = 1;
   });
@@ -249,9 +269,21 @@ cv.addEventListener('click', ev => { const n = pick(ev.offsetX, ev.offsetY);
   if (!n){ info.style.display='none'; return; }
   const out = links.filter(e=>e.s===idx[n.id]).map(e=>N[e.t].label+(e.type?' ['+e.type+']':'')+(e.refs?' ('+e.refs+')':''));
   const inn = links.filter(e=>e.t===idx[n.id]).map(e=>N[e.s].label+(e.type?' ['+e.type+']':'')+(e.refs?' ('+e.refs+')':''));
-  info.innerHTML = '<h2>'+n.label+(n.disabled?' (disabled)':'')+'</h2><div>'+(n.detail||n.cat)+'</div>'
-    + (out.length ? '<div><b>outgoing:</b><ul><li>'+out.join('</li><li>')+'</li></ul></div>' : '')
-    + (inn.length ? '<div><b>incoming:</b><ul><li>'+inn.join('</li><li>')+'</li></ul></div>' : '');
+  info.textContent = '';
+  const h2 = document.createElement('h2');
+  h2.textContent = n.label + (n.disabled ? ' (disabled)' : '');
+  info.appendChild(h2);
+  const dv = document.createElement('div');
+  dv.textContent = (n.detail || n.cat);
+  info.appendChild(dv);
+  [['outgoing:', out], ['incoming:', inn]].forEach(([lbl, arr]) => {
+    if (!arr.length) return;
+    const box = document.createElement('div');
+    const b = document.createElement('b'); b.textContent = lbl; box.appendChild(b);
+    const ul = document.createElement('ul');
+    arr.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+    box.appendChild(ul); info.appendChild(box);
+  });
   info.style.display='block'; });
 
 // legend filtering
@@ -292,6 +324,15 @@ VIEW_BTNS = ('<button id="btnFlow">Flow</button><button id="btnGraph">Graph</but
              '<label><input type="checkbox" id="ar">auto-reload</label>')
 
 
+def embed_json(obj) -> str:
+    """json.dumps for embedding INSIDE a <script> block: escape the sequences
+    that could terminate the block or open a comment. Repo frontmatter is
+    attacker-influencable (any file in the repo), so this is load-bearing."""
+    return (json.dumps(obj)
+            .replace("</", "<\\/")
+            .replace("<!--", "<\\u0021--"))
+
+
 def render(title: str, subtitle: str, nodes: list, edges: list, cats: list[str],
            flow: bool = False) -> str:
     legend = "".join(
@@ -305,14 +346,20 @@ def render(title: str, subtitle: str, nodes: list, edges: list, cats: list[str],
             .replace("__LEGEND__", legend)
             .replace("__COLORS__", json.dumps(CAT_COLORS))
             .replace("__FLOW__", "true" if flow else "false")
-            .replace("__DATA__", json.dumps({"nodes": nodes, "edges": edges})))
+            .replace("__DATA__", embed_json({"nodes": nodes, "edges": edges})))
 
 
 def specs_graph(root: pathlib.Path) -> str | None:
     src = root / ".claude" / "state" / "docs-graph.json"
     if not src.exists():
         return None
-    g = json.loads(src.read_text(encoding="utf-8"))
+    try:
+        g = json.loads(src.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        # contract: never fail the caller - a broken input narrows the output
+        print(f"graph-html: {src} unreadable ({e}); skipping the specs graph",
+              file=sys.stderr)
+        return None
     linked = {e["from"] for e in g["edges"]} | {e["to"] for e in g["edges"]}
     nodes = [{"id": d, "label": d.split("/")[-1], "cat": "doc", "detail": d}
              for d in sorted(linked)]
@@ -368,7 +415,13 @@ def harness_graph(root: pathlib.Path) -> str | None:
         src.parent.mkdir(parents=True, exist_ok=True)
         src.write_text(json.dumps(graph, indent=2, sort_keys=True) + "\n",
                        encoding="utf-8")
-    g = json.loads(src.read_text(encoding="utf-8"))
+    try:
+        g = json.loads(src.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        # contract: never fail the caller - a broken input narrows the output
+        print(f"graph-html: {src} unreadable ({e}); skipping the harness graph",
+              file=sys.stderr)
+        return None
 
     nodes = [{"id": n["id"], "label": n["label"], "cat": n["type"],
               "detail": _node_detail(n), "disabled": bool(n.get("disabled"))}

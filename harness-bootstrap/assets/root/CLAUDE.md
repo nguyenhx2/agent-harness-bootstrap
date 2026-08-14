@@ -33,6 +33,6 @@ owner's approval and never happens on an agent's own initiative.
 
 ### Commands
 
-`.claude/commands/` holds the slash commands listed in `AGENTS.md`. `/deploy` is gated: it is
+`.claude/commands/` holds the slash commands; the main ones are tabled in `AGENTS.md`. `/deploy` is gated: it is
 excluded from model invocation, so it runs only when the user invokes it directly, never as a step
 an agent decides to take on its own.

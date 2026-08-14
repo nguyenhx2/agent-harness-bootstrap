@@ -107,7 +107,7 @@ if [ -n "$cmd" ]; then
     exit 2
   fi
   if printf '%s' "$cmd" | grep -Eqi "$db_reset_pattern"; then
-    echo "BLOCKED: destructive DB command. Migrations only via the controlled /db-migration flow; DB resets must be run by the user themselves." >&2
+    echo "BLOCKED: destructive DB command. Schema changes go through the controlled migration flow; DB resets must be run by the user themselves." >&2
     exit 2
   fi
 fi
