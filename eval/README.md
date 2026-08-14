@@ -2,15 +2,16 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **33/33 correct (11 must-block, 15 must-allow).**
+`python eval/guardrail_eval.py` -> **46/46 correct (18 must-block, 28 must-allow).**
 
-The count moved from 25 to 26: `guard-main-commit` previously had only a must-block case
-(straight-to-main). A hook that blocked every commit unconditionally - a real regression, not a
-hypothetical - would still have passed the old suite. `allow: commit on a feature branch` closes
-that gap; see [What changed](#what-changed) for how it was verified to actually catch a broken hook.
+The count moved from 33 to 46 with the v1.8.0 surfaces: the graph-stale tiers that regenerate the
+harness and docs graphs (proven by file state, not just exit codes), the four agent-history detail
+levels plus retention pruning, and the `/harness-toggle` safety contract (HARD typed-phrase
+refusal, SOFT `--yes`, agent refusal, byte-exact settings.json restore). See
+[What changed](#what-changed).
 
-Pass `--flavor ps1` to ALSO run the identical 26 payloads through the `.ps1` hooks (Windows parity),
-for **66/66** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+Pass `--flavor ps1` to ALSO run the identical payloads through the `.ps1` hooks (Windows parity),
+for **92/92** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
@@ -25,6 +26,7 @@ None of them consults the model.
 | An AI-attribution trailer in a commit | `check-commit-msg` hook | No |
 | Editing an Accepted ADR | `protect-adr` hook | No |
 | Spawning an off-roster agent, escalating a seat's model, or a write-capable dispatch naming no task | `guard-agent-spawn` hook | No |
+| Disabling a protection (protect-secrets, guard-agent-spawn, the review gate) without the user typing the confirmation phrase | `harness-toggle.py` exit 2 | No |
 
 Swap `opus` for `haiku` in every agent and re-run: the result is byte-identical. The safety floor is
 model-independent.
@@ -35,6 +37,27 @@ hook at all: it looks like protection and provides none. This eval caught exactl
 during development, once when `jq` was absent and once under WSL.
 
 ## What changed
+
+**v1.8.0 surfaces (33 -> 46 per flavor).** Three new groups, each asserting FILE STATE after the
+run, not just the exit code (the framework gained `setup_files`/`delete_files` per-case fixtures
+and `file_exists`/`glob_count`/`glob_contains` assertions):
+
+- **graph-stale tiers**: an edit under `.claude/agents/` must leave a regenerated
+  `.claude/state/harness-graph.json` behind; a docs edit must replace a seeded stale marker in
+  `docs-graph.json`. Both must still never block.
+- **agent-history levels**: `off` writes nothing, `minimal` writes one index line and no per-run
+  file, `summary` truncates at 1,500 chars with a transcript pointer, a missing config means
+  `full`, and retention with cap 1 prunes to exactly one per-run file (never `index.md`).
+- **harness-toggle safety**: HARD items refuse with exit 2 until the literal typed phrase is
+  supplied and the file provably does not move; a disabled hook's settings.json registration is
+  removed while every other hook's survives; enable restores settings.json BYTE-exactly across a
+  second disable/enable cycle; SOFT items need `--yes`; the `agent` kind is refused outright.
+
+Writing these caught a real pre-existing bug: `agent-history.sh` consumed the payload's `cwd` and
+transcript path raw, without the `norm_path()` drive-letter conversion every other hook applies.
+Under a Windows bash it silently archived into a literal `C:/` subdirectory and could never read
+its own config or the transcript. The hook now normalizes both paths; the history cases would have
+failed forever otherwise.
 
 **Coverage: every BLOCKING hook now has both a must-block and a must-allow case.** All 5 blocking
 hooks (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
@@ -63,7 +86,7 @@ and is what the fixed case does.
 twins that ship for Windows had no automated coverage at all, only the parity-contract comments in
 each hook's header. `--flavor ps1` scaffolds a second harness with the Windows hook flavor
 (`HOOK_RUNNER`/`HOOK_EXT` and the `windows` flag, matching what CI's `scaffold-matrix` job already
-does for the scaffolder itself) and fires the identical 26 payloads at the `.ps1` hooks through
+does for the scaffolder itself) and fires the identical payloads at the `.ps1` hooks through
 `powershell`/`pwsh`. It is additive, not a replacement: the default `python eval/guardrail_eval.py`
 still runs the `.sh` suite alone, so neither the default local run nor the `eval` CI job (which
 never passes `--flavor`) changes behavior. If no PowerShell interpreter is found, the ps1 pass is

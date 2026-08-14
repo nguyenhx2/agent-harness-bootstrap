@@ -153,10 +153,35 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
     RESPONSE_TXT="${out[1]:-}"
   }
 
+  # Windows-bash path normalization: the payload's cwd and transcript paths arrive as
+  # "C:\..." or "C:/...", which this bash cannot address directly (it would silently create
+  # a literal "C:" directory and archive into it). Same contract as the other .sh hooks.
+  norm_path() {
+    local p d rest
+    p=$(printf '%s' "$1" | tr '\\' '/')
+    case "$p" in
+      [A-Za-z]:/*) ;;
+      *) printf '%s' "$p"; return ;;
+    esac
+    if command -v wslpath >/dev/null 2>&1; then
+      wslpath -u "$p" 2>/dev/null && return
+    fi
+    if command -v cygpath >/dev/null 2>&1; then
+      cygpath -u "$p" 2>/dev/null && return
+    fi
+    d=$(printf '%s' "${p%%:*}" | tr 'A-Z' 'a-z')
+    rest=${p#*:}
+    if [ -d "/mnt/$d" ]; then printf '/mnt/%s%s' "$d" "$rest"
+    elif [ -d "/$d" ]; then printf '/%s%s' "$d" "$rest"
+    else printf '%s' "$p"
+    fi
+  }
+
   # --- resolve the archive dir against the payload's cwd -------------------------------------
   json_fields cwd agent_type agent_id agent_transcript_path transcript_path
   base="${JF[0]}"
   [ -z "$base" ] && base=$(pwd)
+  base=$(norm_path "$base")
 
   # --- detail level + retention: .claude/state/history-level, 2 lines ------------------------
   level='full'; keep=200
@@ -177,8 +202,9 @@ sys.stdout.write((prompt or "") + "\0" + (response or "") + "\0")
 
   tp="${JF[3]}"
   [ -z "$tp" ] && tp="${JF[4]}"
+  tp=$(norm_path "$tp")
   case "$tp" in
-    ''|/*|[A-Za-z]:/*) ;;
+    ''|/*) ;;
     *) tp="$base/$tp" ;;
   esac
 
