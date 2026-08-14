@@ -34,9 +34,10 @@ coding agent:
 <p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set in the gallery</a></b> - six clips, sound-free captions, no download.</p>
 
 - **[`spec-builder`](spec-builder/)** creates the thing you and the AI both understand - one shared
-  voice, built from an idea, a transcript, meeting notes, or a pile of legacy docs, into a 13-section
-  contract with stable requirement IDs and acceptance criteria. It never invents a requirement;
-  anything unstated becomes a flagged open issue instead of a guess. What that contract actually looks
+  voice, built from an idea, a transcript, meeting notes, or a pile of legacy docs, into a contract
+  of numbered sections with stable requirement IDs and acceptance criteria - the core six always,
+  the rest selected by what your input actually contains. It never invents a requirement; anything
+  unstated becomes a flagged open issue instead of a guess. What that contract actually looks
   like: see [below](#-what-spec-builder-produces).
 - **[`harness-bootstrap`](harness-bootstrap/)** creates the frame that lets AI operate autonomously
   AND safely - the `.claude/` **harness** (a folder of agents, path-based rules, and enforcement
@@ -55,9 +56,14 @@ coding agent:
 
 ## 📋 What `spec-builder` produces
 
-Not prose retyped from scratch each time - a fixed structure, thirteen numbered sections under
-`docs/specs/` (`01-overview.md` through `13-revision-history.md`), installed from real template files
-so the shape never drifts between projects:
+Not prose retyped from scratch each time - a fixed structure of numbered sections under
+`docs/specs/`, installed from real template files so the shape never drifts between projects. The
+core six (overview, glossary, functional requirements, NFRs, revision history, plus the index)
+always exist; up to eight optional sections (stakeholders, business flows, access control, data
+model, integrations, UI wireframes, assumptions, feasibility) and a design-system appendix
+(`14-design-system.md` - design tokens `DT-nn`, component inventory `DS-nn`) are selected by what
+the input material actually contains, so a backend batch service never ships an empty wireframes
+file:
 
 - **Stable requirement IDs, each with one defining home** - `FR-` (functional requirements, section
   05), `NFR-` (non-functional, 07), `BR-` (business rules, 05), `US-`/`UC-` (user stories and use
@@ -73,8 +79,19 @@ so the shape never drifts between projects:
   any browser, no server needed) of how sections, requirements, ADRs, and tasks reference each other,
   with orphan IDs called out.
 
-Full depth, and the standards it draws on (ISO/IEC/IEEE 29148, ISO/IEC 25010, BABOK v3, MoSCoW,
-Cockburn use cases): [`spec-builder/SKILL.md`](spec-builder/SKILL.md) ·
+**Document standards it generates against** - an opinionated synthesis, not a certified
+implementation:
+
+- **ISO/IEC/IEEE 29148:2018** - the SRS content model and what makes a requirement well-formed
+- **ISO/IEC 25010:2023** - the NFR taxonomy behind section 07's PERF/SEC/REL/USE/SCA/MNT categories
+- **BABOK v3** - elicitation discipline and requirements traceability
+- **MoSCoW** - the Must/Should/Could/Won't priority column
+- **Cockburn use cases + Gherkin** - the UC blocks and Given/When/Then acceptance criteria
+- **C4 (context level) + arc42 (context and scope)** - the one architecture diagram in 01
+- **OWASP ASVS 5.0 + OWASP LLM Top 10 (2025)** - section 07's mandatory, never-TBD security NFRs
+
+Full depth, including which section draws on which standard and the honest limits:
+[`spec-builder/SKILL.md`](spec-builder/SKILL.md) ·
 [`ba-standards.md`](spec-builder/reference/ba-standards.md).
 
 ---

@@ -31,6 +31,12 @@ invented - anything not stated by a stakeholder or clearly implied by source mat
 | 11 | [Assumptions and constraints](11-assumptions-constraints.md) | What we assumed, what binds us, what is still open |
 | 12 | [Technical feasibility](12-technical-feasibility.md) | Can each requirement actually be built, and at what risk |
 | 13 | [Revision history](13-revision-history.md) | What changed, when, and by whom |
+| 14 | [Design system](14-design-system.md) | Optional appendix - tokens, components, and brand assets |
+
+Not every project carries every section: the core (README, 01, 03, 05, 07, 13) always exists;
+the rest were selected against the input material when this set was created. A row above whose
+file is absent was deliberately not selected - it can be added later by re-running the scaffolder.
+A section that outgrew one file is a folder of the same name with a `README.md` index inside.
 
 ## Reading guide
 
@@ -59,6 +65,8 @@ invented - anything not stated by a stakeholder or clearly implied by source mat
 | `SCR-xx` | 10 | `SCR-01` (screen) |
 | `INT-xx` | 09 | `INT-01` (integration) |
 | `SH-xx` | 02 | `SH-01` (stakeholder) |
+| `DS-xx` | 14 | `DS-01` (design-system component) |
+| `DT-xx` | 14 | `DT-01` (design token) |
 
 IDs are stable. A requirement that is dropped keeps its ID and is marked withdrawn; it is never
 reused, because a task, a commit, and a test somewhere still name it.

@@ -12,7 +12,8 @@ job is tracing what absorbed it, not deleting a paragraph.
 
 Procedure:
 
-1. **Trace the blast radius.** Find every place the retracted content landed: grep the sections for
+1. **Trace the blast radius.** Find every place the retracted content landed: grep the sections
+   (files and section folders alike - a split section keeps its content under `NN-<name>/`) for
    the source's name in source notes, the ID, or the claim's key terms; then check
    `.claude/state/docs-graph.json` for every document referencing the affected IDs, and the task
    board for tasks naming them. Show the full list BEFORE changing anything.

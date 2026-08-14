@@ -13,8 +13,11 @@ section - never the raw source being ingested.
 Procedure:
 
 1. **Read the source whole**, then map each extractable statement to its home section (03 glossary
-   term, 05 FR, 07 business rule, 02 stakeholder, ...). Statements that fit nowhere go to section
-   12 open items, not into a forced section.
+   term, 05 FR, 07 business rule, 02 stakeholder, ...). A section may be a single file or a folder
+   (`05-functional-requirements/` with `FR-nn-<slug>.md` files and a `README.md` index) - in folder
+   form, an FR statement lands in its FR's own file and the index tables update in the same change.
+   A statement mapping to a section that was not selected at creation is a finding: surface it and
+   offer to add the section (re-run the scaffolder for that file), never force it elsewhere.
 2. **Diff before writing.** For each mapped statement, compare against what the section already
    says:
    - New fact, no conflict: add it, with a source note.
@@ -23,7 +26,8 @@ Procedure:
      history row - a requirement that flips twice is a requirement someone must notice flipping.
    - Restates what exists: skip, note the corroboration in the row's source list.
 3. **New IDs are appended, never renumbered.** A new requirement takes the next free `FR-nn`;
-   retired meaning is handled by `/spec-retract`, not by reusing numbers.
+   retired meaning is handled by `/spec-retract`, not by reusing numbers. In folder form, a new FR
+   is a new `FR-nn-<slug>.md` plus its row in the folder's `README.md` summary table.
 4. **Version it**: one row in `13-revision-history.md` per ingest - date, source name, sections
    touched, IDs added/changed, who approved the conflicts. This row is the undo map.
 5. **Ripple to the harness** (only where the target repo has one):
