@@ -15,7 +15,7 @@ on:
 
 jobs:
   guardrails:
-    name: guardrail eval (40 payloads)
+    name: guardrail eval (both hook flavors)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
