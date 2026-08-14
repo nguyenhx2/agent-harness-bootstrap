@@ -2,8 +2,8 @@
 
 Claude Code is where the harness is **generated** and where it enforces most completely. It reads
 `.claude/` (agents, rules, hooks, `settings.json`) plus `AGENTS.md` and `CLAUDE.md`. Enforcement is the
-`settings.json` permission deny list backed by nine hooks (one advisory-only). Cursor and Codex render the same
-harness; this is the reference implementation they are ported from.
+`settings.json` permission deny list backed by nine hooks (six blocking, three advisory/non-blocking).
+Cursor and Codex render the same harness; this is the reference implementation they are ported from.
 
 ## Setup
 
@@ -15,9 +15,9 @@ everything below is written by `scripts/scaffold.py`, not by hand.
 
 | Path | What it does |
 |---|---|
-| `.claude/agents/` | 15 agents, each with an explicit `model`, `effort`, `tools`, and `maxTurns` |
+| `.claude/agents/` | 16 agents, each with an explicit `model`, `effort`, `tools`, and `maxTurns` |
 | `.claude/rules/*.md` | 15 rules with optional `paths:` frontmatter for path-scoped lazy loading |
-| `.claude/hooks/` | 7 hooks (`.sh` on macOS/Linux, `.ps1` on Windows) plus a README |
+| `.claude/hooks/` | 9 hooks (`.sh` on macOS/Linux, `.ps1` on Windows) plus a README |
 | `.claude/settings.json` | Permission allow/deny list and the PreToolUse / PostToolUse / SubagentStop hook registration |
 | `AGENTS.md` + `CLAUDE.md` | The vendor-neutral contract; `CLAUDE.md` is a thin `@AGENTS.md` import plus Claude-only bits |
 
@@ -32,9 +32,12 @@ context.
 |---|---|---|
 | `protect-secrets` | PreToolUse (Bash + file reads) | Blocks reads of `.env`, keys, `~/.ssh`, `.npmrc` |
 | `protect-adr` | PreToolUse (edits) | Blocks edits to an Accepted ADR |
+| `guard-agent-scope` | PreToolUse (edits) | Blocks an edit outside a dev agent's declared scope |
 | `guard-main-commit` | PreToolUse (Bash) | Blocks a direct commit to the default branch |
 | `check-commit-msg` | PreToolUse (Bash) | Blocks a non-conventional or AI-attributed commit message |
+| `guard-agent-spawn` | PreToolUse (Agent/Task) | Blocks spawning an off-roster agent or a non-pinned model |
 | `specs-reminder` | PostToolUse | Flags: reminds after the fact, does not block |
+| `graph-stale` | PostToolUse | Rebuilds the harness graph and docs graph immediately; only marks the code graph stale, never blocks |
 | `agent-history` | SubagentStop | Records subagent history; observational, not a block |
 | `settings.json` `permissions.deny` | Every tool call | Blocks force push, `rm -rf`, prod deploy, secret reads, DB reset (prefix match) |
 | `.claude/rules/*.md` | Loaded into context | Advice only. A model can drift from a rule after a compaction |
@@ -58,7 +61,7 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo ships
-`python eval/guardrail_eval.py` (25 payloads at a real generated harness, expect 33/33). In the
+`python eval/guardrail_eval.py` (40 payloads at a real generated harness, expect 40/40). In the
 tool itself, try to read `.env` or commit to `main` and confirm each is blocked.
 
 ## See also

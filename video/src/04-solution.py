@@ -170,7 +170,7 @@ class Solution(Scene):
         # ============ Beat 2: spec-builder writes the contract ==========
         raw = box("idea / notes / transcript / legacy docs", NEUTRAL, DIM, w=6.6, h=0.72, fs=19)
         sb = box("spec-builder", PURPLE, PURPLE_HI, w=4.0, h=0.82, fs=24)
-        specs = box("docs/specs/  -  13 sections", NEUTRAL, WHITE, w=5.6, h=0.82, fs=22)
+        specs = box("docs/specs/  -  selective sections", NEUTRAL, WHITE, w=5.6, h=0.82, fs=22)
         stack = VGroup(raw, sb, specs).arrange(DOWN, buff=0.72).move_to([RX, 1.35, 0])
         a1 = down_arrow(raw.get_bottom(), sb.get_top())
         a2 = down_arrow(sb.get_bottom(), specs.get_top())
@@ -207,10 +207,10 @@ class Solution(Scene):
         a4 = down_arrow(reads.get_bottom(), claude.get_top())
 
         grid = VGroup(
-            box("15 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("16 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("15 rules\n6 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("21 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("9 blocking hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("22 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("9 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  a board that survives a crash", NEUTRAL, WHITE, w=6.8, h=0.7, fs=19).move_to(
@@ -295,7 +295,7 @@ class Solution(Scene):
         caption(self, "Contract, enforcement, durable state, a chosen bill.", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("guardrail eval 33/33", GREEN_HI, fs=20),
+            tag("guardrail eval 40/40", GREEN_HI, fs=20),
             tag("Opus -> Haiku: byte-identical safety", GREEN_HI, fs=20),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(

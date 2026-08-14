@@ -156,7 +156,7 @@ class SpecBuilder(Scene):
         human = chip("the human confirms or corrects", BLUE, BLUE_HI, fs=22, h=0.8, w=6.2).move_to([0, -1.85, 0])
         self.play(GrowFromCenter(human), run_time=0.5)
         self.play(Indicate(human, color=BLUE_HI, scale_factor=1.06), run_time=0.6)
-        caption(self, "Everything from 02 onward derives from this list. A wrong list costs twelve documents.",
+        caption(self, "Everything from 02 onward derives from this list. A wrong list costs every downstream section.",
                 hold=1.3, y=-3.5, size=23)
         self.play(FadeOut(VGroup(head4, rows, side, human)), run_time=0.5)
 

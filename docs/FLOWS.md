@@ -54,7 +54,7 @@ flowchart TD
     START(["Repo to be made agent-ready"])
     Q{"Does docs/specs/<br/>hold a requirements set?"}
 
-    SB["spec-builder<br/>elicit, scaffold 13 sections, fill"]
+    SB["spec-builder<br/>elicit, scaffold selective sections<br/>(6 core always + up to 9 optional), fill"]
     SPECS[/"docs/specs/ 01-13<br/>the requirements contract"/]
 
     HB["harness-bootstrap<br/>analyze, roster, scaffold, wire"]
@@ -119,7 +119,7 @@ flowchart TD
     ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
     SKILLS["Skill discovery and install<br/>search skills.sh per seat, trust rubric +<br/>mandatory content read, yes per skill"]
     OS["Detect the dev OS<br/>Windows to .ps1, macOS or Linux to .sh<br/>sets the windows / posix flag"]
-    VARS[/"vars.json<br/>vars + flags: ui, db, ai, audit, tdd, ddd,<br/>deploy_ask, exactly one of windows / posix"/]
+    VARS[/"vars.json<br/>vars + 16 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, exactly one of windows / posix"/]
 
     DRY["scaffold.py --dry-run"]
     SCAFFOLD["scaffold.py<br/>deterministic copy of assets/"]
@@ -300,6 +300,11 @@ orchestrator, the reviewers, and the debugger are Opus seats; the dev agents, `q
 effort. The hooks cost nothing, being shell scripts rather than a model, and they are the only
 participant here that can say no.
 
+The sequence below shows the default roster (`tests` chosen, split reviewers). Two flags reshape it:
+without `tests`, `qa-test` and its gate do not exist and the diagram's "Run the suite" step is
+skipped; with `solo_review` set, `code-reviewer` and `security-reviewer` collapse into one merged
+`reviewer` seat and the parallel `par` block below becomes a single pass instead of two.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -383,8 +388,10 @@ distinguishable from "crashed" by a file check instead of a guess.
 
 ## 5. spec-builder
 
-Same shape, different contract: elicit what only a human knows, let the script lay down the thirteen
-sections, then spend model tokens on the content rather than on the headings. The governing rule is
+Same shape, different contract: elicit what only a human knows, let the script lay down the selected
+sections - a 6-file core always, plus up to 9 optional sections chosen from what the input material
+actually contains - then spend model tokens on the content rather than on the headings. The governing
+rule is
 that **nothing is invented**. An unstated requirement becomes an assumption (AS-nn) or an open issue
 (OI-nn) with a named owner, because a plausible invented requirement gets estimated, built, and
 discovered in UAT.
@@ -405,11 +412,11 @@ sequenceDiagram
 
     SB->>User: Confirm the FR list FIRST - FRs with proposed MoSCoW<br/>priorities, the roles, the open issues so far
     User-->>SB: Confirmed or corrected
-    Note over SB,User: Everything from section 02 onward derives from this list.<br/>A wrong list costs twelve documents.
+    Note over SB,User: Everything from section 02 onward derives from this list.<br/>A wrong list costs every downstream section, selected or not.
 
-    SB->>Scaffold: vars.json - PROJECT_NAME, PROJECT_SLUG,<br/>PROJECT_PURPOSE, DOC_OWNER + flags ai / ui / db
+    SB->>Scaffold: vars.json - PROJECT_NAME, PROJECT_SLUG,<br/>PROJECT_PURPOSE, DOC_OWNER + section flags: stakeholders,<br/>flows, access, db, integration, ui, feasibility, design
     Scaffold->>Scaffold: --dry-run first
-    Scaffold->>Specs: Write 14 files: README + sections 01-13,<br/>headings, tables, Mermaid scaffolds, inline authoring notes
+    Scaffold->>Specs: Write the core (README, 01, 03, 05, 07, 13) always,<br/>plus each selected optional section (up to 9, including<br/>14-design-system) - headings, tables, Mermaid scaffolds,<br/>inline authoring notes
     Scaffold-->>SB: ADDED / KEPT / CONFLICT. Exit 1 on an unresolved &#123 -&#123 -VAR&#125 -&#125 -.
     Note over Scaffold,Specs: Deterministic and free. The model does not retype the shape -<br/>CONFLICT is the reconciliation queue for a repo that already has specs.
 
@@ -456,13 +463,13 @@ flowchart TD
         L1[/"code-quality.md - SOURCE_GLOBS"/]
         L2[/"performance.md - SOURCE_GLOBS"/]
         L3[/"security-privacy.md - SOURCE_GLOBS"/]
-        L4[/"testing.md - TEST_GLOBS + SOURCE_GLOBS"/]
+        L4[/"testing.md - TEST_GLOBS + SOURCE_GLOBS (flag tests)"/]
         L5[/"frontend.md - UI_GLOBS (flag ui)"/]
         L6[/"data-model.md - DB_GLOBS (flag db)"/]
         L7[/"docs-workflow.md - docs/**"/]
     end
 
-    NEVER[/"assets/ - the hooks, commands, templates, agent bodies.<br/>NEVER enter the context window: scaffold.py copies them.<br/>The model reads SKILL.md + 6 reference docs, and nothing else."/]
+    NEVER[/"assets/ - the hooks, commands, templates, agent bodies.<br/>NEVER enter the context window: scaffold.py copies them.<br/>The model reads SKILL.md + 9 reference docs, and nothing else."/]
 
     WINDOW["The agent's context window"]
 
@@ -490,8 +497,8 @@ flowchart TD
     class TOUCH hum
 ```
 
-Six unconditional rules, nine path-scoped ones. On the shipped asset set that is 25,667 bytes always
-loaded against 51,785 bytes loaded on demand: **66% of the rule content is kept out of the default
+Six unconditional rules, nine path-scoped ones. On the shipped asset set that is 27,805 bytes always
+loaded against 52,131 bytes loaded on demand: **65% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 
@@ -509,10 +516,10 @@ Two other levers sit in the same diagram:
   `benchmark/RESULTS.md` are **estimated** at 3.6 chars/token, not measured: the benchmark run had no
   API key. They are an order of magnitude, not a quote.
 - The orchestrator's session-start scan of `docs/tasks/active/` is a **procedure in the agent body**,
-  not a `SessionStart` hook. The hook events registered in `assets/claude/settings.json` are
-  `PreToolUse` (protect-adr, protect-secrets, guard-main-commit, check-commit-msg), `PostToolUse`
-  (specs-reminder), and `SubagentStop` (agent-history). Diagram 4 shows the scan as an orchestrator
-  action for that reason.
+  not a `SessionStart` hook. The 9 hooks registered in `assets/claude/settings.json` are
+  `PreToolUse` (protect-adr, guard-agent-scope, protect-secrets, guard-main-commit, check-commit-msg,
+  guard-agent-spawn), `PostToolUse` (specs-reminder, graph-stale), and `SubagentStop`
+  (agent-history). Diagram 4 shows the scan as an orchestrator action for that reason.
 - `CONFLICT` does **not** change the scaffolder's exit code. Only an unresolved `{{VAR}}` (exit 1) or
   a missing manifest/asset (exit 2) does. Diagram 3 reflects the code.
 - The `merge-manager` seat is optional and is omitted from diagram 4. Where it is not fielded, the

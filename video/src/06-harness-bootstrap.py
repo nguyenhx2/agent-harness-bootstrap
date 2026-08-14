@@ -216,7 +216,7 @@ class HarnessBootstrap(Scene):
         caption(self, "Each seat can search skills.sh - a trust rubric and a mandatory content read gate every install.", hold=1.1, y=-3.35, size=21)
         self.play(Create(br2), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
         self.play(Create(br3), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
-        caption(self, "The decisions land in vars.json - including the methodology flag: DDD by default, TDD opt-in.", hold=1.5, y=-3.35, size=21)
+        caption(self, "The decisions land in vars.json - including methodology: DDD by default, or TDD, TDD+DDD, Lightweight.", hold=1.5, y=-3.35, size=21)
         self.play(FadeOut(VGroup(roster, rs, skills, sks, osd, oss, vj, vjs, br1, br2, br3, b1)), run_time=0.4)
 
         # ================= Beat 6: scaffold (GREEN) =======================

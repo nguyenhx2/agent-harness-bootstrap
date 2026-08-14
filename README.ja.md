@@ -6,8 +6,8 @@
 
 <p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 15](https://img.shields.io/badge/agents-15%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 33/33](https://img.shields.io/badge/guardrail%20eval-33%2F33-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![Guardrail eval: 40/40](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -45,7 +45,7 @@
   まずあなたのコードを読み込むので、生成される内容は*あなたの*リポジトリに合ったものになる。「合わせて作る」
   の具体的な中身は[手に入るもの](#-手に入るもの)を参照。
 - ガードレールはシェルスクリプトと終了コードであり、モデルの判断力に頼らない。すべてのエージェントを
-  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、33/33。
+  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、40/40。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
@@ -152,9 +152,14 @@ agent-harness-bootstrap.zip をダウンロードし、同じリリースの SHA
   ガードレールが静かに何もしないまま素通りしてしまうので、これが合っていることが前提になる。
 - **拒否リスト** - このスタックの実際の破壊的コマンド(DBリセットコマンド、デプロイコマンド、
   インフラの撤去コマンド)に一致するもの - あなたの設定から確認したものであり、推測ではない。
-- **方法論** - インテイクで選択: デフォルトはDDD(ドメイン境界のスコープ、実装と同じ変更でテストを
-  出荷)、TDDはオプトイン(テストを厳密に先に書く - より強い証明だが遅い、組み合わせると2つが
-  引っ張り合うこともある) - 詳細は [`intake.md`](harness-bootstrap/reference/intake.md)。
+- **方法論** - インテイクで選ぶ4つの選択肢: デフォルトはDDD(ドメイン境界のスコープ、実装と同じ変更で
+  テストを出荷)、TDD(テストを厳密に先に書く - より強い証明だが遅い)、TDD+DDD(両方を採用する
+  もっとも厳格で遅い姿勢 - 2つが引っ張り合うこともある)、または Lightweight(方法論ルールを
+  導入しない - レビューゲートとガードレールのフックはそのまま残る。プロトタイプや一人での
+  高速な開発向け) - 詳細は [`intake.md`](harness-bootstrap/reference/intake.md)。
+- **テスト** - 前提ではなく選択: unit+e2e / unit のみ / e2e のみ / なし、の4通り。選んだ種類だけ
+  `qa-test`・`/test`・`rules/testing.md` が出荷される。フレームワークはスタックごとに提案され
+  (Vitest はJS/TSスタックにのみ提案される)。
 - **エフォートプロファイル** - Default / Economy / Thorough。レビューや安全ゲートに触れずに
   シートごとのコストと深さを調整する。
 - **コントロールレベル** - デプロイ権限と破壊的コマンドへの姿勢。デプロイはデフォルトで人間のみ
@@ -188,35 +193,60 @@ AGENTS.md + CLAUDE.md
 `guard-agent-spawn` フックが強制するものであり、エージェントが逸脱しうるルールではない。
 
 この「合わせて作る」が引き出す元になっている出荷済みツールボックス - 資産の全体集合であり、
-プロジェクトごとの保証ではない: 15個のエージェント、15個のルール、21個のスラッシュコマンド、
-9個のフック。実際に `.claude/` に入るものは上記の各観点次第 - 全シート一覧は
+プロジェクトごとの保証ではない: 16個のエージェント、15個のルール、22個のスラッシュコマンド、
+9個のフック。デフォルトのインストールで実際に入るのはおおむね8〜10個。`long` プロジェクトなら
+`brainstormer` + `tech-researcher` + `history-tracker` が加わり、`tests` なら `qa-test` が加わり、
+`solo_review` なら分割されたレビューアの代わりに統合された `reviewer` 1つに置き換わる。実際に
+`.claude/` に入るものは上記の各観点次第 - 全シート一覧は
 [`roster.md`](harness-bootstrap/reference/roster.md) を参照。
 
 保証の全リスト、メモリモデル、コストの内訳: [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md)、
 [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md)、
 [`cost-model.md`](harness-bootstrap/reference/cost-model.md)。
 
+### 🔭 `harness-view` - 任意のネイティブビューア
+
+スキル本体が出力するHTML(`docs/context/harness-graph.html`)はPythonとブラウザだけで動き、
+これが標準のままである。[`tools/harness-view`](tools/harness-view/) はその上位版 - 同じ
+`.claude/state/harness-graph.json` を読む小さなRustバイナリで、リアルタイム更新のUI、
+ファイル監視、安全なランタイム切り替えを追加する。欲しい場合だけ導入すればよい。
+
+```
+cargo install --path tools/harness-view
+```
+
+- `harness-view scan [path]` - `.claude/state/harness-graph.json` を書き出す(スキルのPython製
+  スキャナと同じスキーマ)。
+- `harness-view serve [path]` - 同じグラフを2通りに表示するローカルWeb UI: 階層表示の **Flow**
+  ビューと力学モデルの **Graph** ビュー、さらに `/harness-toggle` と同じHARD/SOFTの安全階層で
+  ルール・コマンド・フックを無効化/有効化できる詳細パネル。
+- `harness-view watch [path]` - `.claude/` や `docs/` の変更を検知してグラフを自動的に再構築する。
+
+完全に任意である。ハーネス側は何も要求せず、同梱のHTMLビューアが同じ2つのビューをインストール
+不要で提供する。
+
 ---
 
 ## 🎛️ ブートストラップ後のチューニング
 
-ハーネスの初期設定は固定ではない。ブートストラップ後にそれを調整するための7個のコマンドが、
+ハーネスの初期設定は固定ではない。ブートストラップ後にそれを調整するための8個のコマンドが、
 ブートストラップされたすべてのリポジトリに同梱される - 完全なガイド、実例、それぞれが強制する
 不変条件は [`docs/TUNING.md`](docs/TUNING.md) にある。
 
 | コマンド | 何をするか |
 |---|---|
-| [`/board-audit`](docs/TUNING.md#board-audit) | 孤立したタスク、記録されていない実行、ボードのずれ、古くなったコードグラフを読み取り専用で調べる |
-| [`/harness-tune`](docs/TUNING.md#harness-tune) | 制御レベルを再調整 - デプロイ権限、破壊的コマンドの扱い、起動許可リスト、上限値、レビュー範囲 |
+| [`/board-audit`](docs/TUNING.md#board-audit) | まず `board-check.py` を実行し、そのうえで孤立したタスク、記録されていない実行、ボードのずれ、古くなったコードグラフを読み取り専用で調べる |
+| [`/harness-tune`](docs/TUNING.md#harness-tune) | 制御レベルを再調整 - デプロイ権限、破壊的コマンドの扱い、起動許可リスト、上限値、レビュー範囲、エージェント履歴の詳細度(合計6つのダイヤル) |
+| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | ルール・コマンド・フックを1つ単位で無効化/再有効化する - HARD項目は確認フレーズの入力、SOFT項目は `--yes` が必要で、エージェントは対象外 |
 | [`/agent-permissions`](docs/TUNING.md#agent-permissions) | 1つのシートに1つのツールを付与・剥奪する |
 | [`/harness-update`](docs/TUNING.md#harness-update) | 新しいアセットや変わったコードベースを取り込むためスキャフォルダを再実行。競合はフラグ付け、上書きは絶対にしない |
-| [`/code-graph`](docs/TUNING.md#code-graph) | コードの依存関係グラフ(mermaid + JSON)を再構築する。モジュールをまたぐ変更の前にエージェントが参照する |
+| [`/code-graph`](docs/TUNING.md#code-graph) | コードの依存関係グラフ(mermaid + JSON)を再構築し、ハーネスグラフとHTML出力も更新する。モジュールをまたぐ変更の前にエージェントが参照する |
 | [`/docs-graph`](docs/TUNING.md#docs-graph) | ドキュメントのトレーサビリティグラフ(孤立した要件ID)を再構築し、`specs-graph.html` と `harness-graph.html` の両方のインタラクティブ出力を更新する |
 | [`/spec-ingest`](docs/TUNING.md#the-spec-side) | 新しい情報源を既存のスペックに取り込む。差分を突き合わせ、改訂履歴に記録し、依存するエージェント定義まで反映する |
 | [`/spec-retract`](docs/TUNING.md#the-spec-side) | 誤った情報源や記述を撤回する。影響範囲を追跡し、未確認事項に変換し、該当タスクは人間の判断待ちとしてブロックする |
 | [`/skill-wire`](docs/TUNING.md#skill-wire) | インストール済みの [skills.sh](https://www.skills.sh/) スキルをロースターの担当席に配線する。内容の再レビューとスコープ確認のうえ記録される |
 
-確認しても7つのどれも決してしないこと: レビューア系エージェントが書き込み権限を得ることはなく、
+確認しても8つのどれも決してしないこと: レビューア系エージェントが書き込み権限を得ることはなく、
 起動できるのはオーケストレーターだけであり、コードレビューのゲートは削除できない(範囲の変更のみ可能)。
 
 ---
@@ -228,7 +258,7 @@ AGENTS.md + CLAUDE.md
 | [`docs/FLOWS.md`](docs/FLOWS.md) | 7つの図: スキャフォルダ、機能追加の一連の流れ、コンテキストの読み込み |
 | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) | RAM とディスク、クラッシュからの再開プロトコル、ハード制御とソフト制御の違い |
 | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) | スコアカード。できないことも含む |
-| [`docs/TUNING.md`](docs/TUNING.md) | ブートストラップ後の7個のチューニングコマンドの完全版 |
+| [`docs/TUNING.md`](docs/TUNING.md) | ブートストラップ後の8個のチューニングコマンドの完全版 |
 | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) | 各スキルの質問セットが何を探るか、なぜ重要か - 両スキルのフロー図付き |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | セマンティックバージョニング、成果物、リリースノートの書式 |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 開発環境のセットアップ、PRが通るべきゲート、アセット編集のルール |
@@ -237,17 +267,17 @@ AGENTS.md + CLAUDE.md
 | [`roster.md`](harness-bootstrap/reference/roster.md) | 各エージェントの model / effort / tools / turn limit とその理由 |
 | [`cost-model.md`](harness-bootstrap/reference/cost-model.md) | model・effort・tools・キャッシュの安定性が費用にどう影響するか |
 | [`task-control.md`](harness-bootstrap/reference/task-control.md) | オーケストレーションのループ、クラッシュからの復旧、マージの規律 |
-| [`ba-standards.md`](spec-builder/reference/ba-standards.md) | 13の仕様セクションが依拠する標準 |
+| [`ba-standards.md`](spec-builder/reference/ba-standards.md) | 仕様セクションが依拠する標準 |
 | [`benchmark/RESULTS.md`](benchmark/RESULTS.md) | ベンチマークの数値とその注意点 |
 
 **数値**は、本プロジェクトが置き換える旧スキルとの比較で計測 - `python benchmark/benchmark.py` で再現可能:
 
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 128,072 | **-45%** |
+| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 129,638 | **-45%** |
 | モデルが出力として書くバイト数 | 95,064 | 13,881 | **-85%** |
-| デフォルトのセッションから除外されるルール内容 | - | 51,785 of 77,452 B | **66%** |
-| ガードレール評価 | - | **33/33** | - |
+| デフォルトのセッションから除外されるルール内容 | - | 52,131 of 79,936 B | **65%** |
+| ガードレール評価 | - | **40/40** | - |
 
 ---
 
