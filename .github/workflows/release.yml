@@ -100,44 +100,38 @@ jobs:
           print("every archive carries a correct VERSION")
           PY
 
-      - name: Extract this version's notes from the CHANGELOG
+      - name: Generate release notes from the skills' CHANGELOGs
         run: |
-          python - <<'PY'
-          import pathlib, re, sys
-          v = "${{ steps.v.outputs.version }}"
-          ch = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
-          m = re.search(rf"^## v{re.escape(v)}\s*\n(.*?)(?=^## |\Z)", ch, re.M | re.S)
-          if not m:
-              sys.exit(f"no '## v{v}' section in CHANGELOG.md")
-          body = m.group(1).strip()
-          body += (
-              "\n\n**Install**\n"
-              f"- `unzip harness-bootstrap-v{v}.zip -d ~/.claude/skills/`\n"
-              f"- `unzip spec-builder-v{v}.zip -d ~/.claude/skills/`\n"
-              "- Verify with `sha256sum -c SHA256SUMS`\n"
-          )
-          pathlib.Path("notes.md").write_text(body, encoding="utf-8")
-          print(body)
-          PY
+          # CHANGELOG-driven: each skill's own CHANGELOG.md is the source of truth for its section
+          # of the release body, not a hand-written summary. See scripts/release_notes.py.
+          python3 scripts/release_notes.py "${{ steps.v.outputs.version }}" -o notes.md
+          {
+            echo ""
+            echo "**Install**"
+            echo "- \`unzip harness-bootstrap-v${{ steps.v.outputs.version }}.zip -d ~/.claude/skills/\`"
+            echo "- \`unzip spec-builder-v${{ steps.v.outputs.version }}.zip -d ~/.claude/skills/\`"
+            echo "- Verify with \`sha256sum -c SHA256SUMS\`"
+          } >> notes.md
+          cat notes.md
 
       - name: Publish the release with its artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Title = the CHANGELOG section's summary line, i.e. the first line that is neither a
-          # group heading nor a bullet. A blind `head -1` would yield "**Added**".
-          SUMMARY=$(grep -m1 -vE '^[[:space:]]*$|^\*\*|^- ' notes.md || echo "release")
+          # notes.md is now assembled per-skill (release_notes.py), so there is no single
+          # hand-written theme line left to lift for the title - each skill's section says what
+          # changed in it. The tag is the title.
           # Idempotent: a maintainer may have published the release by hand before this job ran.
           # Creating over an existing release fails, so edit-and-clobber in that case instead.
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release edit "${GITHUB_REF_NAME}" \
-              --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
+              --title "${GITHUB_REF_NAME}" \
               --notes-file notes.md
             gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
           else
             gh release create "${GITHUB_REF_NAME}" \
-              --title "${GITHUB_REF_NAME} - ${SUMMARY}" \
+              --title "${GITHUB_REF_NAME}" \
               --notes-file notes.md \
               dist/*
           fi

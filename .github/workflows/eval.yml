@@ -57,6 +57,12 @@ jobs:
       - name: Figures in the docs must match what the scripts print
         run: python scripts/check_numbers.py
 
+      # A skill's SKILL.md version, its own CHANGELOG.md, and the other skill's version can drift
+      # apart independently - each is edited by hand. This is the sync check for all three, run on
+      # every push so drift is caught long before the release tag is pushed.
+      - name: CHANGELOGs and SKILL.md versions must stay in sync
+        run: python scripts/validate_release.py
+
       # The Cursor/Codex porter's hook adapter must actually block, not just render. It scaffolds a
       # harness, ports it, and fires sample Cursor payloads at the adapter.
       - name: Port adapter must enforce (Cursor/Codex)
