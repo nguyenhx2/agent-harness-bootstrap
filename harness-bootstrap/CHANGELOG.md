@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.11.1] - 2026-08-16
+
+### Changed
+
+- Released alongside the `harness-view` tool. No changes to this skill.
+
 ## [1.11.0] - 2026-08-16
 
 ### Changed

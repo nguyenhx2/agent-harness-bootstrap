@@ -100,9 +100,11 @@
   body.resizing { user-select: none; cursor: col-resize; }
   #detail h3 { font-size: 14px; margin-bottom: 6px; word-break: break-all; }
   #detail table.meta { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
-  #detail table.meta td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; }
-  /* the key column never wraps: "registered" used to break as "registere / d" */
-  #detail table.meta td.k { white-space: nowrap; width: 90px; color: var(--dim); }
+  #detail table.meta td { border-top: 1px solid #e2e8f0; padding: 4px 6px 4px 0; vertical-align: top; }
+  #detail table.meta tr:last-child td { border-bottom: 1px solid #e2e8f0; }
+  /* the key column never wraps: "registered" used to break as "registere / d".
+     104px holds the longest key plus its icon and gap at this font size. */
+  #detail table.meta td.k { white-space: nowrap; width: 104px; color: var(--dim); }
   #detail table.meta td.v { word-break: break-word; overflow-wrap: anywhere; }
   #detail .desc { margin: 6px 0 2px; padding: 6px 8px; background: #f1f5f9; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
   #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
@@ -135,6 +137,29 @@
   .md .tick, #plan .tick { font-size: 13px; margin-right: 3px; }
   .md .tick.done, #plan .tick.done { color: #15803d; }
   .md .tick.todo, #plan .tick.todo { color: var(--dim); }
+  /* Structured file views. JSON and YAML are built with DOM APIs only, so no
+     repository text ever reaches innerHTML on these paths. */
+  .code { margin: 0; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px;
+          font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.55;
+          overflow-x: auto; white-space: pre; }
+  .code .jk { color: #7dd3fc; }              /* key */
+  .code .js { color: #86efac; }              /* string */
+  .code .jn { color: #fca5a5; }              /* number */
+  .code .jb { color: #d8b4fe; }              /* boolean */
+  .code .ju { color: #94a3b8; font-style: italic; }  /* null */
+  .code .jp { color: #64748b; }              /* punctuation */
+  .code .jc { color: #64748b; font-style: italic; }  /* comment */
+  .code .ja { color: #fbbf24; }              /* yaml anchor / directive */
+  /* a collapsible object or array: <details> gives keyboard support for free */
+  .code details { display: block; }
+  .code summary { cursor: pointer; list-style: none; display: block; }
+  .code summary::-webkit-details-marker { display: none; }
+  .code summary::before { content: "\25be"; color: #64748b; display: inline-block;
+                          width: 11px; }
+  .code details:not([open]) > summary::before { content: "\25b8"; }
+  .code .count { color: #64748b; font-style: italic; }
+  .code .kids { display: block; border-left: 1px solid #1e293b; margin-left: 4px;
+                padding-left: 10px; }
   /* a defect in the source file, named where it shows */
   .mdwarn { margin: 8px 0 2px; padding: 6px 8px; border-left: 3px solid #d97706;
             background: #fffbeb; color: #92400e; font-size: 11px; border-radius: 0 4px 4px 0; }
@@ -170,7 +195,11 @@
   .state.on { background: #dcfce7; color: #15803d; }
   .state.off { background: #fee2e2; color: #b91c1c; }
   /* sidebar: colour encodes meaning, it never decorates */
-  #detail td.k { display: flex; align-items: center; gap: 5px; }
+  /* The icon and the key sit in an inner wrapper, NOT on the td. `display:flex`
+     on a table cell drops it out of the table formatting context: `width` and
+     `table-layout: fixed` stop applying, the row splits 50/50, and the cell's
+     border-top stops drawing as one continuous row separator. */
+  #detail td.k .kwrap { display: flex; align-items: center; gap: 5px; }
   .kicon, .bicon { display: inline-flex; line-height: 0; flex: 0 0 auto; }
   .kicon svg { width: 11px; height: 11px; opacity: 0.65; }
   .bicon svg { width: 13px; height: 13px; margin-right: 5px; }
@@ -486,14 +515,18 @@ const PURIFY_OPTS = {
 function mdMode(key) { return localStorage.getItem(key) === "raw" ? "raw" : "formatted"; }
 // The button reports the mode it will switch TO, and its pressed state reports
 // whether raw is currently on.
-function makeModeButton(key, onChange) {
+// `file` is optional and only names the format in the tooltip: the sidebar now
+// previews JSON and YAML too, so "raw markdown" was wrong for most files.
+function makeModeButton(key, onChange, file) {
   const b = document.createElement("button");
   b.className = "icon-btn";
   const paint = () => {
     const raw = mdMode(key) === "raw";
     b.innerHTML = raw ? ICON_DOC : ICON_CODE;
     b.setAttribute("aria-pressed", raw ? "true" : "false");
-    const t = raw ? "Showing raw markdown. Switch to formatted." : "Showing formatted. Switch to raw markdown.";
+    const what = { json: "JSON", yaml: "YAML", md: "markdown" }[fileKind(file)];
+    const t = raw ? "Showing the raw file. Switch to formatted " + what + "."
+                  : "Showing formatted " + what + ". Switch to the raw file.";
     b.title = t; b.setAttribute("aria-label", t);
   };
   b.onclick = () => {
@@ -994,14 +1027,19 @@ cv.addEventListener("wheel", ev => {
 function row(table, k, v, cls) {
   const tr = document.createElement("tr");
   const tdk = document.createElement("td"); tdk.className = "k";
+  // The flex row lives in this wrapper, never on the td itself (see the .kwrap
+  // rule): a flex table cell is no longer a table cell, and the column widths
+  // and row borders collapse with it.
+  const kwrap = document.createElement("span"); kwrap.className = "kwrap";
   // The icon is decoration next to a key that already reads as words, so it is
   // aria-hidden: a screen reader announcing "circle status" helps nobody.
   if (FIELD_ICONS[k]) {
     const i = document.createElement("span");
     i.className = "kicon"; i.innerHTML = FIELD_ICONS[k];
-    tdk.append(i);
+    kwrap.append(i);
   }
-  tdk.append(document.createTextNode(k));
+  kwrap.append(document.createTextNode(k));
+  tdk.append(kwrap);
   const tdv = document.createElement("td"); tdv.className = "v";
   if (cls) { const s = document.createElement("span"); s.className = cls; s.textContent = v; tdv.append(s); }
   else tdv.textContent = v;
@@ -1136,9 +1174,15 @@ function select(n) {
       // panel. Overwriting className here silently dropped that, and the box
       // only looked right because the file happened to be long enough.
       if (mdMode("hv-md-side") === "raw") { host.className = "filehost"; renderRaw(host, text); }
-      else { host.className = "filehost md"; renderMarkdown(host, text, { frontmatter: "render", file: n.file }); }
+      else {
+        // JSON and YAML bring their own frame (.code), so only the markdown
+        // path wants the .md box: nesting a dark code block inside it reads as
+        // a box in a box.
+        const kind = renderFormatted(host, text, n.file);
+        host.className = kind === "md" ? "filehost md" : "filehost";
+      }
     };
-    const modeBtn = makeModeButton("hv-md-side", paint);
+    const modeBtn = makeModeButton("hv-md-side", paint, n.file);
     modeBtn.style.display = "none";
     btn.onclick = () => withBusy("reading file", btn, async () => {
       if (host.style.display === "block") {
@@ -1216,6 +1260,178 @@ async function checkPlan() {
 }
 // Raw mode: the file exactly as it sits on disk, frontmatter included, placed
 // with textContent so repository text can never execute.
+// ---------------------------------------------------------------- structured
+// JSON and YAML get real views instead of one wrapped run of text. Both are
+// built with DOM APIs and textContent only: no repository byte ever reaches
+// innerHTML on these paths, so they need no sanitiser pass at all.
+
+/// Which viewer a file gets, decided by extension. Anything unrecognised is
+/// markdown, which is what every .md in the harness is and a safe default for
+/// the rest since the markdown path already sanitises.
+function fileKind(file) {
+  const f = (file || "").toLowerCase();
+  if (f.endsWith(".json")) return "json";
+  if (f.endsWith(".yml") || f.endsWith(".yaml")) return "yaml";
+  return "md";
+}
+
+function span(cls, text) {
+  const e = document.createElement("span");
+  if (cls) e.className = cls;
+  e.textContent = text;
+  return e;
+}
+
+// Collapse anything big enough to bury the rest of the file. settings.json is
+// one object whose "permissions" array runs to dozens of entries; opening that
+// expanded is the wall of text this view exists to replace.
+const JSON_COLLAPSE_OVER = 6;
+
+/// One JSON value as DOM. `key` is the property name when this value sits in an
+/// object, so the key and its value stay on one line.
+function jsonNode(value, key, depth) {
+  const line = document.createElement("span");
+  const label = () => {
+    if (key === null) return;
+    line.append(span("jk", JSON.stringify(key)), span("jp", ": "));
+  };
+
+  if (value === null) { label(); line.append(span("ju", "null")); return line; }
+  const t = typeof value;
+  if (t === "string") { label(); line.append(span("js", JSON.stringify(value))); return line; }
+  if (t === "number") { label(); line.append(span("jn", String(value))); return line; }
+  if (t === "boolean") { label(); line.append(span("jb", String(value))); return line; }
+
+  const isArr = Array.isArray(value);
+  const entries = isArr ? value.map((v, i) => [i, v]) : Object.entries(value);
+  const open = isArr ? "[" : "{";
+  const close = isArr ? "]" : "}";
+
+  if (entries.length === 0) { label(); line.append(span("jp", open + close)); return line; }
+
+  const det = document.createElement("details");
+  // depth 0 always opens: a collapsed root shows the reader nothing.
+  if (depth === 0 || entries.length <= JSON_COLLAPSE_OVER) det.open = true;
+  const sum = document.createElement("summary");
+  if (key !== null) sum.append(span("jk", JSON.stringify(key)), span("jp", ": "));
+  sum.append(span("jp", open));
+  sum.append(span("count", " " + entries.length + (isArr ? " items" : " keys") + " "));
+  sum.append(span("jp", close));
+  det.append(sum);
+
+  const kids = document.createElement("span");
+  kids.className = "kids";
+  entries.forEach(([k, v], i) => {
+    const child = jsonNode(v, isArr ? null : k, depth + 1);
+    kids.append(child);
+    if (i < entries.length - 1) kids.append(span("jp", ","));
+    kids.append(document.createTextNode("\n"));
+  });
+  det.append(kids);
+  det.append(span("jp", close));
+  line.append(det);
+  return line;
+}
+
+/// Pretty, collapsible JSON. Malformed input is never swallowed: it falls back
+/// to the raw bytes with the parser's own message, because a viewer that shows
+/// nothing for a broken file is worse than one that shows the file.
+function renderJson(host, text, file) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    // renderRaw clears the host first, so the notice has to go in AFTER it or
+    // it is wiped before anyone sees it.
+    renderRaw(host, text);
+    const warn = document.createElement("div");
+    warn.className = "mdwarn";
+    warn.textContent = (file || "this file") + " is not valid JSON, so it is shown as text. "
+      + String(e.message || e);
+    host.prepend(warn);
+    return;
+  }
+  const pre = document.createElement("pre");
+  pre.className = "code";
+  pre.append(jsonNode(data, null, 0));
+  host.append(pre);
+}
+
+// YAML is highlight-only and deliberately not parsed. Colouring is all this
+// view needs, and a real YAML parser is a large dependency with anchors, alias
+// expansion and implicit type coercion behind it - security surface bought for
+// nothing. Line-based highlighting cannot misread a document into the wrong
+// shape because it never claims to know the shape.
+function yamlLine(line) {
+  const out = document.createDocumentFragment();
+  const indentLen = line.length - line.trimStart().length;
+  const indent = line.slice(0, indentLen);
+  let rest = line.slice(indentLen);
+  if (indent) out.append(document.createTextNode(indent));
+
+  if (rest === "") return out;
+  if (rest.startsWith("#")) { out.append(span("jc", rest)); return out; }
+  // document markers and directives
+  if (rest === "---" || rest === "..." || rest.startsWith("%")) {
+    out.append(span("ja", rest));
+    return out;
+  }
+  // a list item keeps its dash, then the remainder is scanned as a value
+  if (rest.startsWith("- ")) {
+    out.append(span("jp", "- "));
+    rest = rest.slice(2);
+  } else if (rest === "-") {
+    out.append(span("jp", "-"));
+    return out;
+  }
+
+  // split a trailing comment off first so a "#" inside a quoted value survives
+  let comment = "";
+  const hash = rest.search(/(^|\s)#/);
+  if (hash >= 0 && !/^["']/.test(rest.slice(hash).trim())) {
+    comment = rest.slice(hash);
+    rest = rest.slice(0, hash);
+  }
+
+  const kv = rest.match(/^([A-Za-z0-9_.$\-"'\[\]]+)(\s*:)(\s*)([\s\S]*)$/);
+  if (kv) {
+    out.append(span("jk", kv[1]), span("jp", kv[2]), document.createTextNode(kv[3]));
+    rest = kv[4];
+  }
+  if (rest) {
+    const v = rest.trim();
+    let cls = null;
+    if (/^(true|false|yes|no|on|off)$/i.test(v)) cls = "jb";
+    else if (/^-?\d[\d_]*(\.\d+)?([eE][+-]?\d+)?$/.test(v)) cls = "jn";
+    else if (/^(null|~)$/i.test(v)) cls = "ju";
+    else if (/^["'].*["']$/.test(v)) cls = "js";
+    else if (/^[&*]/.test(v)) cls = "ja";
+    out.append(cls ? span(cls, rest) : document.createTextNode(rest));
+  }
+  if (comment) out.append(span("jc", comment));
+  return out;
+}
+
+function renderYaml(host, text) {
+  const pre = document.createElement("pre");
+  pre.className = "code";
+  const lines = text.split(/\r?\n/);
+  lines.forEach((ln, i) => {
+    pre.append(yamlLine(ln));
+    if (i < lines.length - 1) pre.append(document.createTextNode("\n"));
+  });
+  host.append(pre);
+}
+
+/// Formatted view for any file: the right viewer for its extension.
+function renderFormatted(host, text, file) {
+  const kind = fileKind(file);
+  if (kind === "json") { renderJson(host, text, file); return "code"; }
+  if (kind === "yaml") { renderYaml(host, text); return "code"; }
+  renderMarkdown(host, text, { frontmatter: "render", file: file });
+  return "md";
+}
+
 function renderRaw(host, md) {
   host.textContent = "";
   const pre = document.createElement("pre");

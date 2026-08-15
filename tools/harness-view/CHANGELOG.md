@@ -7,6 +7,22 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.11.1] - 2026-08-16
+
+### Added
+
+- JSON and YAML are rendered properly instead of being dumped as one wrapped run of text. JSON
+  gets a collapsible tree with coloured keys and values, collapsed where a node has many children
+  so a large settings file opens as something you can scan. YAML gets syntax colouring. A file that
+  does not parse falls back to its raw text with a notice carrying the parser's own message.
+
+### Fixed
+
+- The inspection panel put the value halfway across the row and broke the row separator into two
+  pieces. The key cell had been made a flex container to lay out its icon, which takes a table cell
+  out of the table's formatting context, so the declared column width was computed and then ignored.
+  The value now starts right after the key and the separator spans the row.
+
 ## [1.11.0] - 2026-08-16
 
 ### Added
