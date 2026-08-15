@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.11.1
+
+- `harness-view` reads JSON and YAML properly. A settings file opens as a collapsible, coloured
+  tree rather than one unreadable paragraph, and an unparseable file says why instead of failing
+  silently.
+- Fixed the inspection panel's layout: the value sat at the middle of the row and the separator
+  came apart, because the key cell had been turned into a flex container and a flex cell stops
+  being a table cell.
+
 ## v1.11.0
 
 `harness-view` can now tell you whether a harness is any good, not just show you its shape.
