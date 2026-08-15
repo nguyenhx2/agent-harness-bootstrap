@@ -6,7 +6,8 @@ contract, and `harness-bootstrap`, which builds the machine that implements it.
 Every diagram below is Mermaid and renders natively on GitHub. The claims in them are taken from the
 source: `harness-bootstrap/SKILL.md`, its `reference/` docs, `scripts/scaffold.py`,
 `assets/manifest.json`, `assets/claude/settings.json`, `spec-builder/SKILL.md`, and
-`benchmark/RESULTS.md`.
+`benchmark/RESULTS.md`. Section 7 is the exception - a written command reference rather than a
+diagram, placed here because it documents the commands diagram 4's sequence actually calls.
 
 ## Legend
 
@@ -509,6 +510,306 @@ Two other levers sit in the same diagram:
 - Every file in the always-loaded band is prompt-cache prefix content, so a single `Generated: <date>`
   line in an agent body cold-misses that agent's cache on every future run. No generated file carries
   a timestamp.
+
+## 7. Delivery commands, command by command
+
+Diagram 4 is the procedure; this section is the per-command reference for everything it invokes,
+plus the handful of planning and maintenance commands that don't fit a single sequence step.
+`docs/TUNING.md` documents the eight commands that adjust the *harness's own posture* (plus the two
+`spec-builder` commands that ripple a source into or out of `docs/specs/`). This section documents
+the commands used during normal *feature delivery* - the ones a dev agent or the orchestrator runs
+while building the product itself. Same shape as `TUNING.md`, terser, since these run far more often:
+invocation, what it's for, what it does, what it writes, what it refuses, and when it ships.
+
+### Registering and planning work
+
+#### `/new-task <short-title>`
+
+Creates a task file from the template and registers it on the master plan - the entry point for any
+unit of work. Allocates the next `TASK-NNN` sequentially across `active/`, `pending/`, and `done/`,
+copies `docs/templates/TASK.md`, fills title/goal/owner/dependencies/priority/phase/acceptance
+criteria, sets `status: Planned`, adds the row to `docs/tasks/master-plan.md` and reads it back to
+confirm the write landed, then appends the first session-log row. If `.claude/state/code-graph.json`
+exists it also seeds a "Relevant modules" line (the owner's module plus everything with a direct
+dependency edge into it) so the dispatch brief carries a blast-radius hint before any code is
+touched.
+
+**Writes:** a new `docs/tasks/active/TASK-NNN-<slug>.md`, a new row in `master-plan.md`, the first
+session-log row. **Refuses:** reusing a task number or overwriting an existing task file on a
+collision; proceeding with no title (asks, then stops). **Ships:** unconditional.
+
+#### `/new-adr <decision-title>`
+
+Creates an Architecture Decision Record from the template. Determines the next `ADR-NNN`, copies
+`docs/templates/ADR.md`, and fills context, decision, options considered, and consequences -
+including the negative ones, since "an ADR with no downside recorded is an advertisement, not a
+decision record." Leaves `status: Proposed`; only the user flips it to `Accepted`.
+
+**Writes:** a new `docs/architecture/decisions/ADR-NNN-<slug>.md`, a new row in that folder's
+`README.md` index. **Refuses:** writing in anything but English, even on a non-English-docs project -
+ADRs stay portable; editing an Accepted ADR at all, which is hook-enforced (`protect-adr`) rather
+than a convention - a change of mind is a *new* ADR that supersedes the old one, and every other edit
+must land before the accept flip, because the hook reads the on-disk status at flip time and blocks
+everything after it. **Ships:** unconditional.
+
+#### `/new-spec-section <section-number-or-name>`
+
+Scaffolds a specification section following the project's standard BA structure. With no argument it
+lists which standard sections `docs/specs/` is missing and asks. Dispatches `ba-analyst`, deriving
+content from PRDs, the codebase, and the user's answers, and cross-links every FR to an ID,
+acceptance criteria, and the use case it serves.
+
+**Writes:** the new/filled `docs/specs/` section, a row in `docs/specs/13-revision-history.md`.
+**Refuses:** inventing a requirement - an unanswered question becomes a recorded open question,
+never a plausible guess, because "a fabricated requirement is worse than a missing one, because it
+looks settled"; inventing a parallel numbering scheme instead of following the existing one.
+**Ships:** unconditional (it ships with `harness-bootstrap`, even though it dispatches the
+`ba-analyst` agent in the spec-builder style).
+
+#### `/scaffold-feature <feature-slug>`
+
+Creates the skeleton of a feature module: entry point, library module, UI component, failing test -
+structure only, no behavior. Follows the layout in `.claude/rules/coding-standards.md`: the entry
+point (route handler, controller, or command) does input validation and delegation only, the library
+module holds the business logic and is testable without the transport layer, the UI component is
+built from existing design-system primitives rather than new one-off styles, and a failing unit test
+names the acceptance criterion it will eventually prove.
+
+**Writes:** the new skeleton files; a routing-table row if the feature's domain has no owner yet.
+**Refuses:** filling in the business logic - "leave the logic unimplemented rather than filling it
+with a plausible guess"; proceeding with no feature slug (asks, then stops). **Ships:** unconditional.
+
+### Implementing
+
+#### `/implement-fr <FR-id>`
+
+Plans and implements a functional requirement end-to-end against its acceptance criteria - the
+command diagram 4's sequence actually traces. With no argument it lists FRs that have no task yet and
+asks, rather than guessing which one to build. Reads the FR in
+`docs/specs/05-functional-requirements.md` (and the matching PRD, if one exists), dispatches
+`spec-guardian` to lock scope and acceptance criteria *before* any code is written - an FR with no
+observable acceptance criteria stops here and escalates rather than proceeding - registers the work
+via `/new-task`, flips it to `Active`, and assigns the specialist per the routing table. Implementation
+follows whichever methodology the project chose at intake: test-first under TDD, tests shipped in the
+same change under DDD/default, or a session-log note of how each criterion was verified by hand on a
+project with no automated suite. Then runs `/test` (if the project has one) followed by
+`/review-changes`.
+
+**Writes:** task session-log rows, and the code itself via the dispatched dev agent (plus a glossary
+entry for any new domain term, under DDD). **Refuses:** deploying - that is always a separate,
+explicit `/deploy`; skipping the review gate, even under Lightweight methodology, which drops
+ceremony but not the gate. **Ships:** unconditional.
+
+#### `/db-migration <migration-name>`
+
+Generates a database migration from schema changes, following the ERD and the data dictionary. Diffs
+the schema against the data model in `docs/specs/` (updating the ERD and data dictionary in the same
+PR/MR if the design is new), generates the migration with the project's migration tool against the
+**local development database only**, and reviews the generated SQL before applying it.
+
+**Writes:** the migration file, ERD/data-dictionary updates when the design changed, the seed script
+(updated in the same PR/MR so it still matches the schema), a `docs/context/tool-changelog.md` entry.
+**Refuses:** running a migration, reset, or schema push against a shared, staging, or production
+database under any circumstance - the command file is explicit that this is a gated action and *not*
+gated by this command, i.e. out of scope entirely rather than merely restricted; applying generated
+SQL automatically when it contains a `DROP` of a populated column/table, a `NOT NULL` added without a
+default, a destructive type change, or any other data-loss statement - it escalates to the user
+instead, because "generated does not mean safe." **Ships:** only when the `db` flag is set.
+
+#### `/seed-db`
+
+Seeds the local or development database with deterministic synthetic data per the ERD, by dispatching
+`db-seeder` under the `db-seed` skill. Checks the connection target first, uses fixed seed values so
+two runs produce the same rows, upserts rather than blind-inserts so re-running never duplicates
+rows, and verifies row counts per table afterward.
+
+**Writes:** rows in the local/development database (no doc files - the report is the row-count
+summary). **Refuses:** running against anything but a local or development database - it refuses
+outright if the connection target points at shared, staging, or production; using real customer
+records or a production dump, even as a one-off. **Ships:** only when both `db` and `db_seeder` are
+set.
+
+### Quality gates
+
+#### `/test`
+
+Runs lint plus the unit and end-to-end suites, and reports each failure with its owning agent. Every
+external provider must be mocked - a test that makes a real network call is reported as a failure
+even when it passes, because a green result from a live call is not a repeatable one. Reports the
+coverage figure against the project's target and whether it regressed against the default branch,
+and maps each failure to the agent that owns the code (per the routing table) and the acceptance
+criterion it breaks.
+
+**Writes:** a session-log row on the task file recording the run (pass/fail, coverage). **Refuses:**
+editing a test to make it pass - a failing test is either a real defect or a wrong expectation, and
+deciding which is the point. **Ships:** only when the `tests` flag is set (frameworks vary: unit
+only, e2e only, or both, per the testing choice at intake).
+
+#### `/review-changes`
+
+Runs code review and security review on the current diff before opening a PR/MR - no arguments.
+Diffs with three dots against the default branch on an existing branch (two dots on a stale branch
+reports the branch's own missing commits as false deletions), runs `/secret-scan` first (any real
+secret is a blocker), then dispatches the review agents: the merged `reviewer` doing one pass under
+`solo_review`, or `code-reviewer` plus `security-reviewer` separately on the default split roster.
+Either way, `spec-guardian` verifies the linked FR's and task's acceptance criteria are met, lint and
+tests are confirmed locally, and the CI pipeline must be green in a *terminal* state - pending never
+counts. Findings are aggregated by severity: blocker, should-fix, suggestion.
+
+**Writes:** a session-log row recording the review and its findings - "a gate counts as passed only
+when the log records the run." **Refuses:** merging or deploying - "reviewing is not approving."
+**Ships:** unconditional; its shape (merged vs. split reviewers) follows the `solo_review` flag.
+
+#### `/secret-scan`
+
+Scans the current diff (`git diff` plus staged) for secrets and sensitive data before a commit or
+PR/MR - no arguments. Looks for credential patterns (`sk-`, `AKIA`, `AIza`, `ghp_`, `glpat-`, `xox`,
+JWT-shaped strings, private-key headers, hardcoded `password=`/`api_key=`/`secret=`/`token=`),
+forbidden files (`.env*` other than `.env.example`, `*.pem`/`*.key`/`*.jks`/`*.p12`/`*.tfvars`,
+service-account JSON), real-looking personal or customer data in fixtures and seeds, and secrets
+hiding in CI config, container files, lockfiles, docs, and code comments.
+
+**Writes:** nothing - reports `file:line` plus the pattern TYPE only. **Refuses:** ever printing the
+matched value, even truncated, or writing it anywhere; letting the change proceed on any hit until
+the value is removed from the diff *and* the credential is rotated - rotation is mandatory even after
+the commit is amended, because a secret that reached a commit is compromised regardless. **Ships:**
+unconditional (`/review-changes` and `/implement-fr`'s flow both call it).
+
+### Release
+
+#### `/deploy`
+
+Deploys the project to its hosting target - no arguments. This is the one command with
+`disable-model-invocation: true` in its frontmatter: an agent cannot trigger it on its own
+initiative, it never runs as a step inside another command, and it runs only when a human types
+`/deploy` directly. Before doing anything it verifies every precondition and refuses, naming the
+reason, if any is unmet: the PR/MR is reviewed, approved, and merged to the default branch; CI is
+green *and* in a terminal state (pending or presumed-green don't count); every environment variable
+the target needs is present there (confirmed present only - the command never reads, prints, or
+copies a secret value); migration status is clean. Only then does it run the forward migrations,
+deploy from the merged commit on the default branch (never a local working tree), and verify the
+health endpoint - "deployed is not the same as healthy."
+
+**Writes:** a `docs/context/tool-changelog.md` entry (what shipped, from which commit, how it was
+verified). **Refuses:** deploying with any precondition unmet; retrying a failed deploy or "fixing
+forward" without the user's explicit go-ahead - on failure it rolls back, reports, and stops.
+**Ships:** unconditional (always installed), but functionally gated by the control-level dial in
+`/harness-tune`: deploy rights default to human-only (`permissions.deny`) until moved to `ask` or a
+named non-production variant.
+
+*Ambiguity worth flagging:* the command file's own `allowed-tools` is narrow -
+`Bash(git status), Bash(git log:*), Read` - and the file doesn't name which tool actually executes
+the migration and deploy steps it describes in prose. Read literally, the file does not fully specify
+how those steps run; treat this as the command file's own gap rather than an inferred mechanism.
+
+### Keeping memory current
+
+#### `/sync-context`
+
+Reviews what has landed on the default branch since the last sync and updates the project's
+long-term memory in `docs/context/` - no arguments. Adds behavior changes as numbered `BR-NN` rules
+(each sourced to an FR or ADR) to `business-rules.md`; records new and newly-fixed issues in
+`known-issues.md`, capturing the workaround rather than just the symptom; logs dependency/tool/infra
+changes in `tool-changelog.md`; adds new domain terms, entities, status enums, and role names to
+`glossary.md`.
+
+**Writes:** `docs/context/business-rules.md`, `known-issues.md`, `tool-changelog.md`, `glossary.md`.
+**Refuses:** deleting history - a fixed issue is marked resolved, not removed; copying a secret,
+credential, or real customer data into any of these files; restating the diff instead of recording
+what a future agent actually needs and couldn't infer from the code. **Ships:** unconditional.
+
+#### `/task-resume [TASK-NNN]`
+
+Resumes a task from its task file after a compaction or in a new session. With no argument it lists
+every unfinished task from `docs/tasks/active/` (`Planned`, `Active`, `Blocked`) and does not resume
+anything. With a task ID, it reads the master-plan row, reads the task file end to end, and trusts
+the files over conversation memory - the conversation may have been compacted, the files were
+committed. It then verifies the working tree against the recorded state with `git status`/`diff`/
+`log`; when the tree disagrees with what the files say, it reconciles before continuing rather than
+picking a side.
+
+**Writes:** session-log rows after every meaningful unit of work; any status change to both the task
+file's frontmatter and the master-plan row, together. **Refuses:** stashing, discarding, or
+clobbering uncommitted work it finds in the tree - it drives that work to completion or escalates it.
+**Ships:** unconditional.
+
+### Exploring a decision
+
+#### `/brainstorm <topic>`
+
+Runs a structured brainstorming session on a decision or feature idea. Dispatches `brainstormer`
+(with `tech-researcher` for evidence) to frame the actual decision and its constraints - including
+anything already fixed by an Accepted ADR - produce 3 to 5 genuine options with a trade-off matrix,
+and give a recommendation with its reasoning. When the recommendation rests on an unmeasured
+assumption, it runs a small timeboxed measurement spike before committing to it.
+
+**Writes:** nothing directly - it routes the outcome onward: a stack-affecting decision to `/new-adr`
+before implementation starts, a product-affecting one into the PRD in `docs/requirements/`, anything
+else into the task file's decisions section. **Refuses:** including a straw-man option that exists
+only to be rejected - "noise"; deciding on the user's behalf - "the agent never decides silently."
+**Ships:** only when the `long` flag is set (it ships alongside the `brainstormer` and
+`tech-researcher` agents).
+
+### Audit-only pair
+
+These two ship only when a repo was bootstrapped in **audit mode** (the `AU` branch in diagram 2,
+`audit` flag) - a read-only control plane where agents scan and record, and a human applies every
+fix. They do not exist in a normal delivery bootstrap.
+
+#### `/security-scan [repo-slug]`
+
+Runs the pinned deterministic scanner suite in Docker against the product repos and records new
+findings. With no argument it scans every repo in the workspace. Dispatches `sast-runner`, which runs
+its full pinned matrix (SAST, secrets, dependency/CVE, infrastructure-as-code policy) against the
+target repo(s) through a **read-only mount** - a guardrail, not a convenience: it makes it structurally
+impossible for a scanner to write into product source. Raw output lands in `docs/findings/raw/` (one
+file per scanner per repo, JSON/SARIF where available), then gets normalized and deduped against
+`docs/findings/<repo>/`, with secret matches redacted to location plus pattern type *before* anything
+touches disk.
+
+**Writes:** `docs/findings/raw/` (raw scanner output), `docs/findings/<repo>/` (a new finding file at
+`status: New` for each new result; a reopened finding goes back to `status: Confirmed` rather than
+duplicating). **Refuses:** assigning severity or anchoring requirement IDs - that's `/triage-findings`'
+job; silently skipping a scanner that crashed or timed out - it's reported as missing coverage, never
+a clean result. **Ships:** only in audit mode (`audit` flag).
+
+#### `/triage-findings [repo-slug]`
+
+Walks every finding at `status: New` under `docs/findings/` through confirmation, severity,
+requirement anchoring, and task registration. Dispatches the review agent(s) appropriate to the
+finding type to confirm or reject each one - a rejected finding becomes `status: False-positive` and
+*keeps* its reasoning rather than being deleted, so the next scan re-raises it and the recorded
+reasoning stops the team from re-litigating it. Confirmed findings get a project-scale severity, then
+`spec-guardian` anchors `standard`, `standard_version`, and `requirement_id` from the verified
+standards table. Each confirmed finding becomes work through `/new-task`, linked both ways.
+
+**Writes:** status transitions on finding files under `docs/findings/`; new task files via
+`/new-task`. **Refuses:** anchoring a finding to a standards-table row that is missing, unverified,
+or carries no verification date - it leaves the finding at `status: New` and reports it blocked
+instead, because citing a possibly-wrong control is worse than citing none; closing a finding on a
+claim that it was fixed - only a clean re-check sets `status: Verified`; applying the fix itself -
+that is always the user's job. **Ships:** only in audit mode (`audit` flag).
+
+### Quick reference
+
+| Command | Writes / changes | Ships |
+|---|---|---|
+| `/new-task` | New task file, master-plan row, first session-log row | Unconditional |
+| `/new-adr` | New ADR file, ADR index row | Unconditional |
+| `/new-spec-section` | New/filled spec section, revision-history row | Unconditional |
+| `/scaffold-feature` | New skeleton files (no logic), routing-table row if new domain | Unconditional |
+| `/implement-fr` | Task session-log rows, code via the dispatched dev agent | Unconditional |
+| `/db-migration` | Migration file, ERD/data-dictionary, seed script, tool-changelog | `db` |
+| `/seed-db` | Rows in the local/dev database only | `db` + `db_seeder` |
+| `/test` | Task session-log row (pass/fail, coverage) | `tests` |
+| `/review-changes` | Task session-log row (findings by severity) | Unconditional |
+| `/secret-scan` | Nothing - reports `file:line` + pattern type only | Unconditional |
+| `/deploy` | tool-changelog entry (what shipped, from which commit) | Unconditional; human-invoked only |
+| `/sync-context` | business-rules.md, known-issues.md, tool-changelog.md, glossary.md | Unconditional |
+| `/task-resume` | Session-log rows; status in the task file + master-plan row together | Unconditional |
+| `/brainstorm` | Nothing directly - routes to `/new-adr`, a PRD, or the task's decisions section | `long` |
+| `/security-scan` | docs/findings/raw/, docs/findings/<repo>/ | `audit` |
+| `/triage-findings` | Finding status transitions, new task files via `/new-task` | `audit` |
 
 ## Accuracy notes
 

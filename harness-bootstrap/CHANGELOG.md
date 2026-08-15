@@ -6,6 +6,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.9.0] - 2026-08-15
+
+### Changed
+
+- Documentation only for this skill: all 22 installed commands plus the two audit-only commands now
+  carry a full reference (invocation, effect, what they write, what they refuse, and the flag that
+  ships them). The release tooling also now enforces that the `harness-view` tool version matches
+  the repo release version.
+
 ## [1.8.2] - 2026-08-15
 
 ### Fixed

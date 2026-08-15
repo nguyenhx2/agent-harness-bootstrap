@@ -5,6 +5,50 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.9.0
+
+`harness-view` grew up: it ships as a real application you can download and run, and the viewer
+became usable on a large board instead of merely correct.
+
+- **Standalone builds for Windows, macOS and Linux**, attached to every release as signed-by-hash
+  archives with the binary, its README and the schema. No Rust toolchain and no Python needed.
+  The Windows executable carries proper file metadata (product, version, company) and the project
+  icon, and double-clicking it serves the folder it sits in and opens a browser.
+- **An icon for the tool**, derived from the repo's own shield-and-eye mark by a committed
+  generator script, so it can be regenerated rather than being an opaque binary. The served page
+  finally has a favicon too.
+- **The tool version is enforced against the release version**, so a binary can no longer report a
+  number that disagrees with the tag it shipped under.
+- **Choose a folder from the browser.** The viewer no longer needs a restart to look at another
+  repo: type or pick a path, and recent roots are remembered. A path that is not a harness says so
+  instead of showing an empty page.
+- **Read the files, not just the boxes.** Agents, rules, commands, tasks and the master plan can be
+  opened in place, formatted by default with a one-click switch to the raw markdown.
+- **Trace a connection.** Clicking a node lights its neighbours and the edges between them with a
+  moving dash and fades everything unrelated, which is the point of having a graph at all.
+- **Three connection-line styles** (curved, orthogonal, straight), hook nodes badged Pre / Post /
+  Stop with blocking hooks marked, task nodes showing owner and status, and an optional master-plan
+  tab when the repo keeps one.
+
+### Fixed
+
+- The viewer served a blank page. A JavaScript string broken across two lines killed the whole
+  script, and because the canvas was sized only after a successful load, any failure left an
+  unsized canvas with no error shown. Both are fixed, and a new gate parses every embedded script
+  so a syntax error cannot ship again.
+- **87 of 172 nodes were drawn off screen** on a real board with no indication they existed. The
+  view now scales to fit, and a lane with more nodes than fit wraps instead of running off the
+  bottom.
+- Edges were drawn between node centres, so lines ran under the boxes and every arrowhead was
+  hidden behind its target. Edge labels all landed on the same point: 2,526 overlapping pairs on
+  one board, now zero.
+- Panning cleared the selection you were trying to inspect.
+- Nodes overlapped each other in the graph view because the layout treated a 180px-wide box as a
+  point: 76 overlapping pairs, now zero.
+- Documentation: every command both skills install is now documented with its invocation, what it
+  writes, what it refuses to do, and which flag ships it. Sixteen of them had no documentation at
+  all.
+
 ## v1.8.2
 
 Running the new `harness-view` against a real scaffolded harness found a bug that had been

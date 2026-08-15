@@ -3,8 +3,15 @@
 `harness-bootstrap` picks a starting posture at intake and writes it into `.claude/`. Real projects
 drift from that posture - a deploy command earns trust, a seat needs a tool it does not have, the
 board needs a health check, the skill ships a new asset you want to pick up, the code shifted enough
-that the module map is stale. Eight commands, installed into every bootstrapped repo, cover that drift. This page is the full reference for each: what it
+that the module map is stale. Eight commands, installed into every bootstrapped repo, cover that
+drift, plus two more (`/spec-ingest`, `/spec-retract`) that arrive with a `spec-builder` spec set and
+ripple a source into or out of `docs/specs/`. This page is the full reference for all ten: what each
 does, when to reach for it, a worked example, and the invariants it will not let you break.
+
+The commands used during normal feature delivery - `/new-task`, `/implement-fr`, `/test`,
+`/review-changes`, `/deploy`, and the rest - are a different family: they build the product, not the
+harness. Their reference lives next to the sequence diagram they implement, in
+[`docs/FLOWS.md` section 7](FLOWS.md#7-delivery-commands-command-by-command).
 
 None of the eight edit hook *logic*. They edit data - lists, caps, seat frontmatter, `vars.json`,
 the disabled ledger - the same way any other reviewed change would. If what you want requires
@@ -223,6 +230,13 @@ Adding a seat and not adding its routing row leaves it unreachable; adding a rou
 file dispatches to nothing - `/harness-update` checks both land together. Retiring a seat runs
 `/board-audit` first, to confirm no Active task still names it as owner.
 
+**Respects toggle state.** If `.claude/disabled.json` exists, `/harness-update` runs
+`python .claude/scripts/harness-toggle.py reapply` after conflicts are resolved, so a `--force`
+overwrite or a hand edit can't silently resurrect something the team deliberately disabled. Before
+finishing, it also confirms the scaffolder's spawn-boundary lint still passes and the routing table
+covers every seat, then regenerates the harness graph (`python .claude/scripts/harness-graph.py
+--html`) - script-driven changes don't fire the Edit/Write hooks that normally keep it current.
+
 **What it never touches.** `tech-stack.md`, `coding-standards.md`, scopes, or any content derived from
 your code or your intake answers - those go through the `CONFLICT` queue with you deciding, never a
 silent overwrite.
@@ -267,6 +281,14 @@ a new cross-module edge deserves; it surfaces the edge so a human or reviewer lo
 also refreshes `.claude/state/harness-graph.json` and both HTML exports
 (`docs/context/harness-graph.html`, `docs/context/specs-graph.html`), since module owners feed into
 the harness graph.
+
+**Engine.** Defaults to the stdlib regex extractor in `.claude/scripts/code-graph.py` - zero install,
+best-effort static edges, "missing an edge" means absence of evidence, not evidence of isolation. If
+a GitNexus/codegraph MCP server (or a comparable code-index tool) is available in the session, it may
+replace the extraction for richer call-level edges; the file contract does not change either way, so
+nothing downstream cares which engine ran. The choice is asked once and recorded in
+`docs/context/tool-changelog.md`. If the external engine becomes unavailable mid-project, the next
+`/code-graph` run falls back to the builtin engine on its own - degraded edges, same files.
 
 ## `/docs-graph`
 
@@ -330,10 +352,96 @@ quality gate.
 
 ## The spec side
 
-Two more commands arrive with a `spec-builder` spec set rather than the harness:
-`/spec-ingest` (fold a new source into the sections - diffed, versioned, rippled to the agent
-files that depend on it) and `/spec-retract` (trace and withdraw a bad source or claim - converted
-to open issues, never silently deleted). See `spec-builder/SKILL.md`.
+Two more commands arrive with a `spec-builder` spec set rather than the harness - see
+`spec-builder/SKILL.md` for the skill they belong to.
+
+### `/spec-ingest`
+
+**What it does.** Folds a new information source - meeting notes, a transcript, a legacy doc, an
+email thread - into an existing `docs/specs/` set without regenerating anything. Usage:
+`/spec-ingest <path-or-pasted-source>`. It reads the source whole, maps each extractable statement to
+its home section (a `03` glossary term, a `05` FR or business rule, a `07` NFR, and so on - a section
+may be one file or a folder of `FR-nn-<slug>.md` files with an index), then diffs each mapped
+statement against what the section already says: a new fact with no conflict is added with a source
+note; a conflict with existing normative text is never silently overwritten - both versions are
+shown, `AskUserQuestion` decides which wins, and the loser is recorded in the revision history; a
+restated fact is skipped and the corroboration noted instead. A statement that maps to a section the
+project never selected at creation is surfaced as a finding, not forced elsewhere.
+
+**When to reach for it.** A new source of truth shows up after the spec set already exists - more
+meeting notes, an updated transcript, a legacy doc someone finally found - and it needs reconciling
+against the sections rather than bolted on as a separate file.
+
+**Worked example.**
+
+```text
+/spec-ingest meeting-notes-2026-08-12.txt
+```
+
+```text
+Mapped 6 statements: 2 to 05 (new FR candidates), 1 to 07 (an NFR target), 3 to 03 (glossary terms).
+Conflict: 05 already states "refund window: 14 days"; the note says "30 days".
+Which wins? [14 days (current) / 30 days (new source)]
+Applied: FR-22 added, NFR-09 target updated, 3 glossary terms added.
+Recorded in 13-revision-history.md. Ripples: glossary.md updated, business-rules.md updated.
+docs-graph rebuilt: 0 new orphans.
+```
+
+**What it writes.** The mapped-to spec section(s), one row in `13-revision-history.md` per ingest
+(date, source, sections touched, IDs added/changed, who approved any conflict), and - where a harness
+exists - the ripple targets: `docs/context/glossary.md`, `docs/context/business-rules.md`, the owning
+dev agent's FR list, and the board (a new FR with no owning module becomes a Pending task, never a
+silent seat assignment). It then rebuilds traceability (`python .claude/scripts/docs-graph.py` and
+`graph-html.py`) and records the ingest itself in `docs/context/tool-changelog.md`.
+
+**What it refuses.** Regenerating a section from a template over hand-written content. Renumbering an
+ID - a new requirement always takes the next free number. Letting the raw source become the
+reference: the spec absorbs the source, the source never replaces the spec.
+
+### `/spec-retract`
+
+**What it does.** Removes or corrects information already absorbed into `docs/specs/`. Usage:
+`/spec-retract <source-name | ID | quoted-claim>` - a whole source that turned out unreliable, one
+wrong requirement, or a specific claim. It traces the blast radius first: every section (and, in
+folder form, every `FR-nn-<slug>.md`) mentioning the source, ID, or claim's key terms; every document
+`.claude/state/docs-graph.json` shows referencing the affected IDs; every task naming them. The full
+list is shown before anything changes. A wrong value gets fixed in its defining section. A claim with
+no remaining source does not vanish - it converts to an open issue (`OI-nn`: "was asserted by
+`<source>`, source retracted, needs confirmation"), because a silently deleted requirement looks
+identical to one that never existed, and someone may have built on it.
+
+**When to reach for it.** A source turns out to be unreliable, wrong, or superseded, and the spec
+already has content built from it.
+
+**Worked example.**
+
+```text
+/spec-retract "vendor-api-notes.pdf"
+```
+
+```text
+Blast radius: FR-14, FR-15 (only-sourced from this doc), BR-07 (corroborated elsewhere - stays),
+2 tasks reference FR-14/15 (TASK-031, TASK-033).
+FR-14, FR-15 -> Withdrawn, reason: source retracted (2026-08-14). BR-07 loses one source note, stays.
+TASK-031, TASK-033 -> Blocked, human_gate: requirement withdrawn.
+Recorded in 13-revision-history.md. docs-graph rebuilt: 0 new orphans (both IDs still resolve, as
+Withdrawn).
+```
+
+**What it writes.** One row in `13-revision-history.md` (what was retracted, why, which IDs went
+`Withdrawn` or converted to `OI-nn`, who decided), and - where a harness exists - the ripple: the
+owning dev agent's FR list drops withdrawn IDs, Active tasks implementing them go `Blocked` with
+`human_gate: requirement withdrawn` (a human decides whether the work stops, never a silent
+deletion), and glossary terms only the retracted source defined are marked disputed. Rebuilds
+traceability the same way `/spec-ingest` does, and records the retraction in
+`docs/context/tool-changelog.md`.
+
+**What it refuses.** Reusing a withdrawn ID - a retracted `FR-nn` keeps its number, marked
+`Withdrawn`, and the next requirement takes a fresh one. Deleting a claim outright just because its
+source disappeared - it becomes a tracked open issue instead.
+
+These two ship with the `spec-builder` skill, not `harness-bootstrap` - a repo that only bootstrapped
+the harness does not have them until `spec-builder` is also installed on it.
 
 ## Quick reference
 
@@ -347,6 +455,8 @@ to open issues, never silently deleted). See `spec-builder/SKILL.md`.
 | `/code-graph` | Rebuilds `.claude/state/code-graph.json` and `docs/context/code-graph.md`, clears the stale log | None - regenerates derived files, nothing hand-authored is touched |
 | `/docs-graph` | Rebuilds `.claude/state/docs-graph.json`, `docs/context/docs-graph.md`, and both HTML graph exports | None - derived files only |
 | `/skill-wire` | One installed skill onto one seat's "Skills available" section | Diff shown, yes required; content re-review at wire time, invariant violations refuse |
+| `/spec-ingest` (`spec-builder`) | Spec section(s), `13-revision-history.md` row, glossary/business-rules/board ripples | Conflicts shown via `AskUserQuestion`; IDs appended, never renumbered |
+| `/spec-retract` (`spec-builder`) | Corrects or converts spec content to `OI-nn`, `13-revision-history.md` row, downstream ripples | Blast radius shown before any change; withdrawn IDs never reused |
 
 ## The three invariants that hold across all of them
 

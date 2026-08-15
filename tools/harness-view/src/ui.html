@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <title>harness-view</title>
+<!-- the mark, inlined: the page must stay self-contained, so the icon is a
+     data: URI generated from docs/assets/logo-mark.svg by scripts/make_icons.py -->
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
 <style>
   :root { --bg:#f8fafc; --panel:#ffffff; --ink:#0f172a; --line:#cbd5e1; --dim:#64748b; }
   * { box-sizing: border-box; margin: 0; }
@@ -116,7 +119,7 @@
   <div id="grip" title="Drag to resize"></div>
   <aside id="detail"></aside>
 </main>
-<footer><span id="stats"></span><span id="rootnow"></span><span id="hint">click a node to trace its connections</span></footer>
+<footer><span id="stats"></span><span id="rootnow"></span><span id="hint">click a node to trace its connections</span><span id="ver" style="margin-left:auto"></span></footer>
 <script>
 "use strict";
 const COLORS = {
@@ -190,6 +193,17 @@ function rememberRoot(p) {
   localStorage.setItem("hv-root", p);
   buildRoots();
 }
+// The build version, reported by the server so the page cannot claim a version
+// the binary does not have.
+async function showVersion() {
+  try {
+    const r = await fetch("roots");
+    if (!r.ok) return;
+    const b = await r.json();
+    if (b.version) document.getElementById("ver").textContent = "v" + b.version;
+  } catch (e) { /* the footer simply stays blank */ }
+}
+
 function buildRoots() {
   const dl = document.getElementById("roots");
   dl.textContent = "";
@@ -1037,6 +1051,7 @@ buildRoots();
 applySide();
 fit();
 syncAuto();
+showVersion();
 // Fall back to the server's own root if the remembered one no longer resolves.
 load().then(ok => { if (!ok && currentRoot) { currentRoot = ""; localStorage.removeItem("hv-root"); return load(); } })
       .then(() => sync());
