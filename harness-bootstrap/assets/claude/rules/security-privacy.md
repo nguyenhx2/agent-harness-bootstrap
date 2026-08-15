@@ -1,7 +1,7 @@
 ---
 # {{SOURCE_GLOBS}} expands to one quoted glob per line, e.g. "src/**/*.{ts,tsx}"
 paths:
-  - "{{SOURCE_GLOBS}}"
+  - {{SOURCE_GLOBS}}
 ---
 
 # Security and privacy

@@ -7,7 +7,7 @@
 <p align="center">by <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <b>English</b> · <a href="README.ja.md">日本語</a></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 68/68](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 69/69](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
 
@@ -46,7 +46,7 @@ coding agent:
   "tailored" means concretely: see [What you get](#-what-you-get).
 - The guardrails are shell scripts and exit codes, not the model's judgment. Swap every agent from
   Opus to Haiku and the safety floor is byte-identical - `python eval/guardrail_eval.py` proves it,
-  68/68.
+  69/69.
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
@@ -285,7 +285,7 @@ removed - only rescoped.
 | Bytes the model must read to bootstrap a repo | 234,196 | 129,638 | **-45%** |
 | Bytes the model must write as output | 95,064 | 13,881 | **-85%** |
 | Rule content kept out of the default session | - | 52,131 of 79,936 B | **65%** |
-| Guardrail eval | - | **68/68** | - |
+| Guardrail eval | - | **69/69** | - |
 
 ---
 

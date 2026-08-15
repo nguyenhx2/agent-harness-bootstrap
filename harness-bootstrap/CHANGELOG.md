@@ -6,6 +6,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.8.2] - 2026-08-15
+
+### Fixed
+
+- Path-scoped rules shipped invalid `paths:` frontmatter: the glob variables already carry quotes
+  and the templates added another pair, producing `- ""src/**/*.ts""`. Every release since v1.0.0
+  was affected. The eval now parses the frontmatter of every scoped rule in a real scaffold.
+
 ## [1.8.1] - 2026-08-14
 
 ### Fixed

@@ -1,6 +1,6 @@
 ---
 name: spec-builder
-version: 1.8.1
+version: 1.8.2
 description: Build the requirements contract for a project - a selective set of numbered BA spec sections under docs/specs/ with stable IDs (FR/NFR/BR/UC/US/DS/DT), acceptance criteria, and grep-verifiable traceability. The core (overview, glossary, FRs, NFRs, open issues, revision history, index) always; stakeholders, business flows, access control, data model, integrations, UI wireframes, feasibility, and a design-system appendix when selected. Do NOT use it to digest documents into a knowledge base, to build the .claude agent harness (that is harness-bootstrap), or to write code or ADRs. Works from any raw input - an idea, meeting notes, a transcript, a PRD, legacy docs, or a codebase - in the user's language. Use this WHENEVER the user wants requirements written, structured, or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して" - and their equivalents in any language. It never invents a requirement; anything unstated becomes a flagged open issue instead of a guess.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---

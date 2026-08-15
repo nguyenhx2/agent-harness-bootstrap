@@ -1,8 +1,8 @@
 ---
 # {{TEST_GLOBS}} and {{SOURCE_GLOBS}} each expand to one quoted glob per line
 paths:
-  - "{{TEST_GLOBS}}"
-  - "{{SOURCE_GLOBS}}"
+  - {{TEST_GLOBS}}
+  - {{SOURCE_GLOBS}}
 ---
 
 # Testing

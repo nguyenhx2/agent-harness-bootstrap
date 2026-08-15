@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.8.2
+
+Running the new `harness-view` against a real scaffolded harness found a bug that had been
+shipping since the first release.
+
+- **Path-scoped rules emitted invalid frontmatter.** The glob variables carry their own quotes and
+  the rule templates added a second pair, so every scoped rule shipped `- ""src/**/*.ts""` instead
+  of `- "src/**/*.ts"`. A rule that looks scoped but whose `paths:` block does not parse is the
+  quietest failure this harness can have, and the session-tax figures assume the scoping works.
+  Present in every release from v1.0.0 to v1.8.1. The eval now scaffolds a harness and parses each
+  `paths:` block, so it cannot come back.
+- The native viewer counted a command's reference to the skill's own `<skill>/scripts/scaffold.py`
+  as an installed script, inventing two edges the Python scanner correctly omitted. Both scanners
+  now produce byte-identical graphs on a full 72-node harness, not just on the small fixture.
+
+Guardrail eval: 69/69 per hook flavor, 138/138 across both.
+
 ## v1.8.1
 
 - The presentation deck claimed the old `40/40` guardrail-eval result after the suite reached
@@ -37,7 +54,7 @@ A fitted harness instead of a fixed one, a map of what got built, and runtime co
   guardrail silently dead; the toggle refuses path traversal; a corrupt ledger aborts instead of
   resurrecting disabled controls; and the generated graph page escapes repository content.
 
-Guardrail eval: 68/68 per hook flavor, 136/136 across both. Read path 45 percent below the
+Guardrail eval: 69/69 per hook flavor, 138/138 across both. Read path 45 percent below the
 predecessor skill. Figures from `eval/guardrail_eval.py` and `benchmark/benchmark.py`.
 
 ## v1.7.0

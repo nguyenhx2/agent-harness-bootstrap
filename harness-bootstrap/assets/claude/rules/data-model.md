@@ -1,7 +1,7 @@
 ---
 # {{DB_GLOBS}} expands to one quoted glob per line, e.g. "prisma/**", "migrations/**", "src/models/**"
 paths:
-  - "{{DB_GLOBS}}"
+  - {{DB_GLOBS}}
 ---
 
 # Data model
