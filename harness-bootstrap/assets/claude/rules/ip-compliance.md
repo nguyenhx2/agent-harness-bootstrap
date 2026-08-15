@@ -3,8 +3,8 @@
 # {{DEP_MANIFEST_GLOBS}} expands to the dependency manifests and lockfiles, e.g. "package.json",
 # "package-lock.json", "pyproject.toml", "go.mod", "Cargo.toml"
 paths:
-  - "{{SOURCE_GLOBS}}"
-  - "{{DEP_MANIFEST_GLOBS}}"
+  - {{SOURCE_GLOBS}}
+  - {{DEP_MANIFEST_GLOBS}}
 ---
 
 # Intellectual property

@@ -1,7 +1,7 @@
 ---
 # {{UI_GLOBS}} expands to one quoted glob per line, e.g. "src/components/**", "src/app/**"
 paths:
-  - "{{UI_GLOBS}}"
+  - {{UI_GLOBS}}
 ---
 
 # Frontend

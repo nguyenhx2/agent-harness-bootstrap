@@ -45,7 +45,7 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 68
+CASES_PER_FLAVOR = 69
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -573,6 +573,45 @@ def run_scaffold_validation_suite(workdir: pathlib.Path, flavor: str) -> list[di
           and f"{want_runner} .claude/hooks/protect-secrets.{want_ext}" in
               settings.read_text(encoding="utf-8"))
     rec("hook-runner: vars absent derives correct runner", "scaffold-hookrunner",
+        ok, 0, r.returncode)
+
+    # --- path-scoped rules must emit PARSEABLE frontmatter -------------------------------
+    # A rule whose `paths:` block is malformed is the quietest failure this harness can have:
+    # the file looks scoped, the session-tax claim assumes it is scoped, and nothing downstream
+    # says otherwise. Shipped from the first commit to v1.8.1, the glob vars carry their own
+    # quotes AND the template added a second pair, so every scoped rule emitted `- ""src/**""`.
+    # This walks the real scaffold output and parses each block with a strict, dependency-free
+    # reader: a value that is not a plain quoted scalar fails.
+    v = base_vars(flavor)
+    r, target = run_scaffold(workdir, f"frontmatter-scoped-rules-{flavor}", v)
+    bad_rules: list[str] = []
+    checked = 0
+    rules_dir = target / ".claude/rules"
+    for rule in sorted(rules_dir.glob("*.md")) if rules_dir.is_dir() else []:
+        text = rule.read_text(encoding="utf-8", errors="replace")
+        if not text.startswith("---"):
+            continue
+        fm = text.split("---", 2)[1] if text.count("---") >= 2 else ""
+        if "paths:" not in fm:
+            continue
+        checked += 1
+        for raw in fm.splitlines():
+            item = raw.strip()
+            if not item.startswith("- "):
+                continue
+            value = item[2:].strip()
+            # Accept a bare glob or one wrapped in a single matched pair of quotes. Anything
+            # else (doubled quotes, an unterminated quote) is what this case exists to catch.
+            if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
+                inner = value[1:-1]
+                if value[0] in inner:
+                    bad_rules.append(f"{rule.name}: {value}")
+            elif value[0] in "\"'" or value[-1] in "\"'":
+                bad_rules.append(f"{rule.name}: {value}")
+    ok = r.returncode == 0 and checked > 0 and not bad_rules
+    if bad_rules:
+        print(f"    malformed paths: frontmatter -> {'; '.join(bad_rules[:4])}", file=sys.stderr)
+    rec(f"frontmatter: {checked} scoped rules parse cleanly", "scaffold-frontmatter",
         ok, 0, r.returncode)
 
     return results

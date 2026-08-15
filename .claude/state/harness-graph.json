@@ -1,0 +1,69 @@
+{
+  "edges": [
+    {
+      "from": "gate:merge-request",
+      "to": "human",
+      "type": "escalates"
+    },
+    {
+      "from": "settings",
+      "to": "hook:media-sync-reminder",
+      "type": "triggers"
+    }
+  ],
+  "nodes": [
+    {
+      "disabled": false,
+      "file": ".claude/agents/docs-reconciler.md",
+      "id": "agent:docs-reconciler",
+      "label": "docs-reconciler",
+      "meta": {
+        "effort": "medium",
+        "model": "sonnet",
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob",
+          "Edit",
+          "Bash"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "id": "gate:merge-request",
+      "label": "Merge request",
+      "synthetic": true,
+      "type": "gate"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/media-sync-reminder.sh",
+      "id": "hook:media-sync-reminder",
+      "label": "media-sync-reminder",
+      "meta": {
+        "blocking": false,
+        "event": "PostToolUse",
+        "matcher": "Edit|Write",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "id": "human",
+      "label": "Human",
+      "synthetic": true,
+      "type": "human"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/settings.json",
+      "id": "settings",
+      "label": "settings.json",
+      "type": "settings"
+    }
+  ],
+  "version": 1
+}

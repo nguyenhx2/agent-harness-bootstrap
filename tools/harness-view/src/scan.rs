@@ -577,11 +577,15 @@ pub fn scan(root: &Path) -> Value {
         {
             if let Ok(body) = fs::read_to_string(root.join(file)) {
                 // every ".claude/scripts/<name>.py" reference counts, whether or
-                // not the script file exists yet - the edge records the wiring
+                // not the script file exists yet - the edge records the wiring.
+                // The ".claude/" prefix is required: commands also cite the SKILL's
+                // own "<skill>/scripts/scaffold.py", which is not an installed script
+                // and must not become a node or an edge.
                 let norm = body.replace('\\', "/");
+                let needle = ".claude/scripts/";
                 let mut start = 0;
-                while let Some(i) = norm[start..].find("scripts/") {
-                    let at = start + i + "scripts/".len();
+                while let Some(i) = norm[start..].find(needle) {
+                    let at = start + i + needle.len();
                     let name: String = norm[at..]
                         .chars()
                         .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')

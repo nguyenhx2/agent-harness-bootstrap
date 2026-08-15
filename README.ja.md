@@ -7,7 +7,7 @@
 <p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 68/68](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 69/69](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -45,7 +45,7 @@
   まずあなたのコードを読み込むので、生成される内容は*あなたの*リポジトリに合ったものになる。「合わせて作る」
   の具体的な中身は[手に入るもの](#-手に入るもの)を参照。
 - ガードレールはシェルスクリプトと終了コードであり、モデルの判断力に頼らない。すべてのエージェントを
-  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、68/68。
+  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、69/69。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
@@ -277,7 +277,7 @@ cargo install --path tools/harness-view
 | リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 129,638 | **-45%** |
 | モデルが出力として書くバイト数 | 95,064 | 13,881 | **-85%** |
 | デフォルトのセッションから除外されるルール内容 | - | 52,131 of 79,936 B | **65%** |
-| ガードレール評価 | - | **68/68** | - |
+| ガードレール評価 | - | **69/69** | - |
 
 ---
 
