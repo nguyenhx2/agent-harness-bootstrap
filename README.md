@@ -314,7 +314,7 @@ each writes and refuses: [`docs/FLOWS.md` section 7](docs/FLOWS.md#7-delivery-co
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 129,638 | **-45%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 129,639 | **-45%** |
 | Bytes the model must write as output | 95,064 | 13,881 | **-85%** |
 | Rule content kept out of the default session | - | 52,131 of 79,936 B | **65%** |
 | Guardrail eval | - | **69/69** | - |

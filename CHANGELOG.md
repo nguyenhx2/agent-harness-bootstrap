@@ -5,6 +5,39 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.10.0
+
+The viewer became usable on a real board. Everything here is `harness-view`; the two skills are
+unchanged apart from their version stamp.
+
+- **The task board reads as a board.** Task nodes were labelled with their full title, up to 378px
+  wide, packed into lanes 10px apart: 190 overlapping pairs, unreadable. Nodes now carry the task id
+  and sort by status, so the column forms colour bands by Active / Blocked / Pending / Done, and
+  overlaps are zero. The full title is one click away in the panel.
+- **Markdown is rendered by a real library.** The hand-written renderer is gone, replaced by vendored
+  `marked` with `DOMPurify` sanitising its output. Both are inlined, so the page still makes no
+  network request. A wide table now keeps its real width and scrolls inside its own frame instead of
+  collapsing one character per column, which is what broke the preview.
+- **Browse for a folder.** A Browse button walks the filesystem and loads a repo, with recently
+  opened folders listed and removable. The server lists directory names only, because a browser
+  cannot hand a page a real filesystem path.
+- **The preview fills the panel** instead of sitting in a fixed 340px box with empty space below it.
+- Icons on the header buttons, and the auto-refresh interval is a setting (5s / 10s / 30s / 60s)
+  that takes effect immediately. Its checkbox is no longer misaligned.
+- Release notes now describe the tools, not only the skills, and a missing tool entry fails a gate.
+
+### Fixed
+
+- Markdown tables in the preview rendered as vertical stacks of single characters. Two causes: the
+  panel's own `width: 100%` table rule captured every rendered table by id specificity, and the
+  hand-rolled parser. Both are gone.
+- Node overlap in the graph view fell from 47 pairs to 4 at full density, and from 1 to 0 at the
+  default filter, by letting the separation pass work outside the visible canvas bounds.
+
+Honest note: the markdown library is about 12 times slower than the hand-rolled parser (30ms versus
+2.3ms on the largest file in a real repo). Rendering happens only when a file is opened, so it is not
+perceptible, but it is a real regression and not worth pretending otherwise.
+
 ## v1.9.0
 
 `harness-view` grew up: it ships as a real application you can download and run, and the viewer
