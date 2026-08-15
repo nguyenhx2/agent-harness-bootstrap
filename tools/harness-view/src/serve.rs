@@ -21,7 +21,19 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Request, Response, Server};
 
-const PAGE: &str = include_str!("ui.html");
+const PAGE_TEMPLATE: &str = include_str!("ui.html");
+// Vendored, committed, and inlined rather than fetched: the page must work with
+// no network. See vendor/README.md for versions, licences and provenance.
+const MARKED_JS: &str = include_str!("../vendor/marked.min.js");
+const PURIFY_JS: &str = include_str!("../vendor/purify.min.js");
+
+/// The page with its vendored libraries spliced in. Built once per process.
+fn page() -> String {
+    PAGE_TEMPLATE.replace(
+        "/*__VENDOR__*/",
+        &format!("{MARKED_JS}\n{PURIFY_JS}\n"),
+    )
+}
 
 fn header(k: &str, v: &str) -> Header {
     Header::from_bytes(k.as_bytes(), v.as_bytes()).expect("static header")
@@ -172,6 +184,89 @@ fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
     Ok(target_c)
 }
 
+/// Directory listing for the folder picker: subdirectory NAMES, a parent link,
+/// and whether each child is itself a harness. No file names, no contents, no
+/// sizes. On Windows an empty path lists the drives, because there is no single
+/// filesystem root to start from.
+fn browse(path: Option<&str>, default_root: &Path) -> Result<serde_json::Value, String> {
+    let raw = path.map(|s| s.trim().trim_matches('"').to_string()).unwrap_or_default();
+
+    // "" on Windows means "show me the drives"; elsewhere it means "/".
+    if raw.is_empty() && cfg!(windows) {
+        let mut drives = Vec::new();
+        for letter in b'A'..=b'Z' {
+            let d = format!("{}:\\", letter as char);
+            if Path::new(&d).is_dir() {
+                drives.push(serde_json::json!({
+                    "name": d, "path": d, "harness": Path::new(&d).join(".claude").is_dir(),
+                }));
+            }
+        }
+        return Ok(serde_json::json!({
+            "path": "", "parent": serde_json::Value::Null, "drives": true, "entries": drives,
+        }));
+    }
+
+    let start = if raw.is_empty() {
+        // no path and not Windows: start beside whatever we were pointed at
+        default_root.to_path_buf()
+    } else if cfg!(windows) {
+        PathBuf::from(raw.replace('/', "\\"))
+    } else {
+        PathBuf::from(raw.replace('\\', "/"))
+    };
+
+    if !start.exists() {
+        return Err(format!("path does not exist: {}", start.display()));
+    }
+    if !start.is_dir() {
+        return Err(format!("not a directory: {}", start.display()));
+    }
+    let here = start.canonicalize().unwrap_or(start);
+
+    let mut entries = Vec::new();
+    match fs::read_dir(&here) {
+        Ok(rd) => {
+            for e in rd.flatten() {
+                let p = e.path();
+                if !p.is_dir() {
+                    continue; // directories only: this is navigation, not a file browser
+                }
+                let Some(name) = p.file_name().and_then(|x| x.to_str()) else { continue };
+                // hidden and build directories are noise when hunting for a repo,
+                // but .claude itself is the thing being looked for, so it stays
+                if name.starts_with('.') && name != ".claude" {
+                    continue;
+                }
+                entries.push(serde_json::json!({
+                    "name": name,
+                    "path": display_path(&p),
+                    "harness": p.join(".claude").is_dir(),
+                }));
+            }
+        }
+        Err(e) => return Err(format!("cannot list directory: {e}")),
+    }
+    entries.sort_by(|a, b| {
+        a["name"].as_str().unwrap_or("").to_lowercase().cmp(&b["name"].as_str().unwrap_or("").to_lowercase())
+    });
+
+    // On Windows the parent of a drive root is the drive list, not None.
+    let parent = match here.parent() {
+        Some(p) => serde_json::Value::String(display_path(p)),
+        None if cfg!(windows) => serde_json::Value::String(String::new()),
+        None => serde_json::Value::Null,
+    };
+
+    Ok(serde_json::json!({
+        "path": display_path(&here),
+        "parent": parent,
+        "drives": false,
+        "harness": here.join(".claude").is_dir(),
+        "entries": entries,
+    }))
+}
+
 fn json_error(msg: &str, code: u16) -> Response<std::io::Cursor<Vec<u8>>> {
     let body = serde_json::json!({ "error": msg }).to_string();
     Response::from_string(body)
@@ -215,7 +310,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
         let url = if url.is_empty() { "/".to_string() } else { url };
         let method = request.method().clone();
         let response = match (method, url.as_str()) {
-            (Method::Get, "/") => Response::from_string(PAGE)
+            (Method::Get, "/") => Response::from_string(page())
                 .with_header(header("Content-Type", "text/html; charset=utf-8")),
             (Method::Get, "/roots") => {
                 // The recent list lives in the browser's localStorage: it is a
@@ -231,6 +326,38 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                 .to_string();
                 Response::from_string(body)
                     .with_header(header("Content-Type", "application/json"))
+            }
+            (Method::Get, "/browse") => {
+                // Directory NAMES only, never file names and never contents.
+                // A browser cannot hand the page a real filesystem path, so
+                // navigation has to be served; this returns the minimum needed
+                // to walk a tree and nothing that could stand in for a read.
+                let mut refused = None;
+                if let Some(origin) = header_value(&request, "Origin") {
+                    let allowed = [
+                        format!("http://127.0.0.1:{port}"),
+                        format!("http://localhost:{port}"),
+                    ];
+                    if !allowed.iter().any(|a| origin.eq_ignore_ascii_case(a)) {
+                        refused = Some(format!("cross-origin request refused (Origin: {origin})"));
+                    }
+                }
+                if let Some(site) = header_value(&request, "Sec-Fetch-Site") {
+                    let s = site.to_ascii_lowercase();
+                    if s != "same-origin" && s != "none" {
+                        refused =
+                            Some(format!("cross-origin request refused (Sec-Fetch-Site: {site})"));
+                    }
+                }
+                if let Some(msg) = refused {
+                    let _ = request.respond(json_error(&msg, 403));
+                    continue;
+                }
+                match browse(query_param(&raw_url, "path").as_deref(), &root) {
+                    Ok(v) => Response::from_string(v.to_string())
+                        .with_header(header("Content-Type", "application/json")),
+                    Err(msg) => json_error(&msg, 400),
+                }
             }
             (Method::Get, "/graph.json") => {
                 let requested = query_param(&raw_url, "root");

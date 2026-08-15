@@ -74,3 +74,27 @@ fn page_makes_no_external_requests() {
         );
     }
 }
+
+/// The vendored libraries are inlined into the page at serve time by replacing a
+/// placeholder. If the placeholder is renamed or a vendor file is truncated by a
+/// bad download, the page still serves and still looks fine until someone opens
+/// a preview and the renderer is not there. Catch that here instead.
+#[test]
+fn vendored_libraries_are_present_and_spliced() {
+    const MARKED: &str = include_str!("../vendor/marked.min.js");
+    const PURIFY: &str = include_str!("../vendor/purify.min.js");
+
+    assert!(
+        PAGE.contains("/*__VENDOR__*/"),
+        "ui.html lost the /*__VENDOR__*/ placeholder, so the libraries would never be inlined"
+    );
+    // Enough of each file to prove it is the library and not an error page.
+    assert!(MARKED.len() > 20_000, "vendor/marked.min.js looks truncated");
+    assert!(PURIFY.len() > 10_000, "vendor/purify.min.js looks truncated");
+    assert!(MARKED.contains("marked"), "vendor/marked.min.js is not marked");
+    assert!(PURIFY.contains("DOMPurify"), "vendor/purify.min.js is not DOMPurify");
+
+    // The page must actually call them, or the sanitiser could be silently skipped.
+    assert!(PAGE.contains("DOMPurify.sanitize"), "the page does not sanitise rendered markdown");
+    assert!(PAGE.contains("marked.parse"), "the page does not use the markdown library");
+}

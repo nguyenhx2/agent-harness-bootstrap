@@ -18,7 +18,7 @@ is counted from the files on disk (see [Methodology](#methodology)) and reproduc
 
 | | project-bootstrap | harness-bootstrap | Change |
 |---|---:|---:|---:|
-| Read path (bytes the model must pull into context) | 234,196 | 129,638 | -45% |
+| Read path (bytes the model must pull into context) | 234,196 | 129,639 | -45% |
 | Read path (files read) | 24 | 10 | -58% |
 | Write path (bytes the model must author) | 95,064 | 13,881 | -85% |
 | Session tax kept out of every launch | - | 65% | - |
@@ -75,7 +75,7 @@ xychart-beta
 | | Files read | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | project-bootstrap | 24 | 234,196 | ~65,000 |
-| harness-bootstrap | 10 | 129,638 | ~36,000 |
+| harness-bootstrap | 10 | 129,639 | ~36,000 |
 | **Reduction** | **-58%** | **-45%** | **-45%** |
 
 ## Goal 3 - Safe writes

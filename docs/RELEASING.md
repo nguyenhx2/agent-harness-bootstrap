@@ -15,6 +15,9 @@ hand.
    still add an entry saying so - the version stays in sync either way.
    - Write for the person reading the GitHub release page, not the PR reviewer: what changed and
      why it matters to them, not the commit subject line. No em-dashes, plain hyphens.
+   - Also add a `## [X.Y.Z] - YYYY-MM-DD` entry to `tools/harness-view/CHANGELOG.md`. The tool's
+     binaries are attached to the same release, so the release body has to describe them; without
+     the entry someone downloads a build with nothing saying what changed in it. This is gated.
    - Also add a `## vX.Y.Z` section to the repo-root `CHANGELOG.md` - a separate, pre-existing
      narrative changelog that `scripts/package.py --version X.Y.Z --check` still gates on
      independently.
@@ -24,8 +27,9 @@ hand.
    ```
    Fails on a missing CHANGELOG, a malformed, duplicate, or out-of-order entry, a skill whose
    newest CHANGELOG version does not match its own `SKILL.md`, the two skills disagreeing on the
-   version, or (with the version argument) a skill that has no entry for the version being
-   released. Without the argument it runs the structure and sync checks only - that form runs in
+   version, `tools/harness-view/Cargo.toml` disagreeing with the repo version, a missing
+   `tools/harness-view/CHANGELOG.md` entry, or (with the version argument) a skill that has no
+   entry for the version being released. Without the argument it runs the structure and sync checks only - that form runs in
    CI on every push.
 4. **Tag.**
    ```bash
@@ -33,7 +37,8 @@ hand.
    git push origin vX.Y.Z
    ```
 5. **CI publishes.** The `release` workflow builds the artifacts and generates the release body with
-   `py -3.13 scripts/release_notes.py X.Y.Z -o notes.md` (each skill's `## [X.Y.Z]` section becomes
+   `py -3.13 scripts/release_notes.py X.Y.Z -o notes.md` (each skill's and each tool's
+   `## [X.Y.Z]` section becomes
    its own `### skill-name` block), then runs `gh release create` (or `gh release edit` +
    `gh release upload --clobber` if the release already exists, so a re-run is safe).
 
@@ -55,6 +60,7 @@ misreports itself.
 | Both skills agree on the repo version | `scripts/validate_release.py` |
 | The sync check above runs on every push, not just at release time | `.github/workflows/eval.yml` (`guardrails` job) |
 | The release body is assembled from the CHANGELOGs, not hand-typed | `scripts/release_notes.py`, called from `.github/workflows/release.yml` |
+| The release body describes the attached tool binaries, not just the skills | `scripts/release_notes.py` reads `tools/harness-view/CHANGELOG.md`; `scripts/validate_release.py X.Y.Z` fails without that entry |
 | The tag's `SKILL.md` version matches the tag itself | `scripts/package.py --version X.Y.Z --check` (`release` job gate) |
 | The repo-root `CHANGELOG.md` has a section for the release version | `scripts/package.py --version X.Y.Z --check` (unchanged, separate from the per-skill files above) |
 | Every archive carries a `VERSION` file matching the tag | `.github/workflows/release.yml` ("Assert VERSION is inside every archive") |

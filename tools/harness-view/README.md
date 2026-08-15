@@ -81,10 +81,14 @@ harness-view --help
 
 ### Pointing it at other repos
 
-One running server can inspect several projects: the path box in the header
-accepts any folder containing `.claude/` (Windows `D:\Projects\x` and
-`D:/Projects/x` both work), and the recent list is remembered in the browser,
-never written to disk. Under the hood that is `GET /graph.json?root=<path>`; a
+One running server can inspect several projects. Either type the path into the
+header box (Windows `D:\Projects\x` and `D:/Projects/x` both work) or press
+**Browse** and walk the filesystem: folders that are themselves harnesses are
+marked, and recently opened folders are listed for one-click return and can be
+removed individually or cleared. That list lives in the browser, never on disk.
+Browsing is served by `GET /browse?path=<dir>`, which returns directory names
+only - no file names, no contents - because a browser cannot give a page a real
+filesystem path (`showDirectoryPicker()` yields a handle without one). Under the hood that is `GET /graph.json?root=<path>`; a
 path that does not exist or has no `.claude/` returns HTTP 400 with the reason
 shown in the page, and the previous graph stays on screen.
 
@@ -97,6 +101,12 @@ shown in the page, and the previous graph stays on screen.
   `POST`), so another open tab cannot drive it.
 - `GET /file` is read-only and limited to `.claude/` and `docs/`, capped at
   256 KB, always served as `text/plain` with `nosniff`.
+- `GET /browse` returns subdirectory names for navigation only, never file names
+  or contents, and is refused cross-origin like the rest.
+- Rendered markdown is sanitised with DOMPurify against an allow-list before it
+  reaches the page, because the file being previewed comes from the repository
+  under inspection and the page is same-origin with `POST /toggle`. Raw mode is
+  inserted as text and never parsed.
 - Agents are never toggleable; HARD-protected controls are refused outright and
   SOFT-protected ones need an explicit confirmation. Full detail under
   [Runtime toggles](#runtime-toggles).
@@ -211,6 +221,17 @@ and the Master plan tab. It is read-only and deliberately narrow:
 - it is always `text/plain` with `X-Content-Type-Options: nosniff`, never
   `text/html`, and the page renders it with `textContent`
 - the same same-origin rules as `/toggle` apply
+
+## Markdown rendering
+
+Files opened in the sidebar and the master-plan tab are rendered by
+[marked](https://github.com/markedjs/marked) and sanitised by
+[DOMPurify](https://github.com/cure53/DOMPurify). Both are vendored under
+`vendor/` and inlined into the page, so the viewer still makes no network
+request and there is no build step. Versions, licences and provenance are in
+[`vendor/README.md`](vendor/README.md). The icon button beside **Hide file**
+switches between the formatted view and the raw markdown, and the two surfaces
+remember that choice separately.
 
 ## Development
 

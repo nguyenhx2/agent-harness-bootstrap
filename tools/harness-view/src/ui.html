@@ -14,6 +14,18 @@
   header b { margin-right: 8px; }
   button { font: inherit; padding: 4px 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
   button.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+  /* header buttons carry an icon beside the label; the label stays because the
+     glyphs alone do not say "Master plan" */
+  header button { display: inline-flex; align-items: center; gap: 6px; }
+  header button svg { width: 14px; height: 14px; flex: 0 0 auto; }
+  /* the checkbox sat above the neighbouring text baselines: the label was the
+     only header control not centred as a flex row */
+  #autowrap { display: inline-flex; align-items: center; gap: 6px; }
+  #autowrap input[type=checkbox] { margin: 0; }
+  /* the label is the flex item, so it has to be a row itself or the
+     checkbox inside it keeps sitting above the neighbouring baselines */
+  #autolbl { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  #every { font: inherit; padding: 2px 4px; border: 1px solid var(--line); background: #fff; border-radius: 5px; cursor: pointer; }
   select { font: inherit; padding: 4px 8px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
   #legend { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
   #legend label { display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
@@ -27,39 +39,54 @@
   #plan h3 { font-size: 14px; margin: 12px 0 4px; }
   #plan p, #plan li { margin: 3px 0; }
   #plan ul { margin: 4px 0 4px 18px; }
-  #plan table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  #plan table { border-collapse: collapse; margin: 0; font-size: 12px; }
   #plan th, #plan td { border: 1px solid var(--line); padding: 3px 8px; text-align: left; }
   #plan th { background: #f1f5f9; }
+  #plan .tw { overflow-x: auto; margin: 8px 0; }
   #plan code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
   #plan .done { color: #15803d; } #plan .todo { color: var(--dim); }
-  /* width is set inline from localStorage; the grip drags it */
-  #detail { width: 320px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; flex: 0 0 auto; }
-  #detail.open { display: block; }
+  /* width is set inline from localStorage; the grip drags it.
+     A column, not a block: the metadata table takes what it needs and the file
+     preview stretches into whatever is left, instead of sitting in a fixed
+     340px box with the rest of a tall panel empty underneath it. */
+  #detail { width: 320px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; display: none; flex: 0 0 auto; }
+  #detail.open { display: flex; flex-direction: column; min-height: 0; }
+  /* everything above the preview scrolls together when the panel is short */
+  #detail .head { flex: 0 0 auto; overflow-y: auto; max-height: 60%; }
   #grip { flex: 0 0 6px; cursor: col-resize; background: var(--line); opacity: 0.35; display: none; }
   #grip.open { display: block; }
   #grip:hover, #grip.dragging { opacity: 0.9; }
   body.resizing { user-select: none; cursor: col-resize; }
   #detail h3 { font-size: 14px; margin-bottom: 6px; word-break: break-all; }
-  #detail table { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
-  #detail td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; }
+  #detail table.meta { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
+  #detail table.meta td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; }
   /* the key column never wraps: "registered" used to break as "registere / d" */
-  #detail td.k { white-space: nowrap; width: 90px; color: var(--dim); }
-  #detail td.v { word-break: break-word; overflow-wrap: anywhere; }
+  #detail table.meta td.k { white-space: nowrap; width: 90px; color: var(--dim); }
+  #detail table.meta td.v { word-break: break-word; overflow-wrap: anywhere; }
   #detail .desc { margin: 6px 0 2px; padding: 6px 8px; background: #f1f5f9; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
   #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
   .toggle-btn { margin-top: 8px; width: 100%; }
   .prev-btn { margin-top: 8px; width: 100%; }
-  pre.preview { margin-top: 8px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; }
+  pre.preview { margin-top: 8px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; }
   /* formatted rendering of a file inside the sidebar: same renderer as the plan
      tab, scaled down to the panel */
-  .md { margin-top: 8px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; max-height: 340px; overflow: auto; font-size: 12px; }
+  .md { margin-top: 8px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow: auto; font-size: 12px; }
+  /* The preview host owns the rest of the panel and scrolls inside itself. It is
+     the scroller whether it is the formatted box (it also carries .md) or the
+     wrapper around a raw <pre>, so no inner element needs a fixed height. */
+  #detail .filehost { flex: 1 1 auto; min-height: 120px; overflow-x: hidden; overflow-y: auto; margin-top: 8px; }
+  #detail .filehost > pre.preview { margin-top: 0; }
   .md h1 { font-size: 15px; margin: 8px 0 4px; } .md h2 { font-size: 14px; margin: 8px 0 4px; }
   .md h3 { font-size: 13px; margin: 6px 0 3px; }
   .md p, .md li { margin: 3px 0; word-break: break-word; }
   .md ul { margin: 4px 0 4px 16px; }
-  .md table { border-collapse: collapse; margin: 6px 0; font-size: 11px; width: 100%; }
-  .md th, .md td { border: 1px solid var(--line); padding: 2px 5px; text-align: left; word-break: break-word; }
+  /* A table keeps its natural column widths and its wrapper scrolls. Forcing
+     width:100% with word-break inside a 300px panel is what shredded a real
+     task table into one-character columns. */
+  .md table { border-collapse: collapse; margin: 0; font-size: 11px; }
+  .md th, .md td { border: 1px solid var(--line); padding: 2px 5px; text-align: left; white-space: nowrap; }
   .md th { background: #f1f5f9; }
+  .tw { overflow-x: auto; margin: 6px 0; }
   .md pre.preview { max-height: 200px; }
   .md .done { color: #15803d; } .md .todo { color: var(--dim); }
   /* frontmatter is metadata, not prose: in the sidebar it is the most useful
@@ -91,6 +118,27 @@
   .state { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; }
   .state.on { background: #dcfce7; color: #15803d; }
   .state.off { background: #fee2e2; color: #b91c1c; }
+  /* folder browser: the page cannot learn a real filesystem path from a native
+     picker (showDirectoryPicker returns a handle, webkitdirectory relative
+     names), so the server lists directories and this walks them */
+  #modal { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: none; align-items: center; justify-content: center; z-index: 10; }
+  #modal.on { display: flex; }
+  #modal .box { background: var(--panel); border-radius: 10px; width: min(720px, 92vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  #modal .top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  #modal .top .cur { flex: 1; color: var(--dim); word-break: break-all; font-size: 12px; }
+  #modal .body { overflow-y: auto; padding: 6px 0; flex: 1; }
+  #modal .foot { padding: 10px 12px; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+  .dirrow { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; }
+  .dirrow:hover { background: #eff6ff; }
+  .dirrow .nm { flex: 1; word-break: break-all; }
+  .dirrow .tag { font-size: 10px; font-weight: bold; color: #15803d; background: #dcfce7; padding: 1px 6px; border-radius: 8px; }
+  .dirrow.up { color: var(--dim); }
+  #modal h4 { padding: 8px 12px 2px; font-size: 12px; color: var(--dim); }
+  .recent { display: flex; align-items: center; gap: 8px; padding: 4px 12px; }
+  .recent .p { flex: 1; cursor: pointer; word-break: break-all; }
+  .recent .p:hover { text-decoration: underline; }
+  .recent .x { border: none; background: none; color: var(--dim); cursor: pointer; padding: 0 4px; font-size: 14px; }
+  .recent .x:hover { color: #b91c1c; }
 </style>
 </head>
 <body>
@@ -105,9 +153,10 @@
     <option value="ortho">Orthogonal</option>
     <option value="straight">Straight</option>
   </select>
-  <label><input type="checkbox" id="auto"> auto-refresh 10s</label>
+  <span id="autowrap"><label id="autolbl"><input type="checkbox" id="auto"> auto-refresh</label><select id="every" title="How often to re-scan"><option value="5">5s</option><option value="10">10s</option><option value="30">30s</option><option value="60">60s</option></select></span>
   <input id="root" list="roots" spellcheck="false" placeholder="repo path with a .claude/ folder">
   <datalist id="roots"></datalist>
+  <button id="btn-browse" title="Browse for a folder">Browse</button>
   <button id="btn-load" title="Scan this folder">Load</button>
   <span id="busy" role="status" aria-live="polite"><i class="spin"></i><span id="busy-what">loading</span></span>
   <div id="legend"></div>
@@ -120,6 +169,23 @@
   <aside id="detail"></aside>
 </main>
 <footer><span id="stats"></span><span id="rootnow"></span><span id="hint">click a node to trace its connections</span><span id="ver" style="margin-left:auto"></span></footer>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Choose a folder">
+  <div class="box">
+    <div class="top">
+      <button id="m-up" title="Parent folder">Up</button>
+      <span class="cur" id="m-cur"></span>
+      <button id="m-close" title="Close">Close</button>
+    </div>
+    <div class="body" id="m-body"></div>
+    <div class="foot">
+      <button id="m-pick">Open this folder</button>
+      <span class="cur" id="m-note"></span>
+    </div>
+  </div>
+</div>
+<script>
+/*__VENDOR__*/
+</script>
 <script>
 "use strict";
 const COLORS = {
@@ -193,6 +259,10 @@ function rememberRoot(p) {
   localStorage.setItem("hv-root", p);
   buildRoots();
 }
+function forgetRoot(p) {
+  localStorage.setItem("hv-recent", JSON.stringify(recentRoots().filter(x => x !== p)));
+  buildRoots();
+}
 // The build version, reported by the server so the page cannot claim a version
 // the binary does not have.
 async function showVersion() {
@@ -258,6 +328,43 @@ const ICON_DOC = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" str
   '<path d="M3 2.5h10v11H3z"/><path d="M5 5.5h6M5 8h6M5 10.5h4"/></svg>';
 const ICON_CODE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
   '<path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></svg>';
+// Header button icons. Inline SVG so the page stays self-contained; the text
+// label stays beside each one because the glyphs alone do not say "Master plan".
+const ICONS = {
+  flow: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="10.5" width="4.5" height="3.5" rx="1"/><path d="M5.5 3.75h5M8 3.75v8.5h2.5"/></svg>',
+  graph: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="3" cy="4" r="2"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="13" r="2"/><path d="M4.8 4.9 11 5.7M4.2 5.7 6.2 11.2M11.9 7.7 8.3 11.6"/></svg>',
+  plan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 2h10v12H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>',
+  reload: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2v3.5H10"/></svg>',
+  load: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8"/><path d="M4.75 6.75 8 10l3.25-3.25"/><path d="M2.5 12.5h11"/></svg>',
+  browse: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 12.5v-9h4l1.5 2h7.5v7z"/></svg>',
+};
+// Put the icon in front of the existing label without disturbing the text.
+function iconize(id, key) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  const text = b.textContent;
+  b.textContent = "";
+  const s = document.createElement("span");
+  s.innerHTML = ICONS[key];           // our own constant, never repo content
+  b.append(s.firstChild, document.createTextNode(text));
+  if (!b.getAttribute("aria-label")) b.setAttribute("aria-label", b.title || text);
+}
+
+// GFM on for tables and task lists; no mangling, and headings get no auto ids
+// we do not use. Configured once rather than per render.
+window.marked.setOptions({ gfm: true, breaks: false });
+// An allow-list, not a deny-list: anything the markdown subset does not need is
+// simply not permitted, so a new HTML trick in a repo file has nothing to land on.
+const PURIFY_OPTS = {
+  ALLOWED_TAGS: ["p","br","hr","strong","em","del","code","pre","blockquote",
+                 "h1","h2","h3","h4","h5","h6","ul","ol","li",
+                 "table","thead","tbody","tr","th","td","a","span","input"],
+  ALLOWED_ATTR: ["href","title","align","type","checked","disabled","class"],
+  ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|#|\/|\.)/i,
+  FORBID_TAGS: ["script","style","iframe","object","embed","form"],
+  FORBID_ATTR: ["srcset","src","onerror","onload","onclick","style"],
+};
+
 function mdMode(key) { return localStorage.getItem(key) === "raw" ? "raw" : "formatted"; }
 // The button reports the mode it will switch TO, and its pressed state reports
 // whether raw is currently on.
@@ -319,6 +426,20 @@ async function load(rootOverride) {
 function types() { return [...new Set(graph.nodes.map(n => n.type))].sort(); }
 function visible(n) { return !hidden.has(n.type); }
 function label(n) { return n.label || n.id.split(":").slice(1).join(":") || n.id; }
+// What the NODE shows, which is not always the full name. A task file stem like
+// "TASK-023-ooxml-bound-xlsx-scan" measures 378px, and 115 of those cannot be
+// arranged without overlapping whatever the lane maths does. The task id is the
+// handle everything else uses (deps read "TASK-027"), it is unique, and the full
+// title is one click away in the sidebar, so the node carries the id alone.
+const STATUS_ORDER = { Active: 0, Blocked: 1, Pending: 2, Done: 3 };
+function nodeLabel(n) {
+  const full = label(n);
+  if (n.type === "task") {
+    const m = full.match(/^(TASK-\d+)/i);
+    if (m) return m[1].toUpperCase();
+  }
+  return full.length > 34 ? full.slice(0, 33) + "…" : full;
+}
 function meta(n, k) { return (n.meta || {})[k]; }
 
 function buildLegend() {
@@ -340,26 +461,42 @@ function layout() {
   if (view === "flow") {
     const cols = {};
     for (const n of vis) { const c = FLOW_COL[n.type] ?? 7; (cols[c] = cols[c] || []).push(n); }
-    const W = Math.max(...Object.keys(cols).map(Number), 0) + 1;
-    const cw = Math.max(190, (cv.width - 80) / W);
-    for (const [c, ns] of Object.entries(cols)) {
-      ns.sort((a, b) => a.id.localeCompare(b.id));
-      const orch = ns.findIndex(n => n.id === "agent:orchestrator");
-      if (orch > 0) { const [o] = ns.splice(orch, 1); ns.splice(Math.floor(ns.length / 2), 0, o); }
-      // A lane with far more nodes than fit wraps into sub-lanes instead of
-      // running thousands of pixels down. One board here carries 115 tasks: in a
-      // single lane the whole graph has to zoom to 0.25 to fit and no label is
-      // readable, so the fit that saves the view also destroys it.
-      const gap = 34;
-      const perLane = Math.max(1, Math.floor((cv.height - 80) / gap));
+    // Columns are placed left to right using the width each one actually needs,
+    // so a column of wide boxes cannot be laid on top of its neighbour. The old
+    // code spaced columns by a single average and spaced wrapped sub-lanes by
+    // `cw / lanes`, neither of which had ever seen a node width: on msboost that
+    // put 378px task boxes into lanes 16px apart, 190 overlapping pairs.
+    const colX = {};
+    let cursor = 60;
+    const keys = Object.keys(cols).map(Number).sort((a, b) => a - b);
+    const gap = 34;
+    const perLane = Math.max(1, Math.floor((cv.height - 80) / gap));
+    for (const c of keys) {
+      const ns = cols[c];
+      // Tasks read as a board: grouped by status, then by id inside a status.
+      // Sorting this way makes each wrapped sub-lane hold one status, so the
+      // colour bands are the grouping and no extra chrome is needed.
+      if (ns.every(n => n.type === "task")) {
+        ns.sort((a, b) => {
+          const sa = STATUS_ORDER[meta(a, "status")] ?? 9, sb = STATUS_ORDER[meta(b, "status")] ?? 9;
+          return sa !== sb ? sa - sb : a.id.localeCompare(b.id);
+        });
+      } else {
+        ns.sort((a, b) => a.id.localeCompare(b.id));
+        const orch = ns.findIndex(n => n.id === "agent:orchestrator");
+        if (orch > 0) { const [o] = ns.splice(orch, 1); ns.splice(Math.floor(ns.length / 2), 0, o); }
+      }
+      const wMax = Math.max(...ns.map(n => n._w || 80));
       const lanes = Math.ceil(ns.length / perLane);
-      const laneW = lanes > 1 ? Math.min(210, cw / lanes) : 0;
+      const laneW = wMax + 26;                 // real width plus breathing room
+      colX[c] = cursor;
       ns.forEach((n, i) => {
         const lane = Math.floor(i / perLane), row = i % perLane;
         const inLane = Math.min(perLane, ns.length - lane * perLane);
         const spread = lanes > 1 ? gap : Math.max(gap, (cv.height - 60) / (inLane + 1));
-        pos[n.id] = { x: 60 + c * cw + lane * laneW, y: 40 + (row + 1) * spread };
+        pos[n.id] = { x: cursor + lane * laneW, y: 40 + (row + 1) * spread };
       });
+      cursor += lanes * laneW + 90;            // clear the next column entirely
     }
   } else {
     const N = vis.length || 1, R = Math.min(cv.width, cv.height) / 2 - 60;
@@ -406,7 +543,7 @@ function forceSim(vis, iters) {
     }
     for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
   }
-  separate(vis, 60);
+  separate(vis, 400);
 }
 
 // The repulsion above treats every node as a point, but a node is a BOX and the
@@ -435,7 +572,10 @@ function separate(vis, iters) {
         }
       }
     }
-    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
+    // a margin well outside the canvas: pinning nodes to the visible edge left
+    // them nothing to escape into, so dense graphs never stopped overlapping
+    const mx = cv.width * 1.5, my = cv.height * 1.5;
+    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(-mx, Math.min(cv.width + mx, p.x)); p.y = Math.max(-my, Math.min(cv.height + my, p.y)); }
     if (!moved) break;
   }
 }
@@ -476,7 +616,7 @@ function measureNodes() {
     if (!visible(n)) continue;
     const badge = nodeBadge(n);
     const bw = badge ? ctx.measureText(badge.text).width + 10 : 0;
-    n._w = Math.max(60, ctx.measureText(label(n)).width + 18 + bw);
+    n._w = Math.max(60, ctx.measureText(nodeLabel(n)).width + 18 + bw);
   }
 }
 // The point on a node's box in the direction of (tx,ty).
@@ -641,7 +781,7 @@ function draw() {
   for (const n of graph.nodes) {
     if (!visible(n)) continue;
     const p = pos[n.id]; if (!p) continue;
-    const text = label(n);
+    const text = nodeLabel(n);
     const badge = nodeBadge(n);
     const lit = !active || hi.nodes.has(n.id);
     ctx.globalAlpha = lit ? (n.disabled ? 0.75 : 1) : 0.16;
@@ -750,14 +890,20 @@ function select(n) {
   const d = document.getElementById("detail");
   setPanel(true);
   d.textContent = "";
+  // the panel is a column: this block takes the height it needs, the preview
+  // below it stretches into the rest instead of being a fixed 340px box
+  const head = document.createElement("div");
+  head.className = "head";
+  d.append(head);
   const h3 = document.createElement("h3");
   h3.textContent = label(n);
-  d.append(h3);
+  head.append(h3);
 
   const desc = meta(n, "description");
-  if (desc) { const p = document.createElement("div"); p.className = "desc"; p.textContent = desc; d.append(p); }
+  if (desc) { const p = document.createElement("div"); p.className = "desc"; p.textContent = desc; head.append(p); }
 
   const table = document.createElement("table");
+  table.className = "meta";
   row(table, "id", n.id);
   row(table, "type", n.type);
   // enabled/disabled first and as a badge: it is the thing a reader scans for
@@ -788,7 +934,7 @@ function select(n) {
       row(table, k, val);
     }
   }
-  d.append(table);
+  head.append(table);
 
   if (n.file) {
     const bar = document.createElement("div");
@@ -797,16 +943,20 @@ function select(n) {
     btn.className = "prev-btn";
     btn.textContent = "Preview file";
     const host = document.createElement("div");
+    host.className = "filehost";
     host.style.display = "none";
     let text = null, err = null;
     const paint = () => {
       host.textContent = "";
-      if (err !== null) { host.className = ""; const p = document.createElement("pre"); p.className = "preview"; p.textContent = err; host.append(p); return; }
+      if (err !== null) { host.className = "filehost"; const p = document.createElement("pre"); p.className = "preview"; p.textContent = err; host.append(p); return; }
       if (text === null) return;
       // the .md frame belongs to formatted output only; raw already ships its
       // own <pre> and would otherwise sit in a box inside a box
-      if (mdMode("hv-md-side") === "raw") { host.className = ""; renderRaw(host, text); }
-      else { host.className = "md"; renderMarkdown(host, text, { frontmatter: "render" }); }
+      // keep `filehost`: it is what makes the preview claim the rest of the
+      // panel. Overwriting className here silently dropped that, and the box
+      // only looked right because the file happened to be long enough.
+      if (mdMode("hv-md-side") === "raw") { host.className = "filehost"; renderRaw(host, text); }
+      else { host.className = "filehost md"; renderMarkdown(host, text, { frontmatter: "render" }); }
     };
     const modeBtn = makeModeButton("hv-md-side", paint);
     modeBtn.style.display = "none";
@@ -829,7 +979,8 @@ function select(n) {
       btn.textContent = "Hide file";
     });
     bar.append(btn, modeBtn);
-    d.append(bar, host);
+    head.append(bar);
+    d.append(host);
   }
 
   if (["rule", "command", "hook"].includes(n.type)) {
@@ -857,7 +1008,7 @@ function select(n) {
       else { clearSel(); await load(); }
       fit();
     };
-    d.append(b);
+    head.append(b);
   }
   fit(); draw();
 }
@@ -923,56 +1074,20 @@ function renderMarkdown(host, md, opts) {
       }
     }
   }
-  const lines = src.split(/\r?\n/);
-  let i = 0, list = null, inCode = false, code = null;
-  const closeList = () => { list = null; };
-  while (i < lines.length) {
-    const ln = lines[i];
-    // HTML comments are authoring notes to the humans editing the file
-    if (!inCode && /^\s*<!--/.test(ln)) {
-      closeList();
-      while (i < lines.length && !/-->/.test(lines[i])) i++;
-      i++; continue;
-    }
-    if (/^```/.test(ln)) {
-      if (inCode) { inCode = false; code = null; } else { inCode = true; code = document.createElement("pre"); code.className = "preview"; host.append(code); }
-      i++; continue;
-    }
-    if (inCode) { code.textContent += ln + "\n"; i++; continue; }
-    const h = ln.match(/^(#{1,3})\s+(.*)$/);
-    if (h) { closeList(); const el = document.createElement("h" + h[1].length); el.textContent = h[2]; host.append(el); i++; continue; }
-    // a markdown table: header, separator, then rows
-    if (/^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
-      closeList();
-      const t = document.createElement("table");
-      const cells = s => s.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
-      const thead = document.createElement("tr");
-      for (const c of cells(ln)) { const th = document.createElement("th"); th.textContent = c; thead.append(th); }
-      t.append(thead);
-      i += 2;
-      while (i < lines.length && /^\s*\|/.test(lines[i])) {
-        const tr = document.createElement("tr");
-        for (const c of cells(lines[i])) { const td = document.createElement("td"); td.textContent = c; tr.append(td); }
-        t.append(tr); i++;
-      }
-      host.append(t); continue;
-    }
-    const li = ln.match(/^\s*[-*]\s+(.*)$/);
-    if (li) {
-      if (!list) { list = document.createElement("ul"); host.append(list); }
-      const item = document.createElement("li");
-      const box = li[1].match(/^\[([ xX])\]\s*(.*)$/);
-      if (box) {
-        const done = box[1].toLowerCase() === "x";
-        item.className = done ? "done" : "todo";
-        item.textContent = (done ? "[x] " : "[ ] ") + box[2];
-      } else item.textContent = li[1];
-      list.append(item); i++; continue;
-    }
-    if (ln.trim() === "") { closeList(); i++; continue; }
-    closeList();
-    const p = document.createElement("p"); p.textContent = ln; host.append(p); i++;
+  // marked renders the markdown (GFM tables included, which is what the
+  // hand-rolled parser got wrong); DOMPurify makes the result safe to insert,
+  // because this HTML is built from a file in the repository being inspected
+  // and the page it lands in is same-origin with the mutating /toggle endpoint.
+  const body = document.createElement("div");
+  body.innerHTML = window.DOMPurify.sanitize(window.marked.parse(src), PURIFY_OPTS);
+  // A wide table keeps its natural width and scrolls in its own container
+  // instead of being crushed to fit the panel it happens to be in.
+  for (const t of [...body.querySelectorAll("table")]) {
+    const wrap = document.createElement("div");
+    wrap.className = "tw";
+    t.replaceWith(wrap); wrap.append(t);
   }
+  while (body.firstChild) host.append(body.firstChild);
 }
 
 // The plan tab keeps its toolbar outside the rendered body, so switching mode
@@ -1024,8 +1139,95 @@ auto.checked = localStorage.getItem("hv-auto") === "1";
 let timer = null;
 // wrapped, not passed by reference: setInterval hands its callback a tick
 // argument, which load() would read as a root override
-function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(() => load(), 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
+const every = document.getElementById("every");
+every.value = localStorage.getItem("hv-every") || "10";
+function syncAuto() {
+  if (timer) clearInterval(timer);
+  const secs = Math.max(1, Number(every.value) || 10);
+  // rebuilt on every change, so a new interval takes effect at once rather
+  // than after the next reload
+  if (auto.checked) timer = setInterval(() => load(), secs * 1000);
+  localStorage.setItem("hv-auto", auto.checked ? "1" : "0");
+  localStorage.setItem("hv-every", String(secs));
+}
 auto.onchange = syncAuto;
+every.onchange = syncAuto;
+
+// --- folder browser ---------------------------------------------------------
+// The server lists directories because the browser cannot tell the page a real
+// path: showDirectoryPicker() yields a handle with no path and webkitdirectory
+// yields relative names, so neither can fill the root box.
+const modal = document.getElementById("modal");
+let browsePath = "";
+function closeModal() { modal.classList.remove("on"); }
+document.getElementById("m-close").onclick = closeModal;
+modal.addEventListener("click", ev => { if (ev.target === modal) closeModal(); });
+window.addEventListener("keydown", ev => { if (ev.key === "Escape" && modal.classList.contains("on")) closeModal(); });
+
+async function openBrowse(path) {
+  const body = document.getElementById("m-body");
+  const note = document.getElementById("m-note");
+  body.textContent = ""; note.textContent = "";
+  let data;
+  try {
+    const r = await fetch("browse" + (path !== undefined && path !== null ? "?path=" + encodeURIComponent(path) : ""));
+    data = await r.json();
+    if (!r.ok || data.error) { note.textContent = data.error || ("server returned " + r.status); return; }
+  } catch (e) { note.textContent = "could not reach the server: " + e; return; }
+
+  browsePath = data.path || "";
+  document.getElementById("m-cur").textContent = data.drives ? "This computer" : browsePath;
+  document.getElementById("m-pick").disabled = !!data.drives;
+  document.getElementById("m-up").disabled = data.parent === null;
+  document.getElementById("m-up").onclick = () => { if (data.parent !== null) openBrowse(data.parent); };
+  if (!data.drives) note.textContent = data.harness ? "this folder is a harness" : "no .claude/ here - open a child folder";
+
+  const recents = recentRoots();
+  if (recents.length) {
+    const h = document.createElement("h4"); h.textContent = "Recent folders"; body.append(h);
+    for (const p of recents) {
+      const row = document.createElement("div"); row.className = "recent";
+      const a = document.createElement("span"); a.className = "p"; a.textContent = p;
+      a.onclick = () => { closeModal(); rootInput.value = p; loadTyped(); };
+      const x = document.createElement("button");
+      x.className = "x"; x.textContent = "x"; x.title = "Forget this folder";
+      x.onclick = ev => { ev.stopPropagation(); forgetRoot(p); openBrowse(browsePath); };
+      row.append(a, x); body.append(row);
+    }
+    const clr = document.createElement("div"); clr.className = "recent";
+    const cb = document.createElement("button");
+    cb.textContent = "Clear history"; cb.style.padding = "2px 8px";
+    cb.onclick = () => { localStorage.removeItem("hv-recent"); buildRoots(); openBrowse(browsePath); };
+    clr.append(cb); body.append(clr);
+    const h2 = document.createElement("h4"); h2.textContent = "Folders"; body.append(h2);
+  }
+
+  if (data.parent !== null && !data.drives) {
+    const up = document.createElement("div"); up.className = "dirrow up";
+    up.textContent = ".. parent folder";
+    up.onclick = () => openBrowse(data.parent);
+    body.append(up);
+  }
+  for (const e of data.entries) {
+    const row = document.createElement("div"); row.className = "dirrow";
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.name;
+    row.append(nm);
+    if (e.harness) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "harness"; row.append(t); }
+    row.onclick = () => openBrowse(e.path);
+    body.append(row);
+  }
+  if (!data.entries.length) {
+    const em = document.createElement("div"); em.className = "dirrow up";
+    em.textContent = "(no subfolders)"; body.append(em);
+  }
+  modal.classList.add("on");
+}
+document.getElementById("m-pick").onclick = () => {
+  if (!browsePath) return;
+  closeModal(); rootInput.value = browsePath; loadTyped();
+};
+const btnBrowse = document.getElementById("btn-browse");
+btnBrowse.onclick = () => withBusy("listing folders", btnBrowse, () => openBrowse(currentRoot || undefined));
 function hint() {
   const el = document.getElementById("hint");
   if (view === "plan") { el.textContent = "docs/tasks/master-plan.md"; return; }
@@ -1047,6 +1249,12 @@ function sync() {
 // Size the canvas and paint the chrome BEFORE the first fetch. When load()
 // used to run first, any failure skipped fit() and left a 300x150 canvas
 // stretched over the window - a blank page with no explanation.
+iconize("btn-flow", "flow");
+iconize("btn-graph", "graph");
+iconize("btn-plan", "plan");
+iconize("btn-reload", "reload");
+iconize("btn-browse", "browse");
+iconize("btn-load", "load");
 buildRoots();
 applySide();
 fit();

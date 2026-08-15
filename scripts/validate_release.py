@@ -132,6 +132,21 @@ def main() -> int:
                     f"{expected} - bump it, or the released binary reports the wrong version"
                 )
 
+    # The tool's binaries are attached to the release, so the release body has to describe
+    # them. scripts/release_notes.py reads this file; without an entry the download appears
+    # on the page with nothing saying what changed in it.
+    tool_cl = ROOT / "tools" / "harness-view" / "CHANGELOG.md"
+    if not tool_cl.is_file():
+        errs.append("tools/harness-view/CHANGELOG.md is missing - the release body needs it")
+    elif required:
+        text = tool_cl.read_text(encoding="utf-8")
+        if not re.search(rf"^##\s*\[{re.escape(required)}\]\s*-\s*\d{{4}}-\d{{2}}-\d{{2}}\s*$",
+                         text, re.M):
+            errs.append(
+                f"tools/harness-view/CHANGELOG.md has no '## [{required}] - YYYY-MM-DD' entry - "
+                "the release attaches its binaries, so it must say what changed in them"
+            )
+
     # Both skills are released together under one repo version - a version present in one
     # SKILL.md and not the other means the release is half-bumped.
     distinct_skill_md = set(skill_md_versions.values())

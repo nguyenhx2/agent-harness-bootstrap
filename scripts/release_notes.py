@@ -8,6 +8,11 @@ the skill instead of siblings of it), and stitches the results into one release 
 
     harness-bootstrap/CHANGELOG.md
     spec-builder/CHANGELOG.md
+    tools/harness-view/CHANGELOG.md
+
+The tools are included because their binaries are attached to the same release: a body that only
+described the skills left someone downloading `harness-view-<version>-<target>.zip` with no way to
+learn what changed in it.
 
     py -3.13 scripts/release_notes.py 1.7.0            # -> stdout
     py -3.13 scripts/release_notes.py 1.7.0 -o notes.md
@@ -21,6 +26,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILLS = ("harness-bootstrap", "spec-builder")
+# (heading, path to CHANGELOG.md) for the shipped tools
+TOOLS = (("harness-view", pathlib.Path("tools") / "harness-view"),)
 
 
 def section(changelog: pathlib.Path, version: str) -> str | None:
@@ -45,10 +52,25 @@ def build(version: str) -> str | None:
         body = re.sub(r"^###\s", "#### ", body, flags=re.M)
         parts.append(f"### `{skill}`\n\n{body}")
 
-    if not parts:
+    tool_parts = []
+    for name, rel in TOOLS:
+        body = section(ROOT / rel / "CHANGELOG.md", version)
+        if body is None:
+            continue
+        body = re.sub(r"^###\s", "#### ", body, flags=re.M)
+        tool_parts.append(f"### `{name}`\n\n{body}")
+
+    if not parts and not tool_parts:
         return None
 
-    return "\n\n---\n\n".join(parts)
+    out = "\n\n---\n\n".join(parts)
+    if tool_parts:
+        # Called out separately because the tools ship as platform binaries on this
+        # same release while the skills ship as zips: different things to download.
+        head = "## Tools\n\nDownloadable builds for Windows, macOS and Linux are attached to this release."
+        joined = "\n\n---\n\n".join(tool_parts)
+        out = (out + "\n\n---\n\n" if out else "") + f"{head}\n\n{joined}"
+    return out
 
 
 def main() -> int:
