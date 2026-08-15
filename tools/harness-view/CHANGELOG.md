@@ -7,6 +7,31 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.11.0] - 2026-08-16
+
+### Added
+
+- An **Assess** tab and a matching `harness-view assess` command that score a harness on its own
+  published quality gate: safety, cost control, traceability, board health and docs quality, each
+  with the findings that produced it. Every finding names the file it came from and links to the
+  offending node in the graph. The engine is plain logic with no model involved, so the browser and
+  a CI pipeline cannot disagree, and `assess` exits non-zero on a high finding.
+- Statistics beside the score: nodes and edges by type, agents by model tier, tasks by status,
+  hooks blocking versus advisory, and the session tax in bytes that unscoped rules cost every agent
+  in every session.
+- Icons and meaningful colour in the inspection panel. Disable reads as destructive and Enable as a
+  restore; task status reuses the exact colour constant the graph badges use, so the panel and the
+  nodes can never drift apart; model and effort are coloured on a cost scale.
+
+### Fixed
+
+- Task-list checkboxes rendered as wide empty text boxes. DOMPurify strips `type` from an `input`
+  as clobbering protection whatever the allow-list says, so every checkbox became a text field.
+  Task items are now inert glyphs and form controls cannot reach the preview at all.
+- A markdown table that ends early because the source file has a blank line inside it now says so
+  in place, naming the file, instead of leaving the reader with a wall of raw pipes. The rendering
+  itself stays faithful to the spec, because GitHub renders that file the same way.
+
 ## [1.10.0] - 2026-08-16
 
 ### Added

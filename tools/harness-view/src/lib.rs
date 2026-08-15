@@ -3,6 +3,7 @@
 /// page footer, and stamped into the Windows VERSIONINFO resource by build.rs.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub mod assess;
 pub mod scan;
 pub mod serve;
 pub mod toggle;

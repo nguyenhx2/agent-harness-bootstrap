@@ -34,6 +34,47 @@
   canvas { flex: 1; display: block; }
   #plan { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; background: var(--panel); }
   #plan.open { display: block; }
+  /* Assess tab */
+  #assess { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; background: var(--panel); }
+  #assess.open { display: block; }
+  #assess h2 { font-size: 17px; }
+  #assess h3 { font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+  .ahead { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .aoverall b { font-size: 30px; }
+  .aoverall b.good { color: #15803d; } .aoverall b.warn { color: #a16207; } .aoverall b.bad { color: #b91c1c; }
+  .amuted { color: var(--dim); font-size: 11px; }
+  .acats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .acat { flex: 1 1 150px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .acat-t { display: flex; justify-content: space-between; align-items: baseline; }
+  .acat-t b.good { color: #15803d; } .acat-t b.warn { color: #a16207; } .acat-t b.bad { color: #b91c1c; }
+  .abar { height: 5px; background: #e2e8f0; border-radius: 3px; margin: 5px 0 3px; overflow: hidden; }
+  .abar i { display: block; height: 100%; background: #64748b; }
+  .abar i.good { background: #16a34a; } .abar i.warn { background: #d97706; } .abar i.bad { background: #dc2626; }
+  .anote { margin-top: 10px; font-size: 11px; color: var(--dim); background: #f8fafc;
+           border-left: 3px solid var(--line); padding: 6px 8px; }
+  .anotm { margin-top: 6px; font-size: 11px; color: var(--dim); }
+  .anotm ul { margin: 4px 0 0 18px; }
+  .astats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .astat { flex: 1 1 190px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 11px; }
+  .astat-h { font-weight: bold; margin-bottom: 4px; }
+  .astat-r { display: flex; justify-content: space-between; gap: 8px; padding: 1px 0; }
+  .alink { color: #1d4ed8; cursor: pointer; text-decoration: underline dotted; }
+  .afind-r { border: 1px solid var(--line); border-left-width: 3px; border-radius: 5px;
+             padding: 7px 9px; margin-bottom: 6px; }
+  .afind-r.sev-high { border-left-color: #dc2626; }
+  .afind-r.sev-medium { border-left-color: #d97706; }
+  .afind-r.sev-low { border-left-color: #64748b; }
+  .afind-r.sev-info { border-left-color: #cbd5e1; }
+  .afind-t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sevtag { font-size: 10px; text-transform: uppercase; font-weight: bold; padding: 1px 6px;
+            border-radius: 9px; }
+  .sevtag.high { background: #fee2e2; color: #b91c1c; }
+  .sevtag.medium { background: #ffedd5; color: #9a3412; }
+  .sevtag.low { background: #f1f5f9; color: #475569; }
+  .sevtag.info { background: #f8fafc; color: #64748b; }
+  .agoto { margin-left: auto; font-size: 11px; padding: 2px 8px; }
+  .afind-w { color: var(--dim); font-size: 11px; margin-top: 3px; }
+  .afind-f { font-size: 10px; color: #94a3b8; margin-top: 2px; }
   #plan h1 { font-size: 19px; margin: 14px 0 8px; }
   #plan h2 { font-size: 16px; margin: 14px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
   #plan h3 { font-size: 14px; margin: 12px 0 4px; }
@@ -89,6 +130,16 @@
   .tw { overflow-x: auto; margin: 6px 0; }
   .md pre.preview { max-height: 200px; }
   .md .done { color: #15803d; } .md .todo { color: var(--dim); }
+  /* GFM task items: an inert glyph, never a form control */
+  .md li.taskitem, #plan li.taskitem { list-style: none; margin-left: -14px; }
+  .md .tick, #plan .tick { font-size: 13px; margin-right: 3px; }
+  .md .tick.done, #plan .tick.done { color: #15803d; }
+  .md .tick.todo, #plan .tick.todo { color: var(--dim); }
+  /* a defect in the source file, named where it shows */
+  .mdwarn { margin: 8px 0 2px; padding: 6px 8px; border-left: 3px solid #d97706;
+            background: #fffbeb; color: #92400e; font-size: 11px; border-radius: 0 4px 4px 0; }
+  .mdraw { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace;
+           font-size: 11px; background: #fffbeb; padding: 4px 8px; overflow-x: auto; }
   /* frontmatter is metadata, not prose: in the sidebar it is the most useful
      part of an agent file, so formatted mode shows it as a keyed block */
   .fm { margin: 2px 0 6px; padding: 6px 8px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; font-size: 11px; }
@@ -118,6 +169,28 @@
   .state { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; }
   .state.on { background: #dcfce7; color: #15803d; }
   .state.off { background: #fee2e2; color: #b91c1c; }
+  /* sidebar: colour encodes meaning, it never decorates */
+  #detail td.k { display: flex; align-items: center; gap: 5px; }
+  .kicon, .bicon { display: inline-flex; line-height: 0; flex: 0 0 auto; }
+  .kicon svg { width: 11px; height: 11px; opacity: 0.65; }
+  .bicon svg { width: 13px; height: 13px; margin-right: 5px; }
+  button.prev-btn, button.toggle-btn { display: inline-flex; align-items: center; justify-content: center; }
+  /* Disable is destructive-ish, Enable restores: different intent, different colour */
+  .toggle-btn.danger { border-color: #fca5a5; color: #b91c1c; background: #fff5f5; }
+  .toggle-btn.danger:hover { background: #fee2e2; }
+  .toggle-btn.restore { border-color: #86efac; color: #15803d; background: #f0fdf4; }
+  .toggle-btn.restore:hover { background: #dcfce7; }
+  /* a value that points at another node */
+  .vlink { padding: 1px 8px; font-size: 11px; color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
+  .vlink:hover { background: #dbeafe; }
+  .vmiss { color: #b91c1c; }
+  .vmono { font-variant-numeric: tabular-nums; color: #475569; }
+  /* cost tone: hot = expensive, cool = cheap. The word is always shown too. */
+  .tone { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+  .tone.hot { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .tone.mid { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .tone.cool { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .tone.warnv { background: #fef2f2; color: #b91c1c; border: 1px dashed #fca5a5; }
   /* folder browser: the page cannot learn a real filesystem path from a native
      picker (showDirectoryPicker returns a handle, webkitdirectory relative
      names), so the server lists directories and this walks them */
@@ -147,6 +220,7 @@
   <button id="btn-flow">Flow</button>
   <button id="btn-graph">Graph</button>
   <button id="btn-plan" style="display:none">Master plan</button>
+  <button id="btn-assess" title="Score this harness">Assess</button>
   <button id="btn-reload" title="Re-scan now">Reload</button>
   <select id="linestyle" title="Connection line style">
     <option value="curved">Curved</option>
@@ -165,6 +239,7 @@
 <main>
   <canvas id="cv"></canvas>
   <div id="plan"><div id="plan-bar"></div><div id="plan-body"></div></div>
+  <div id="assess"></div>
   <div id="grip" title="Drag to resize"></div>
   <aside id="detail"></aside>
 </main>
@@ -337,8 +412,47 @@ const ICONS = {
   reload: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2v3.5H10"/></svg>',
   load: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8"/><path d="M4.75 6.75 8 10l3.25-3.25"/><path d="M2.5 12.5h11"/></svg>',
   browse: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 12.5v-9h4l1.5 2h7.5v7z"/></svg>',
+  assess: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 13.5h12"/><path d="M4 13.5V8M8 13.5V3.5M12 13.5V6"/></svg>',
+  eye: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="1.8"/></svg>',
+  eyeoff: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 5.2C1.6 6.3 1 8 1 8s2.5 4.5 7 4.5c1.3 0 2.4-.4 3.4-.9"/><path d="M6.3 3.7A7.6 7.6 0 0 1 8 3.5c4.5 0 7 4.5 7 4.5s-.7 1.3-2 2.5"/><path d="M2 2l12 12"/></svg>',
+  off: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v6"/><path d="M4.2 4.4a5.5 5.5 0 1 0 7.6 0"/></svg>',
+  on: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 8.5 6 12l7.5-8"/></svg>',
 };
+
+// Icons for metadata KEYS, only where the icon adds meaning. A row that is just
+// a string (id, file, title) gets none: decorating every row would make the
+// ones that carry state stop standing out, which is the whole point.
+const FIELD_ICONS = {
+  state:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/></svg>',
+  status: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.2l2 1.3"/></svg>',
+  owner:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg>',
+  model:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2"/><path d="M6.5 6.5h3v3h-3z"/></svg>',
+  effort: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 13h3V8H2zM6.5 13h3V5h-3zM11 13h3V2h-3z"/></svg>',
+  deps:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.5 9.5 4 12a2.5 2.5 0 0 1-3.5-3.5L3 6"/><path d="M9.5 6.5 12 4a2.5 2.5 0 0 1 3.5 3.5L13 10"/><path d="M6 10l4-4"/></svg>',
+  fr:     '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 2h6l2.5 2.5V14H4z"/><path d="M6 7h4M6 10h4"/></svg>',
+  tools:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10.5 2.5a3 3 0 0 0-4 4L2 11v3h3l4.5-4.5a3 3 0 0 0 4-4l-2 2-2-2z"/></svg>',
+  event:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v5l3 2"/><circle cx="8" cy="8" r="6"/></svg>',
+};
+
+// A cheap seat and an expensive seat should be distinguishable at a glance:
+// cost control is one of the things this project measures, so the panel should
+// not render "opus" and "haiku" as the same grey text.
+const MODEL_TONE = { opus: "hot", sonnet: "mid", haiku: "cool", inherit: "warnv" };
+const EFFORT_TONE = { high: "hot", medium: "mid", low: "cool" };
 // Put the icon in front of the existing label without disturbing the text.
+// Label plus icon, for buttons built at run time. The icon is decoration beside
+// text that already says the action, so it stays out of the accessibility tree.
+function setBtn(btn, iconKey, text) {
+  btn.textContent = "";
+  if (ICONS[iconKey]) {
+    const i = document.createElement("span");
+    i.className = "bicon"; i.innerHTML = ICONS[iconKey];
+    btn.append(i);
+  }
+  btn.append(document.createTextNode(text));
+  btn.setAttribute("aria-label", text);
+}
+
 function iconize(id, key) {
   const b = document.getElementById(id);
   if (!b) return;
@@ -356,10 +470,14 @@ window.marked.setOptions({ gfm: true, breaks: false });
 // An allow-list, not a deny-list: anything the markdown subset does not need is
 // simply not permitted, so a new HTML trick in a repo file has nothing to land on.
 const PURIFY_OPTS = {
+  // No form controls: a viewer never needs one, and DOMPurify strips `type` off
+  // an input as DOM-clobbering protection anyway, which silently turned every
+  // GFM task checkbox into a bare (therefore text) input 170px wide. Task items
+  // become inert glyphs in taskGlyphs() below instead.
   ALLOWED_TAGS: ["p","br","hr","strong","em","del","code","pre","blockquote",
                  "h1","h2","h3","h4","h5","h6","ul","ol","li",
-                 "table","thead","tbody","tr","th","td","a","span","input"],
-  ALLOWED_ATTR: ["href","title","align","type","checked","disabled","class"],
+                 "table","thead","tbody","tr","th","td","a","span"],
+  ALLOWED_ATTR: ["href","title","align","class"],
   ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|#|\/|\.)/i,
   FORBID_TAGS: ["script","style","iframe","object","embed","form"],
   FORBID_ATTR: ["srcset","src","onerror","onload","onclick","style"],
@@ -875,12 +993,34 @@ cv.addEventListener("wheel", ev => {
 
 function row(table, k, v, cls) {
   const tr = document.createElement("tr");
-  const tdk = document.createElement("td"); tdk.className = "k"; tdk.textContent = k;
+  const tdk = document.createElement("td"); tdk.className = "k";
+  // The icon is decoration next to a key that already reads as words, so it is
+  // aria-hidden: a screen reader announcing "circle status" helps nobody.
+  if (FIELD_ICONS[k]) {
+    const i = document.createElement("span");
+    i.className = "kicon"; i.innerHTML = FIELD_ICONS[k];
+    tdk.append(i);
+  }
+  tdk.append(document.createTextNode(k));
   const tdv = document.createElement("td"); tdv.className = "v";
   if (cls) { const s = document.createElement("span"); s.className = cls; s.textContent = v; tdv.append(s); }
   else tdv.textContent = v;
   tr.append(tdk, tdv); table.append(tr);
   return tdv;
+}
+
+/// A value that names another node becomes a button to it. Colour alone never
+/// carries the meaning: the text is always the identifier itself.
+function nodeLink(cell, id, text) {
+  const target = graph.nodes.find(x => x.id === id);
+  if (!target) return false;
+  const a = document.createElement("button");
+  a.className = "vlink";
+  a.textContent = text;
+  a.title = "select " + id;
+  a.onclick = () => { select(target); draw(); };
+  cell.append(a);
+  return true;
 }
 
 function select(n) {
@@ -921,15 +1061,55 @@ function select(n) {
       cell.append(s);
     } else if (k === "owner") {
       const cell = row(table, k, val);
-      // the owning seat is a node: say so, and let the reader jump to it
-      const owner = graph.nodes.find(x => x.id === "agent:" + val);
-      if (owner) {
+      // a task can name more than one seat (`a+b`), and each is its own node
+      const seats = val.split("+").map(x => x.trim()).filter(Boolean);
+      const linked = seats.filter(x => graph.nodes.some(n2 => n2.id === "agent:" + x));
+      if (linked.length) {
         cell.textContent = "";
-        const a = document.createElement("button");
-        a.textContent = val; a.style.padding = "1px 8px";
-        a.onclick = () => { select(owner); draw(); };
-        cell.append(a);
+        seats.forEach((seat, i) => {
+          if (i) cell.append(document.createTextNode(" "));
+          if (!nodeLink(cell, "agent:" + seat, seat)) {
+            // a seat that is not on the roster: say so rather than linking nowhere
+            const miss = document.createElement("span");
+            miss.className = "vmiss"; miss.textContent = seat + " (not on roster)";
+            cell.append(miss);
+          }
+        });
       }
+    } else if (k === "deps") {
+      const cell = row(table, k, val);
+      const ids = val.split(",").map(x => x.trim()).filter(Boolean);
+      const nodes = graph.nodes.filter(x => x.type === "task");
+      const any = ids.some(id => nodes.some(t => t.id.includes(id)));
+      if (any) {
+        cell.textContent = "";
+        ids.forEach((id, i) => {
+          if (i) cell.append(document.createTextNode(" "));
+          const t = nodes.find(x => x.id.includes(id));
+          if (!t || !nodeLink(cell, t.id, id)) {
+            const plain = document.createElement("span");
+            plain.className = "vmono"; plain.textContent = id; cell.append(plain);
+          }
+        });
+      }
+    } else if (k === "model" || k === "effort") {
+      // cost signal, with the word still present for anyone who cannot see it
+      const cell = row(table, k, "");
+      const tone = (k === "model" ? MODEL_TONE : EFFORT_TONE)[val] || "mid";
+      const s2 = document.createElement("span");
+      s2.className = "tone " + tone; s2.textContent = val;
+      cell.append(s2);
+    } else if (k === "fr") {
+      const cell = row(table, k, "");
+      const s2 = document.createElement("span");
+      s2.className = "vmono"; s2.textContent = val;
+      cell.append(s2);
+    } else if (k === "blocking") {
+      const cell = row(table, k, "");
+      const s2 = document.createElement("span");
+      s2.className = "tone " + (val === "true" ? "hot" : "cool");
+      s2.textContent = val === "true" ? "true (blocks the call)" : "false (advisory)";
+      cell.append(s2);
     } else {
       row(table, k, val);
     }
@@ -941,7 +1121,7 @@ function select(n) {
     bar.className = "md-bar";
     const btn = document.createElement("button");
     btn.className = "prev-btn";
-    btn.textContent = "Preview file";
+    setBtn(btn, "eye", "Preview file");
     const host = document.createElement("div");
     host.className = "filehost";
     host.style.display = "none";
@@ -956,14 +1136,14 @@ function select(n) {
       // panel. Overwriting className here silently dropped that, and the box
       // only looked right because the file happened to be long enough.
       if (mdMode("hv-md-side") === "raw") { host.className = "filehost"; renderRaw(host, text); }
-      else { host.className = "filehost md"; renderMarkdown(host, text, { frontmatter: "render" }); }
+      else { host.className = "filehost md"; renderMarkdown(host, text, { frontmatter: "render", file: n.file }); }
     };
     const modeBtn = makeModeButton("hv-md-side", paint);
     modeBtn.style.display = "none";
     btn.onclick = () => withBusy("reading file", btn, async () => {
       if (host.style.display === "block") {
         host.style.display = "none"; modeBtn.style.display = "none";
-        btn.textContent = "Preview file"; return;
+        setBtn(btn, "eye", "Preview file"); return;
       }
       if (text === null && err === null) {
         try {
@@ -976,7 +1156,7 @@ function select(n) {
       paint();
       host.style.display = "block";
       if (err === null) modeBtn.style.display = "";
-      btn.textContent = "Hide file";
+      setBtn(btn, "eyeoff", "Hide file");
     });
     bar.append(btn, modeBtn);
     head.append(bar);
@@ -985,8 +1165,11 @@ function select(n) {
 
   if (["rule", "command", "hook"].includes(n.type)) {
     const b = document.createElement("button");
-    b.className = "toggle-btn";
-    b.textContent = n.disabled ? "Enable " + label(n) : "Disable " + label(n);
+    // Disabling removes a control and Enabling restores one; they should not
+    // look like the same neutral action.
+    b.className = "toggle-btn " + (n.disabled ? "restore" : "danger");
+    setBtn(b, n.disabled ? "on" : "off",
+           (n.disabled ? "Enable " : "Disable ") + label(n));
     b.onclick = async () => {
       const bare = n.id.split(":").slice(1).join(":");
       // always name the root being viewed, so a toggle can never land on the
@@ -1048,6 +1231,48 @@ function renderRaw(host, md) {
 //   "strip"  - drop it (the plan tab: metadata about the file is not the plan)
 //   "render" - show it as a keyed block (the sidebar: model, tools and
 //              description are the most useful lines in an agent file)
+// GFM task items arrive from marked as `<li><input type="checkbox" ...>text`.
+// The sanitiser strips the input (see PURIFY_OPTS), so we convert the item to an
+// inert glyph BEFORE sanitising and mark it with a class the CSS can style.
+function taskGlyphs(html) {
+  return html.replace(
+    /<li([^>]*)>\s*<input([^>]*?)type="checkbox"([^>]*?)>\s*/gi,
+    (m, liAttr, a, b) => {
+      const checked = /checked/i.test(a + b);
+      const cls = checked ? "tick done" : "tick todo";
+      const glyph = checked ? "☑" : "☐";
+      return `<li${liAttr} class="taskitem"><span class="${cls}">${glyph}</span> `;
+    });
+}
+
+// GFM ends a table at the first blank line. A file that puts one in the middle of
+// a table therefore renders the remaining rows as a paragraph of pipes - correct
+// per spec and identical on GitHub, but baffling on screen. Rather than diverge
+// from the spec we name the defect where it shows, and report it in the
+// assessment tab as a docs-quality finding.
+const PIPE_ROW = /^\s*\|.*\|\s*$/;
+function markBrokenTables(body, fileLabel) {
+  let found = 0;
+  for (const p of [...body.querySelectorAll("p")]) {
+    const lines = (p.textContent || "").split("\n").filter(l => l.trim());
+    if (lines.length < 1 || !lines.every(l => PIPE_ROW.test(l))) continue;
+    const prev = p.previousElementSibling;
+    const afterTable = prev && (prev.tagName === "TABLE" ||
+      (prev.classList && prev.classList.contains("tw")));
+    if (!afterTable) continue;
+    found++;
+    const note = document.createElement("div");
+    note.className = "mdwarn";
+    note.textContent = "This table ended early: there is a blank line inside it in " +
+      (fileLabel || "the source file") + ", and a blank line terminates a table in " +
+      "GitHub-flavoured Markdown. The rows below are shown as written. Remove the " +
+      "blank line to join them back into the table.";
+    p.parentNode.insertBefore(note, p);
+    p.classList.add("mdraw");
+  }
+  return found;
+}
+
 function renderMarkdown(host, md, opts) {
   const mode = (opts && opts.frontmatter) || "strip";
   host.textContent = "";
@@ -1079,7 +1304,8 @@ function renderMarkdown(host, md, opts) {
   // because this HTML is built from a file in the repository being inspected
   // and the page it lands in is same-origin with the mutating /toggle endpoint.
   const body = document.createElement("div");
-  body.innerHTML = window.DOMPurify.sanitize(window.marked.parse(src), PURIFY_OPTS);
+  body.innerHTML = window.DOMPurify.sanitize(
+    taskGlyphs(window.marked.parse(src)), PURIFY_OPTS);
   // A wide table keeps its natural width and scrolls in its own container
   // instead of being crushed to fit the panel it happens to be in.
   for (const t of [...body.querySelectorAll("table")]) {
@@ -1087,8 +1313,10 @@ function renderMarkdown(host, md, opts) {
     wrap.className = "tw";
     t.replaceWith(wrap); wrap.append(t);
   }
+  mdBrokenTables = markBrokenTables(body, (opts && opts.file) || null);
   while (body.firstChild) host.append(body.firstChild);
 }
+let mdBrokenTables = 0;
 
 // The plan tab keeps its toolbar outside the rendered body, so switching mode
 // does not destroy the control that switched it.
@@ -1101,12 +1329,189 @@ function renderPlan(md) {
     bar.append(makeModeButton("hv-md-plan", () => renderPlan(planText)), lbl);
   }
   if (mdMode("hv-md-plan") === "raw") renderRaw(body, md);
-  else renderMarkdown(body, md, { frontmatter: "strip" });
+  else renderMarkdown(body, md, { frontmatter: "strip", file: "docs/tasks/master-plan.md" });
+}
+
+// ---- Assess tab -----------------------------------------------------------
+// The rules engine is in Rust (src/assess.rs) and is the same one
+// `harness-view assess` runs, so the browser and CI can never disagree about a
+// harness. This code only renders what it returns.
+let assessCache = null, assessRoot = null;
+
+async function loadAssessment(force) {
+  const host = document.getElementById("assess");
+  if (!force && assessCache && assessRoot === currentRoot) { renderAssessment(assessCache); return; }
+  host.textContent = "";
+  const p = document.createElement("p"); p.className = "amuted";
+  p.textContent = "assessing " + (currentRoot || "this harness") + "...";
+  host.append(p);
+  await withBusy("assessing", document.getElementById("btn-assess"), async () => {
+    const url = "assess" + (currentRoot ? "?root=" + encodeURIComponent(currentRoot) : "");
+    try {
+      const res = await fetch(url);
+      const body = await res.json();
+      if (!res.ok || body.error) {
+        host.textContent = "";
+        banner(body.error || ("server returned " + res.status));
+        return;
+      }
+      assessCache = body; assessRoot = currentRoot;
+      renderAssessment(body);
+    } catch (e) { host.textContent = ""; banner("could not assess: " + e); }
+  });
+}
+
+function abar(pct, cls) {
+  const outer = document.createElement("div"); outer.className = "abar";
+  const inner = document.createElement("i"); inner.className = cls || "";
+  inner.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  outer.append(inner); return outer;
+}
+
+function scoreClass(v) { return v >= 85 ? "good" : v >= 60 ? "warn" : "bad"; }
+
+// Selecting the offending node and switching to the graph is the whole point of
+// linking findings back to the graph: a finding you cannot locate is a complaint.
+function gotoNode(id) {
+  const n = graph.nodes.find(x => x.id === id);
+  if (!n) { banner("that node is not in the current graph: " + id); return; }
+  if (hidden.has(n.type)) {
+    hidden.delete(n.type);
+    localStorage.setItem("hv-hidden", JSON.stringify([...hidden]));
+    buildLegend();
+  }
+  if (view !== "graph") view = "flow";
+  localStorage.setItem("hv-view", view);
+  sync();
+  select(n);
+  fitView(graph.nodes.filter(visible));
+  draw();
+}
+
+function renderAssessment(a) {
+  const host = document.getElementById("assess");
+  host.textContent = "";
+
+  const head = document.createElement("div"); head.className = "ahead";
+  const left = document.createElement("div");
+  const h = document.createElement("h2"); h.textContent = "Harness assessment";
+  const sub = document.createElement("div"); sub.className = "amuted";
+  sub.textContent = a.root + "  -  " + a.counts.high + " high, " + a.counts.medium +
+                    " medium, " + a.counts.low + " low";
+  left.append(h, sub);
+  const overall = document.createElement("div"); overall.className = "aoverall";
+  const big = document.createElement("b"); big.className = scoreClass(a.scores.overall);
+  big.textContent = a.scores.overall;
+  const of = document.createElement("span"); of.className = "amuted"; of.textContent = "/100";
+  overall.append(big, of);
+  head.append(left, overall);
+  host.append(head);
+
+  const cats = document.createElement("div"); cats.className = "acats";
+  for (const [name, v] of Object.entries(a.scores.categories)) {
+    const card = document.createElement("div"); card.className = "acat";
+    const t = document.createElement("div"); t.className = "acat-t";
+    const nm = document.createElement("span"); nm.textContent = name;
+    const sc = document.createElement("b"); sc.className = scoreClass(v.score); sc.textContent = v.score;
+    t.append(nm, sc);
+    const f = document.createElement("div"); f.className = "amuted";
+    f.textContent = v.findings + (v.findings === 1 ? " finding" : " findings");
+    card.append(t, abar(v.score, scoreClass(v.score)), f);
+    cats.append(card);
+  }
+  host.append(cats);
+
+  const note = document.createElement("div"); note.className = "anote";
+  note.textContent = a.scores.method;
+  host.append(note);
+
+  const notm = document.createElement("details"); notm.className = "anotm";
+  const nsum = document.createElement("summary");
+  nsum.textContent = "What this score does NOT measure";
+  notm.append(nsum);
+  const ul = document.createElement("ul");
+  for (const line of a.scores.not_measured) {
+    const li = document.createElement("li"); li.textContent = line; ul.append(li);
+  }
+  notm.append(ul); host.append(notm);
+
+  const sh = document.createElement("h3"); sh.textContent = "Statistics"; host.append(sh);
+  const st = a.statistics;
+  const grid = document.createElement("div"); grid.className = "astats";
+  const addStat = (label, pairs, filterable) => {
+    const box = document.createElement("div"); box.className = "astat";
+    const b = document.createElement("div"); b.className = "astat-h"; b.textContent = label;
+    box.append(b);
+    for (const [k, v] of Object.entries(pairs)) {
+      const row = document.createElement("div"); row.className = "astat-r";
+      const kk = document.createElement("span"); kk.textContent = k;
+      const vv = document.createElement("b"); vv.textContent = v;
+      if (filterable) {
+        kk.className = "alink";
+        kk.title = "show only this type in the graph";
+        kk.onclick = () => {
+          for (const t of Object.keys(st.nodes_by_type)) { if (t !== k) hidden.add(t); }
+          hidden.delete(k);
+          localStorage.setItem("hv-hidden", JSON.stringify([...hidden]));
+          buildLegend();
+          view = "flow"; localStorage.setItem("hv-view", view); sync();
+        };
+      }
+      row.append(kk, vv); box.append(row);
+    }
+    grid.append(box);
+  };
+  addStat("Nodes by type", st.nodes_by_type, true);
+  addStat("Edges by type", st.edges_by_type, false);
+  addStat("Agents by model", st.agents_by_model, false);
+  if (Object.keys(st.tasks_by_status).length) addStat("Tasks by status", st.tasks_by_status, false);
+  addStat("Hooks", { total: st.hooks.total, blocking: st.hooks.blocking, advisory: st.hooks.advisory }, false);
+  addStat("Rules (session tax)", {
+    "always on": st.rules.always_on,
+    "always-on bytes": st.rules.always_on_bytes,
+    "path scoped": st.rules.path_scoped,
+    "kept out of session %": st.rules.percent_kept_out_of_session
+  }, false);
+  host.append(grid);
+
+  const fh = document.createElement("h3");
+  fh.textContent = "Findings (" + a.findings.length + ", worst first)";
+  host.append(fh);
+  if (!a.findings.length) {
+    const ok = document.createElement("p"); ok.className = "amuted";
+    ok.textContent = "No findings. That means every rule this engine checks passed, " +
+                     "not that the harness is good.";
+    host.append(ok);
+  }
+  const list = document.createElement("div"); list.className = "afind";
+  for (const f of a.findings) {
+    const row = document.createElement("div"); row.className = "afind-r sev-" + f.severity;
+    const top = document.createElement("div"); top.className = "afind-t";
+    const sev = document.createElement("span"); sev.className = "sevtag " + f.severity;
+    sev.textContent = f.severity;
+    const title = document.createElement("span"); title.textContent = f.title;
+    top.append(sev, title);
+    if (f.node) {
+      const go = document.createElement("button"); go.className = "agoto";
+      go.textContent = "show in graph";
+      go.onclick = () => gotoNode(f.node);
+      top.append(go);
+    }
+    const why = document.createElement("div"); why.className = "afind-w"; why.textContent = f.why;
+    row.append(top, why);
+    if (f.file) {
+      const fl = document.createElement("div"); fl.className = "afind-f"; fl.textContent = f.file;
+      row.append(fl);
+    }
+    list.append(row);
+  }
+  host.append(list);
 }
 
 document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-plan").onclick = () => { view = "plan"; localStorage.setItem("hv-view", view); sync(); };
+document.getElementById("btn-assess").onclick = () => { view = "assess"; localStorage.setItem("hv-view", view); sync(); };
 const btnReload = document.getElementById("btn-reload");
 btnReload.onclick = () => withBusy("scanning", btnReload, () => load());
 const lineSel = document.getElementById("linestyle");
@@ -1236,14 +1641,17 @@ function hint() {
     : "click a node to trace its connections";
 }
 function sync() {
-  const plan = view === "plan";
+  const plan = view === "plan", asses = view === "assess";
   document.getElementById("btn-flow").classList.toggle("active", view === "flow");
   document.getElementById("btn-graph").classList.toggle("active", view === "graph");
   document.getElementById("btn-plan").classList.toggle("active", plan);
+  document.getElementById("btn-assess").classList.toggle("active", asses);
   document.getElementById("plan").classList.toggle("open", plan);
-  cv.style.display = plan ? "none" : "block";
+  document.getElementById("assess").classList.toggle("open", asses);
+  cv.style.display = (plan || asses) ? "none" : "block";
   hint();
   if (plan) { stopAnim(); if (planText !== null) renderPlan(planText); return; }
+  if (asses) { stopAnim(); loadAssessment(); return; }
   layout(); fitView(graph.nodes.filter(visible)); draw();
 }
 // Size the canvas and paint the chrome BEFORE the first fetch. When load()
@@ -1252,6 +1660,7 @@ function sync() {
 iconize("btn-flow", "flow");
 iconize("btn-graph", "graph");
 iconize("btn-plan", "plan");
+iconize("btn-assess", "assess");
 iconize("btn-reload", "reload");
 iconize("btn-browse", "browse");
 iconize("btn-load", "load");

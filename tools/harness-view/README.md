@@ -126,9 +126,10 @@ The icon is generated from the project mark (`docs/assets/logo-mark.svg`) by
 ## Commands
 
 ```
-harness-view scan  [path] [-o out.json]   # write .claude/state/harness-graph.json
-harness-view serve [path] [--port 7420]   # local web UI at http://127.0.0.1:7420/
-harness-view watch [path]                 # rebuild the graph on .claude/ or docs/ changes
+harness-view scan   [path] [-o out.json]  # write .claude/state/harness-graph.json
+harness-view serve  [path] [--port 7420]  # local web UI at http://127.0.0.1:7420/
+harness-view watch  [path]                # rebuild the graph on .claude/ or docs/ changes
+harness-view assess [path] [--json]       # score the harness; exit 1 on a high finding
 ```
 
 What each one actually prints, against a real harness:
@@ -170,6 +171,61 @@ harness-view: rebuilt (172 nodes, 505 edges)
   `.claude/state/harness-graph.json` on every change burst (500 ms debounce).
   Events under `.claude/state/` are ignored so the rebuild never re-triggers
   itself.
+
+## Assessment
+
+`assess` scores a harness against the quality gate that `harness-bootstrap`
+already asserts, and reports what it saw with the file that proves it. It is a
+plain rules engine: no model, no network, no judgment calls. The same engine
+backs the **Assess** tab in the web UI and `GET /assess?root=<path>`, so a
+browser and a CI job cannot disagree about the same repo.
+
+```
+$ harness-view assess D:/Projects/msboost
+harness assessment: D:/Projects/msboost
+  overall 64/100   high 0  medium 15  low 55
+    Board health    95/100  (1 findings)
+    Cost control     0/100  (33 findings)
+    Docs quality    28/100  (36 findings)
+    Safety         100/100  (0 findings)
+    Traceability   100/100  (0 findings)
+```
+
+It exits 1 when any high finding is outstanding, so it can gate a pipeline:
+
+```
+harness-view assess . --json > assessment.json   # exit 1 blocks the build
+```
+
+### What it checks
+
+| Category | Checks |
+|---|---|
+| Safety | reviewers hold no `Edit`/`Write`; only the orchestrator holds `Agent`; registered hooks exist on disk and hook files are registered; the four guardrail layers are present (deny rules, a blocking hook, `agent-guardrails.md`, a review gate) |
+| Cost control | every agent pins `model` and `effort`; every agent has an explicit `tools` list; every rule that can be path-scoped carries `paths:` |
+| Traceability | tasks are owned by seats that exist; commands do not run scripts that are absent |
+| Board health | Blocked tasks name what would unblock them; tasks carry a status |
+| Docs quality | no blank line inside a Markdown table (it silently ends the table on GitHub and here) |
+
+### What the score is, and is not
+
+Each category starts at 100 and loses 12 per high finding, 5 per medium and 2
+per low, floored at 0. The overall figure is the plain mean of the five. Those
+weights are a stated convention, not a measurement, and the UI shows the
+derivation rather than hiding it behind one number.
+
+It does not measure whether the rules say anything useful for your codebase,
+whether an agent's scope matches how the code is really organised, whether a
+hook that exists actually blocks what it claims to, or anything at all about
+code quality. A clean report means every rule here passed, not that the harness
+is good.
+
+### Findings link back to the graph
+
+Every finding that names a node carries a **show in graph** button: it unhides
+that node type if you had filtered it out, switches to the graph, selects the
+node and lights its connections. A finding you cannot locate is a complaint,
+not a report.
 
 ## Runtime toggles
 

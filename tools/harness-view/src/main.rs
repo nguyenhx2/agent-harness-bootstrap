@@ -2,7 +2,7 @@
 //! harness-bootstrap skill. Subcommands: scan, serve, watch. No AI involved;
 //! it only reads files and reports relationships.
 
-use harness_view::{scan, serve, watch, VERSION};
+use harness_view::{assess, scan, serve, watch, VERSION};
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -13,6 +13,7 @@ fn usage() -> ! {
          harness-view scan  [path] [-o out.json]   write .claude/state/harness-graph.json\n  \
          harness-view serve [path] [--port 7420]   local web UI (Flow + Graph views, toggles)\n  \
          harness-view watch [path]                 rebuild the graph on .claude/ or docs/ changes\n  \
+         harness-view assess [path] [--json]       score the harness; exit 1 on a high finding\n  \
          harness-view --version                    print the version\n\
          \n\
          Run with no arguments (or double-click the executable) to serve the\n\
@@ -42,6 +43,7 @@ fn main() {
     let mut path = PathBuf::from(".");
     let mut out: Option<PathBuf> = None;
     let mut port: u16 = 7420;
+    let mut json_out = false;
     let mut i = if launched_bare { 0 } else { 1 };
     while i < args.len() {
         match args[i].as_str() {
@@ -56,6 +58,7 @@ fn main() {
                     .and_then(|p| p.parse().ok())
                     .unwrap_or_else(|| usage());
             }
+            "--json" => json_out = true,
             a if !a.starts_with('-') => path = PathBuf::from(a),
             _ => usage(),
         }
@@ -79,6 +82,10 @@ fn main() {
                 eprintln!("harness-view: scan failed: {e}");
                 exit(1);
             }
+        },
+        "assess" => match assess::assess_cli(&path, json_out) {
+            Ok(code) => std::process::exit(code),
+            Err(e) => { eprintln!("harness-view: {e}"); std::process::exit(2); }
         },
         "serve" => {
             if launched_bare {

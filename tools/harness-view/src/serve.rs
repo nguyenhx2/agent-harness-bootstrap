@@ -16,7 +16,7 @@
 //! anything else is refused with 403. HARD-protected items refuse with 403,
 //! SOFT-protected items with 409 unless the body carries confirm_soft: true.
 
-use crate::{scan, toggle};
+use crate::{assess, scan, toggle};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Request, Response, Server};
@@ -373,6 +373,20 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                             );
                         }
                         Response::from_string(scan::to_canonical_json(&graph))
+                            .with_header(header("Content-Type", "application/json"))
+                    }
+                    Err(msg) => json_error(&msg, 400),
+                }
+            }
+            (Method::Get, "/assess") => {
+                // Read-only and deterministic: the same rules engine the CLI
+                // runs, so a browser and CI cannot disagree about a harness.
+                let requested = query_param(&raw_url, "root");
+                match resolve_root(requested.as_deref(), &root) {
+                    Ok(target) => {
+                        let graph = scan::scan(&target);
+                        let report = assess::assess(&target, &graph);
+                        Response::from_string(scan::to_canonical_json(&report))
                             .with_header(header("Content-Type", "application/json"))
                     }
                     Err(msg) => json_error(&msg, 400),
