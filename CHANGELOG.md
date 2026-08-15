@@ -5,6 +5,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.11.0
+
+`harness-view` can now tell you whether a harness is any good, not just show you its shape.
+
+- **A harness assessment, scored by logic rather than opinion.** A new tab and a
+  `harness-view assess` command grade a repo against the quality gate this project publishes:
+  agents without an explicit model or effort, rules that load in every session, reviewers holding
+  write access, hooks registered but missing from disk, tasks owned by seats that left the roster.
+  Every finding names its file and jumps to the node. No model is consulted, so the same numbers
+  come out in a browser and in CI, and the command fails the build on a high finding.
+- Run against three real harnesses it produced a spread worth the effort: the scaffolder's own
+  output scored 99, while two hand-maintained ones scored 79 and 64. The lower two had genuinely
+  drifted: renamed agent seats the task board never followed, and eighteen rules loading in every
+  single session at 73 KB a time.
+- The score is deliberately five category numbers rather than one verdict, the arithmetic is shown,
+  and the tab carries a list of what the score does not measure.
+- The inspection panel gained icons and colour that carry meaning: destructive actions look
+  destructive, and task status uses the same colour constant as the graph so the two cannot drift.
+
+### Fixed
+
+- Task-list checkboxes in the file preview rendered as wide empty text boxes, because the sanitiser
+  strips `type` from a form control regardless of the allow-list. The preview no longer contains
+  form controls at all.
+- A table that ends early now explains itself. The cause is a blank line inside the table in the
+  source file, which is where GFM ends a table and where GitHub ends it too, so the fix is to name
+  the problem rather than to render it differently from GitHub.
+
 ## v1.10.0
 
 The viewer became usable on a real board. Everything here is `harness-view`; the two skills are
