@@ -9,14 +9,109 @@ The skill's own HTML output (`docs/context/harness-graph.html`) needs nothing
 but Python and a browser; this tool is the power version: a native binary with
 a live-refreshing UI, file watching, and safe runtime toggles.
 
-## Install
+## Install and run
+
+There are three ways to run it. They all produce the same tool; pick whichever
+suits you. The web UI is compiled into the executable, so no route needs Python,
+Node, or any runtime install.
+
+### 1. Download a prebuilt build (no toolchain)
+
+Every release attaches a standalone executable per platform, each built on that
+platform's own runner:
+
+| Platform | Asset |
+|---|---|
+| Windows x86_64 | `harness-view-<version>-x86_64-pc-windows-msvc.zip` |
+| macOS Apple Silicon | `harness-view-<version>-aarch64-apple-darwin.tar.gz` |
+| macOS Intel | `harness-view-<version>-x86_64-apple-darwin.tar.gz` |
+| Linux x86_64 | `harness-view-<version>-x86_64-unknown-linux-gnu.tar.gz` |
+
+Each archive contains the binary, this README and `SCHEMA.md`, and a `.sha256`
+sits beside it on the release page.
+
+Windows (PowerShell):
+
+```powershell
+Expand-Archive harness-view-1.8.2-x86_64-pc-windows-msvc.zip -DestinationPath .
+cd harness-view-1.8.2-x86_64-pc-windows-msvc
+.\harness-view.exe serve D:\Projects\my-repo
+```
+
+macOS and Linux:
+
+```bash
+tar xzf harness-view-1.8.2-x86_64-unknown-linux-gnu.tar.gz
+cd harness-view-1.8.2-x86_64-unknown-linux-gnu
+./harness-view serve ~/projects/my-repo
+```
+
+On macOS the binary is unsigned, so Gatekeeper quarantines a downloaded file.
+Clear it once with `xattr -d com.apple.quarantine ./harness-view`, or build from
+source instead.
+
+### 2. Double-click it (Windows)
+
+Drop `harness-view.exe` into a repo that has a `.claude/` folder and double-click
+it. With no arguments it serves the current directory, prints the URL, and opens
+your browser. The console window stays open while the server runs; closing it
+stops the server. If the folder has no `.claude/`, it says so and waits for a
+keypress instead of flashing shut.
+
+This applies **only** to the no-argument launch. Every explicit invocation
+behaves exactly as it always has: nothing opens a browser, nothing pauses.
+
+### 3. Build from source (needs Rust)
 
 ```
 cargo install --path tools/harness-view
 ```
 
-Prebuilt binaries, when attached to a GitHub Release, are optional - the source
-is the contract.
+### Everyday invocations
+
+```
+harness-view                              # serve the current folder, open a browser
+harness-view serve .                      # serve the current folder, no browser
+harness-view serve /path/to/repo --port 8080
+harness-view scan /path/to/repo
+harness-view watch /path/to/repo
+harness-view --version                    # also shown in the page footer
+harness-view --help
+```
+
+### Pointing it at other repos
+
+One running server can inspect several projects: the path box in the header
+accepts any folder containing `.claude/` (Windows `D:\Projects\x` and
+`D:/Projects/x` both work), and the recent list is remembered in the browser,
+never written to disk. Under the hood that is `GET /graph.json?root=<path>`; a
+path that does not exist or has no `.claude/` returns HTTP 400 with the reason
+shown in the page, and the previous graph stays on screen.
+
+### Safety, in one place
+
+- The server binds to `127.0.0.1` only. It is a local tool, not a service to
+  expose; there is no authentication because there is no remote surface.
+- Mutating and file-reading endpoints require same-origin browser requests
+  (`Origin` and `Sec-Fetch-Site` checked, `Content-Type: application/json` on
+  `POST`), so another open tab cannot drive it.
+- `GET /file` is read-only and limited to `.claude/` and `docs/`, capped at
+  256 KB, always served as `text/plain` with `nosniff`.
+- Agents are never toggleable; HARD-protected controls are refused outright and
+  SOFT-protected ones need an explicit confirmation. Full detail under
+  [Runtime toggles](#runtime-toggles).
+
+## Version and metadata
+
+The crate version tracks the repo release version; `scripts/validate_release.py`
+fails the build when the two drift, so a downloaded binary cannot report a
+version the release never had. On Windows it is compiled into a real VERSIONINFO
+resource, so `Properties -> Details` shows the product name, description and file
+version, and Explorer shows the application icon. `--version` and the served page
+footer report the same string.
+
+The icon is generated from the project mark (`docs/assets/logo-mark.svg`) by
+`scripts/make_icons.py`; regenerate it rather than editing the binaries by hand.
 
 ## Commands
 
@@ -25,6 +120,23 @@ harness-view scan  [path] [-o out.json]   # write .claude/state/harness-graph.js
 harness-view serve [path] [--port 7420]   # local web UI at http://127.0.0.1:7420/
 harness-view watch [path]                 # rebuild the graph on .claude/ or docs/ changes
 ```
+
+What each one actually prints, against a real harness:
+
+```
+$ harness-view scan D:/Projects/msboost
+harness-view: 172 nodes, 505 edges -> D:\Projects\msboost\.claude\state\harness-graph.json
+
+$ harness-view serve D:/Projects/msboost --port 7420
+harness-view: serving D:\Projects\msboost on http://127.0.0.1:7420/
+
+$ harness-view watch D:/Projects/msboost
+harness-view: watching D:\Projects\msboost (Ctrl+C to stop)
+harness-view: rebuilt (172 nodes, 505 edges)
+```
+
+`scan` writes a file and exits, which is the form to use in a script or a hook.
+`serve` and `watch` stay in the foreground until interrupted.
 
 - `scan` emits the graph described in [SCHEMA.md](SCHEMA.md) (schema version 1,
   shared with the skill's Python scanner). Output is byte-stable: sorted nodes,

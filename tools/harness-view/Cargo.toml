@@ -1,14 +1,25 @@
 [package]
 name = "harness-view"
-version = "0.1.0"
+# Tracks the repo release version (the two skills' SKILL.md frontmatter), NOT an
+# independent number. scripts/validate_release.py fails the gate when they drift,
+# so a tagged build cannot ship a binary stamped with a stale version.
+version = "1.9.0"
 edition = "2021"
 description = "Deterministic analyzer and viewer for a .claude/ agent harness: scan, serve, watch"
 license = "MIT"
+authors = ["nguyenhx2"]
+repository = "https://github.com/nguyenhx2/agent-harness-bootstrap"
 
 [dependencies]
 serde_json = { version = "1", features = ["preserve_order"] }
 tiny_http = "0.12"
 notify = "6"
+
+# Windows-only: writes the VERSIONINFO resource and the icon into the .exe, so
+# Explorer shows the mark and the file properties carry a real version. Gated by
+# target so the unix builds never see it.
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
 
 [profile.release]
 strip = true

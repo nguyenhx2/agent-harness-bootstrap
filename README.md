@@ -214,19 +214,23 @@ Full guarantees, the memory model, and the cost breakdown: [`docs/ASSESSMENT.md`
 The skill's own HTML export (`docs/context/harness-graph.html`) needs nothing but Python and a
 browser, and that stays the default. [`tools/harness-view`](tools/harness-view/) is the power
 version: a small Rust binary that reads the same `.claude/state/harness-graph.json` contract and
-adds a live-refreshing UI, file watching, and safe runtime toggles - install it only if you want
-those.
+adds a live-refreshing UI, file watching, and safe runtime toggles.
+
+Every release attaches a **standalone executable** for Windows, macOS (Intel and Apple Silicon)
+and Linux - no toolchain, no Python, no install step. On Windows you can drop it into a repo and
+double-click it: with no arguments it serves that folder and opens your browser. Or build from
+source with `cargo install --path tools/harness-view`.
 
 ```
-cargo install --path tools/harness-view
+harness-view                              # serve the current folder, open a browser
+harness-view scan  [path]                 # write .claude/state/harness-graph.json
+harness-view serve [path] [--port 7420]   # Flow + Graph views, details panel, safe toggles
+harness-view watch [path]                 # rebuild the graph as .claude/ or docs/ change
 ```
 
-- `harness-view scan [path]` - write `.claude/state/harness-graph.json` (same schema the skill's
-  Python scanner writes).
-- `harness-view serve [path]` - a local web UI with two views of the same graph: layered **Flow**
-  and force-directed **Graph**, plus a details panel that can disable/enable rules, commands, and
-  hooks under the same HARD/SOFT safety tiers as `/harness-toggle`.
-- `harness-view watch [path]` - rebuild the graph automatically on `.claude/` or `docs/` changes.
+Full instructions for every route - downloading per OS, the double-click case, pointing it at
+other repos, the endpoints and the safety model - are in
+[`tools/harness-view/README.md`](tools/harness-view/README.md).
 
 It is entirely optional: nothing in the harness requires it, and the shipped HTML viewer covers the
 same two views with zero install.
@@ -236,7 +240,8 @@ same two views with zero install.
 ## 🎛️ Post-bootstrap tuning
 
 The harness's starting posture is not permanent. Eight commands ship into every bootstrapped repo to
-adjust it after the fact - full guidance, worked examples, and the invariants each one enforces live
+adjust it after the fact, plus two more (`/spec-ingest`, `/spec-retract`) that arrive with a
+`spec-builder` spec set - full guidance, worked examples, and the invariants each one enforces live
 in [`docs/TUNING.md`](docs/TUNING.md).
 
 | Command | What it does |
@@ -258,14 +263,41 @@ removed - only rescoped.
 
 ---
 
+## 🛠️ Delivery commands
+
+A second set of commands runs during normal feature work rather than harness upkeep - registering a
+task, implementing an FR, running tests, reviewing a diff, deploying. Full reference, including what
+each writes and refuses: [`docs/FLOWS.md` section 7](docs/FLOWS.md#7-delivery-commands-command-by-command).
+
+| Command | What it does | Ships |
+|---|---|---|
+| [`/new-task`](docs/FLOWS.md#new-task-short-title) | Create a task file from the template, register it on the master plan | Unconditional |
+| [`/implement-fr`](docs/FLOWS.md#implement-fr-fr-id) | Plan and implement a functional requirement end-to-end against its acceptance criteria | Unconditional |
+| [`/scaffold-feature`](docs/FLOWS.md#scaffold-feature-feature-slug) | Create a feature's skeleton - entry point, module, component, failing test - no logic | Unconditional |
+| [`/db-migration`](docs/FLOWS.md#db-migration-migration-name) | Generate a migration against the local DB only, escalating anything that could lose data | `db` |
+| [`/seed-db`](docs/FLOWS.md#seed-db) | Seed the local/dev database with deterministic, synthetic, idempotent data | `db` + `db_seeder` |
+| [`/test`](docs/FLOWS.md#test) | Run lint plus the unit/e2e suites, report failures by owning agent | `tests` |
+| [`/review-changes`](docs/FLOWS.md#review-changes) | Code + security review on the current diff before a PR/MR - never merges or deploys | Unconditional |
+| [`/secret-scan`](docs/FLOWS.md#secret-scan) | Scan the diff for secrets and sensitive data - any hit blocks until rotated | Unconditional |
+| [`/deploy`](docs/FLOWS.md#deploy) | Deploy after every precondition holds - human-invoked only, never model-triggered | Unconditional |
+| [`/new-adr`](docs/FLOWS.md#new-adr-decision-title) | Create an Architecture Decision Record - Accepted ADRs are hook-immutable | Unconditional |
+| [`/new-spec-section`](docs/FLOWS.md#new-spec-section-section-number-or-name) | Scaffold a missing `docs/specs/` section | Unconditional |
+| [`/sync-context`](docs/FLOWS.md#sync-context) | Refresh `docs/context/` (rules, issues, changelog, glossary) from what landed | Unconditional |
+| [`/task-resume`](docs/FLOWS.md#task-resume-task-nnn) | Resume a task after a compaction or crash, trusting files over memory | Unconditional |
+| [`/brainstorm`](docs/FLOWS.md#brainstorm-topic) | Structured options + trade-offs on a decision, never deciding for the user | `long` |
+| [`/security-scan`](docs/FLOWS.md#security-scan-repo-slug) | Run the pinned scanner suite (read-only mount) and record new findings | `audit` mode only |
+| [`/triage-findings`](docs/FLOWS.md#triage-findings-repo-slug) | Confirm, score, anchor, and register findings as tasks - never applies the fix | `audit` mode only |
+
+---
+
 ## 🗺️ Docs map
 
 | | |
 |---|---|
-| [`docs/FLOWS.md`](docs/FLOWS.md) | Seven diagrams: the scaffolder, one feature end to end, context loading |
+| [`docs/FLOWS.md`](docs/FLOWS.md) | Seven diagrams plus the delivery-command reference: the scaffolder, one feature end to end, context loading |
 | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) | RAM vs. disk, the crash-resume protocol, hard vs. soft controls |
 | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) | Scorecard, including what this does not do |
-| [`docs/TUNING.md`](docs/TUNING.md) | The eight post-bootstrap tuning commands, in full |
+| [`docs/TUNING.md`](docs/TUNING.md) | The eight post-bootstrap tuning commands plus `spec-builder`'s ingest/retract pair, in full |
 | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) | What each skill's question set explores, and why - flow diagrams for both |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | Semver, artifacts, the release note format |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Dev setup, the gates a PR must pass, asset editing rules |

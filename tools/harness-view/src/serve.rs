@@ -224,6 +224,9 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                 let body = serde_json::json!({
                     "current": display_path(&root),
                     "recent": [],
+                    // reported by the binary so the page footer cannot claim a
+                    // version the running executable does not actually have
+                    "version": crate::VERSION,
                 })
                 .to_string();
                 Response::from_string(body)

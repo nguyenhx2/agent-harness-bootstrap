@@ -37,6 +37,14 @@ hand.
    its own `### skill-name` block), then runs `gh release create` (or `gh release edit` +
    `gh release upload --clobber` if the release already exists, so a re-run is safe).
 
+### Bumping the version
+
+Three files carry the number and all three must agree, which `validate_release.py`
+enforces: both skills' `SKILL.md` frontmatter, and `tools/harness-view/Cargo.toml`.
+The Cargo version is what gets compiled into the released executables (Windows
+VERSIONINFO, `--version`, the page footer), so a stale one ships a binary that
+misreports itself.
+
 ## What enforces this
 
 | Rule | Enforced by |
@@ -51,6 +59,11 @@ hand.
 | The repo-root `CHANGELOG.md` has a section for the release version | `scripts/package.py --version X.Y.Z --check` (unchanged, separate from the per-skill files above) |
 | Every archive carries a `VERSION` file matching the tag | `.github/workflows/release.yml` ("Assert VERSION is inside every archive") |
 | A re-run of the release job does not fail on an existing release | `gh release edit` + `gh release upload --clobber` in `release.yml` |
+| `tools/harness-view/Cargo.toml` matches the repo version | `scripts/validate_release.py` (and re-asserted per target in the `binaries` job) |
+| The built binary reports the release version | `binaries` job runs `harness-view --version` on the natively-runnable targets |
+| Standalone binaries are attached for every supported platform | `.github/workflows/release.yml` (`binaries` matrix job) |
+| Re-running the binaries job replaces assets instead of failing | `gh release upload --clobber` in the `binaries` job |
+| The application icon exists and carries every required size | `scripts/make_icons.py --check` (`guardrails` job) |
 | No em-dashes in any generated or written content | convention - checked by review, not tooling |
 
 ## Withdrawing a release

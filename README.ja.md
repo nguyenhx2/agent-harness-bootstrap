@@ -206,31 +206,37 @@ AGENTS.md + CLAUDE.md
 
 ### 🔭 `harness-view` - 任意のネイティブビューア
 
-スキル本体が出力するHTML(`docs/context/harness-graph.html`)はPythonとブラウザだけで動き、
+スキル自身が出力するHTML(`docs/context/harness-graph.html`)はPythonとブラウザだけで動き、
 これが標準のままである。[`tools/harness-view`](tools/harness-view/) はその上位版 - 同じ
-`.claude/state/harness-graph.json` を読む小さなRustバイナリで、リアルタイム更新のUI、
-ファイル監視、安全なランタイム切り替えを追加する。欲しい場合だけ導入すればよい。
+`.claude/state/harness-graph.json` 契約を読み、ライブ更新するUI、ファイル監視、安全な
+ランタイムトグルを加えた小さなRust製バイナリである。
+
+各リリースには Windows / macOS(Intel と Apple Silicon)/ Linux 向けの
+**スタンドアロン実行ファイル**が添付される - ツールチェーンもPythonもインストール作業も不要。
+Windows ではリポジトリに置いてダブルクリックすれば、引数なしでそのフォルダを配信し
+ブラウザを開く。ソースからビルドする場合は `cargo install --path tools/harness-view`。
 
 ```
-cargo install --path tools/harness-view
+harness-view                              # カレントフォルダを配信し、ブラウザを開く
+harness-view scan  [path]                 # .claude/state/harness-graph.json を書き出す
+harness-view serve [path] [--port 7420]   # Flow + Graph 表示、詳細パネル、安全なトグル
+harness-view watch [path]                 # .claude/ や docs/ の変更でグラフを再構築する
 ```
 
-- `harness-view scan [path]` - `.claude/state/harness-graph.json` を書き出す(スキルのPython製
-  スキャナと同じスキーマ)。
-- `harness-view serve [path]` - 同じグラフを2通りに表示するローカルWeb UI: 階層表示の **Flow**
-  ビューと力学モデルの **Graph** ビュー、さらに `/harness-toggle` と同じHARD/SOFTの安全階層で
-  ルール・コマンド・フックを無効化/有効化できる詳細パネル。
-- `harness-view watch [path]` - `.claude/` や `docs/` の変更を検知してグラフを自動的に再構築する。
+OSごとのダウンロード方法、ダブルクリックの挙動、他リポジトリの指定方法、エンドポイントと
+安全性モデルまで含めた完全な手順は
+[`tools/harness-view/README.md`](tools/harness-view/README.md) にある。
 
-完全に任意である。ハーネス側は何も要求せず、同梱のHTMLビューアが同じ2つのビューをインストール
-不要で提供する。
+これは完全に任意である: ハーネスの動作に必須ではなく、同梱のHTMLビューアが同じ2つの表示を
+インストール不要でカバーする。
 
 ---
 
 ## 🎛️ ブートストラップ後のチューニング
 
 ハーネスの初期設定は固定ではない。ブートストラップ後にそれを調整するための8個のコマンドが、
-ブートストラップされたすべてのリポジトリに同梱される - 完全なガイド、実例、それぞれが強制する
+ブートストラップされたすべてのリポジトリに同梱される。加えて、`spec-builder` の仕様セットに
+同梱される2個(`/spec-ingest`、`/spec-retract`)がある - 完全なガイド、実例、それぞれが強制する
 不変条件は [`docs/TUNING.md`](docs/TUNING.md) にある。
 
 | コマンド | 何をするか |
@@ -251,14 +257,41 @@ cargo install --path tools/harness-view
 
 ---
 
+## 🛠️ デリバリーコマンド
+
+ハーネスの保守ではなく、通常の機能開発の中で実行されるもう一つのコマンド群がある - タスクの登録、
+FRの実装、テストの実行、diffのレビュー、デプロイなど。各コマンドが何を書き込み、何を拒否するかを
+含む完全なリファレンス: [`docs/FLOWS.md` の7節](docs/FLOWS.md#7-delivery-commands-command-by-command)。
+
+| コマンド | 何をするか | 出荷条件 |
+|---|---|---|
+| [`/new-task`](docs/FLOWS.md#new-task-short-title) | テンプレートからタスクファイルを作成し、マスタープランに登録する | 無条件 |
+| [`/implement-fr`](docs/FLOWS.md#implement-fr-fr-id) | 機能要件(FR)を受け入れ基準に対して最初から最後まで計画・実装する | 無条件 |
+| [`/scaffold-feature`](docs/FLOWS.md#scaffold-feature-feature-slug) | 機能の骨格(エントリーポイント、モジュール、コンポーネント、失敗するテスト)を作成する - ロジックは書かない | 無条件 |
+| [`/db-migration`](docs/FLOWS.md#db-migration-migration-name) | ローカルDBのみに対してマイグレーションを生成し、データを失いうる変更はエスカレーションする | `db` |
+| [`/seed-db`](docs/FLOWS.md#seed-db) | 決定的・合成的・冪等なデータでローカル/開発用DBをシードする | `db` + `db_seeder` |
+| [`/test`](docs/FLOWS.md#test) | lintとunit/e2eスイートを実行し、失敗を担当エージェントごとに報告する | `tests` |
+| [`/review-changes`](docs/FLOWS.md#review-changes) | PR/MRの前に現在のdiffへコード+セキュリティレビューを行う - マージもデプロイもしない | 無条件 |
+| [`/secret-scan`](docs/FLOWS.md#secret-scan) | diffをシークレットと機密データについてスキャンする - 検出されたらローテーションされるまでブロック | 無条件 |
+| [`/deploy`](docs/FLOWS.md#deploy) | すべての前提条件が揃ってからデプロイする - 起動できるのは人間だけで、モデルからは絶対に起動されない | 無条件 |
+| [`/new-adr`](docs/FLOWS.md#new-adr-decision-title) | Architecture Decision Recordを作成する - Accepted になったADRはフックにより変更不可になる | 無条件 |
+| [`/new-spec-section`](docs/FLOWS.md#new-spec-section-section-number-or-name) | `docs/specs/` の欠けているセクションをスキャフォルドする | 無条件 |
+| [`/sync-context`](docs/FLOWS.md#sync-context) | 直近の変更から `docs/context/`(ルール・既知の課題・変更履歴・用語集)を更新する | 無条件 |
+| [`/task-resume`](docs/FLOWS.md#task-resume-task-nnn) | コンパクション後やクラッシュ後にタスクを再開する - 会話の記憶よりファイルを信頼する | 無条件 |
+| [`/brainstorm`](docs/FLOWS.md#brainstorm-topic) | ある決定事項について選択肢とトレードオフを構造化する - ユーザーの代わりに決めることは決してしない | `long` |
+| [`/security-scan`](docs/FLOWS.md#security-scan-repo-slug) | 固定されたスキャナ一式を読み取り専用マウントで実行し、新規findingを記録する | `audit` モードのみ |
+| [`/triage-findings`](docs/FLOWS.md#triage-findings-repo-slug) | findingを確認・採点・要件へのアンカリング・タスク登録する - 修正自体は絶対に行わない | `audit` モードのみ |
+
+---
+
 ## 🗺️ ドキュメント一覧
 
 | | |
 |---|---|
-| [`docs/FLOWS.md`](docs/FLOWS.md) | 7つの図: スキャフォルダ、機能追加の一連の流れ、コンテキストの読み込み |
+| [`docs/FLOWS.md`](docs/FLOWS.md) | 7つの図とデリバリーコマンドのリファレンス: スキャフォルダ、機能追加の一連の流れ、コンテキストの読み込み |
 | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) | RAM とディスク、クラッシュからの再開プロトコル、ハード制御とソフト制御の違い |
 | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) | スコアカード。できないことも含む |
-| [`docs/TUNING.md`](docs/TUNING.md) | ブートストラップ後の8個のチューニングコマンドの完全版 |
+| [`docs/TUNING.md`](docs/TUNING.md) | ブートストラップ後の8個のチューニングコマンドと `spec-builder` の ingest/retract ペアの完全版 |
 | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) | 各スキルの質問セットが何を探るか、なぜ重要か - 両スキルのフロー図付き |
 | [`docs/RELEASING.md`](docs/RELEASING.md) | セマンティックバージョニング、成果物、リリースノートの書式 |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 開発環境のセットアップ、PRが通るべきゲート、アセット編集のルール |

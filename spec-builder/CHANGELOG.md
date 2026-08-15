@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.9.0] - 2026-08-15
+
+### Changed
+
+- Documentation only for this skill: `/spec-ingest` and `/spec-retract` gained full reference
+  sections with worked examples, what they write, and what they refuse to do.
+
 ## [1.8.2] - 2026-08-15
 
 ### Fixed

@@ -70,6 +70,12 @@ jobs:
       - name: Embedded page JavaScript must parse
         run: python scripts/check_js.py
 
+      # The application icon is compiled into the Windows .exe by build.rs. A missing or
+      # truncated icon.ico fails that build on the release runner, long after the commit
+      # that broke it; this catches it on the PR instead.
+      - name: Application icons must be present and complete
+        run: python scripts/make_icons.py --check
+
       # The Cursor/Codex porter's hook adapter must actually block, not just render. It scaffolds a
       # harness, ports it, and fires sample Cursor payloads at the adapter.
       - name: Port adapter must enforce (Cursor/Codex)

@@ -112,6 +112,26 @@ def main() -> int:
                 f"SKILL.md frontmatter says {skill_v} - bump one to match the other"
             )
 
+    # The native viewer ships as a release artifact with its version compiled into the
+    # binary (Windows VERSIONINFO, `--version`, the served page footer). Cargo.toml is
+    # the only place that number comes from, so a drift here means a downloaded .exe
+    # reports a version the release never had. Checked here rather than left to a human.
+    cargo = ROOT / "tools" / "harness-view" / "Cargo.toml"
+    if cargo.is_file():
+        text = cargo.read_text(encoding="utf-8")
+        m = re.search(r'^version\s*=\s*"(\d+\.\d+\.\d+)"', text, re.M)
+        if not m:
+            errs.append("tools/harness-view/Cargo.toml has no 'version = \"X.Y.Z\"' line")
+        else:
+            cargo_v = m.group(1)
+            expected = required or (next(iter(set(skill_md_versions.values())), None)
+                                    if len(set(skill_md_versions.values())) == 1 else None)
+            if expected and cargo_v != expected:
+                errs.append(
+                    f"tools/harness-view/Cargo.toml is {cargo_v} but the repo version is "
+                    f"{expected} - bump it, or the released binary reports the wrong version"
+                )
+
     # Both skills are released together under one repo version - a version present in one
     # SKILL.md and not the other means the release is half-bumped.
     distinct_skill_md = set(skill_md_versions.values())

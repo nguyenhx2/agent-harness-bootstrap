@@ -143,3 +143,112 @@ jobs:
           fi
           echo "attached:"
           gh release view "${GITHUB_REF_NAME}" --json assets -q '.assets[].name'
+
+  # Standalone application builds. Separate job so a compiler problem on one OS cannot
+  # stop the skill zips from shipping, and so each target builds on its own runner
+  # rather than through a cross toolchain that would need its own maintenance.
+  #
+  # `needs: release` is deliberate: the gates (including the Cargo.toml version sync)
+  # live in that job, and the release has to exist before anything can be attached.
+  binaries:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            ext: ""
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: ""
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ""
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from the tag
+        id: v
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            V="${{ github.event.inputs.version }}"; V="${V#v}"
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Assert the crate version matches the release
+        shell: bash
+        run: |
+          # The binary stamps its own version from Cargo.toml, so a mismatch here
+          # would ship an .exe whose Properties tab disagrees with the release page.
+          CV=$(grep -m1 '^version = ' tools/harness-view/Cargo.toml | cut -d'"' -f2)
+          if [ "$CV" != "${{ steps.v.outputs.version }}" ]; then
+            echo "Cargo.toml is $CV but the release is ${{ steps.v.outputs.version }}" >&2
+            exit 1
+          fi
+          echo "crate version $CV matches the release"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+        working-directory: tools/harness-view
+
+      - name: Verify the built binary reports the release version
+        if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          # Only the natively-runnable targets: an aarch64 macOS runner cannot execute
+          # the x86_64 slice, so asserting there would be theatre.
+          BIN="tools/harness-view/target/${{ matrix.target }}/release/harness-view${{ matrix.ext }}"
+          OUT=$("$BIN" --version)
+          echo "$OUT"
+          [ "$OUT" = "harness-view ${{ steps.v.outputs.version }}" ]
+
+      - name: Package
+        shell: bash
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          NAME="harness-view-$V-${{ matrix.target }}"
+          mkdir -p "stage/$NAME"
+          cp "tools/harness-view/target/${{ matrix.target }}/release/harness-view${{ matrix.ext }}" "stage/$NAME/"
+          cp tools/harness-view/README.md tools/harness-view/SCHEMA.md "stage/$NAME/"
+          mkdir -p out
+          cd stage
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a -tzip "../out/$NAME.zip" "$NAME" >/dev/null
+          else
+            tar czf "../out/$NAME.tar.gz" "$NAME"
+          fi
+          cd ..
+          ls -la out/
+
+      - name: Checksum
+        shell: bash
+        run: |
+          cd out
+          for f in *; do
+            if command -v sha256sum >/dev/null; then sha256sum "$f" > "$f.sha256";
+            else shasum -a 256 "$f" > "$f.sha256"; fi
+          done
+          cat *.sha256
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # --clobber keeps this idempotent, matching how the skill zips are attached:
+          # a re-run of the workflow replaces the asset instead of failing on a duplicate.
+          gh release upload "${GITHUB_REF_NAME}" out/* --clobber
+          echo "attached $(ls out | tr '\n' ' ')"
