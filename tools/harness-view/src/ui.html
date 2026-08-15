@@ -11,6 +11,7 @@
   header b { margin-right: 8px; }
   button { font: inherit; padding: 4px 12px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
   button.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+  select { font: inherit; padding: 4px 8px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; }
   #legend { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
   #legend label { display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
   #legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
@@ -28,8 +29,13 @@
   #plan th { background: #f1f5f9; }
   #plan code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
   #plan .done { color: #15803d; } #plan .todo { color: var(--dim); }
-  #detail { width: 320px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; }
+  /* width is set inline from localStorage; the grip drags it */
+  #detail { width: 320px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; flex: 0 0 auto; }
   #detail.open { display: block; }
+  #grip { flex: 0 0 6px; cursor: col-resize; background: var(--line); opacity: 0.35; display: none; }
+  #grip.open { display: block; }
+  #grip:hover, #grip.dragging { opacity: 0.9; }
+  body.resizing { user-select: none; cursor: col-resize; }
   #detail h3 { font-size: 14px; margin-bottom: 6px; word-break: break-all; }
   #detail table { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
   #detail td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; }
@@ -58,6 +64,11 @@
   <button id="btn-graph">Graph</button>
   <button id="btn-plan" style="display:none">Master plan</button>
   <button id="btn-reload" title="Re-scan now">Reload</button>
+  <select id="linestyle" title="Connection line style">
+    <option value="curved">Curved</option>
+    <option value="ortho">Orthogonal</option>
+    <option value="straight">Straight</option>
+  </select>
   <label><input type="checkbox" id="auto"> auto-refresh 10s</label>
   <input id="root" list="roots" spellcheck="false" placeholder="repo path with a .claude/ folder">
   <datalist id="roots"></datalist>
@@ -68,6 +79,7 @@
 <main>
   <canvas id="cv"></canvas>
   <div id="plan"></div>
+  <div id="grip" title="Drag to resize"></div>
   <aside id="detail"></aside>
 </main>
 <footer><span id="stats"></span><span id="rootnow"></span><span id="hint">click a node to trace its connections</span></footer>
@@ -89,18 +101,38 @@ let graph = { nodes: [], edges: [] };
 let view = localStorage.getItem("hv-view") || "flow";
 let hidden = new Set(JSON.parse(localStorage.getItem("hv-hidden") || "null") || [...HIDE_DEFAULT]);
 let pos = {}, sel = null, drag = null, panzoom = { x: 0, y: 0, k: 1 };
+let lineStyle = localStorage.getItem("hv-line") || "curved";
 // Selection highlight: the ids in the connected set, and the edges that join
 // them. Empty when nothing is selected, which is also what stops the animation.
 let hi = { nodes: new Set(), edges: new Set() };
 let dashPhase = 0, anim = null;
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 
+// Measure what the panel actually occupies rather than assuming a constant:
+// the panel is resizable, so a hardcoded width desynchronises the canvas from
+// the layout the moment anyone drags the grip.
+function panelWidth() {
+  const d = document.getElementById("detail");
+  if (!d.classList.contains("open")) return 0;
+  return d.getBoundingClientRect().width + document.getElementById("grip").getBoundingClientRect().width;
+}
 function fit() {
   const r = cv.parentElement.getBoundingClientRect();
-  const side = document.getElementById("detail").classList.contains("open") ? 320 : 0;
-  cv.width = Math.max(100, r.width - side); cv.height = r.height; draw();
+  cv.width = Math.max(100, r.width - panelWidth()); cv.height = r.height; draw();
 }
-window.addEventListener("resize", fit);
+window.addEventListener("resize", () => { applySide(); fit(); });
+
+let sideW = Number(localStorage.getItem("hv-side")) || 320;
+function applySide() {
+  const max = Math.max(260, Math.round(window.innerWidth * 0.6));
+  sideW = Math.max(240, Math.min(max, sideW));
+  document.getElementById("detail").style.width = sideW + "px";
+  localStorage.setItem("hv-side", String(sideW));
+}
+function setPanel(open) {
+  document.getElementById("detail").classList.toggle("open", open);
+  document.getElementById("grip").classList.toggle("open", open);
+}
 
 let currentRoot = localStorage.getItem("hv-root") || "";
 
@@ -269,16 +301,136 @@ function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; } }
 function clearSel() {
   sel = null; hi = { nodes: new Set(), edges: new Set() };
   stopAnim();
-  document.getElementById("detail").classList.remove("open");
+  setPanel(false);
 }
+
+// --- edge routing -----------------------------------------------------------
+// Nodes are 24px tall and their width is measured before any edge is drawn, so
+// a line can stop at the box boundary. Anchoring at the centre (the old
+// behaviour) ran every line under the node and hid every arrowhead behind the
+// target, because nodes paint after edges.
+const NODE_HH = 12;
+function measureNodes() {
+  ctx.font = "12px ui-monospace, Consolas, monospace";
+  for (const n of graph.nodes) {
+    if (!visible(n)) continue;
+    const badge = nodeBadge(n);
+    const bw = badge ? ctx.measureText(badge.text).width + 10 : 0;
+    n._w = Math.max(60, ctx.measureText(label(n)).width + 18 + bw);
+  }
+}
+// The point on a node's box in the direction of (tx,ty).
+function anchor(p, hw, tx, ty) {
+  const dx = tx - p.x, dy = ty - p.y;
+  if (!dx && !dy) return { x: p.x, y: p.y };
+  const s = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? NODE_HH / Math.abs(dy) : Infinity);
+  return { x: p.x + dx * s, y: p.y + dy * s };
+}
+function face(p, hw, right) { return { x: p.x + (right ? hw : -hw), y: p.y }; }
+
+// Orthogonal routing gives every source its own vertical channel. Without that
+// each column pair shares one channel and the parallel runs merge into a single
+// thick line, which is worse than the curves it replaced.
+function channelIndex(vis) {
+  const byCol = {};
+  for (const n of vis) { const c = FLOW_COL[n.type] ?? 7; (byCol[c] = byCol[c] || []).push(n); }
+  const idx = {};
+  for (const c of Object.keys(byCol)) {
+    const ns = byCol[c].slice().sort((p, q) => pos[p.id].y - pos[q.id].y);
+    ns.forEach((n, i) => { idx[n.id] = i - (ns.length - 1) / 2; });
+  }
+  return idx;
+}
+
+// One edge's geometry: what to stroke, where the arrow lands, and a sampler for
+// the label. `ortho` has no sensible reading in the force-directed view, so it
+// falls back to straight there rather than drawing right angles through nodes.
+function edgeGeom(a, b, pa, pb, chanOff) {
+  const aw = (a._w || 80) / 2, bw = (b._w || 80) / 2;
+  const style = (view === "graph" && lineStyle === "ortho") ? "straight" : lineStyle;
+  if (view === "flow" && style !== "straight") {
+    const right = pb.x >= pa.x;
+    const s = face(pa, aw, right), e = face(pb, bw, !right);
+    if (style === "ortho") {
+      const mid = (s.x + e.x) / 2;
+      const lo = Math.min(s.x, e.x) + 10, hi = Math.max(s.x, e.x) - 10;
+      let cx = mid + (chanOff || 0) * 11;
+      if (hi > lo) cx = Math.max(lo, Math.min(hi, cx));
+      return { type: "poly", pts: [s, { x: cx, y: s.y }, { x: cx, y: e.y }, e] };
+    }
+    const mx = (s.x + e.x) / 2;
+    return { type: "bezier", s, c1: { x: mx, y: s.y }, c2: { x: mx, y: e.y }, e };
+  }
+  const s = anchor(pa, aw, pb.x, pb.y), e = anchor(pb, bw, pa.x, pa.y);
+  if (style === "curved") {
+    // a gentle bow so two edges between the same neighbourhood stay distinct
+    const dx = e.x - s.x, dy = e.y - s.y, len = Math.hypot(dx, dy) || 1;
+    const bow = Math.min(40, len * 0.12);
+    return { type: "quad", s, e, c: { x: (s.x + e.x) / 2 - dy / len * bow, y: (s.y + e.y) / 2 + dx / len * bow } };
+  }
+  return { type: "poly", pts: [s, e] };
+}
+function strokeGeom(g) {
+  ctx.beginPath();
+  if (g.type === "bezier") { ctx.moveTo(g.s.x, g.s.y); ctx.bezierCurveTo(g.c1.x, g.c1.y, g.c2.x, g.c2.y, g.e.x, g.e.y); }
+  else if (g.type === "quad") { ctx.moveTo(g.s.x, g.s.y); ctx.quadraticCurveTo(g.c.x, g.c.y, g.e.x, g.e.y); }
+  else { ctx.moveTo(g.pts[0].x, g.pts[0].y); for (let i = 1; i < g.pts.length; i++) ctx.lineTo(g.pts[i].x, g.pts[i].y); }
+  ctx.stroke();
+}
+function geomPoint(g, t) {
+  if (g.type === "bezier") {
+    const u = 1 - t;
+    return { x: u * u * u * g.s.x + 3 * u * u * t * g.c1.x + 3 * u * t * t * g.c2.x + t * t * t * g.e.x,
+             y: u * u * u * g.s.y + 3 * u * u * t * g.c1.y + 3 * u * t * t * g.c2.y + t * t * t * g.e.y };
+  }
+  if (g.type === "quad") {
+    const u = 1 - t;
+    return { x: u * u * g.s.x + 2 * u * t * g.c.x + t * t * g.e.x, y: u * u * g.s.y + 2 * u * t * g.c.y + t * t * g.e.y };
+  }
+  const pts = g.pts, seg = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); seg.push(d); total += d; }
+  let want = total * t;
+  for (let i = 0; i < seg.length; i++) {
+    if (want <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? want / seg[i] : 0;
+      return { x: pts[i].x + (pts[i + 1].x - pts[i].x) * f, y: pts[i].y + (pts[i + 1].y - pts[i].y) * f };
+    }
+    want -= seg[i];
+  }
+  return pts[pts.length - 1];
+}
+// The arrow follows the real tangent at the end. The old expression reduced to
+// atan2(0, ...) in flow view, so the head always pointed due east.
+function geomEnd(g) {
+  if (g.type === "bezier") return { p: g.e, ang: Math.atan2(g.e.y - g.c2.y, g.e.x - g.c2.x) };
+  if (g.type === "quad") return { p: g.e, ang: Math.atan2(g.e.y - g.c.y, g.e.x - g.c.x) };
+  const p = g.pts[g.pts.length - 1], q = g.pts[g.pts.length - 2];
+  return { p, ang: Math.atan2(p.y - q.y, p.x - q.x) };
+}
+
+// Labels are only worth drawing when they can be read. What limits them is not
+// the edge count but whether a pill fits somewhere free, so the collision test
+// below does the rationing: on this board it keeps 133 of 387 candidates and
+// drops the rest. The only extra gate is a zoom floor, because below it the
+// text is too small to read whether it collides or not. Lit edges are exempt:
+// tracing a connection is exactly when the edge type matters.
+const LABEL_MIN_ZOOM = 0.5;
+let labelRects = [];
 
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.translate(panzoom.x, panzoom.y); ctx.scale(panzoom.k, panzoom.k);
   ctx.font = "12px ui-monospace, Consolas, monospace";
+  measureNodes();
   const byId = Object.fromEntries(graph.nodes.map(n => [n.id, n]));
   const active = hi.nodes.size > 0;
+  const vis = graph.nodes.filter(visible);
+  const chan = (view === "flow" && lineStyle === "ortho") ? channelIndex(vis) : null;
+  const roomy = panzoom.k >= LABEL_MIN_ZOOM;
+  const cand = [];
+
   graph.edges.forEach((e, i) => {
     const a = byId[e.from], b = byId[e.to];
     if (!a || !b || !visible(a) || !visible(b)) return;
@@ -292,26 +444,40 @@ function draw() {
     // ordinary disabled edge keeps the static dash it always had.
     if (lit) { ctx.setLineDash([9, 6]); ctx.lineDashOffset = -dashPhase; }
     else ctx.setLineDash(off ? [4, 3] : []);
+    const g = edgeGeom(a, b, pa, pb, chan ? chan[a.id] : 0);
+    strokeGeom(g);
+    ctx.setLineDash([]); ctx.lineDashOffset = 0;
+    const { p: ep, ang } = geomEnd(g);
     ctx.beginPath();
-    const mx = (pa.x + pb.x) / 2;
-    if (view === "flow") { ctx.moveTo(pa.x, pa.y); ctx.bezierCurveTo(mx, pa.y, mx, pb.y, pb.x, pb.y); }
-    else { ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); }
-    ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
-    const ang = Math.atan2(pb.y - (view === "flow" ? pb.y : pa.y), pb.x - (view === "flow" ? mx : pa.x));
-    ctx.beginPath();
-    ctx.moveTo(pb.x - 10 * Math.cos(ang - 0.4), pb.y - 10 * Math.sin(ang - 0.4));
-    ctx.lineTo(pb.x, pb.y);
-    ctx.lineTo(pb.x - 10 * Math.cos(ang + 0.4), pb.y - 10 * Math.sin(ang + 0.4));
+    ctx.moveTo(ep.x - 10 * Math.cos(ang - 0.4), ep.y - 10 * Math.sin(ang - 0.4));
+    ctx.lineTo(ep.x, ep.y);
+    ctx.lineTo(ep.x - 10 * Math.cos(ang + 0.4), ep.y - 10 * Math.sin(ang + 0.4));
     ctx.stroke();
-    if ((view === "flow" || panzoom.k >= 1.2) && (!active || lit)) {
-      const lx = mx, ly = (pa.y + pb.y) / 2;
-      const w = ctx.measureText(e.type).width + 8;
-      ctx.fillStyle = "#ffffff"; ctx.strokeStyle = lit ? "#bfdbfe" : "#e2e8f0";
-      ctx.beginPath(); ctx.roundRect(lx - w / 2, ly - 8, w, 14, 7); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = lit ? "#1d4ed8" : "#64748b"; ctx.textAlign = "center"; ctx.fillText(e.type, lx, ly + 3);
-    }
     ctx.globalAlpha = 1;
+    if (lit || (!active && roomy)) {
+      // spread the anchor along the path so parallel edges do not all label at
+      // the same midpoint, then let the collision test drop what still clashes
+      const t = 0.34 + 0.32 * ((i % 5) / 4);
+      const q = geomPoint(g, t);
+      cand.push({ x: q.x, y: q.y, w: ctx.measureText(e.type).width + 8, h: 14, text: e.type, lit });
+    }
   });
+
+  // lit labels claim their space first, so a traced connection is never the one
+  // that gets dropped
+  labelRects = [];
+  cand.sort((p, q) => (q.lit ? 1 : 0) - (p.lit ? 1 : 0));
+  for (const L of cand) {
+    const clash = labelRects.some(r =>
+      Math.abs(r.x - L.x) < (r.w + L.w) / 2 && Math.abs(r.y - L.y) < (r.h + L.h) / 2);
+    if (clash) continue;
+    labelRects.push(L);
+    ctx.fillStyle = "#ffffff"; ctx.strokeStyle = L.lit ? "#bfdbfe" : "#e2e8f0"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(L.x - L.w / 2, L.y - 8, L.w, 14, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = L.lit ? "#1d4ed8" : "#64748b"; ctx.textAlign = "center"; ctx.fillText(L.text, L.x, L.y + 3);
+  }
+  ctx.textAlign = "left";
+
   for (const n of graph.nodes) {
     if (!visible(n)) continue;
     const p = pos[n.id]; if (!p) continue;
@@ -320,7 +486,7 @@ function draw() {
     const lit = !active || hi.nodes.has(n.id);
     ctx.globalAlpha = lit ? (n.disabled ? 0.75 : 1) : 0.16;
     const bw = badge ? ctx.measureText(badge.text).width + 10 : 0;
-    const w = Math.max(60, ctx.measureText(text).width + 18 + bw);
+    const w = n._w || Math.max(60, ctx.measureText(text).width + 18 + bw);
     ctx.fillStyle = n.disabled ? "#9ca3af" : (COLORS[n.type] || "#94a3b8");
     ctx.strokeStyle = sel === n.id ? "#0f172a" : (n.disabled ? "#b91c1c" : "rgba(0,0,0,0.15)");
     ctx.lineWidth = sel === n.id ? 2.5 : (n.disabled ? 1.6 : 1);
@@ -380,16 +546,25 @@ function hit(mx, my) {
 }
 cv.addEventListener("mousedown", ev => {
   const n = hit(ev.offsetX, ev.offsetY);
-  if (n) { drag = { id: n.id, dx: ev.offsetX, dy: ev.offsetY }; select(n); }
-  else { drag = { pan: true, dx: ev.offsetX, dy: ev.offsetY }; clearSel(); fit(); }
+  if (n) { drag = { id: n.id, dx: ev.offsetX, dy: ev.offsetY, moved: 0 }; select(n); }
+  // A pan must not disturb the selection. Deselecting belongs to a CLICK - a
+  // press and release that did not move - so the decision waits for mouseup.
+  else drag = { pan: true, dx: ev.offsetX, dy: ev.offsetY, moved: 0 };
 });
 cv.addEventListener("mousemove", ev => {
   if (!drag) return;
-  if (drag.pan) { panzoom.x += ev.offsetX - drag.dx; panzoom.y += ev.offsetY - drag.dy; }
-  else { const p = pos[drag.id]; p.x += (ev.offsetX - drag.dx) / panzoom.k; p.y += (ev.offsetY - drag.dy) / panzoom.k; }
+  const ddx = ev.offsetX - drag.dx, ddy = ev.offsetY - drag.dy;
+  drag.moved += Math.abs(ddx) + Math.abs(ddy);
+  if (drag.pan) { panzoom.x += ddx; panzoom.y += ddy; }
+  else { const p = pos[drag.id]; p.x += ddx / panzoom.k; p.y += ddy / panzoom.k; }
   drag.dx = ev.offsetX; drag.dy = ev.offsetY; draw();
 });
-window.addEventListener("mouseup", () => drag = null);
+window.addEventListener("mouseup", () => {
+  // fit() belongs here, not in mousedown: it is needed only because clearing
+  // the selection closes the side panel and so changes the canvas width.
+  if (drag && drag.pan && drag.moved < 4) { clearSel(); fit(); }
+  drag = null;
+});
 cv.addEventListener("wheel", ev => {
   ev.preventDefault();
   const k = Math.max(0.3, Math.min(3, panzoom.k * (ev.deltaY < 0 ? 1.1 : 0.9)));
@@ -413,7 +588,7 @@ function select(n) {
   hi = computeHighlight(n.id);
   startAnim();
   const d = document.getElementById("detail");
-  d.classList.add("open");
+  setPanel(true);
   d.textContent = "";
   const h3 = document.createElement("h3");
   h3.textContent = label(n);
@@ -590,6 +765,26 @@ document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorag
 document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-plan").onclick = () => { view = "plan"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-reload").onclick = () => load();
+const lineSel = document.getElementById("linestyle");
+lineSel.value = lineStyle;
+lineSel.onchange = () => {
+  lineStyle = lineSel.value; localStorage.setItem("hv-line", lineStyle);
+  hint(); draw();
+};
+// Drag the grip to resize the panel. The canvas is refitted on every move so
+// the two never disagree about how much room is left.
+const grip = document.getElementById("grip");
+grip.addEventListener("mousedown", ev => {
+  ev.preventDefault();
+  const startX = ev.clientX, startW = sideW;
+  document.body.classList.add("resizing"); grip.classList.add("dragging");
+  const move = e => { sideW = startW + (startX - e.clientX); applySide(); fit(); };
+  const up = () => {
+    document.body.classList.remove("resizing"); grip.classList.remove("dragging");
+    window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up);
+  };
+  window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+});
 const rootInput = document.getElementById("root");
 function loadTyped() { load(rootInput.value.trim()); }
 document.getElementById("btn-load").onclick = loadTyped;
@@ -601,6 +796,13 @@ let timer = null;
 // argument, which load() would read as a root override
 function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(() => load(), 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
 auto.onchange = syncAuto;
+function hint() {
+  const el = document.getElementById("hint");
+  if (view === "plan") { el.textContent = "docs/tasks/master-plan.md"; return; }
+  el.textContent = (view === "graph" && lineStyle === "ortho")
+    ? "orthogonal routing applies to Flow view; drawn straight here"
+    : "click a node to trace its connections";
+}
 function sync() {
   const plan = view === "plan";
   document.getElementById("btn-flow").classList.toggle("active", view === "flow");
@@ -608,8 +810,7 @@ function sync() {
   document.getElementById("btn-plan").classList.toggle("active", plan);
   document.getElementById("plan").classList.toggle("open", plan);
   cv.style.display = plan ? "none" : "block";
-  document.getElementById("hint").textContent = plan
-    ? "docs/tasks/master-plan.md" : "click a node to trace its connections";
+  hint();
   if (plan) { stopAnim(); if (planText !== null) renderPlan(planText); return; }
   layout(); fitView(graph.nodes.filter(visible)); draw();
 }
@@ -617,6 +818,7 @@ function sync() {
 // used to run first, any failure skipped fit() and left a 300x150 canvas
 // stretched over the window - a blank page with no explanation.
 buildRoots();
+applySide();
 fit();
 syncAuto();
 // Fall back to the server's own root if the remembered one no longer resolves.
