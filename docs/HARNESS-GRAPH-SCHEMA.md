@@ -37,11 +37,16 @@ extra keys; anything that writes it must preserve the guarantees below.
 
 `meta` by type:
 
-- `agent`: `model` (string, `inherit` when unset), `effort`?, `maxTurns`? (int), `tools`? (string list)
+- `agent`: `model` (string, `inherit` when unset), `effort`?, `maxTurns`? (int), `tools`? (string list),
+  `description`? (frontmatter `description:`, trimmed, capped at 300 chars)
 - `rule`: `scoped` (bool - has `paths:` frontmatter), `paths`? (first globs, max 8, values
-  unquoted - surrounding single/double quotes from the frontmatter are stripped)
+  unquoted - surrounding single/double quotes from the frontmatter are stripped), `description`?
+- `command`: `description`? only (same rule as the agent one)
 - `hook`: `registered` (bool - appears in settings.json hook arrays), `event`?, `matcher`?,
   `blocking`? (true when `event == "PreToolUse"`)
+- `task`: `title`? `status`? `fr`? `owner`? `deps`? `priority`? `phase`? - the board fields from
+  the task frontmatter. A trailing YAML comment is stripped, so the template's
+  `status: Done # Active | Blocked | Pending | Done` reads as `Done`.
 - `module`: `files` (int) AND `owner` (agent name from code-graph.json, `"-"` when unowned)
 - `settings`: no meta - the settings node carries `id`/`type`/`label`/`file`/`disabled` only
 
@@ -72,7 +77,7 @@ Inventory rules:
 | `invokes` | a human runs a slash command | human -> command |
 | `runs` | a command executes a script - one edge per distinct `.claude/scripts/<name>.py` referenced in the command body | command -> script |
 | `spawns` | the orchestrator can dispatch a seat | agent:orchestrator -> agent |
-| `owns` | a dev agent owns a code module | agent -> module |
+| `owns` | a dev agent owns a code module, or owns a task (its `owner:` frontmatter) | agent -> module, agent -> task |
 | `references` | module imports module, or a task names a module | module -> module, task -> module |
 
 ## Inputs the scanner merges

@@ -34,7 +34,16 @@ harness-view watch [path]                 # rebuild the graph on .claude/ or doc
   commands, with edge-type labels) and **Graph** (force-directed). The legend
   toggles node types; modules, tasks and scripts are hidden by default. Every
   request to `/graph.json` re-scans, so the page is always current; an optional
-  10 second auto-refresh keeps it live.
+  10 second auto-refresh keeps it live. Clicking a node traces its connected
+  subgraph: the node, its neighbours, and the edges between any two of them are
+  drawn with a marching dash while everything unrelated fades back. Hooks carry
+  a `PRE`/`POST`/`STOP` badge for the event they fire on, blocking hooks in
+  red; tasks carry their board status; a disabled item is dashed, red-bordered
+  and struck through. A third **Master plan** tab appears only when the repo has
+  `docs/tasks/master-plan.md`.
+- The path box in the header re-points the viewer at any repo with a `.claude/`
+  folder, so one running server can inspect several projects. Recent paths are
+  remembered in the browser, never on disk.
 - `watch` uses OS file notifications and rewrites
   `.claude/state/harness-graph.json` on every change burst (500 ms debounce).
   Events under `.claude/state/` are ignored so the rebuild never re-triggers
@@ -76,6 +85,20 @@ The endpoint only accepts same-origin browser requests: a request with a
 foreign `Origin` or a `Sec-Fetch-Site` other than `same-origin`/`none`, or
 without `Content-Type: application/json`, is refused with 403. This stops a
 page open in another tab from silently mutating `.claude/` while `serve` runs.
+
+### Reading a file
+
+`GET /file?root=<repo>&path=<repo-relative path>` backs the sidebar's Preview
+and the Master plan tab. It is read-only and deliberately narrow:
+
+- only `.claude/` and `docs/` are readable - nothing else in the repo is served
+- both sides are canonicalized and the result must still sit inside the root,
+  so `..`, an absolute path, and a symlink pointing out of the tree are all
+  refused by the same check rather than by pattern-matching the string
+- the body is capped at 256 KB and truncated with a visible marker
+- it is always `text/plain` with `X-Content-Type-Options: nosniff`, never
+  `text/html`, and the page renders it with `textContent`
+- the same same-origin rules as `/toggle` apply
 
 ## Development
 

@@ -77,6 +77,58 @@ def frontmatter_field(head: str, key: str) -> str | None:
     return m.group(1) if m else None
 
 
+def strip_comment(s: str) -> str:
+    """Drop a trailing YAML comment: `Done # Active | Blocked` -> `Done`.
+
+    A `#` only opens a comment when whitespace precedes it, so `P0#1` survives.
+    Real task files keep the template's enum comment on the line, and without
+    this the status reads as "Done # Active | Blocked | Pending | Done".
+    """
+    if s[:1] in ('"', "'"):
+        return s
+    for i, ch in enumerate(s):
+        if ch == "#" and (i == 0 or s[i - 1].isspace()):
+            return s[:i].rstrip()
+    return s
+
+
+def unquote(s: str) -> str:
+    """Strip one matched pair of surrounding quotes."""
+    t = s.strip()
+    if len(t) >= 2 and t[0] in "\"'" and t[-1] == t[0]:
+        return t[1:-1]
+    return t
+
+
+def frontmatter_block(text: str) -> str:
+    """The leading `---` fenced block, or "" when the file has none.
+
+    Read the BLOCK, not the first N bytes: a `description:` line in the prose
+    body is not frontmatter, and a long value can sit past any byte cap. The
+    Rust twin parses the block the same way, and the two must agree exactly.
+    """
+    if not text.startswith("---"):
+        return ""
+    rest = text[3:]
+    end = rest.find("\n---")
+    return rest[:end] if end != -1 else rest
+
+
+def description_field(text: str) -> str | None:
+    """Frontmatter `description:`, trimmed and capped at 300 chars.
+
+    The viewer shows this in its sidebar, so a runaway value must not push the
+    rest of the panel off screen; the full text is one Preview click away.
+    """
+    raw = frontmatter_field(frontmatter_block(text), "description")
+    if not raw:
+        return None
+    d = unquote(raw).strip()
+    if not d:
+        return None
+    return d[:300] + "..." if len(d) > 300 else d
+
+
 def load_disabled(claude: pathlib.Path) -> dict[str, dict]:
     """-> {'<kind>/<name>': entry} from .claude/disabled.json (absent = empty)."""
     out: dict[str, dict] = {}
@@ -167,6 +219,9 @@ def build(root: pathlib.Path) -> dict:
             tools = frontmatter_field(head, "tools")
             if tools:
                 meta["tools"] = [t.strip() for t in tools.split(",") if t.strip()]
+            desc = description_field(read_text(a))
+            if desc:
+                meta["description"] = desc
             add_node(f"agent:{a.stem}", "agent", a.stem, file=rel(a),
                      disabled=dis, meta=meta)
             if not dis:
@@ -187,6 +242,9 @@ def build(root: pathlib.Path) -> dict:
                                 head.split("paths:", 1)[1].split("---", 1)[0], re.M)
                 if pm:
                     meta["paths"] = pm[:8]
+            desc = description_field(read_text(rl))
+            if desc:
+                meta["description"] = desc
             entry = disabled_entries.get(f"rule/{rl.stem}")
             add_node(f"rule:{rl.stem}", "rule", rl.stem, file=rel(rl),
                      disabled=dis or bool(entry), meta=meta)
@@ -203,8 +261,13 @@ def build(root: pathlib.Path) -> dict:
     # commands (+ a runs edge for EVERY .claude/scripts/<name>.py reference)
     for d, dis in [(claude / "commands", False), (claude / "disabled" / "commands", True)]:
         for c in sorted(d.glob("*.md")) if d.is_dir() else []:
-            add_node(f"cmd:{c.stem}", "command", "/" + c.stem, file=rel(c), disabled=dis)
             body = read_text(c)
+            cmeta = {}
+            desc = description_field(body)
+            if desc:
+                cmeta["description"] = desc
+            add_node(f"cmd:{c.stem}", "command", "/" + c.stem, file=rel(c), disabled=dis,
+                     meta=cmeta or None)
             for s in sorted(set(re.findall(r"\.claude/scripts/([\w-]+)\.py", body))):
                 # nodes are the on-disk inventory; a reference to a script that
                 # does not exist stays a dangling edge (the viewers tolerate it)
@@ -274,8 +337,30 @@ def build(root: pathlib.Path) -> dict:
         mod_names = [(n["label"], n["label"].split("/")[-1])
                      for n in nodes.values() if n["type"] == "module"]
         for t in sorted(tasks_dir.rglob("TASK-*.md")):
-            add_node(f"task:{t.stem}", "task", t.stem, file=rel(t))
             body = read_text(t)
+            fm = frontmatter_block(body)
+            # The board fields, in the order the task template declares them.
+            # This is what makes a task readable without opening the file.
+            tmeta = {}
+            for key in ("title", "status", "fr", "owner", "deps", "priority", "phase"):
+                v = frontmatter_field(fm, key)
+                if v:
+                    v = unquote(strip_comment(v)).strip()
+                    if v:
+                        tmeta[key] = v
+            add_node(f"task:{t.stem}", "task", t.stem, file=rel(t), meta=tmeta or None)
+            # agent -owns-> task, the same edge type an agent uses for a module.
+            # Emitted only when the named seat exists: a task owned by a retired
+            # agent would otherwise anchor to nothing. (Contrast `runs`, which is
+            # deliberately allowed to dangle - a command naming a missing script
+            # is itself the finding.)
+            # Real boards co-own a task as "frontend-ui-dev+platform-dev", so
+            # each named seat gets its own edge. Dropping the pair entirely
+            # would leave a task that HAS owners looking unowned.
+            for one in (tmeta.get("owner") or "").split("+"):
+                one = one.strip()
+                if one and one in agents:
+                    add_edge(f"agent:{one}", f"task:{t.stem}", "owns")
             for m in [m for m, base in mod_names if base and base in body]:
                 add_edge(f"task:{t.stem}", f"mod:{m}", "references")
 
