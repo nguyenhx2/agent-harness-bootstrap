@@ -17,6 +17,7 @@
 //! SOFT-protected items with 409 unless the body carries confirm_soft: true.
 
 use crate::{scan, toggle};
+use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Request, Response, Server};
 
@@ -121,6 +122,56 @@ fn display_path(p: &Path) -> String {
     s.strip_prefix(r"\\?\").unwrap_or(&s).to_string()
 }
 
+/// Largest file body the preview will return. Anything past this is truncated
+/// with a visible marker rather than silently cut.
+const FILE_CAP: usize = 256 * 1024;
+
+/// Subtrees the preview may read. Everything the graph points at lives in one
+/// of these two, and an allow-list is the only containment rule that stays
+/// correct when the graph gains new node types.
+const READABLE: [&str; 2] = [".claude", "docs"];
+
+/// Resolve a repo-relative path for the preview, refusing anything that leaves
+/// the root or the readable subtrees.
+///
+/// Containment is decided AFTER canonicalizing both sides, so `..` segments, an
+/// absolute path, and a symlink pointing outside the repo are all caught by the
+/// same prefix check rather than by pattern-matching the string.
+fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
+    let cleaned = rel.trim().replace('\\', "/");
+    if cleaned.is_empty() {
+        return Err("no path given".into());
+    }
+    // Reject the obvious shapes early so the error names the real reason.
+    if cleaned.starts_with('/') || cleaned.contains("://") || cleaned.split('/').any(|s| s == "..")
+    {
+        return Err(format!("refused: path must stay inside the repo ({rel})"));
+    }
+    if cleaned.len() > 2 && cleaned.as_bytes()[1] == b':' {
+        return Err(format!("refused: absolute paths are not readable ({rel})"));
+    }
+    let first = cleaned.split('/').next().unwrap_or("");
+    if !READABLE.contains(&first) {
+        return Err(format!(
+            "refused: only .claude/ and docs/ are readable, not {first}/"
+        ));
+    }
+    let root_c = root.canonicalize().map_err(|e| format!("root: {e}"))?;
+    let target = root_c.join(&cleaned);
+    let target_c = target
+        .canonicalize()
+        .map_err(|_| format!("no such file: {cleaned}"))?;
+    // The decisive check: a symlink that escaped the repo fails here even
+    // though its textual path looked contained.
+    if !target_c.starts_with(&root_c) {
+        return Err(format!("refused: path escapes the repo ({rel})"));
+    }
+    if !target_c.is_file() {
+        return Err(format!("not a file: {cleaned}"));
+    }
+    Ok(target_c)
+}
+
 fn json_error(msg: &str, code: u16) -> Response<std::io::Cursor<Vec<u8>>> {
     let body = serde_json::json!({ "error": msg }).to_string();
     Response::from_string(body)
@@ -197,6 +248,59 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                     Err(msg) => json_error(&msg, 400),
                 }
             }
+            (Method::Get, "/file") => {
+                // Same cross-origin gate as the mutating endpoint, minus the
+                // Content-Type rule (a GET carries no body). Repo contents are
+                // not public just because the port is open.
+                let mut refused = None;
+                if let Some(origin) = header_value(&request, "Origin") {
+                    let allowed = [
+                        format!("http://127.0.0.1:{port}"),
+                        format!("http://localhost:{port}"),
+                    ];
+                    if !allowed.iter().any(|a| origin.eq_ignore_ascii_case(a)) {
+                        refused = Some(format!("cross-origin request refused (Origin: {origin})"));
+                    }
+                }
+                if let Some(site) = header_value(&request, "Sec-Fetch-Site") {
+                    let s = site.to_ascii_lowercase();
+                    if s != "same-origin" && s != "none" {
+                        refused =
+                            Some(format!("cross-origin request refused (Sec-Fetch-Site: {site})"));
+                    }
+                }
+                if let Some(msg) = refused {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let requested = query_param(&raw_url, "root");
+                let rel = query_param(&raw_url, "path").unwrap_or_default();
+                match resolve_root(requested.as_deref(), &root)
+                    .and_then(|target| resolve_file(&target, &rel))
+                {
+                    Ok(path) => match fs::read(&path) {
+                        Ok(bytes) => {
+                            let truncated = bytes.len() > FILE_CAP;
+                            let slice = if truncated { &bytes[..FILE_CAP] } else { &bytes[..] };
+                            let mut body = String::from_utf8_lossy(slice).into_owned();
+                            if truncated {
+                                body.push_str("\n\n... truncated at 256 KB by harness-view ...\n");
+                            }
+                            // text/plain, never text/html: the browser must not
+                            // be talked into rendering repo content as markup.
+                            Response::from_string(body)
+                                .with_header(header("Content-Type", "text/plain; charset=utf-8"))
+                                .with_header(header("X-Content-Type-Options", "nosniff"))
+                        }
+                        Err(e) => json_error(&format!("could not read: {e}"), 400),
+                    },
+                    Err(msg) => json_error(&msg, 400),
+                }
+            }
             (Method::Post, "/toggle") => {
                 if let Err(msg) = same_origin(&request, port) {
                     let _ = request.respond(
@@ -268,6 +372,50 @@ mod tests {
         assert_eq!(query_param(url, "root").as_deref(), Some(r"D:\Projects\msboost"));
         assert_eq!(query_param("/graph.json", "root"), None);
         assert_eq!(query_param("/graph.json?root=", "root"), None);
+    }
+
+    #[test]
+    fn resolve_file_refuses_everything_outside_the_readable_subtrees() {
+        let tmp = std::env::temp_dir().join("hv-serve-file-test");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(tmp.join(".claude/agents")).unwrap();
+        std::fs::create_dir_all(tmp.join("docs/tasks")).unwrap();
+        std::fs::write(tmp.join(".claude/agents/app-dev.md"), "# hi").unwrap();
+        std::fs::write(tmp.join("docs/tasks/TASK-01.md"), "# task").unwrap();
+        std::fs::write(tmp.join("SECRET.md"), "do not serve").unwrap();
+        // a real file outside the root, the target a traversal would want
+        let outside = tmp.parent().unwrap().join("hv-outside-secret.txt");
+        std::fs::write(&outside, "outside").unwrap();
+
+        // allowed
+        assert!(resolve_file(&tmp, ".claude/agents/app-dev.md").is_ok());
+        assert!(resolve_file(&tmp, "docs/tasks/TASK-01.md").is_ok());
+        // backslashes are normalized, not a bypass
+        assert!(resolve_file(&tmp, r".claude\agents\app-dev.md").is_ok());
+
+        // refused, each for its own stated reason
+        for bad in [
+            "../hv-outside-secret.txt",
+            ".claude/../../hv-outside-secret.txt",
+            "/etc/passwd",
+            "SECRET.md",
+            "docs/../SECRET.md",
+            "",
+            "http://example.com/x",
+        ] {
+            let e = resolve_file(&tmp, bad);
+            assert!(e.is_err(), "should have refused {bad:?}, got {e:?}");
+        }
+        // an absolute Windows path is refused by shape, before touching disk
+        let abs = tmp.join(".claude/agents/app-dev.md").display().to_string();
+        assert!(resolve_file(&tmp, &abs).is_err(), "absolute path must be refused");
+        // a directory is not a file
+        assert!(resolve_file(&tmp, ".claude/agents").is_err());
+        // a path under a readable prefix that does not exist
+        assert!(resolve_file(&tmp, ".claude/agents/nope.md").is_err());
+
+        let _ = std::fs::remove_file(&outside);
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[test]

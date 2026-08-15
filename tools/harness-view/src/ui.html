@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>harness-view</title>
 <style>
-  :root { --bg:#f8fafc; --panel:#ffffff; --ink:#0f172a; --line:#cbd5e1; }
+  :root { --bg:#f8fafc; --panel:#ffffff; --ink:#0f172a; --line:#cbd5e1; --dim:#64748b; }
   * { box-sizing: border-box; margin: 0; }
   body { font: 13px/1.4 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--ink); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
   header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -16,19 +16,39 @@
   #legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
   main { flex: 1; display: flex; min-height: 0; }
   canvas { flex: 1; display: block; }
-  #detail { width: 300px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; }
+  #plan { flex: 1; overflow-y: auto; padding: 16px 24px; display: none; background: var(--panel); }
+  #plan.open { display: block; }
+  #plan h1 { font-size: 19px; margin: 14px 0 8px; }
+  #plan h2 { font-size: 16px; margin: 14px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+  #plan h3 { font-size: 14px; margin: 12px 0 4px; }
+  #plan p, #plan li { margin: 3px 0; }
+  #plan ul { margin: 4px 0 4px 18px; }
+  #plan table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  #plan th, #plan td { border: 1px solid var(--line); padding: 3px 8px; text-align: left; }
+  #plan th { background: #f1f5f9; }
+  #plan code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+  #plan .done { color: #15803d; } #plan .todo { color: var(--dim); }
+  #detail { width: 320px; border-left: 1px solid var(--line); background: var(--panel); padding: 12px; overflow-y: auto; display: none; }
   #detail.open { display: block; }
   #detail h3 { font-size: 14px; margin-bottom: 6px; word-break: break-all; }
-  #detail table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-  #detail td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; word-break: break-all; }
-  #detail .off { color: #b91c1c; }
+  #detail table { width: 100%; border-collapse: collapse; margin: 8px 0; table-layout: fixed; }
+  #detail td { border-top: 1px solid #e2e8f0; padding: 3px 4px; vertical-align: top; }
+  /* the key column never wraps: "registered" used to break as "registere / d" */
+  #detail td.k { white-space: nowrap; width: 90px; color: var(--dim); }
+  #detail td.v { word-break: break-word; overflow-wrap: anywhere; }
+  #detail .desc { margin: 6px 0 2px; padding: 6px 8px; background: #f1f5f9; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
   #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
   .toggle-btn { margin-top: 8px; width: 100%; }
-  footer { padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: #64748b; display: flex; gap: 16px; }
+  .prev-btn { margin-top: 8px; width: 100%; }
+  pre.preview { margin-top: 8px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; }
+  footer { padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: var(--dim); display: flex; gap: 16px; }
   #root { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; width: 320px; }
   #banner { display: none; padding: 8px 12px; background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; white-space: pre-wrap; }
   #banner.on { display: block; }
-  #rootnow { color: #0f172a; }
+  #rootnow { color: var(--ink); }
+  .state { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+  .state.on { background: #dcfce7; color: #15803d; }
+  .state.off { background: #fee2e2; color: #b91c1c; }
 </style>
 </head>
 <body>
@@ -36,6 +56,7 @@
   <b>harness-view</b>
   <button id="btn-flow">Flow</button>
   <button id="btn-graph">Graph</button>
+  <button id="btn-plan" style="display:none">Master plan</button>
   <button id="btn-reload" title="Re-scan now">Reload</button>
   <label><input type="checkbox" id="auto"> auto-refresh 10s</label>
   <input id="root" list="roots" spellcheck="false" placeholder="repo path with a .claude/ folder">
@@ -46,9 +67,10 @@
 <div id="banner"></div>
 <main>
   <canvas id="cv"></canvas>
+  <div id="plan"></div>
   <aside id="detail"></aside>
 </main>
-<footer><span id="stats"></span><span id="rootnow"></span><span>edges: solid with type label; disabled items grey and dashed</span></footer>
+<footer><span id="stats"></span><span id="rootnow"></span><span id="hint">click a node to trace its connections</span></footer>
 <script>
 "use strict";
 const COLORS = {
@@ -58,13 +80,26 @@ const COLORS = {
 };
 const FLOW_COL = { rule: 0, hook: 1, settings: 1, agent: 2, gate: 3, human: 4, command: 5, script: 6, module: 6, task: 7 };
 const HIDE_DEFAULT = new Set(["module", "task", "script"]);
+// Hook event -> short badge. The scan carries the full event name; the node is
+// too small for "PostToolUse", and Pre/Post is the distinction that matters.
+const EVENT_BADGE = { PreToolUse: "PRE", PostToolUse: "POST", SubagentStop: "STOP",
+                      UserPromptSubmit: "PROMPT", SessionStart: "START", Stop: "STOP" };
+const STATUS_COLOR = { Active: "#1d4ed8", Blocked: "#b91c1c", Pending: "#a16207", Done: "#15803d" };
 let graph = { nodes: [], edges: [] };
 let view = localStorage.getItem("hv-view") || "flow";
 let hidden = new Set(JSON.parse(localStorage.getItem("hv-hidden") || "null") || [...HIDE_DEFAULT]);
 let pos = {}, sel = null, drag = null, panzoom = { x: 0, y: 0, k: 1 };
+// Selection highlight: the ids in the connected set, and the edges that join
+// them. Empty when nothing is selected, which is also what stops the animation.
+let hi = { nodes: new Set(), edges: new Set() };
+let dashPhase = 0, anim = null;
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 
-function fit() { const r = cv.parentElement.getBoundingClientRect(); cv.width = r.width - (document.getElementById("detail").classList.contains("open") ? 300 : 0); cv.height = r.height; draw(); }
+function fit() {
+  const r = cv.parentElement.getBoundingClientRect();
+  const side = document.getElementById("detail").classList.contains("open") ? 320 : 0;
+  cv.width = Math.max(100, r.width - side); cv.height = r.height; draw();
+}
 window.addEventListener("resize", fit);
 
 let currentRoot = localStorage.getItem("hv-root") || "";
@@ -115,25 +150,26 @@ async function load(rootOverride) {
   // Positions are keyed by node id, and two repos share ids like
   // "agent:orchestrator". Carrying them across a root change lays the new
   // graph out at the old one's scale, pushing nodes off the canvas.
-  if (changedRoot) { pos = {}; sel = null; document.getElementById("detail").classList.remove("open"); }
+  if (changedRoot) { pos = {}; clearSel(); }
   currentRoot = body.root || target || "";
   document.getElementById("root").value = currentRoot;
   document.getElementById("rootnow").textContent = currentRoot ? "root: " + currentRoot : "";
   rememberRoot(currentRoot);
   document.getElementById("stats").textContent = graph.nodes.length + " nodes, " + graph.edges.length + " edges";
-  buildLegend(); layout(); draw();
+  buildLegend(); await checkPlan(); layout(); fitView(graph.nodes.filter(visible)); draw();
   return true;
 }
 function types() { return [...new Set(graph.nodes.map(n => n.type))].sort(); }
 function visible(n) { return !hidden.has(n.type); }
 function label(n) { return n.label || n.id.split(":").slice(1).join(":") || n.id; }
+function meta(n, k) { return (n.meta || {})[k]; }
 
 function buildLegend() {
-  const el = document.getElementById("legend"); el.innerHTML = "";
+  const el = document.getElementById("legend"); el.textContent = "";
   for (const t of types()) {
     const l = document.createElement("label");
     const c = document.createElement("input"); c.type = "checkbox"; c.checked = !hidden.has(t);
-    c.onchange = () => { c.checked ? hidden.delete(t) : hidden.add(t); localStorage.setItem("hv-hidden", JSON.stringify([...hidden])); layout(); draw(); };
+    c.onchange = () => { c.checked ? hidden.delete(t) : hidden.add(t); localStorage.setItem("hv-hidden", JSON.stringify([...hidden])); layout(); fitView(graph.nodes.filter(visible)); draw(); };
     const i = document.createElement("i"); i.style.background = COLORS[t] || "#94a3b8";
     l.append(c, i, t); el.append(l);
   }
@@ -150,8 +186,20 @@ function layout() {
       ns.sort((a, b) => a.id.localeCompare(b.id));
       const orch = ns.findIndex(n => n.id === "agent:orchestrator");
       if (orch > 0) { const [o] = ns.splice(orch, 1); ns.splice(Math.floor(ns.length / 2), 0, o); }
-      const gap = Math.max(34, (cv.height - 60) / (ns.length + 1));
-      ns.forEach((n, i) => { pos[n.id] = { x: 60 + c * cw, y: 40 + (i + 1) * gap }; });
+      // A lane with far more nodes than fit wraps into sub-lanes instead of
+      // running thousands of pixels down. One board here carries 115 tasks: in a
+      // single lane the whole graph has to zoom to 0.25 to fit and no label is
+      // readable, so the fit that saves the view also destroys it.
+      const gap = 34;
+      const perLane = Math.max(1, Math.floor((cv.height - 80) / gap));
+      const lanes = Math.ceil(ns.length / perLane);
+      const laneW = lanes > 1 ? Math.min(210, cw / lanes) : 0;
+      ns.forEach((n, i) => {
+        const lane = Math.floor(i / perLane), row = i % perLane;
+        const inLane = Math.min(perLane, ns.length - lane * perLane);
+        const spread = lanes > 1 ? gap : Math.max(gap, (cv.height - 60) / (inLane + 1));
+        pos[n.id] = { x: 60 + c * cw + lane * laneW, y: 40 + (row + 1) * spread };
+      });
     }
   } else {
     const N = vis.length || 1, R = Math.min(cv.width, cv.height) / 2 - 60;
@@ -161,6 +209,23 @@ function layout() {
     forceSim(vis, 200);
   }
   if (view === "flow") for (const n of vis) pos[n.id].flow = true; else for (const n of vis) pos[n.id].flow = false;
+}
+
+// Scale and centre so the whole layout is on screen. Without this a real board
+// silently loses most of itself off the bottom edge: msboost lays 115 task nodes
+// into one column 3950px tall inside a 1018px canvas, so 87 of 172 nodes were
+// unreachable with no hint that they existed. Content you cannot see is the same
+// failure as a blank page.
+function fitView(vis) {
+  if (!vis.length) { panzoom = { x: 0, y: 0, k: 1 }; return; }
+  const xs = vis.map(n => pos[n.id].x), ys = vis.map(n => pos[n.id].y);
+  const pad = 90;  // room for the widest node label and its badge
+  const w = Math.max(...xs) - Math.min(...xs) + pad * 2;
+  const h = Math.max(...ys) - Math.min(...ys) + pad * 2;
+  const k = Math.max(0.15, Math.min(1, cv.width / w, cv.height / h));
+  panzoom.k = k;
+  panzoom.x = (cv.width - (Math.min(...xs) + Math.max(...xs)) * k) / 2;
+  panzoom.y = (cv.height - (Math.min(...ys) + Math.max(...ys)) * k) / 2;
 }
 function forceSim(vis, iters) {
   const ids = new Set(vis.map(n => n.id));
@@ -183,53 +248,124 @@ function forceSim(vis, iters) {
   }
 }
 
+// The connected set for a selection: the node, its direct neighbours, and the
+// edges BETWEEN any two members - so you also see how the neighbours relate to
+// each other, not just how they hang off the selection.
+function computeHighlight(id) {
+  const nodes = new Set([id]), edges = new Set();
+  for (const e of graph.edges) {
+    if (e.from === id) nodes.add(e.to);
+    else if (e.to === id) nodes.add(e.from);
+  }
+  graph.edges.forEach((e, i) => { if (nodes.has(e.from) && nodes.has(e.to)) edges.add(i); });
+  return { nodes, edges };
+}
+function startAnim() {
+  if (anim) return;
+  const tick = () => { dashPhase = (dashPhase + 0.7) % 24; draw(); anim = requestAnimationFrame(tick); };
+  anim = requestAnimationFrame(tick);
+}
+function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; } }
+function clearSel() {
+  sel = null; hi = { nodes: new Set(), edges: new Set() };
+  stopAnim();
+  document.getElementById("detail").classList.remove("open");
+}
+
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.translate(panzoom.x, panzoom.y); ctx.scale(panzoom.k, panzoom.k);
+  ctx.font = "12px ui-monospace, Consolas, monospace";
   const byId = Object.fromEntries(graph.nodes.map(n => [n.id, n]));
-  for (const e of graph.edges) {
+  const active = hi.nodes.size > 0;
+  graph.edges.forEach((e, i) => {
     const a = byId[e.from], b = byId[e.to];
-    if (!a || !b || !visible(a) || !visible(b)) continue;
-    const pa = pos[a.id], pb = pos[b.id]; if (!pa || !pb) continue;
+    if (!a || !b || !visible(a) || !visible(b)) return;
+    const pa = pos[a.id], pb = pos[b.id]; if (!pa || !pb) return;
+    const lit = hi.edges.has(i);
     const off = a.disabled || b.disabled;
-    ctx.strokeStyle = off ? "#cbd5e1" : "#94a3b8"; ctx.lineWidth = 1.2;
-    ctx.setLineDash(off ? [4, 3] : []);
+    if (active && !lit) { ctx.globalAlpha = 0.12; ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1; }
+    else if (lit) { ctx.globalAlpha = 1; ctx.strokeStyle = "#1d4ed8"; ctx.lineWidth = 2.2; }
+    else { ctx.globalAlpha = 1; ctx.strokeStyle = off ? "#cbd5e1" : "#94a3b8"; ctx.lineWidth = 1.2; }
+    // A lit edge animates by marching its dash pattern along the path; an
+    // ordinary disabled edge keeps the static dash it always had.
+    if (lit) { ctx.setLineDash([9, 6]); ctx.lineDashOffset = -dashPhase; }
+    else ctx.setLineDash(off ? [4, 3] : []);
     ctx.beginPath();
     const mx = (pa.x + pb.x) / 2;
     if (view === "flow") { ctx.moveTo(pa.x, pa.y); ctx.bezierCurveTo(mx, pa.y, mx, pb.y, pb.x, pb.y); }
     else { ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); }
-    ctx.stroke(); ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
     const ang = Math.atan2(pb.y - (view === "flow" ? pb.y : pa.y), pb.x - (view === "flow" ? mx : pa.x));
     ctx.beginPath();
     ctx.moveTo(pb.x - 10 * Math.cos(ang - 0.4), pb.y - 10 * Math.sin(ang - 0.4));
     ctx.lineTo(pb.x, pb.y);
     ctx.lineTo(pb.x - 10 * Math.cos(ang + 0.4), pb.y - 10 * Math.sin(ang + 0.4));
     ctx.stroke();
-    if (view === "flow" || panzoom.k >= 1.2) {
+    if ((view === "flow" || panzoom.k >= 1.2) && (!active || lit)) {
       const lx = mx, ly = (pa.y + pb.y) / 2;
       const w = ctx.measureText(e.type).width + 8;
-      ctx.fillStyle = "#ffffff"; ctx.strokeStyle = "#e2e8f0";
+      ctx.fillStyle = "#ffffff"; ctx.strokeStyle = lit ? "#bfdbfe" : "#e2e8f0";
       ctx.beginPath(); ctx.roundRect(lx - w / 2, ly - 8, w, 14, 7); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#64748b"; ctx.textAlign = "center"; ctx.fillText(e.type, lx, ly + 3);
+      ctx.fillStyle = lit ? "#1d4ed8" : "#64748b"; ctx.textAlign = "center"; ctx.fillText(e.type, lx, ly + 3);
     }
-  }
+    ctx.globalAlpha = 1;
+  });
   for (const n of graph.nodes) {
     if (!visible(n)) continue;
     const p = pos[n.id]; if (!p) continue;
     const text = label(n);
-    ctx.font = "12px ui-monospace, Consolas, monospace";
-    const w = Math.max(60, ctx.measureText(text).width + 18);
+    const badge = nodeBadge(n);
+    const lit = !active || hi.nodes.has(n.id);
+    ctx.globalAlpha = lit ? (n.disabled ? 0.75 : 1) : 0.16;
+    const bw = badge ? ctx.measureText(badge.text).width + 10 : 0;
+    const w = Math.max(60, ctx.measureText(text).width + 18 + bw);
     ctx.fillStyle = n.disabled ? "#9ca3af" : (COLORS[n.type] || "#94a3b8");
-    ctx.strokeStyle = sel === n.id ? "#0f172a" : "rgba(0,0,0,0.15)";
-    ctx.lineWidth = sel === n.id ? 2 : 1;
+    ctx.strokeStyle = sel === n.id ? "#0f172a" : (n.disabled ? "#b91c1c" : "rgba(0,0,0,0.15)");
+    ctx.lineWidth = sel === n.id ? 2.5 : (n.disabled ? 1.6 : 1);
     ctx.setLineDash(n.disabled ? [4, 3] : []);
-    ctx.globalAlpha = n.disabled ? 0.55 : 1;
     ctx.beginPath(); ctx.roundRect(p.x - w / 2, p.y - 12, w, 24, 6); ctx.fill(); ctx.stroke();
-    ctx.setLineDash([]); ctx.globalAlpha = 1;
-    ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.fillText(text, p.x, p.y + 4);
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#ffffff"; ctx.textAlign = "left";
+    const tx = p.x - w / 2 + 9;
+    ctx.fillText(text, tx, p.y + 4);
+    if (badge) {
+      const bx = p.x + w / 2 - bw - 4, tw = ctx.measureText(badge.text).width;
+      ctx.fillStyle = badge.bg;
+      ctx.beginPath(); ctx.roundRect(bx, p.y - 8, tw + 8, 16, 4); ctx.fill();
+      ctx.fillStyle = badge.fg; ctx.fillText(badge.text, bx + 4, p.y + 4);
+    }
+    // A disabled item reads as OFF at a glance: dashed red border, greyed
+    // fill, and the label struck through. Opacity alone did not register.
+    if (n.disabled) {
+      ctx.strokeStyle = "#7f1d1d"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(tx - 2, p.y); ctx.lineTo(tx + ctx.measureText(text).width + 2, p.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
     n._w = w;
   }
+  ctx.textAlign = "left";
+}
+
+// Badges: hooks show the event they fire on, blocking ones in red because a
+// PreToolUse hook can exit 2 and stop the call; tasks show their board status.
+function nodeBadge(n) {
+  if (n.type === "hook") {
+    const ev = meta(n, "event");
+    if (!ev) return { text: "OFF", bg: "#fecaca", fg: "#7f1d1d" };
+    const text = EVENT_BADGE[ev] || ev.slice(0, 5).toUpperCase();
+    return meta(n, "blocking")
+      ? { text, bg: "#7f1d1d", fg: "#fff" }
+      : { text, bg: "#fef3c7", fg: "#78350f" };
+  }
+  if (n.type === "task") {
+    const st = meta(n, "status");
+    if (!st) return null;
+    const c = STATUS_COLOR[st];
+    return c ? { text: st.toUpperCase().slice(0, 7), bg: c, fg: "#fff" } : null;
+  }
+  return null;
 }
 
 function hit(mx, my) {
@@ -245,7 +381,7 @@ function hit(mx, my) {
 cv.addEventListener("mousedown", ev => {
   const n = hit(ev.offsetX, ev.offsetY);
   if (n) { drag = { id: n.id, dx: ev.offsetX, dy: ev.offsetY }; select(n); }
-  else drag = { pan: true, dx: ev.offsetX, dy: ev.offsetY };
+  else { drag = { pan: true, dx: ev.offsetX, dy: ev.offsetY }; clearSel(); fit(); }
 });
 cv.addEventListener("mousemove", ev => {
   if (!drag) return;
@@ -262,31 +398,84 @@ cv.addEventListener("wheel", ev => {
   panzoom.k = k; draw();
 });
 
+function row(table, k, v, cls) {
+  const tr = document.createElement("tr");
+  const tdk = document.createElement("td"); tdk.className = "k"; tdk.textContent = k;
+  const tdv = document.createElement("td"); tdv.className = "v";
+  if (cls) { const s = document.createElement("span"); s.className = cls; s.textContent = v; tdv.append(s); }
+  else tdv.textContent = v;
+  tr.append(tdk, tdv); table.append(tr);
+  return tdv;
+}
+
 function select(n) {
   sel = n.id;
+  hi = computeHighlight(n.id);
+  startAnim();
   const d = document.getElementById("detail");
   d.classList.add("open");
-  const rows = [["id", n.id], ["type", n.type], ["file", n.file || "-"],
-    ["disabled", n.disabled ? "yes" : "no"]];
-  for (const [k, v] of Object.entries(n.meta || {})) rows.push([k, Array.isArray(v) ? v.join(", ") : String(v)]);
-  // built with DOM APIs, never innerHTML: meta values come from arbitrary
-  // repo frontmatter and must not become markup
   d.textContent = "";
   const h3 = document.createElement("h3");
   h3.textContent = label(n);
   d.append(h3);
+
+  const desc = meta(n, "description");
+  if (desc) { const p = document.createElement("div"); p.className = "desc"; p.textContent = desc; d.append(p); }
+
   const table = document.createElement("table");
-  for (const [k, v] of rows) {
-    const tr = document.createElement("tr");
-    const tdk = document.createElement("td");
-    tdk.textContent = k;
-    const tdv = document.createElement("td");
-    if (k === "disabled" && v === "yes") tdv.className = "off";
-    tdv.textContent = v;
-    tr.append(tdk, tdv);
-    table.append(tr);
+  row(table, "id", n.id);
+  row(table, "type", n.type);
+  // enabled/disabled first and as a badge: it is the thing a reader scans for
+  row(table, "state", n.disabled ? "DISABLED" : "enabled", n.disabled ? "state off" : "state on");
+  if (n.file) row(table, "file", n.file);
+  for (const [k, v] of Object.entries(n.meta || {})) {
+    if (k === "description") continue;
+    const val = Array.isArray(v) ? v.join(", ") : String(v);
+    if (k === "status") {
+      const cell = row(table, k, "");
+      const s = document.createElement("span");
+      s.className = "state"; s.textContent = val;
+      s.style.background = (STATUS_COLOR[val] || "#64748b") + "22";
+      s.style.color = STATUS_COLOR[val] || "#334155";
+      cell.append(s);
+    } else if (k === "owner") {
+      const cell = row(table, k, val);
+      // the owning seat is a node: say so, and let the reader jump to it
+      const owner = graph.nodes.find(x => x.id === "agent:" + val);
+      if (owner) {
+        cell.textContent = "";
+        const a = document.createElement("button");
+        a.textContent = val; a.style.padding = "1px 8px";
+        a.onclick = () => { select(owner); draw(); };
+        cell.append(a);
+      }
+    } else {
+      row(table, k, val);
+    }
   }
   d.append(table);
+
+  if (n.file) {
+    const btn = document.createElement("button");
+    btn.className = "prev-btn";
+    btn.textContent = "Preview file";
+    const pre = document.createElement("pre");
+    pre.className = "preview"; pre.style.display = "none";
+    btn.onclick = async () => {
+      if (pre.style.display === "block") { pre.style.display = "none"; btn.textContent = "Preview file"; return; }
+      btn.textContent = "Loading...";
+      try {
+        const u = "file?path=" + encodeURIComponent(n.file) + (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
+        const r = await fetch(u);
+        const t = await r.text();
+        // textContent, never innerHTML: this is arbitrary repo content
+        pre.textContent = r.ok ? t : ("could not read file: " + t);
+      } catch (e) { pre.textContent = "could not read file: " + e; }
+      pre.style.display = "block"; btn.textContent = "Hide file";
+    };
+    d.append(btn, pre);
+  }
+
   if (["rule", "command", "hook"].includes(n.type)) {
     const b = document.createElement("button");
     b.className = "toggle-btn";
@@ -309,7 +498,7 @@ function select(n) {
         }
       }
       if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }
-      else { d.classList.remove("open"); sel = null; await load(); }
+      else { clearSel(); await load(); }
       fit();
     };
     d.append(b);
@@ -317,8 +506,89 @@ function select(n) {
   fit(); draw();
 }
 
+// --- master plan (optional) -------------------------------------------------
+// The tab only exists when docs/tasks/master-plan.md does. Projects that do not
+// run a board must not be shown an empty tab implying they should.
+let planText = null;
+async function checkPlan() {
+  planText = null;
+  try {
+    const u = "file?path=" + encodeURIComponent("docs/tasks/master-plan.md") +
+      (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
+    const r = await fetch(u);
+    if (r.ok) planText = await r.text();
+  } catch (e) { planText = null; }
+  const btn = document.getElementById("btn-plan");
+  btn.style.display = planText === null ? "none" : "";
+  if (planText === null && view === "plan") { view = "flow"; localStorage.setItem("hv-view", view); }
+}
+// A deliberately small markdown subset rendered through DOM APIs. No library,
+// and no raw HTML from the file: every value lands via textContent.
+function renderPlan(md) {
+  const host = document.getElementById("plan");
+  host.textContent = "";
+  let src = md;
+  // Drop a leading `---` frontmatter block: it is metadata for the file, not
+  // content, and rendering it as prose is just noise at the top of the tab.
+  if (/^---\s*\n/.test(src)) {
+    const end = src.indexOf("\n---", 3);
+    if (end !== -1) src = src.slice(src.indexOf("\n", end + 1) + 1);
+  }
+  const lines = src.split(/\r?\n/);
+  let i = 0, list = null, inCode = false, code = null;
+  const closeList = () => { list = null; };
+  while (i < lines.length) {
+    const ln = lines[i];
+    // HTML comments are authoring notes to the humans editing the file
+    if (!inCode && /^\s*<!--/.test(ln)) {
+      closeList();
+      while (i < lines.length && !/-->/.test(lines[i])) i++;
+      i++; continue;
+    }
+    if (/^```/.test(ln)) {
+      if (inCode) { inCode = false; code = null; } else { inCode = true; code = document.createElement("pre"); code.className = "preview"; host.append(code); }
+      i++; continue;
+    }
+    if (inCode) { code.textContent += ln + "\n"; i++; continue; }
+    const h = ln.match(/^(#{1,3})\s+(.*)$/);
+    if (h) { closeList(); const el = document.createElement("h" + h[1].length); el.textContent = h[2]; host.append(el); i++; continue; }
+    // a markdown table: header, separator, then rows
+    if (/^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      closeList();
+      const t = document.createElement("table");
+      const cells = s => s.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+      const thead = document.createElement("tr");
+      for (const c of cells(ln)) { const th = document.createElement("th"); th.textContent = c; thead.append(th); }
+      t.append(thead);
+      i += 2;
+      while (i < lines.length && /^\s*\|/.test(lines[i])) {
+        const tr = document.createElement("tr");
+        for (const c of cells(lines[i])) { const td = document.createElement("td"); td.textContent = c; tr.append(td); }
+        t.append(tr); i++;
+      }
+      host.append(t); continue;
+    }
+    const li = ln.match(/^\s*[-*]\s+(.*)$/);
+    if (li) {
+      if (!list) { list = document.createElement("ul"); host.append(list); }
+      const item = document.createElement("li");
+      const box = li[1].match(/^\[([ xX])\]\s*(.*)$/);
+      if (box) {
+        const done = box[1].toLowerCase() === "x";
+        item.className = done ? "done" : "todo";
+        item.textContent = (done ? "[x] " : "[ ] ") + box[2];
+      } else item.textContent = li[1];
+      list.append(item); i++; continue;
+    }
+    if (ln.trim() === "") { closeList(); i++; continue; }
+    closeList();
+    const p = document.createElement("p"); p.textContent = ln; host.append(p); i++;
+  }
+}
+
 document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
+document.getElementById("btn-plan").onclick = () => { view = "plan"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-reload").onclick = () => load();
 const rootInput = document.getElementById("root");
 function loadTyped() { load(rootInput.value.trim()); }
@@ -332,19 +602,26 @@ let timer = null;
 function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(() => load(), 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
 auto.onchange = syncAuto;
 function sync() {
+  const plan = view === "plan";
   document.getElementById("btn-flow").classList.toggle("active", view === "flow");
   document.getElementById("btn-graph").classList.toggle("active", view === "graph");
-  layout(); draw();
+  document.getElementById("btn-plan").classList.toggle("active", plan);
+  document.getElementById("plan").classList.toggle("open", plan);
+  cv.style.display = plan ? "none" : "block";
+  document.getElementById("hint").textContent = plan
+    ? "docs/tasks/master-plan.md" : "click a node to trace its connections";
+  if (plan) { stopAnim(); if (planText !== null) renderPlan(planText); return; }
+  layout(); fitView(graph.nodes.filter(visible)); draw();
 }
 // Size the canvas and paint the chrome BEFORE the first fetch. When load()
 // used to run first, any failure skipped fit() and left a 300x150 canvas
 // stretched over the window - a blank page with no explanation.
 buildRoots();
 fit();
-sync();
 syncAuto();
 // Fall back to the server's own root if the remembered one no longer resolves.
-load().then(ok => { if (!ok && currentRoot) { currentRoot = ""; localStorage.removeItem("hv-root"); load(); } });
+load().then(ok => { if (!ok && currentRoot) { currentRoot = ""; localStorage.removeItem("hv-root"); return load(); } })
+      .then(() => sync());
 </script>
 </body>
 </html>

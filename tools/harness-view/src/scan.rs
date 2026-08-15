@@ -86,6 +86,42 @@ fn frontmatter(text: &str) -> BTreeMap<String, Value> {
     out
 }
 
+/// Frontmatter `description:`, trimmed and capped. The sidebar shows it, so a
+/// runaway value must not push the rest of the panel off screen; the full text
+/// is one Preview click away.
+fn description(fm: &BTreeMap<String, Value>) -> Option<String> {
+    let raw = match fm.get("description") {
+        Some(Value::String(s)) => unquote(s),
+        _ => return None,
+    };
+    let d = raw.trim().to_string();
+    if d.is_empty() {
+        return None;
+    }
+    Some(if d.chars().count() > 300 {
+        d.chars().take(300).collect::<String>() + "..."
+    } else {
+        d
+    })
+}
+
+/// Drop a trailing YAML comment from a scalar: `Done # Active | Blocked` -> `Done`.
+/// A `#` only opens a comment when whitespace precedes it, so `P0#1` survives.
+/// Real task files keep the template's enum comment on the line, and without
+/// this the status reads as "Done # Active | Blocked | Pending | Done".
+fn strip_comment(s: &str) -> String {
+    if s.starts_with('"') || s.starts_with('\'') {
+        return s.to_string();
+    }
+    let b = s.as_bytes();
+    for i in 0..b.len() {
+        if b[i] == b'#' && (i == 0 || b[i - 1].is_ascii_whitespace()) {
+            return s[..i].trim_end().to_string();
+        }
+    }
+    s.to_string()
+}
+
 /// Strip one layer of surrounding single or double quotes.
 fn unquote(s: &str) -> String {
     let t = s.trim();
@@ -215,6 +251,9 @@ pub fn scan(root: &Path) -> Value {
                 }
             }
         }
+        if let Some(d) = description(&fm) {
+            meta.insert("description".to_string(), Value::String(d));
+        }
         nodes.insert(
             format!("agent:{name}"),
             json!({
@@ -261,9 +300,10 @@ pub fn scan(root: &Path) -> Value {
                 node.insert("label".into(), json!(label));
                 node.insert("file".into(), json!(rel(root, &file)));
                 node.insert("disabled".into(), json!(disabled));
+                let text = fs::read_to_string(root.join(&file)).unwrap_or_default();
+                let fm_any = frontmatter(&text);
                 if kind == "rule" {
-                    let text = fs::read_to_string(root.join(&file)).unwrap_or_default();
-                    let fm = frontmatter(&text);
+                    let fm = fm_any;
                     let mut meta = Map::new();
                     let mut scoped = false;
                     match fm.get("paths") {
@@ -283,12 +323,22 @@ pub fn scan(root: &Path) -> Value {
                             meta.insert("scoped".into(), json!(false));
                         }
                     }
+                    if let Some(d) = description(&fm) {
+                        meta.insert("description".into(), Value::String(d));
+                    }
                     node.insert("meta".into(), Value::Object(meta));
                     if !dir_disabled && !scoped {
                         gating_rules.push(id.clone());
                     }
-                } else if !dir_disabled {
-                    active_commands.push(id.clone());
+                } else {
+                    if let Some(d) = description(&fm_any) {
+                        let mut meta = Map::new();
+                        meta.insert("description".into(), Value::String(d));
+                        node.insert("meta".into(), Value::Object(meta));
+                    }
+                    if !dir_disabled {
+                        active_commands.push(id.clone());
+                    }
                 }
                 nodes.insert(id, Value::Object(node));
             }
@@ -517,17 +567,54 @@ pub fn scan(root: &Path) -> Value {
     walk_tasks(&root.join("docs").join("tasks"), &mut task_files, root);
     task_files.sort();
     for (stem, relpath) in &task_files {
-        nodes.insert(
-            format!("task:{stem}"),
-            json!({"id": format!("task:{stem}"), "type": "task", "label": stem,
-                   "disabled": false, "file": relpath}),
-        );
+        let body = fs::read_to_string(root.join(relpath)).unwrap_or_default();
+        let fm = frontmatter(&body);
+        // The board fields, in the order the templates declare them. Everything
+        // here is what makes a task row readable without opening the file.
+        let mut meta = Map::new();
+        for key in ["title", "status", "fr", "owner", "deps", "priority", "phase"] {
+            if let Some(Value::String(v)) = fm.get(key) {
+                let v = unquote(&strip_comment(v));
+                if !v.is_empty() {
+                    meta.insert(key.to_string(), Value::String(v));
+                }
+            }
+        }
+        let mut node = Map::new();
+        node.insert("id".into(), json!(format!("task:{stem}")));
+        node.insert("type".into(), json!("task"));
+        node.insert("label".into(), json!(stem));
+        node.insert("disabled".into(), json!(false));
+        node.insert("file".into(), json!(relpath));
+        if !meta.is_empty() {
+            node.insert("meta".into(), Value::Object(meta));
+        }
+        nodes.insert(format!("task:{stem}"), Value::Object(node));
+        // agent -owns-> task, the same edge type an agent uses for a module.
+        // Emitted only when the named seat exists: a task owned by a retired
+        // agent would otherwise anchor to nothing. (Contrast `runs`, which is
+        // deliberately allowed to dangle because a command naming a missing
+        // script is itself the finding.)
+        if let Some(Value::String(owner)) = fm.get("owner") {
+            let owner = unquote(&strip_comment(owner));
+            // Real boards co-own a task as "frontend-ui-dev+platform-dev", so
+            // each named seat gets its own edge. Dropping the pair entirely
+            // would leave a task that HAS owners looking unowned.
+            for one in owner.split('+').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+                if agent_names.iter().any(|a| a == one) {
+                    edges.push((
+                        format!("agent:{one}"),
+                        format!("task:{stem}"),
+                        "owns".into(),
+                        0,
+                    ));
+                }
+            }
+        }
         if !module_names.is_empty() {
-            if let Ok(body) = fs::read_to_string(root.join(relpath)) {
-                for m in &module_names {
-                    if body.contains(m.as_str()) {
-                        edges.push((format!("task:{stem}"), format!("mod:{m}"), "references".into(), 0));
-                    }
+            for m in &module_names {
+                if body.contains(m.as_str()) {
+                    edges.push((format!("task:{stem}"), format!("mod:{m}"), "references".into(), 0));
                 }
             }
         }
