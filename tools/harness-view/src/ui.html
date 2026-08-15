@@ -47,6 +47,39 @@
   .toggle-btn { margin-top: 8px; width: 100%; }
   .prev-btn { margin-top: 8px; width: 100%; }
   pre.preview { margin-top: 8px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; }
+  /* formatted rendering of a file inside the sidebar: same renderer as the plan
+     tab, scaled down to the panel */
+  .md { margin-top: 8px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; max-height: 340px; overflow: auto; font-size: 12px; }
+  .md h1 { font-size: 15px; margin: 8px 0 4px; } .md h2 { font-size: 14px; margin: 8px 0 4px; }
+  .md h3 { font-size: 13px; margin: 6px 0 3px; }
+  .md p, .md li { margin: 3px 0; word-break: break-word; }
+  .md ul { margin: 4px 0 4px 16px; }
+  .md table { border-collapse: collapse; margin: 6px 0; font-size: 11px; width: 100%; }
+  .md th, .md td { border: 1px solid var(--line); padding: 2px 5px; text-align: left; word-break: break-word; }
+  .md th { background: #f1f5f9; }
+  .md pre.preview { max-height: 200px; }
+  .md .done { color: #15803d; } .md .todo { color: var(--dim); }
+  /* frontmatter is metadata, not prose: in the sidebar it is the most useful
+     part of an agent file, so formatted mode shows it as a keyed block */
+  .fm { margin: 2px 0 6px; padding: 6px 8px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; font-size: 11px; }
+  .fm div { display: flex; gap: 6px; padding: 1px 0; }
+  .fm b { flex: 0 0 78px; color: #3730a3; font-weight: 600; }
+  .fm span { word-break: break-word; }
+  /* icon toggle: two states, current mode is the pressed one */
+  .icon-btn { padding: 3px 7px; line-height: 0; display: inline-flex; align-items: center; }
+  .icon-btn svg { width: 15px; height: 15px; display: block; }
+  .icon-btn[aria-pressed="true"] { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  .md-bar { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .md-bar .prev-btn { margin-top: 0; }
+  #plan-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #plan-bar .lbl { color: var(--dim); }
+  /* spinner: CSS only, no asset. Hidden until an operation is slow enough to
+     be worth reporting, so a fast fetch never flashes it. */
+  .spin { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: #1d4ed8; border-radius: 50%; animation: sp 0.6s linear infinite; display: inline-block; vertical-align: middle; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #busy { display: none; align-items: center; gap: 6px; color: var(--dim); }
+  #busy.on { display: inline-flex; }
+  [aria-busy="true"] { opacity: 0.6; }
   footer { padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: var(--dim); display: flex; gap: 16px; }
   #root { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; width: 320px; }
   #banner { display: none; padding: 8px 12px; background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; white-space: pre-wrap; }
@@ -73,12 +106,13 @@
   <input id="root" list="roots" spellcheck="false" placeholder="repo path with a .claude/ folder">
   <datalist id="roots"></datalist>
   <button id="btn-load" title="Scan this folder">Load</button>
+  <span id="busy" role="status" aria-live="polite"><i class="spin"></i><span id="busy-what">loading</span></span>
   <div id="legend"></div>
 </header>
 <div id="banner"></div>
 <main>
   <canvas id="cv"></canvas>
-  <div id="plan"></div>
+  <div id="plan"><div id="plan-bar"></div><div id="plan-body"></div></div>
   <div id="grip" title="Drag to resize"></div>
   <aside id="detail"></aside>
 </main>
@@ -134,7 +168,11 @@ function setPanel(open) {
   document.getElementById("grip").classList.toggle("open", open);
 }
 
-let currentRoot = localStorage.getItem("hv-root") || "";
+// The root the server was pointed at wins on a fresh page load: someone who ran
+// `harness-view serve D:/foo` means D:/foo, and silently showing a different repo
+// remembered from a previous session is a genuine surprise. The remembered roots
+// stay in the datalist for one-click switching.
+let currentRoot = "";
 
 function banner(text) {
   const b = document.getElementById("banner");
@@ -158,6 +196,75 @@ function buildRoots() {
   for (const p of recentRoots()) { const o = document.createElement("option"); o.value = p; dl.append(o); }
 }
 
+// --- busy reporting ---------------------------------------------------------
+// Shown only once an operation has run long enough to be worth reporting. A
+// spinner that flashes for a 20ms fetch reads as a glitch, so the indicator is
+// scheduled rather than shown, and any op that finishes first cancels it.
+// Counted, because a root switch runs the graph fetch and the plan fetch.
+const BUSY_DELAY_MS = 150;
+let busyN = 0, busyTimer = null;
+function busyShow(what) {
+  const el = document.getElementById("busy");
+  document.getElementById("busy-what").textContent = what || "loading";
+  el.classList.add("on");
+}
+function busyHide() { document.getElementById("busy").classList.remove("on"); }
+function busyStart(what) {
+  busyN++;
+  if (busyN === 1 && busyTimer === null) {
+    busyTimer = setTimeout(() => { busyTimer = null; busyShow(what); }, BUSY_DELAY_MS);
+  }
+}
+function busyEnd() {
+  busyN = Math.max(0, busyN - 1);
+  if (busyN === 0) {
+    if (busyTimer !== null) { clearTimeout(busyTimer); busyTimer = null; }
+    busyHide();
+  }
+}
+// Every caller goes through this so the counter can never be left raised by an
+// early return or a throw - a stuck spinner is worse than no spinner.
+async function withBusy(what, el, fn) {
+  busyStart(what);
+  if (el) { el.setAttribute("aria-busy", "true"); el.disabled = true; }
+  try { return await fn(); }
+  finally {
+    busyEnd();
+    if (el) { el.removeAttribute("aria-busy"); el.disabled = false; }
+  }
+}
+
+// --- markdown view mode -----------------------------------------------------
+// Two surfaces, two remembered choices (hv-md-side, hv-md-plan). They are kept
+// apart deliberately: inspecting an agent file often calls for raw, to read the
+// frontmatter and syntax exactly as written, while the master plan is a report
+// people read formatted. One shared setting would let a choice made in the
+// sidebar silently change how the plan renders.
+const ICON_DOC = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+  '<path d="M3 2.5h10v11H3z"/><path d="M5 5.5h6M5 8h6M5 10.5h4"/></svg>';
+const ICON_CODE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+  '<path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></svg>';
+function mdMode(key) { return localStorage.getItem(key) === "raw" ? "raw" : "formatted"; }
+// The button reports the mode it will switch TO, and its pressed state reports
+// whether raw is currently on.
+function makeModeButton(key, onChange) {
+  const b = document.createElement("button");
+  b.className = "icon-btn";
+  const paint = () => {
+    const raw = mdMode(key) === "raw";
+    b.innerHTML = raw ? ICON_DOC : ICON_CODE;
+    b.setAttribute("aria-pressed", raw ? "true" : "false");
+    const t = raw ? "Showing raw markdown. Switch to formatted." : "Showing formatted. Switch to raw markdown.";
+    b.title = t; b.setAttribute("aria-label", t);
+  };
+  b.onclick = () => {
+    localStorage.setItem(key, mdMode(key) === "raw" ? "formatted" : "raw");
+    paint(); onChange();
+  };
+  paint();
+  return b;
+}
+
 // A load failure must never leave a blank page: the error goes in the banner,
 // the previous graph stays on screen, and the canvas is already sized because
 // fit() runs before the first load rather than after it.
@@ -166,8 +273,12 @@ async function load(rootOverride) {
   const url = "graph.json" + (target ? "?root=" + encodeURIComponent(target) : "");
   let res, body;
   try {
-    res = await fetch(url);
-    body = await res.json();
+    // scanning a big tree is the slowest thing this page does, so it is the
+    // operation the indicator exists for
+    [res, body] = await withBusy("scanning", null, async () => {
+      const r = await fetch(url);
+      return [r, await r.json()];
+    });
   } catch (e) {
     banner("could not reach the server: " + e);
     return false;
@@ -208,6 +319,9 @@ function buildLegend() {
 }
 
 function layout() {
+  // widths must be known BEFORE the layout runs: the separation pass sizes its
+  // push from the real box width, and draw() measuring them afterwards is too late
+  measureNodes();
   const vis = graph.nodes.filter(visible);
   if (view === "flow") {
     const cols = {};
@@ -277,6 +391,38 @@ function forceSim(vis, iters) {
       pa.x += fx; pa.y += fy; pb.x -= fx; pb.y -= fy;
     }
     for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
+  }
+  separate(vis, 60);
+}
+
+// The repulsion above treats every node as a point, but a node is a BOX and the
+// labels make them wide: "conventional-commits" is ~180px across. Point repulsion
+// let 76 pairs of boxes overlap on a 57-node graph, which is what made the graph
+// view look like a pile. This pushes overlapping rectangles apart along their
+// smallest escape direction, which is cheap and converges in a few passes.
+function separate(vis, iters) {
+  const pad = 6;
+  for (let it = 0; it < iters; it++) {
+    let moved = false;
+    for (let i = 0; i < vis.length; i++) {
+      for (let j = i + 1; j < vis.length; j++) {
+        const a = vis[i], b = vis[j], pa = pos[a.id], pb = pos[b.id];
+        const hw = (a._w || 80) / 2 + (b._w || 80) / 2 + pad, hh = 24 + pad;
+        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const ox = hw - Math.abs(dx), oy = hh - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;      // boxes already clear
+        moved = true;
+        if (ox < oy) {                          // shorter escape is sideways
+          const s = (dx < 0 ? -1 : 1) * ox / 2;
+          pa.x -= s; pb.x += s;
+        } else {
+          const s = (dy < 0 ? -1 : 1) * oy / 2;
+          pa.y -= s; pb.y += s;
+        }
+      }
+    }
+    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
+    if (!moved) break;
   }
 }
 
@@ -631,24 +777,45 @@ function select(n) {
   d.append(table);
 
   if (n.file) {
+    const bar = document.createElement("div");
+    bar.className = "md-bar";
     const btn = document.createElement("button");
     btn.className = "prev-btn";
     btn.textContent = "Preview file";
-    const pre = document.createElement("pre");
-    pre.className = "preview"; pre.style.display = "none";
-    btn.onclick = async () => {
-      if (pre.style.display === "block") { pre.style.display = "none"; btn.textContent = "Preview file"; return; }
-      btn.textContent = "Loading...";
-      try {
-        const u = "file?path=" + encodeURIComponent(n.file) + (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
-        const r = await fetch(u);
-        const t = await r.text();
-        // textContent, never innerHTML: this is arbitrary repo content
-        pre.textContent = r.ok ? t : ("could not read file: " + t);
-      } catch (e) { pre.textContent = "could not read file: " + e; }
-      pre.style.display = "block"; btn.textContent = "Hide file";
+    const host = document.createElement("div");
+    host.style.display = "none";
+    let text = null, err = null;
+    const paint = () => {
+      host.textContent = "";
+      if (err !== null) { host.className = ""; const p = document.createElement("pre"); p.className = "preview"; p.textContent = err; host.append(p); return; }
+      if (text === null) return;
+      // the .md frame belongs to formatted output only; raw already ships its
+      // own <pre> and would otherwise sit in a box inside a box
+      if (mdMode("hv-md-side") === "raw") { host.className = ""; renderRaw(host, text); }
+      else { host.className = "md"; renderMarkdown(host, text, { frontmatter: "render" }); }
     };
-    d.append(btn, pre);
+    const modeBtn = makeModeButton("hv-md-side", paint);
+    modeBtn.style.display = "none";
+    btn.onclick = () => withBusy("reading file", btn, async () => {
+      if (host.style.display === "block") {
+        host.style.display = "none"; modeBtn.style.display = "none";
+        btn.textContent = "Preview file"; return;
+      }
+      if (text === null && err === null) {
+        try {
+          const u = "file?path=" + encodeURIComponent(n.file) + (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
+          const r = await fetch(u);
+          const t = await r.text();
+          if (r.ok) text = t; else err = "could not read file: " + t;
+        } catch (e) { err = "could not read file: " + e; }
+      }
+      paint();
+      host.style.display = "block";
+      if (err === null) modeBtn.style.display = "";
+      btn.textContent = "Hide file";
+    });
+    bar.append(btn, modeBtn);
+    d.append(bar, host);
   }
 
   if (["rule", "command", "hook"].includes(n.type)) {
@@ -690,24 +857,57 @@ async function checkPlan() {
   try {
     const u = "file?path=" + encodeURIComponent("docs/tasks/master-plan.md") +
       (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
-    const r = await fetch(u);
-    if (r.ok) planText = await r.text();
+    planText = await withBusy("reading plan", null, async () => {
+      const r = await fetch(u);
+      return r.ok ? await r.text() : null;
+    });
   } catch (e) { planText = null; }
   const btn = document.getElementById("btn-plan");
   btn.style.display = planText === null ? "none" : "";
   if (planText === null && view === "plan") { view = "flow"; localStorage.setItem("hv-view", view); }
 }
+// Raw mode: the file exactly as it sits on disk, frontmatter included, placed
+// with textContent so repository text can never execute.
+function renderRaw(host, md) {
+  host.textContent = "";
+  const pre = document.createElement("pre");
+  pre.className = "preview";
+  pre.textContent = md;
+  host.append(pre);
+}
+
 // A deliberately small markdown subset rendered through DOM APIs. No library,
 // and no raw HTML from the file: every value lands via textContent.
-function renderPlan(md) {
-  const host = document.getElementById("plan");
+// One renderer serves both the plan tab and the sidebar; they differ only in
+// what they do with frontmatter, which is the `frontmatter` option:
+//   "strip"  - drop it (the plan tab: metadata about the file is not the plan)
+//   "render" - show it as a keyed block (the sidebar: model, tools and
+//              description are the most useful lines in an agent file)
+function renderMarkdown(host, md, opts) {
+  const mode = (opts && opts.frontmatter) || "strip";
   host.textContent = "";
   let src = md;
-  // Drop a leading `---` frontmatter block: it is metadata for the file, not
-  // content, and rendering it as prose is just noise at the top of the tab.
   if (/^---\s*\n/.test(src)) {
     const end = src.indexOf("\n---", 3);
-    if (end !== -1) src = src.slice(src.indexOf("\n", end + 1) + 1);
+    if (end !== -1) {
+      const fmText = src.slice(4, end);
+      src = src.slice(src.indexOf("\n", end + 1) + 1);
+      if (mode === "render") {
+        const box = document.createElement("div");
+        box.className = "fm";
+        for (const line of fmText.split(/\r?\n/)) {
+          if (!line.trim() || /^\s/.test(line)) continue;
+          const i = line.indexOf(":");
+          if (i === -1) continue;
+          const row = document.createElement("div");
+          const k = document.createElement("b"), v = document.createElement("span");
+          k.textContent = line.slice(0, i).trim();
+          v.textContent = line.slice(i + 1).trim();
+          row.append(k, v); box.append(row);
+        }
+        if (box.children.length) host.append(box);
+      }
+    }
   }
   const lines = src.split(/\r?\n/);
   let i = 0, list = null, inCode = false, code = null;
@@ -761,10 +961,25 @@ function renderPlan(md) {
   }
 }
 
+// The plan tab keeps its toolbar outside the rendered body, so switching mode
+// does not destroy the control that switched it.
+function renderPlan(md) {
+  const bar = document.getElementById("plan-bar");
+  const body = document.getElementById("plan-body");
+  if (!bar.children.length) {
+    const lbl = document.createElement("span");
+    lbl.className = "lbl"; lbl.textContent = "docs/tasks/master-plan.md";
+    bar.append(makeModeButton("hv-md-plan", () => renderPlan(planText)), lbl);
+  }
+  if (mdMode("hv-md-plan") === "raw") renderRaw(body, md);
+  else renderMarkdown(body, md, { frontmatter: "strip" });
+}
+
 document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-plan").onclick = () => { view = "plan"; localStorage.setItem("hv-view", view); sync(); };
-document.getElementById("btn-reload").onclick = () => load();
+const btnReload = document.getElementById("btn-reload");
+btnReload.onclick = () => withBusy("scanning", btnReload, () => load());
 const lineSel = document.getElementById("linestyle");
 lineSel.value = lineStyle;
 lineSel.onchange = () => {
@@ -786,8 +1001,9 @@ grip.addEventListener("mousedown", ev => {
   window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
 });
 const rootInput = document.getElementById("root");
-function loadTyped() { load(rootInput.value.trim()); }
-document.getElementById("btn-load").onclick = loadTyped;
+const btnLoad = document.getElementById("btn-load");
+function loadTyped() { return withBusy("scanning", btnLoad, () => load(rootInput.value.trim())); }
+btnLoad.onclick = loadTyped;
 rootInput.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); loadTyped(); } });
 const auto = document.getElementById("auto");
 auto.checked = localStorage.getItem("hv-auto") === "1";
