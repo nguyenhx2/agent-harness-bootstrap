@@ -25,6 +25,10 @@
   #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
   .toggle-btn { margin-top: 8px; width: 100%; }
   footer { padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: #64748b; display: flex; gap: 16px; }
+  #root { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; width: 320px; }
+  #banner { display: none; padding: 8px 12px; background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; white-space: pre-wrap; }
+  #banner.on { display: block; }
+  #rootnow { color: #0f172a; }
 </style>
 </head>
 <body>
@@ -34,13 +38,17 @@
   <button id="btn-graph">Graph</button>
   <button id="btn-reload" title="Re-scan now">Reload</button>
   <label><input type="checkbox" id="auto"> auto-refresh 10s</label>
+  <input id="root" list="roots" spellcheck="false" placeholder="repo path with a .claude/ folder">
+  <datalist id="roots"></datalist>
+  <button id="btn-load" title="Scan this folder">Load</button>
   <div id="legend"></div>
 </header>
+<div id="banner"></div>
 <main>
   <canvas id="cv"></canvas>
   <aside id="detail"></aside>
 </main>
-<footer><span id="stats"></span><span>edges: solid with type label; disabled items grey and dashed</span></footer>
+<footer><span id="stats"></span><span id="rootnow"></span><span>edges: solid with type label; disabled items grey and dashed</span></footer>
 <script>
 "use strict";
 const COLORS = {
@@ -59,11 +67,62 @@ const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 function fit() { const r = cv.parentElement.getBoundingClientRect(); cv.width = r.width - (document.getElementById("detail").classList.contains("open") ? 300 : 0); cv.height = r.height; draw(); }
 window.addEventListener("resize", fit);
 
-async function load() {
-  const res = await fetch("graph.json");
-  graph = await res.json();
+let currentRoot = localStorage.getItem("hv-root") || "";
+
+function banner(text) {
+  const b = document.getElementById("banner");
+  b.textContent = text || "";
+  b.classList.toggle("on", !!text);
+}
+
+function recentRoots() {
+  try { return JSON.parse(localStorage.getItem("hv-recent") || "[]"); } catch (e) { return []; }
+}
+function rememberRoot(p) {
+  if (!p) return;
+  const list = [p, ...recentRoots().filter(x => x !== p)].slice(0, 12);
+  localStorage.setItem("hv-recent", JSON.stringify(list));
+  localStorage.setItem("hv-root", p);
+  buildRoots();
+}
+function buildRoots() {
+  const dl = document.getElementById("roots");
+  dl.textContent = "";
+  for (const p of recentRoots()) { const o = document.createElement("option"); o.value = p; dl.append(o); }
+}
+
+// A load failure must never leave a blank page: the error goes in the banner,
+// the previous graph stays on screen, and the canvas is already sized because
+// fit() runs before the first load rather than after it.
+async function load(rootOverride) {
+  const target = rootOverride !== undefined ? rootOverride : currentRoot;
+  const url = "graph.json" + (target ? "?root=" + encodeURIComponent(target) : "");
+  let res, body;
+  try {
+    res = await fetch(url);
+    body = await res.json();
+  } catch (e) {
+    banner("could not reach the server: " + e);
+    return false;
+  }
+  if (!res.ok || body.error) {
+    banner(body.error || ("server returned " + res.status));
+    return false;
+  }
+  banner("");
+  const changedRoot = (body.root || target || "") !== currentRoot;
+  graph = body;
+  // Positions are keyed by node id, and two repos share ids like
+  // "agent:orchestrator". Carrying them across a root change lays the new
+  // graph out at the old one's scale, pushing nodes off the canvas.
+  if (changedRoot) { pos = {}; sel = null; document.getElementById("detail").classList.remove("open"); }
+  currentRoot = body.root || target || "";
+  document.getElementById("root").value = currentRoot;
+  document.getElementById("rootnow").textContent = currentRoot ? "root: " + currentRoot : "";
+  rememberRoot(currentRoot);
   document.getElementById("stats").textContent = graph.nodes.length + " nodes, " + graph.edges.length + " edges";
   buildLegend(); layout(); draw();
+  return true;
 }
 function types() { return [...new Set(graph.nodes.map(n => n.type))].sort(); }
 function visible(n) { return !hidden.has(n.type); }
@@ -234,15 +293,15 @@ function select(n) {
     b.textContent = n.disabled ? "Enable " + label(n) : "Disable " + label(n);
     b.onclick = async () => {
       const bare = n.id.split(":").slice(1).join(":");
-      const payload = { kind: n.type, name: bare, enable: !!n.disabled };
+      // always name the root being viewed, so a toggle can never land on the
+      // server's CLI default while the page is showing a different repo
+      const payload = { kind: n.type, name: bare, enable: !!n.disabled, root: currentRoot };
       let res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify(payload) });
       let txt = await res.text();
       if (res.status === 409 && !payload.enable) {
         // SOFT-protected: the server refused pending an explicit confirmation
-        if (window.confirm(txt + "
-
-Disable it anyway?")) {
+        if (window.confirm(txt + "\n\nDisable it anyway?")) {
           payload.confirm_soft = true;
           res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
             body: JSON.stringify(payload) });
@@ -260,18 +319,32 @@ Disable it anyway?")) {
 
 document.getElementById("btn-flow").onclick = () => { view = "flow"; localStorage.setItem("hv-view", view); sync(); };
 document.getElementById("btn-graph").onclick = () => { view = "graph"; localStorage.setItem("hv-view", view); sync(); };
-document.getElementById("btn-reload").onclick = load;
+document.getElementById("btn-reload").onclick = () => load();
+const rootInput = document.getElementById("root");
+function loadTyped() { load(rootInput.value.trim()); }
+document.getElementById("btn-load").onclick = loadTyped;
+rootInput.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); loadTyped(); } });
 const auto = document.getElementById("auto");
 auto.checked = localStorage.getItem("hv-auto") === "1";
 let timer = null;
-function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(load, 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
+// wrapped, not passed by reference: setInterval hands its callback a tick
+// argument, which load() would read as a root override
+function syncAuto() { if (timer) clearInterval(timer); if (auto.checked) timer = setInterval(() => load(), 10000); localStorage.setItem("hv-auto", auto.checked ? "1" : "0"); }
 auto.onchange = syncAuto;
 function sync() {
   document.getElementById("btn-flow").classList.toggle("active", view === "flow");
   document.getElementById("btn-graph").classList.toggle("active", view === "graph");
   layout(); draw();
 }
-load().then(() => { fit(); sync(); syncAuto(); });
+// Size the canvas and paint the chrome BEFORE the first fetch. When load()
+// used to run first, any failure skipped fit() and left a 300x150 canvas
+// stretched over the window - a blank page with no explanation.
+buildRoots();
+fit();
+sync();
+syncAuto();
+// Fall back to the server's own root if the remembered one no longer resolves.
+load().then(ok => { if (!ok && currentRoot) { currentRoot = ""; localStorage.removeItem("hv-root"); load(); } });
 </script>
 </body>
 </html>
