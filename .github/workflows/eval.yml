@@ -64,6 +64,12 @@ jobs:
       - name: Figures in the docs must match what the scripts print
         run: python scripts/check_numbers.py
 
+      # Both viewers ship as one file with an inline <script>. Nothing executes that JavaScript in
+      # CI, so a syntax error used to ship silently: the page rendered its chrome and the canvas
+      # stayed blank. node --check is the parser, not a heuristic.
+      - name: Embedded page JavaScript must parse
+        run: python scripts/check_js.py
+
       # The Cursor/Codex porter's hook adapter must actually block, not just render. It scaffolds a
       # harness, ports it, and fires sample Cursor payloads at the adapter.
       - name: Port adapter must enforce (Cursor/Codex)
