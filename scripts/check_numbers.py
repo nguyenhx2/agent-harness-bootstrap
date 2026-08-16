@@ -151,6 +151,12 @@ MEDIA_CHECKS = [
 # far from the canonical count (a video timestamp, a score in an example) is not either.
 EVAL_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
 
+# The guardrail-eval shields badge, whose numbers are a direct claim about the suite.
+# It needs its own check because the prose rule above only looks at EQUAL pairs, to
+# avoid matching a must-block/must-allow split. A badge reading "38/40" is unequal, so
+# it slipped through for several releases while also implying the suite was failing.
+EVAL_BADGE = re.compile(r"guardrail(?:%20|\s)eval-(\d{1,3})/(\d{1,3})", re.I)
+
 BYTE_CHECKS = [
     ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
     ("write-path after bytes", r"95,064\s*\|\s*([\d,]{4,})",  "write_bytes_after"),
@@ -215,8 +221,23 @@ def main() -> int:
         # the regex entirely when there is no backtick to blank - cheap and exact, same result.
         if "`" in text:
             text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
+        # A shields.io badge URL escapes its slash as %2F, so "107%2F107" hid from the
+        # pair regex below. The README carried 38/40 in the image while its own alt text
+        # said 107/107, and this checker saw only the alt text. This shifts character
+        # offsets but adds no newline, so the reported line numbers stay correct.
+        text = text.replace("%2F", "/").replace("%2f", "/")
         rel = p.relative_to(ROOT).as_posix()
         text_lower = text.lower()
+        # The shields badge states the suite result outright, so both halves must be the
+        # real case count. Checked separately from the prose rule below, which only looks
+        # at equal pairs and therefore cannot see a badge claiming 38/40.
+        for m in EVAL_BADGE.finditer(text):
+            a, b = int(m.group(1)), int(m.group(2))
+            if a != c["eval_cases"] or b != c["eval_cases"]:
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  guardrail eval badge: says {a}/{b}, "
+                      f"reality is {c['eval_cases']}/{c['eval_cases']}")
+                bad += 1
         # Eval badge in prose: "26/26" near eval-ish words is a claim about the suite. This drifted
         # across fifteen files at once while only the media files were scanned.
         for m in EVAL_PAIR.finditer(text):
