@@ -32,6 +32,11 @@ Ask the user to confirm the number before proceeding. Do not guess a MAJOR bump 
 skill self-identifying even before the packager injects its `VERSION` file, and the preflight in
 step 3 fails the release if a `SKILL.md` version does not match the tag.
 
+**And bump the tool.** `tools/harness-view/Cargo.toml`, then `cargo update -p harness-view` to
+carry the number into `Cargo.lock`. The release workflow builds with `--locked`, which refuses to
+update the lockfile, so bumping the manifest alone fails all four platform builds after the tag is
+already pushed - a published release with no binaries. `validate_release.py` checks both.
+
 **2. Write the CHANGELOG entries - per skill first.** The release body is CHANGELOG-driven: CI
 assembles it from the two skills' own CHANGELOGs with `scripts/release_notes.py`, not from a
 hand-written summary.
