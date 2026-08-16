@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="940" viewBox="0 0 1400 940" role="img" aria-labelledby="loom-title loom-desc" font-family="'Yu Gothic UI', 'Meiryo', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="loom-title">ハーネスは織機である: もつれた意図が入り、秩序ある成果が出てくる</title>
+  <desc id="loom-desc">システム全体を織機として描いた概要図。左端は入力、すなわち生の意図であり、実際に持ち込まれる形として、一行のアイデア、会議の議事録、既存のドキュメント、既存のリポジトリ、空のリポジトリ、書きかけの仕様書が並ぶ。そこから色とりどりの糸がほどけて右へ進み、互いにもつれ合う。糸はハーネスの外側にある spec-builder に入る。spec-builder の仕事は一つだけで、あらゆる入力形式を国際標準に沿った一つの契約に変換することである。その契約が、harness-bootstrap と名づけられた大きな枠として描かれたハーネスに入る。枠の内側では、ルールとフックが上から中央のエージェントに降りてくる。ルールは Conventional Commits や機密情報の保護といった規約を担い、パスでスコープされる。フックはツール呼び出しの前後で発火し、終了コード 2 は呼び出しを遮断する。枠の右側には同じ階層の二つのパネルが並ぶ。スキル探索は、このプロジェクトのマニフェストを走査して技術スタックを判定し、それに合うスキルを見つける。読み取る対象には requirements.txt、Gemfile、csproj、build.gradle、pnpm-workspace.yaml、さらにマーケットプレイスのカタログが含まれる。その下のスキル配線は、選ばれたスキルを、それを必要とするエージェントの席に接続する。利用者が選ばない限り何もインストールされない。この二つがスキルに、スキルがエージェントにつながる。エージェントは織機のくびれであり、すべてが織り合わされる場所である。くびれの下からは、単一の色で秩序立った三つの成果物が、それぞれ独立した接続を持って出ていく。グラフ付きドキュメント、担当者つきのタスク計画、グラフ付きコードである。枠の下部には状態があり、プロンプト、実行履歴、タスクボードを保持する。エージェントはこれを読み書きし、状態はコンパクションと再起動を越えて残る。この状態こそハーネスビューアが読むものである。ビューアは枠の下にあり、四つの機能を持つ。すべての配線を見せるフローとグラフの表示、ハーネスを採点して欠けているものを名指す評価、任意のルールやフックを無効化する切り替え、ファイル変更に応じて再走査する監視である。そのいずれにもモデルは関与しない。この図の要点は、混沌が入り、制御され検証可能な成果が出てくるということである。</desc>
+
+  <defs>
+    <radialGradient id="waist" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD79A" stop-opacity="0.55"/>
+      <stop offset="45%" stop-color="#F2A33C" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#F2A33C" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#6FB8F5"/>
+    </marker>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#F2A33C"/>
+    </marker>
+    <marker id="ard" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#93A4C0"/>
+    </marker>
+    <marker id="ars" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#3FA9A0"/>
+    </marker>
+    <marker id="ars0" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M10,1 L1,5 L10,9 z" fill="#3FA9A0"/>
+    </marker>
+
+    <style>
+      /* 英語版と同じ規律: アニメーションが無くても図は完全に描かれる。
+         GitHub は README の画像を img として描画し、そこではアニメーション
+         クロックが動かない。以前このリポジトリで、文字がアニメーション
+         頼りだった図が空箱として出荷された。可視性をアニメーションに
+         依存させることはここでは決してしない。
+
+         動きは意味を持たなければ雑音でしかない。意味のなかった移動する
+         点は削除し、残る動きは三段階で一つのことを語る。
+
+           .chaos*  左の糸は互いに異なる速度と向きで流れる = 混沌
+           .sync    枠の内側の糸はすべて同じ速度で流れる   = 規律
+           (なし)   出力の線はまったく動かない             = 完成 */
+      .chaos1 { animation: drift  7s linear infinite; }
+      .chaos2 { animation: drift 11s linear infinite reverse; }
+      .chaos3 { animation: drift 16s linear infinite; }
+      .sync   { animation: drift  9s linear infinite; }
+
+      .ring  { animation: spin 26s linear infinite; transform-origin: 860px 420px; }
+      .ring2 { animation: spin 38s linear infinite reverse; transform-origin: 860px 420px; }
+      .breathe { animation: breathe 5s ease-in-out infinite; }
+
+      @keyframes drift   { to { stroke-dashoffset: -48; } }
+      @keyframes spin    { to { transform: rotate(360deg); } }
+      @keyframes breathe { 0%,100% { opacity: .30; } 50% { opacity: .62; } }
+
+      @media (prefers-reduced-motion: reduce) {
+        .chaos1, .chaos2, .chaos3, .sync, .ring, .ring2, .breathe {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="940" fill="#0E1424"/>
+
+  <!-- ===== タイトル ===== -->
+  <text x="40" y="42" font-size="22" font-weight="700" fill="#E8EEF9">ハーネスは織機である</text>
+  <text x="40" y="68" font-size="13" fill="#93A4C0">もつれた意図が左から入り、秩序ある検証可能な成果が出てくる。その間にあるすべてがハーネス。</text>
+
+  <!-- ===== 入力: 実際に持ち込まれる形で示す ===== -->
+  <text x="24" y="112" font-size="12" font-weight="700" fill="#B79ACB">入力 &#183; 生の意図</text>
+
+  <g>
+    <rect x="24" y="132" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="132" width="4" height="40" rx="2" fill="#A75FA8"/>
+    <text x="40" y="157" font-size="11.5" fill="#C9D4E6">一行のアイデア</text>
+
+    <rect x="24" y="184" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="184" width="4" height="40" rx="2" fill="#3FA9A0"/>
+    <text x="40" y="209" font-size="11.5" fill="#C9D4E6">会議の議事録</text>
+
+    <rect x="24" y="236" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="236" width="4" height="40" rx="2" fill="#C98A3A"/>
+    <text x="40" y="261" font-size="11.5" fill="#C9D4E6">既存のドキュメント</text>
+
+    <rect x="24" y="288" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="288" width="4" height="40" rx="2" fill="#5A7FD4"/>
+    <text x="40" y="313" font-size="11.5" fill="#C9D4E6">既存のリポジトリ</text>
+
+    <rect x="24" y="340" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="340" width="4" height="40" rx="2" fill="#A75FA8"/>
+    <text x="40" y="365" font-size="11.5" fill="#C9D4E6">空のリポジトリ</text>
+
+    <rect x="24" y="392" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="392" width="4" height="40" rx="2" fill="#3FA9A0"/>
+    <text x="40" y="417" font-size="11.5" fill="#C9D4E6">書きかけの仕様書</text>
+  </g>
+  <text x="24" y="454" font-size="10.5" fill="#7C8AA6">形式も完成度も問わない。</text>
+  <text x="24" y="470" font-size="10.5" fill="#7C8AA6">事前に整える必要はない。</text>
+
+  <!-- もつれ: 同じ六本の糸が、互いにずれて流れる -->
+  <g fill="none" stroke-width="2" stroke-linecap="round" opacity="0.8">
+    <path class="chaos1" d="M220,152 C250,190 244,260 262,330 C272,372 286,410 300,428" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="chaos2" d="M220,204 C256,232 240,300 268,352 C280,378 288,410 300,432" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+    <path class="chaos3" d="M220,256 C252,272 246,320 272,362 C284,392 290,414 300,434" stroke="#C98A3A" stroke-dasharray="8 4"/>
+    <path class="chaos2" d="M220,308 C254,318 250,346 274,378 C286,400 292,420 300,436" stroke="#5A7FD4" stroke-dasharray="5 7"/>
+    <path class="chaos1" d="M220,360 C256,364 252,384 276,402 C288,414 294,428 300,438" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="chaos3" d="M220,412 C258,412 254,420 278,428 C290,434 296,438 300,440" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+  </g>
+
+  <!-- ===== spec-builder: ハーネスの外側 ===== -->
+  <rect x="300" y="388" width="180" height="100" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="2"/>
+  <text x="390" y="416" font-size="14" font-weight="700" fill="#E8EEF9" text-anchor="middle">spec-builder</text>
+  <text x="390" y="438" font-size="10" fill="#93A4C0" text-anchor="middle">あらゆる入力形式を</text>
+  <text x="390" y="454" font-size="10" fill="#93A4C0" text-anchor="middle">一つの契約に変換し、</text>
+  <text x="390" y="470" font-size="10" fill="#93A4C0" text-anchor="middle">国際標準に沿って記述する</text>
+  <text x="390" y="506" font-size="10" fill="#7C8AA6" text-anchor="middle">ハーネスの外側で動く</text>
+
+  <path d="M480,438 L506,438" stroke="#6FB8F5" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+
+  <!-- ===== ハーネスの枠 ===== -->
+  <rect x="508" y="100" width="860" height="670" rx="14" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
+  <text x="938" y="92" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">harness-bootstrap</text>
+
+  <path class="sync" d="M508,438 C620,438 700,432 776,428" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" opacity="0.85"/>
+  <text x="640" y="420" font-size="10" fill="#6FB8F5" text-anchor="middle">あなたと AI が共有する一つの契約</text>
+
+  <!-- ルール -->
+  <rect x="600" y="130" width="160" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="680" y="159" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">ルール</text>
+  <rect x="556" y="192" width="248" height="50" rx="8" fill="#151E36" stroke="#3B5478" stroke-width="1"/>
+  <text x="568" y="212" font-size="10" fill="#93A4C0">Conventional Commits、機密情報の保護、</text>
+  <text x="568" y="230" font-size="10" fill="#93A4C0">ADR の規律、パスでスコープ</text>
+  <path d="M660,176 L636,192" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
+
+  <!-- フック -->
+  <rect x="828" y="130" width="160" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="908" y="159" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">フック</text>
+  <path d="M876,176 L852,198" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
+  <path d="M940,176 L964,198" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
+  <text x="846" y="214" font-size="10.5" font-weight="700" fill="#93A4C0" text-anchor="middle">実行前</text>
+  <text x="970" y="214" font-size="10.5" font-weight="700" fill="#93A4C0" text-anchor="middle">実行後</text>
+  <text x="908" y="236" font-size="10" fill="#7C8AA6" text-anchor="middle">終了コード 2 で呼び出しを遮断</text>
+
+  <!-- 制御がくびれへ降りてくる -->
+  <g fill="none" stroke-width="1.7" opacity="0.62">
+    <path class="sync" d="M680,242 C680,300 736,352 792,396" stroke="#5A7FD4" stroke-dasharray="7 5"/>
+    <path class="sync" d="M908,248 C908,306 886,352 872,392" stroke="#6FB8F5" stroke-dasharray="7 5"/>
+  </g>
+
+  <!-- ===== スキルのレール: 探索と配線を同じ階層に ===== -->
+  <rect x="1030" y="196" width="320" height="108" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="220" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">スキル探索</text>
+  <text x="1190" y="240" font-size="10" fill="#93A4C0" text-anchor="middle">このプロジェクトのマニフェストを走査して</text>
+  <text x="1190" y="256" font-size="10" fill="#93A4C0" text-anchor="middle">技術スタックを判定し、合うスキルを見つける</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#7C8AA6" text-anchor="middle">
+    <text x="1190" y="276">requirements.txt &#183; Gemfile &#183; *.csproj</text>
+    <text x="1190" y="291">build.gradle &#183; pnpm-workspace.yaml &#183; catalogs</text>
+  </g>
+
+  <path d="M1190,304 L1190,322" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <rect x="1030" y="324" width="320" height="108" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="348" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">スキル配線</text>
+  <text x="1190" y="368" font-size="10" fill="#93A4C0" text-anchor="middle">選ばれたスキルを、必要とするエージェントの</text>
+  <text x="1190" y="384" font-size="10" fill="#93A4C0" text-anchor="middle">席に接続し、その配線をグラフに記録する</text>
+  <text x="1190" y="408" font-size="10" fill="#6FB8F5" text-anchor="middle">あなたが選ばない限り何もインストールされない</text>
+
+  <path d="M1190,432 L1190,450" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <rect x="1090" y="452" width="200" height="52" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="475" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">スキル</text>
+  <text x="1190" y="492" font-size="9.5" fill="#93A4C0" text-anchor="middle">席に配線済みか、未インストールか</text>
+
+  <path class="sync" d="M1088,472 C1020,466 968,450 940,438" stroke="#6FB8F5" stroke-width="1.7" stroke-dasharray="7 5" fill="none" opacity="0.8" marker-end="url(#ar)"/>
+
+  <!-- ===== くびれ: エージェント ===== -->
+  <circle cx="860" cy="420" r="104" fill="url(#waist)" class="breathe"/>
+  <g fill="none" stroke="#F2A33C" stroke-width="1.2" opacity="0.5">
+    <circle class="ring"  cx="860" cy="420" r="80" stroke-dasharray="10 12"/>
+    <circle class="ring2" cx="860" cy="420" r="94" stroke-dasharray="4 16"/>
+  </g>
+
+  <rect x="786" y="394" width="148" height="52" rx="10" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
+  <text x="860" y="417" font-size="15" font-weight="700" fill="#1A1206" text-anchor="middle">エージェント</text>
+  <text x="860" y="435" font-size="10" fill="#4A3208" text-anchor="middle">織り合わせ点</text>
+
+  <!-- ===== 秩序ある出力: 同じ色、同じ向き、三つとも接続済み ===== -->
+  <g fill="none" stroke="#6FB8F5" stroke-width="2.2" opacity="0.9">
+    <path d="M818,450 C772,494 700,522 660,556" marker-end="url(#ar)"/>
+    <path d="M860,452 L860,556" marker-end="url(#ar)"/>
+    <path d="M902,450 C948,494 1020,522 1060,556" marker-end="url(#ar)"/>
+  </g>
+
+  <rect x="549" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="644" y="585" font-size="12" font-weight="700" fill="#E8EEF9" text-anchor="middle">グラフ付きドキュメント</text>
+  <text x="644" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">追跡可能、定義は一箇所</text>
+
+  <rect x="765" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="860" y="585" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">計画</text>
+  <text x="860" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">タスク・担当・状態</text>
+
+  <rect x="981" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1076" y="585" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">グラフ付きコード</text>
+  <text x="1076" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">どのモジュールを誰が持つか</text>
+
+  <text x="860" y="646" font-size="10.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#93A4C0" text-anchor="middle">安定ID: FR-01 &#183; BR-04 &#183; NFR-SEC-02 &#183; TASK-012</text>
+
+  <!-- ===== 状態: 入り口ではなく、実行が残すもの ===== -->
+  <path class="sync" d="M600,668 C544,644 524,580 528,520 C532,486 580,478 660,474 C716,471 762,462 788,452"
+        stroke="#3FA9A0" stroke-width="1.8" stroke-dasharray="6 6" fill="none" opacity="0.85"
+        marker-start="url(#ars0)" marker-end="url(#ars)"/>
+  <text x="536" y="548" font-size="9.5" fill="#3FA9A0">読み書き</text>
+
+  <rect x="524" y="668" width="224" height="82" rx="10" fill="#1B2540" stroke="#3FA9A0" stroke-width="1.5"/>
+  <text x="636" y="692" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">状態</text>
+  <text x="636" y="712" font-size="10" fill="#93A4C0" text-anchor="middle">プロンプト &#183; 実行履歴 &#183; タスクボード</text>
+  <text x="636" y="730" font-size="9.5" fill="#3FA9A0" text-anchor="middle">コンパクションと再起動を越えて残る</text>
+
+  <path d="M636,750 L636,788" stroke="#F2A33C" stroke-width="1.8" fill="none" marker-end="url(#arw)"/>
+  <text x="650" y="783" font-size="9.5" fill="#7C8AA6">harness-graph.json</text>
+
+  <!-- ===== ビューアの帯: 枠の下 ===== -->
+  <rect x="508" y="790" width="860" height="112" rx="12" fill="#17203A" stroke="#F2A33C" stroke-width="1.5"/>
+  <text x="528" y="818" font-size="13" font-weight="700" fill="#FFD79A">ハーネスビューア</text>
+  <text x="528" y="836" font-size="10.5" fill="#93A4C0">実行が書いた状態を読み、制御面全体を描画する。純粋なロジックのみで、モデルは介在しない。</text>
+
+  <g>
+    <rect x="528" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="626" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">フロー / グラフ</text>
+    <text x="626" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">図ではなく実際の配線</text>
+
+    <rect x="736" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="834" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">評価</text>
+    <text x="834" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">採点し、欠けているものを名指す</text>
+
+    <rect x="944" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="1042" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">切り替え</text>
+    <text x="1042" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">任意のルールやフックを無効化</text>
+
+    <rect x="1152" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="1250" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">監視</text>
+    <text x="1250" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">ファイル変更に応じて再走査</text>
+  </g>
+
+  <!-- ===== 左段の注記 ===== -->
+  <text x="24" y="534" font-size="11" font-weight="700" fill="#6FB8F5">なぜ図が動くのか</text>
+  <text x="24" y="554" font-size="10" fill="#7C8AA6">左の糸は互いにばらばらの速度で</text>
+  <text x="24" y="570" font-size="10" fill="#7C8AA6">流れる。枠の内側では同じ速度で</text>
+  <text x="24" y="586" font-size="10" fill="#7C8AA6">流れる。枠がそう強いるからだ。</text>
+  <text x="24" y="602" font-size="10" fill="#7C8AA6">出力の線はまったく動かない。</text>
+  <text x="24" y="626" font-size="10" fill="#93A4C0">混沌、そして規律、そして完成。</text>
+
+  <text x="24" y="690" font-size="11" font-weight="700" fill="#6FB8F5">運ではなく秩序</text>
+  <text x="24" y="710" font-size="10" fill="#7C8AA6">ガードレールはシェルスクリプトと</text>
+  <text x="24" y="726" font-size="10" fill="#7C8AA6">終了コードであり、モデルの判断で</text>
+  <text x="24" y="742" font-size="10" fill="#7C8AA6">はない。モデルを入れ替えても安全</text>
+  <text x="24" y="758" font-size="10" fill="#7C8AA6">性の下限はバイト単位で同一。</text>
+</svg>

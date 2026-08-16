@@ -167,7 +167,10 @@ COUNT_CHECKS = [
 # translation of the already-checked EN source, so a divergence would have to be introduced by hand
 # in the JA file itself, and the EVAL_PAIR check below still applies to it (the JA badge reads
 # "ガードレール評価 26/26", and "ガードレール" is in the context regex the same as "guardrail" is).
-MEDIA_FILES = ["presentation/index.html"]
+# index.html is the GitHub Pages landing page. It bakes the same artifact counts as the deck and
+# is the first thing a visitor reads, so it is policed the same way. Its Japanese twin is a
+# translation of the checked English source, exactly as the video files are.
+MEDIA_FILES = ["presentation/index.html", "index.html", "index.ja.html"]
 MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html", "video/src/ja/*.py"]
 MEDIA_CHECKS = [
     ("media command count", r"(\d+) commands\b", "commands"),
@@ -381,13 +384,34 @@ def main() -> int:
             # follow it rather than precede it. A badge that sat just outside the old window is
             # exactly how the v1.8.0 deck kept claiming 40/40 after the suite reached 68.
             ctx = text[max(0, m.start() - 120):m.start() + 200].lower()
-            if a == b and a != c["eval_cases"] \
+            # The other true pairs a page may legitimately quote next to the same words. Each is
+            # derived, not typed: an earlier version excluded the literal string "5/5", which
+            # silently stopped excluding anything the moment that suite grew to 18.
+            other_truths = {c["eval_cases"], 2 * c["eval_cases"],
+                            c["adapter_cases"], c["bench_block"]}
+            # There is deliberately no "adapter not in ctx" exclusion here. The window is 200
+            # characters wide, so on the landing page the word "adapter" in the NEXT badge fell
+            # inside the eval badge's context and silenced it: a 99/99 eval claim went unreported.
+            # `other_truths` already lets the adapter's own number through, which is what the
+            # string exclusion was really for.
+            if a == b and a not in other_truths \
                     and re.search(r"eval|guardrail|payload|ペイロード|ガードレール|forbidden|"
-                                  r"permitted|judged|floor hold|proof|禁止|許可|bị cấm", ctx) \
-                    and "adapter" not in ctx and "5/5" != m.group(0):
+                                  r"permitted|judged|floor hold|proof|禁止|許可|bị cấm", ctx):
                 line = text[:m.start()].count("\n") + 1
                 print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
                       f"{c['eval_cases']}/{c['eval_cases']}")
+                bad += 1
+        # The adapter's own figure, in the pages as well as the markdown. Same rule, so a page
+        # cannot quote a self-test result the markdown would have been failed for.
+        for m in ADAPTER_PAIR.finditer(text):
+            a, b = int(m.group(1)), int(m.group(2))
+            ctx = text[max(0, m.start() - 130):m.start() + 70].lower()
+            if a == b and a != c["adapter_cases"] \
+                    and re.search(r"adapter|port\.py|--self-test", ctx) \
+                    and not re.search(r"->|→|\bwas\b|from", ctx):
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  port adapter self-test: says {a}/{b}, "
+                      f"reality is {c['adapter_cases']}/{c['adapter_cases']}")
                 bad += 1
 
     if bad:

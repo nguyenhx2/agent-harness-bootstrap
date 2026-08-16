@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="782" viewBox="0 0 1200 782" role="img" aria-labelledby="loom-title loom-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="940" viewBox="0 0 1400 940" role="img" aria-labelledby="loom-title loom-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <title id="loom-title">The harness is a loom: tangled intent in, ordered work out</title>
-  <desc id="loom-desc">An overview of the whole system, drawn as a loom. On the left, loose multicoloured threads stand for raw intent and an unmanaged agent: whatever the user asks for, in whatever shape it arrives. Those threads pass through spec-builder, which routes any input format into one contract written to international standards. They then enter the Harness, drawn as a large frame. Inside the frame, rules and hooks come down from above into the agents at the centre: rules carry conventions such as conventional commits and protecting secrets, and hooks fire before and after a tool call. State, meaning the prompt and the run history, sits to the left of the agents. To the right sit skills, fed by skill discovery, which reads the project manifests to work out the stack: Python requirements and Pipfile and poetry and uv, Ruby Gemfile and gemspec, dotnet and NuGet project and package files, Java and Kotlin gradle files, and monorepo markers for pnpm workspaces, turbo and nx. Skill wire then connects a chosen skill to the agent that needs it. The agents are the narrow waist of the loom where everything is woven together, and out of it come three ordered outputs in a single colour: documents with a graph, which carry stable identifiers such as FR and BR, a plan of tasks with owners, and code with a graph. Below the frame sits the harness viewer, which renders the whole control plane and lets any part of it be switched off on demand. The point of the picture is that chaos goes in and controlled, inspectable work comes out.</desc>
+  <desc id="loom-desc">An overview of the whole system drawn as a loom. On the far left is the input: raw intent, listed as the forms it actually arrives in, which are a one-line idea, a meeting transcript, legacy documents, an existing repository, an empty repository, and half-written specifications. Loose multicoloured threads leave those blocks and tangle together as they travel right. They pass into spec-builder, which sits outside the harness and does one job: routing any input format into a single contract written to international standards. That contract enters the harness, labelled harness-bootstrap and drawn as a large frame. Inside the frame, rules and hooks come down from above into the agents at the centre. Rules carry conventions such as conventional commits and protecting secrets, and are scoped by path. Hooks fire before and after a tool call, and an exit code of 2 blocks the call. On the right of the frame is a rail of two panels at the same level. Skill Discovery scans this project's manifests to work out its tech stack and then finds the skills that match it, reading files such as requirements.txt, Gemfile, csproj, build.gradle and pnpm-workspace.yaml, as well as marketplace catalogs. Below it, Skill Wire connects a chosen skill to the agent seat that needs it, and nothing is installed unless the user chooses it. The rail feeds the skills, which feed the agents. The agents are the narrow waist of the loom where everything is woven together. Below the waist, three ordered outputs leave in a single colour, each with its own connection: documents with a graph, a plan of tasks with owners, and code with a graph. At the bottom of the frame sits state, holding the prompt, the run history and the task board, which the agents both read and write, and which survives compaction and restart. State is also what the harness viewer reads. The viewer sits below the frame and carries four functions: a flow and graph view of every wire, an assess function that scores the harness and names what is missing, a toggle that switches any rule or hook off, and a watch mode that re-scans as files change. No model is involved in any of it. The point of the picture is that chaos goes in and controlled, inspectable work comes out.</desc>
 
   <defs>
     <radialGradient id="waist" cx="50%" cy="50%" r="50%">
@@ -8,11 +8,6 @@
       <stop offset="45%" stop-color="#F2A33C" stop-opacity="0.22"/>
       <stop offset="100%" stop-color="#F2A33C" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="heat" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#A75FA8"/>
-      <stop offset="50%" stop-color="#F2A33C"/>
-      <stop offset="100%" stop-color="#6FB8F5"/>
-    </linearGradient>
     <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,1 L9,5 L0,9 z" fill="#6FB8F5"/>
     </marker>
@@ -22,196 +17,257 @@
     <marker id="ard" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M0,1 L9,5 L0,9 z" fill="#93A4C0"/>
     </marker>
+    <marker id="ars" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#3FA9A0"/>
+    </marker>
+    <marker id="ars0" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M10,1 L1,5 L10,9 z" fill="#3FA9A0"/>
+    </marker>
 
     <style>
       /* Every element below is fully drawn and fully opaque WITHOUT animation.
-         The animation only nudges what is already there: dashes drift, the ring
-         turns, a pulse slides. This is deliberate. GitHub renders a README image
-         in an img context that does not run the animation clock, and an earlier
-         asset in this repo whose text depended on its animation shipped as an
-         empty box. Visibility is never something an animation grants here. */
-      .drift  { animation: drift 9s linear infinite; }
-      .drift2 { animation: drift 13s linear infinite; }
-      .ring   { animation: spin 26s linear infinite; transform-origin: 560px 352px; }
-      .ring2  { animation: spin 38s linear infinite reverse; transform-origin: 560px 352px; }
-      /* The travelling pulses move via CSS offset-path, not SMIL animateMotion.
-         SMIL is deliberately avoided here: a media query cannot switch it off,
-         so a reduced-motion reader would still get travelling dots. Everything
-         that moves in this file is driven by a CSS animation for exactly that
-         reason. Base state is offset-distance 0 and opacity 0, so a frozen
-         clock shows no stray dots at all. */
-      .pulse, .pulse2, .pulse3 { offset-rotate: 0deg; }
-      .pulse  { offset-path: path("M14,318 C120,340 240,352 486,352");
-                animation: travel 7s ease-in-out infinite; }
-      .pulse2 { offset-path: path("M634,352 C700,352 760,420 800,470");
-                animation: travel 7s ease-in-out infinite 2.3s; }
-      .pulse3 { offset-path: path("M560,378 C560,420 560,440 560,470");
-                animation: travel 7s ease-in-out infinite 4.6s; }
-      .breathe{ animation: breathe 5s ease-in-out infinite; }
+         The animation only nudges what is already there. This is deliberate:
+         GitHub renders a README image in an img context that does not run the
+         animation clock, and an earlier asset in this repo whose text depended
+         on its animation shipped as an empty box. Visibility is never something
+         an animation grants here.
 
-      @keyframes drift   { to { stroke-dashoffset: -44; } }
+         The motion also has to MEAN something, or it is noise. An earlier draft
+         of this figure had travelling dots that carried no information, and they
+         are gone. What is left says one thing in three stages:
+
+           .chaos*  the input threads drift at different speeds and directions,
+                    so they are visibly OUT OF STEP with each other  = chaos
+           .sync    every thread inside the frame drifts at the same speed in
+                    the same direction, because the frame imposes it = discipline
+           (none)   the output lines do not move at all               = settled
+
+         Nothing else moves. Read that way, the animation is the argument. */
+      .chaos1 { animation: drift  7s linear infinite; }
+      .chaos2 { animation: drift 11s linear infinite reverse; }
+      .chaos3 { animation: drift 16s linear infinite; }
+      .sync   { animation: drift  9s linear infinite; }
+
+      .ring  { animation: spin 26s linear infinite; transform-origin: 860px 420px; }
+      .ring2 { animation: spin 38s linear infinite reverse; transform-origin: 860px 420px; }
+      .breathe { animation: breathe 5s ease-in-out infinite; }
+
+      @keyframes drift   { to { stroke-dashoffset: -48; } }
       @keyframes spin    { to { transform: rotate(360deg); } }
       @keyframes breathe { 0%,100% { opacity: .30; } 50% { opacity: .62; } }
-      @keyframes travel  {
-        0%       { offset-distance: 0%;   opacity: 0; }
-        8%, 52%  { opacity: .95; }
-        60%,100% { offset-distance: 100%; opacity: 0; }
-      }
 
       /* Graceful degradation, not a kill switch: the loom stops turning and the
-         pulses stop travelling, but no labelled element moves or vanishes,
+         threads stop drifting, but no labelled element moves or vanishes,
          because the resting state was already the complete picture. Reduced
          motion lands on exactly the same frame GitHub's img context shows. */
       @media (prefers-reduced-motion: reduce) {
-        .drift, .drift2, .ring, .ring2, .breathe {
+        .chaos1, .chaos2, .chaos3, .sync, .ring, .ring2, .breathe {
           animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
         }
-        .pulse, .pulse2, .pulse3 { animation: none !important; }
       }
     </style>
   </defs>
 
-  <rect x="0" y="0" width="1200" height="782" fill="#0E1424"/>
+  <rect x="0" y="0" width="1400" height="940" fill="#0E1424"/>
 
   <!-- ===== title ===== -->
-  <text x="40" y="40" font-size="21" font-weight="700" fill="#E8EEF9">The harness is a loom</text>
-  <text x="40" y="64" font-size="13" fill="#93A4C0">Tangled intent goes in on the left. Ordered, inspectable work comes out. Everything between is the harness.</text>
+  <text x="40" y="42" font-size="22" font-weight="700" fill="#E8EEF9">The harness is a loom</text>
+  <text x="40" y="68" font-size="13" fill="#93A4C0">Tangled intent goes in on the left. Ordered, inspectable work comes out. Everything between is the harness.</text>
 
-  <!-- ===== LEFT: the tangle ===== -->
-  <g fill="none" stroke-width="2" stroke-linecap="round" opacity="0.75">
-    <path class="drift"  d="M14,150 C60,180 40,230 92,246 C132,258 120,300 150,330" stroke="#A75FA8" stroke-dasharray="7 5"/>
-    <path class="drift2" d="M14,206 C70,214 44,272 104,286 C138,294 122,326 150,346" stroke="#3FA9A0" stroke-dasharray="6 6"/>
-    <path class="drift"  d="M14,262 C58,286 52,300 100,318 C130,330 126,342 150,358" stroke="#C98A3A" stroke-dasharray="8 4"/>
-    <path class="drift2" d="M14,318 C66,318 48,342 106,350 C132,354 128,358 150,364" stroke="#5A7FD4" stroke-dasharray="5 7"/>
-    <path class="drift"  d="M14,374 C60,362 46,392 104,378 C134,370 126,378 150,372" stroke="#A75FA8" stroke-dasharray="7 5"/>
-    <path class="drift2" d="M14,430 C70,414 44,430 104,404 C136,392 124,392 150,382" stroke="#3FA9A0" stroke-dasharray="6 6"/>
-    <path class="drift"  d="M14,486 C58,458 52,452 100,428 C132,412 124,404 150,390" stroke="#C98A3A" stroke-dasharray="8 4"/>
-    <path class="drift2" d="M14,542 C66,500 48,478 106,444 C136,424 124,414 150,398" stroke="#5A7FD4" stroke-dasharray="5 7"/>
+  <!-- ===== INPUT: raw intent, named by the forms it actually arrives in ===== -->
+  <text x="24" y="112" font-size="12" font-weight="700" fill="#B79ACB">INPUT &#183; RAW INTENT</text>
+
+  <g>
+    <rect x="24" y="132" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="132" width="4" height="40" rx="2" fill="#A75FA8"/>
+    <text x="40" y="157" font-size="11.5" fill="#C9D4E6">a one-line idea</text>
+
+    <rect x="24" y="184" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="184" width="4" height="40" rx="2" fill="#3FA9A0"/>
+    <text x="40" y="209" font-size="11.5" fill="#C9D4E6">a meeting transcript</text>
+
+    <rect x="24" y="236" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="236" width="4" height="40" rx="2" fill="#C98A3A"/>
+    <text x="40" y="261" font-size="11.5" fill="#C9D4E6">legacy documents</text>
+
+    <rect x="24" y="288" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="288" width="4" height="40" rx="2" fill="#5A7FD4"/>
+    <text x="40" y="313" font-size="11.5" fill="#C9D4E6">an existing repo</text>
+
+    <rect x="24" y="340" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="340" width="4" height="40" rx="2" fill="#A75FA8"/>
+    <text x="40" y="365" font-size="11.5" fill="#C9D4E6">an empty repo</text>
+
+    <rect x="24" y="392" width="196" height="40" rx="7" fill="#171E33" stroke="#3B5478" stroke-width="1"/>
+    <rect x="24" y="392" width="4" height="40" rx="2" fill="#3FA9A0"/>
+    <text x="40" y="417" font-size="11.5" fill="#C9D4E6">half-written specs</text>
   </g>
-  <text x="14" y="586" font-size="12" font-weight="700" fill="#B79ACB">RAW INTENT</text>
-  <text x="14" y="604" font-size="11" fill="#7C8AA6">an idea, a transcript,</text>
-  <text x="14" y="620" font-size="11" fill="#7C8AA6">legacy docs, a bare repo</text>
+  <text x="24" y="454" font-size="10.5" fill="#7C8AA6">Any format, any completeness.</text>
+  <text x="24" y="470" font-size="10.5" fill="#7C8AA6">Nothing has to be tidy first.</text>
+
+  <!-- the tangle: same six threads, out of step with each other -->
+  <g fill="none" stroke-width="2" stroke-linecap="round" opacity="0.8">
+    <path class="chaos1" d="M220,152 C250,190 244,260 262,330 C272,372 286,410 300,428" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="chaos2" d="M220,204 C256,232 240,300 268,352 C280,378 288,410 300,432" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+    <path class="chaos3" d="M220,256 C252,272 246,320 272,362 C284,392 290,414 300,434" stroke="#C98A3A" stroke-dasharray="8 4"/>
+    <path class="chaos2" d="M220,308 C254,318 250,346 274,378 C286,400 292,420 300,436" stroke="#5A7FD4" stroke-dasharray="5 7"/>
+    <path class="chaos1" d="M220,360 C256,364 252,384 276,402 C288,414 294,428 300,438" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="chaos3" d="M220,412 C258,412 254,420 278,428 C290,434 296,438 300,440" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+  </g>
 
   <!-- ===== spec-builder, outside the harness ===== -->
-  <rect x="150" y="318" width="176" height="84" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="2"/>
-  <text x="238" y="344" font-size="14" font-weight="700" fill="#E8EEF9" text-anchor="middle">spec-builder</text>
-  <text x="238" y="364" font-size="10.5" fill="#93A4C0" text-anchor="middle">format routing for tool call</text>
-  <text x="238" y="380" font-size="10.5" fill="#93A4C0" text-anchor="middle">use international standards</text>
-  <text x="238" y="394" font-size="10" fill="#6FB8F5" text-anchor="middle">one contract you and the AI share</text>
-  <path d="M326,360 L344,360" stroke="#6FB8F5" stroke-width="2.5" marker-end="url(#ar)"/>
+  <rect x="300" y="388" width="180" height="100" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="2"/>
+  <text x="390" y="416" font-size="14" font-weight="700" fill="#E8EEF9" text-anchor="middle">spec-builder</text>
+  <text x="390" y="438" font-size="10.5" fill="#93A4C0" text-anchor="middle">routes any input format</text>
+  <text x="390" y="454" font-size="10.5" fill="#93A4C0" text-anchor="middle">into ONE contract, written</text>
+  <text x="390" y="470" font-size="10.5" fill="#93A4C0" text-anchor="middle">to international standards</text>
+  <text x="390" y="506" font-size="10" fill="#7C8AA6" text-anchor="middle">runs outside the harness</text>
+
+  <path d="M480,438 L506,438" stroke="#6FB8F5" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
 
   <!-- ===== the harness frame ===== -->
-  <rect x="346" y="92" width="832" height="556" rx="14" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
-  <text x="762" y="86" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">HARNESS</text>
+  <rect x="508" y="100" width="860" height="670" rx="14" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
+  <text x="938" y="92" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">harness-bootstrap</text>
+
+  <!-- the contract crossing into the frame, and on to the waist -->
+  <path class="sync" d="M508,438 C620,438 700,432 776,428" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" opacity="0.85"/>
+  <text x="640" y="420" font-size="10" fill="#6FB8F5" text-anchor="middle">one contract you and the AI share</text>
 
   <!-- rules -->
-  <rect x="452" y="124" width="132" height="42" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="518" y="150" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Rule(s)</text>
-  <rect x="366" y="184" width="200" height="44" rx="8" fill="#151E36" stroke="#3B5478" stroke-width="1"/>
-  <text x="378" y="203" font-size="10.5" fill="#93A4C0">conventional commits,</text>
-  <text x="378" y="219" font-size="10.5" fill="#93A4C0">protect secrets, scoped by path</text>
-  <path d="M478,166 L452,184" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
+  <rect x="600" y="130" width="160" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="680" y="159" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Rule(s)</text>
+  <rect x="556" y="192" width="248" height="50" rx="8" fill="#151E36" stroke="#3B5478" stroke-width="1"/>
+  <text x="568" y="212" font-size="10.5" fill="#93A4C0">conventional commits, protect secrets,</text>
+  <text x="568" y="230" font-size="10.5" fill="#93A4C0">ADR discipline, scoped by path</text>
+  <path d="M660,176 L636,192" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
 
   <!-- hooks -->
-  <rect x="628" y="124" width="132" height="42" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="694" y="150" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Hook(s)</text>
-  <path d="M668,166 L646,190" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
-  <path d="M720,166 L742,190" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
-  <text x="640" y="206" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Pre</text>
-  <text x="748" y="206" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Post</text>
-  <text x="694" y="226" font-size="10" fill="#7C8AA6" text-anchor="middle">exit 2 blocks the call</text>
+  <rect x="828" y="130" width="160" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="908" y="159" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Hook(s)</text>
+  <path d="M876,176 L852,198" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
+  <path d="M940,176 L964,198" stroke="#3B5478" stroke-width="1.2" fill="none" marker-end="url(#ard)"/>
+  <text x="846" y="214" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Pre</text>
+  <text x="970" y="214" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Post</text>
+  <text x="908" y="236" font-size="10" fill="#7C8AA6" text-anchor="middle">exit 2 blocks the call</text>
 
-  <!-- skill discovery panel -->
-  <rect x="800" y="104" width="366" height="152" rx="10" fill="#151E36" stroke="#3B5478" stroke-width="1.2"/>
-  <text x="983" y="124" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Discovery</text>
-  <text x="983" y="140" font-size="10" fill="#7C8AA6" text-anchor="middle">reads the manifests, works out the stack</text>
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#93A4C0">
-    <text x="812" y="160">Python: requirements*.txt, Pipfile, poetry.lock, uv.lock</text>
-    <text x="812" y="175">Ruby: Gemfile, Gemfile.lock, *.gemspec</text>
-    <text x="812" y="190">.NET / NuGet: *.fsproj, Directory.Packages.props,</text>
-    <text x="812" y="204">packages.lock.json, nuget.config</text>
-    <text x="812" y="219">Java / Kotlin: build.gradle, build.gradle.kts,</text>
-    <text x="812" y="233">settings.gradle*</text>
-    <text x="812" y="248">Monorepo: pnpm-workspace.yaml, turbo.json, nx.json</text>
+  <!-- control coming down into the waist -->
+  <g fill="none" stroke-width="1.7" opacity="0.62">
+    <path class="sync" d="M680,242 C680,300 736,352 792,396" stroke="#5A7FD4" stroke-dasharray="7 5"/>
+    <path class="sync" d="M908,248 C908,306 886,352 872,392" stroke="#6FB8F5" stroke-dasharray="7 5"/>
   </g>
 
-  <!-- state -->
-  <rect x="366" y="330" width="106" height="48" rx="8" fill="#1B2540" stroke="#3B5478" stroke-width="1.2"/>
-  <text x="419" y="350" font-size="12" font-weight="700" fill="#E8EEF9" text-anchor="middle">State</text>
-  <text x="419" y="368" font-size="10" fill="#93A4C0" text-anchor="middle">prompt, history</text>
+  <!-- ===== SKILL RAIL: discovery and wire, one level, one column ===== -->
+  <rect x="1030" y="196" width="320" height="108" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="220" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Discovery</text>
+  <text x="1190" y="240" font-size="10.5" fill="#93A4C0" text-anchor="middle">Scans this project's manifests to work out its</text>
+  <text x="1190" y="256" font-size="10.5" fill="#93A4C0" text-anchor="middle">tech stack, then finds the skills that match it.</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#7C8AA6" text-anchor="middle">
+    <text x="1190" y="276">requirements.txt &#183; Gemfile &#183; *.csproj</text>
+    <text x="1190" y="291">build.gradle &#183; pnpm-workspace.yaml &#183; catalogs</text>
+  </g>
+
+  <path d="M1190,304 L1190,322" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <rect x="1030" y="324" width="320" height="108" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="348" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Wire</text>
+  <text x="1190" y="368" font-size="10.5" fill="#93A4C0" text-anchor="middle">Connects a chosen skill to the agent seat that</text>
+  <text x="1190" y="384" font-size="10.5" fill="#93A4C0" text-anchor="middle">needs it, and records the wire in the graph.</text>
+  <text x="1190" y="408" font-size="10" fill="#6FB8F5" text-anchor="middle">nothing is installed unless you choose it</text>
+
+  <path d="M1190,432 L1190,450" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <rect x="1090" y="452" width="200" height="52" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1190" y="475" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill(s)</text>
+  <text x="1190" y="492" font-size="9.5" fill="#93A4C0" text-anchor="middle">wired to a seat, or not installed</text>
+
+  <path class="sync" d="M1088,472 C1020,466 968,450 940,438" stroke="#6FB8F5" stroke-width="1.7" stroke-dasharray="7 5" fill="none" opacity="0.8" marker-end="url(#ar)"/>
 
   <!-- ===== THE WAIST: agents ===== -->
-  <circle cx="560" cy="352" r="104" fill="url(#waist)" class="breathe"/>
+  <circle cx="860" cy="420" r="104" fill="url(#waist)" class="breathe"/>
   <g fill="none" stroke="#F2A33C" stroke-width="1.2" opacity="0.5">
-    <circle class="ring"  cx="560" cy="352" r="80" stroke-dasharray="10 12"/>
-    <circle class="ring2" cx="560" cy="352" r="94" stroke-dasharray="4 16"/>
+    <circle class="ring"  cx="860" cy="420" r="80" stroke-dasharray="10 12"/>
+    <circle class="ring2" cx="860" cy="420" r="94" stroke-dasharray="4 16"/>
   </g>
 
-  <!-- threads converging into the waist -->
-  <g fill="none" stroke-width="1.6" opacity="0.62">
-    <path d="M472,354 C500,354 508,352 518,352" stroke="#A75FA8"/>
-    <path d="M346,300 C420,300 470,330 512,344" stroke="#3FA9A0"/>
-    <path d="M346,420 C420,420 470,382 512,362" stroke="#C98A3A"/>
-    <path d="M518,166 C518,240 530,300 546,326" stroke="#5A7FD4"/>
-    <path d="M694,236 C694,290 620,320 596,332" stroke="#6FB8F5"/>
-    <path d="M676,352 C650,352 630,352 610,352" stroke="#6FB8F5"/>
+  <rect x="786" y="394" width="148" height="52" rx="10" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
+  <text x="860" y="417" font-size="15" font-weight="700" fill="#1A1206" text-anchor="middle">Agent(s)</text>
+  <text x="860" y="435" font-size="10" fill="#4A3208" text-anchor="middle">the weave point</text>
+
+  <!-- ===== ordered output: one colour, one direction, and all three connected ===== -->
+  <g fill="none" stroke="#6FB8F5" stroke-width="2.2" opacity="0.9">
+    <path d="M818,450 C772,494 700,522 660,556" marker-end="url(#ar)"/>
+    <path d="M860,452 L860,556" marker-end="url(#ar)"/>
+    <path d="M902,450 C948,494 1020,522 1060,556" marker-end="url(#ar)"/>
   </g>
 
-  <rect x="486" y="326" width="148" height="52" rx="10" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
-  <text x="560" y="349" font-size="15" font-weight="700" fill="#1A1206" text-anchor="middle">Agent(s)</text>
-  <text x="560" y="367" font-size="10" fill="#4A3208" text-anchor="middle">the weave point</text>
+  <rect x="549" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="644" y="585" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Docs with Graph</text>
+  <text x="644" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">traceable, one defining home</text>
 
-  <!-- Travelling pulses, garnish only. Nothing here is labelled and nothing
-       here carries meaning: if the clock never runs, the picture is unchanged. -->
-  <circle class="pulse"  cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
-  <circle class="pulse2" cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
-  <circle class="pulse3" cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
+  <rect x="765" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="860" y="585" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Plan</text>
+  <text x="860" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">task, owner, status</text>
 
-  <!-- skills -->
-  <rect x="676" y="330" width="112" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="732" y="358" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill(s)</text>
-  <path d="M760,330 C790,300 800,280 812,258" stroke="#3B5478" stroke-width="1.4" fill="none" marker-end="url(#ard)"/>
+  <rect x="981" y="560" width="190" height="64" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="1076" y="585" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Code with Graph</text>
+  <text x="1076" y="604" font-size="10" fill="#93A4C0" text-anchor="middle">who owns which module</text>
 
-  <!-- skill wire -->
-  <rect x="828" y="322" width="188" height="62" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="922" y="344" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Wire</text>
-  <text x="922" y="361" font-size="10" fill="#93A4C0" text-anchor="middle">wire an agent to the skill</text>
-  <text x="922" y="376" font-size="10" fill="#6FB8F5" text-anchor="middle">you pick what gets installed</text>
-  <path d="M788,352 L826,352" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <text x="860" y="646" font-size="10.5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#93A4C0" text-anchor="middle">stable IDs: FR-01 &#183; BR-04 &#183; NFR-SEC-02 &#183; TASK-012</text>
 
-  <!-- ===== ordered output: one colour, parallel ===== -->
-  <g fill="none" stroke="#6FB8F5" stroke-width="2" opacity="0.85">
-    <path d="M528,378 C520,420 500,436 476,470" marker-end="url(#ar)"/>
-    <path d="M560,378 L560,470" marker-end="url(#ar)"/>
-    <path d="M596,378 C606,420 630,436 660,470" marker-end="url(#ar)"/>
-  </g>
+  <!-- ===== state: not on the way in, but what the run keeps ===== -->
+  <!-- State meets the waist from BELOW, not from the left. An earlier route ran
+       alongside the contract arrow at the same height and the two read as one
+       line: the picture said state was an input, which is the thing this
+       placement exists to deny. -->
+  <path class="sync" d="M600,668 C544,644 524,580 528,520 C532,486 580,478 660,474 C716,471 762,462 788,452"
+        stroke="#3FA9A0" stroke-width="1.8" stroke-dasharray="6 6" fill="none" opacity="0.85"
+        marker-start="url(#ars0)" marker-end="url(#ars)"/>
+  <text x="536" y="548" font-size="9.5" fill="#3FA9A0">read / write</text>
 
-  <rect x="382" y="470" width="188" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="476" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Docs with Graph</text>
-  <text x="476" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">traceable, one defining home</text>
+  <rect x="524" y="668" width="224" height="82" rx="10" fill="#1B2540" stroke="#3FA9A0" stroke-width="1.5"/>
+  <text x="636" y="692" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">State</text>
+  <text x="636" y="712" font-size="10" fill="#93A4C0" text-anchor="middle">prompt &#183; run history &#183; task board</text>
+  <text x="636" y="730" font-size="10" fill="#3FA9A0" text-anchor="middle">survives compaction and restart</text>
 
-  <rect x="588" y="470" width="150" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="663" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Plan</text>
-  <text x="663" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">task, owner, status</text>
-
-  <rect x="756" y="470" width="150" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
-  <text x="831" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Code with Graph</text>
-  <text x="831" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">who owns which module</text>
-
-  <path d="M476,524 L476,548" stroke="#3B5478" stroke-width="1.4" fill="none" marker-end="url(#ard)"/>
-  <text x="476" y="566" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#93A4C0" text-anchor="middle">ID: FR-01, BR-04, NFR-SEC-02</text>
-
-  <text x="762" y="600" font-size="11" fill="#7C8AA6" text-anchor="middle">Same colour, same direction: the output is ordered because the frame made it so.</text>
+  <path d="M636,750 L636,788" stroke="#F2A33C" stroke-width="1.8" fill="none" marker-end="url(#arw)"/>
+  <text x="650" y="783" font-size="9.5" fill="#7C8AA6">harness-graph.json</text>
 
   <!-- ===== viewer band, below the frame ===== -->
-  <rect x="346" y="668" width="832" height="58" rx="12" fill="#17203A" stroke="#F2A33C" stroke-width="1.5"/>
-  <text x="366" y="694" font-size="13" font-weight="700" fill="#FFD79A">Harness Viewer</text>
-  <text x="366" y="712" font-size="11" fill="#93A4C0">See the whole weave, score it, and switch any single thread off on demand. No model in the loop.</text>
-  <path d="M762,648 L762,666" stroke="#F2A33C" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+  <rect x="508" y="790" width="860" height="112" rx="12" fill="#17203A" stroke="#F2A33C" stroke-width="1.5"/>
+  <text x="528" y="818" font-size="13" font-weight="700" fill="#FFD79A">Harness Viewer</text>
+  <text x="528" y="836" font-size="10.5" fill="#93A4C0">Reads the state the run wrote and renders the whole control plane. Pure logic, no model in the loop.</text>
 
-  <text x="40" y="700" font-size="11" font-weight="700" fill="#6FB8F5">ORDER, NOT LUCK</text>
-  <text x="40" y="718" font-size="10.5" fill="#7C8AA6">Guardrails are shell</text>
-  <text x="40" y="733" font-size="10.5" fill="#7C8AA6">scripts and exit codes,</text>
-  <text x="40" y="748" font-size="10.5" fill="#7C8AA6">not the model's judgment.</text>
+  <g>
+    <rect x="528" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="626" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Flow / Graph</text>
+    <text x="626" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">every wire, not a drawing</text>
+
+    <rect x="736" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="834" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Assess</text>
+    <text x="834" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">score it, name what is missing</text>
+
+    <rect x="944" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="1042" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Toggle</text>
+    <text x="1042" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">switch any rule or hook off</text>
+
+    <rect x="1152" y="846" width="196" height="44" rx="8" fill="#111A2E" stroke="#3B5478" stroke-width="1"/>
+    <text x="1250" y="864" font-size="10.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Watch</text>
+    <text x="1250" y="879" font-size="9.5" fill="#93A4C0" text-anchor="middle">re-scan as the files change</text>
+  </g>
+
+  <!-- ===== left column notes ===== -->
+  <text x="24" y="534" font-size="11" font-weight="700" fill="#6FB8F5">WHY THE PICTURE MOVES</text>
+  <text x="24" y="554" font-size="10.5" fill="#7C8AA6">The threads on the left drift out</text>
+  <text x="24" y="570" font-size="10.5" fill="#7C8AA6">of step with each other. Inside the</text>
+  <text x="24" y="586" font-size="10.5" fill="#7C8AA6">frame they drift in step, because</text>
+  <text x="24" y="602" font-size="10.5" fill="#7C8AA6">the frame imposes it. The output</text>
+  <text x="24" y="618" font-size="10.5" fill="#7C8AA6">lines do not move at all.</text>
+  <text x="24" y="640" font-size="10.5" fill="#93A4C0">Chaos, then discipline, then done.</text>
+
+  <text x="24" y="690" font-size="11" font-weight="700" fill="#6FB8F5">ORDER, NOT LUCK</text>
+  <text x="24" y="710" font-size="10.5" fill="#7C8AA6">Guardrails are shell scripts and</text>
+  <text x="24" y="726" font-size="10.5" fill="#7C8AA6">exit codes, not the model's</text>
+  <text x="24" y="742" font-size="10.5" fill="#7C8AA6">judgment. Swap the model and</text>
+  <text x="24" y="758" font-size="10.5" fill="#7C8AA6">the floor is byte-identical.</text>
 </svg>
