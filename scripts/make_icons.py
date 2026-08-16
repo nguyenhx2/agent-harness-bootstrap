@@ -52,8 +52,20 @@ SVG_NS = "{http://www.w3.org/2000/svg}"
 
 try:
     from PIL import Image, ImageDraw
+    HAVE_PILLOW = True
 except ImportError:  # pragma: no cover - environment-dependent
-    print("error: this script needs Pillow to rasterise the mark.\n"
+    Image = ImageDraw = None
+    HAVE_PILLOW = False
+
+
+def require_pillow() -> None:
+    """Generating the icons needs Pillow. Checking them does not, and must not:
+    CI runners do not install it, and what CI verifies is the committed icons,
+    not our ability to redraw them. Exiting at import time made --check fail on
+    every runner and took the whole guardrails job down with it."""
+    if HAVE_PILLOW:
+        return
+    print("error: generating the icons needs Pillow.\n"
           "       install it with:  py -3.13 -m pip install pillow\n"
           "       (the committed icons are the fallback: they only need "
           "regenerating when docs/assets/logo-mark.svg changes)", file=sys.stderr)
@@ -279,9 +291,22 @@ def check() -> int:
     ico = OUT / "icon.ico"
     if not ico.is_file():
         problems.append("icon.ico is missing - run this script without --check")
-    else:
+    elif HAVE_PILLOW:
         with Image.open(ico) as im:
             have = sorted({s[0] for s in im.info.get("sizes", [])} or {im.size[0]})
+            missing = [s for s in ICO_SIZES if s not in have]
+            if missing:
+                problems.append(f"icon.ico lacks sizes {missing} (has {have})")
+    else:
+        # An ICO carries its own directory: 6-byte header, then one 16-byte entry
+        # per image whose first two bytes are width and height, with 0 meaning 256.
+        # Reading it by hand keeps --check honest on a runner without Pillow.
+        raw = ico.read_bytes()
+        if len(raw) < 6 or raw[:4] != b"\x00\x00\x01\x00":
+            problems.append("icon.ico is not a valid ICO container")
+        else:
+            n = int.from_bytes(raw[4:6], "little")
+            have = sorted({(raw[6 + i * 16] or 256) for i in range(n)})
             missing = [s for s in ICO_SIZES if s not in have]
             if missing:
                 problems.append(f"icon.ico lacks sizes {missing} (has {have})")
@@ -303,6 +328,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     if "--check" in sys.argv:
         return check()
+    require_pillow()
 
     master = render(SRC, MASTER)
 
