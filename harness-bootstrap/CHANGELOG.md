@@ -6,6 +6,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.12.0] - 2026-08-16
+
+### Fixed
+
+- Guardrail bypasses found by audit: a command prefix defeated the commit and push guards, and
+  `protect-secrets` matched read verbs instead of the file being read. Both are closed and pinned
+  by eval cases in each hook flavour.
+- `env-read.py` no longer leaks values through its `run` subcommand, and its docstring now states
+  the real limits of redaction.
+- Agents can read the env files they legitimately need. The deny rule matched `.env.example`, which
+  every block message tells the agent to read; must-allow cases now cover the legitimate paths.
+- The Cursor adapter no longer allows everything on a Windows harness, and the self-test covers
+  both flavours.
+- The task board directories are created, so the spawn check is armed on a fresh bootstrap.
+
+### Added
+
+- GitHub, GitLab and Bitbucket support, with platform detection that ranks its evidence and asks
+  when signals disagree.
+- A wiring gate asserting every installed hook is registered and every directory a hook needs exists.
+- Wider manifest detection across Python, Ruby, .NET, Java and Kotlin, plus monorepo markers.
+- Marketplace catalogs as a skill-discovery source; installation stays an explicit user choice.
+- Opt-in `rtk` behind a wrapper hook, and an opt-in `terse` output-style rule.
+- Questionnaires are asked in the user's own language.
+
 ## [1.11.1] - 2026-08-16
 
 ### Changed

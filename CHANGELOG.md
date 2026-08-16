@@ -5,6 +5,65 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.12.0
+
+A security audit of both skills found three controls that were installed but never wired, and this
+release closes them. It also gives agents the git tooling they were always told to use, and adds an
+assessment engine that would have caught the whole class earlier.
+
+### Fixed, and these matter
+
+- **A command prefix defeated the commit and push guards.** The pattern anchored on `git commit` at
+  the start of a command, so anything in front of it walked through. This was never about one tool:
+  `env git commit`, `time git push`, or any wrapper a team installs tomorrow had the same effect.
+- **`protect-secrets` matched read verbs, not the file.** It carried a closed list of ways to read a
+  file, so any reader not on the list read secrets freely. It now matches the file being touched,
+  which is the primitive that does not need to predict every verb.
+- **`env-read.py` leaked the values it promised never to print.** Its `run` subcommand handed env
+  values to any child command with stdout inherited, while the docstring said values are never
+  printed. Values are now redacted on the way out, and the docstring says exactly what redaction
+  does and does not cover.
+- **Agents were blocked from env they legitimately needed.** The deny rule matched `.env.example`,
+  the one file every block message tells the agent to read. That is the reported failure, and the
+  cause was that no test covered the allow side. The deny list now names value-bearing files, and
+  the eval covers reading the example file, seeding a local one, and running with one loaded.
+- **The Cursor adapter allowed everything on Windows** while printing that it blocked, because the
+  hook lookup was hardcoded to one flavour and the self-test only ever ran the other.
+- **The task board directory that arms the spawn check was never created**, so the check was inert
+  from the moment of install. A missing board now blocks rather than allows.
+- An Accepted ADR could be edited under a translating shell, because one guard normalised the
+  working directory but not an absolute file path. Found only because the Windows self-test was
+  added above.
+
+### Added
+
+- **`harness-view assess`** and an Assess tab: a deterministic engine that scores a harness against
+  this project's own quality gate and names what is wrong, with a link to the offending node. No
+  model is involved, so a browser and a CI pipeline cannot disagree. Run against three real
+  harnesses it scored the generated one 99 and two hand-maintained ones 79 and 64.
+- **A wiring gate.** Every installed hook must be registered and every directory a hook keys off
+  must exist. That single check covers three of the failures above.
+- **Git platform support for GitHub, GitLab and Bitbucket.** The harness previously told agents to
+  open and merge pull requests without giving them a command to do it. Detection ranks its evidence
+  rather than trusting the remote, and asks when the signals disagree. Bitbucket has no first-party
+  CLI of this shape, so it pushes the branch and hands the human the URL rather than pretending.
+- **Skills in the graph**, so you can see which are installed and which are actually wired to a seat.
+- **`rtk`, opt-in and off by default**, behind a wrapper hook we own so it can be disabled through
+  `/harness-toggle` and tested by the eval. The wrapper refuses to touch any command the guards
+  watch, so the compressor can never be the reason a guard did not fire.
+- **An output-style rule** adapted from `i-have-adhd` under the `terse` flag.
+- Wider stack detection: Python, Ruby, .NET, Java and Kotlin, and monorepo markers. Marketplace
+  catalogs feed skill suggestions, and installing anything remains the user's explicit choice.
+- Questionnaires are now asked in the language the user writes in, inferred rather than asked.
+
+### Not integrated, deliberately
+
+`caveman` was evaluated and rejected. Its compression engine is BSL-1.1, and the `ip-compliance`
+rule this skill installs into other people's repositories denies BSL by name. Shipping it would
+have contradicted the rule we ask others to keep.
+
+Guardrail eval: 107/107 per hook flavour, 214/214 across both.
+
 ## v1.11.1
 
 - `harness-view` reads JSON and YAML properly. A settings file opens as a collapsible, coloured
