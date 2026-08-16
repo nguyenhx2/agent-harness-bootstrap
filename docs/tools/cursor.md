@@ -54,7 +54,7 @@ not blocked before it happens. In Claude Code that edit is blocked pre-hoc.
 Run the adapter self-test, which exercises the translation against documented sample payloads:
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 5/5
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 18/18
 ```
 
 It denies `cat .env`, denies a commit to `main`, allows `npm test`, denies reading `.env`, and allows

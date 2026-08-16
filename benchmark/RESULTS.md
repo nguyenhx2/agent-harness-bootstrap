@@ -149,8 +149,8 @@ capability landed. A benchmark that only ever improves is a marketing document.
 - **Baseline A imports the eval's own payload suite** rather than re-declaring it, so the safety
   number cannot drift from the suite it claims to represent. It runs the `.sh` hook flavor and is
   skipped with a message if `bash` is unavailable.
-- **Baseline A counts only the 15 must-block payloads** in the eval's hook suite. The eval's full
-  69 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
+- **Baseline A counts only the 22 must-block payloads** in the eval's hook suite. The eval's full
+  107 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
   measure different properties and are not safety wins.
 - **The bare repo is built from the same fixtures** as the harnessed one, then has `.claude/`
   removed. If it lacked the `.env` or the ADR, "nothing was blocked" would be trivially true.

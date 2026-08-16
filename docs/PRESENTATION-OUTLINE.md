@@ -286,7 +286,7 @@ shape behaviour; they do not enforce it.
 ### The strongest claim in the talk
 
 `eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **15 must-block, 25 must-allow, 107/107 correct.**
+at it: **40 must-block, 67 must-allow, 107/107 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -344,7 +344,7 @@ default session**. A rule without `paths:` is rent paid on every request of ever
 | Enforcement | `settings.json` hooks | `.cursor/hooks.json` + generated adapter | `.codex/hooks.json` (registers directly) |
 | Blocks a secret read / commit to main | yes | yes | yes |
 
-One command: `python scripts/port.py --target . --tool all`. The adapter is unit-tested in CI (5/5).
+One command: `python scripts/port.py --target . --tool all`. The adapter is unit-tested in CI (18/18, both hook flavours).
 
 **State the two honest limits out loud** - it buys credibility and pre-empts the sharpest question:
 Codex routes edits through `apply_patch`, so `protect-adr` is best-effort there; Cursor's
@@ -389,9 +389,9 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **107/107** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **107/107** (40 blocked, 67 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
-| Cursor/Codex port adapter | **5/5** | `port.py --self-test` |
+| Cursor/Codex port adapter | **18/18** | `port.py --self-test` |
 
 ### Efficiency of the harness itself
 
@@ -509,8 +509,8 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - Always-RAM rules **27,805 bytes**; path-scoped **52,131 bytes**
 - Read path **-38%** (234,196 -> 144,645 bytes), files read **-58%** (24 -> 10)
 - Write path **-85%** (95,064 → 13,881 bytes)
-- Guardrail eval **107/107** (15 must-block, 25 must-allow), model-independent
-- Port adapter self-test **5/5**
+- Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
+- Port adapter self-test **18/18**
 - Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
 - Scaffold **~0.2s**, 73 paths, idempotent on re-run
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`

@@ -46,6 +46,10 @@ import tempfile
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
 CASES_PER_FLAVOR = 107
+# The same total split by intent. Quoted separately in the deck and the outline, so it needs its
+# own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
+MUST_BLOCK_PER_FLAVOR = 40
+MUST_ALLOW_PER_FLAVOR = 67
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -1084,6 +1088,27 @@ def main() -> int:
               f"{expected} for this run. Update CASES_PER_FLAVOR at the top of this file "
               f"and re-run scripts/check_numbers.py to refresh every badge.", file=sys.stderr)
         return 1
+
+    # The split is quoted separately from the total ("107/107, 40 blocked, 67 allowed"), and it
+    # drifted on its own: the deck claimed 15 and 25 long after the suite passed 107, a pair that
+    # does not even add up to the total it sat next to. Asserted here for the same reason as above.
+    per = 2 if ran_both else 1
+    if MUST_BLOCK_PER_FLAVOR + MUST_ALLOW_PER_FLAVOR != CASES_PER_FLAVOR:
+        print(f"\n  FIGURE DRIFT: MUST_BLOCK_PER_FLAVOR + MUST_ALLOW_PER_FLAVOR = "
+              f"{MUST_BLOCK_PER_FLAVOR + MUST_ALLOW_PER_FLAVOR}, which is not CASES_PER_FLAVOR "
+              f"({CASES_PER_FLAVOR}). The published split would not add up to its own total.",
+              file=sys.stderr)
+        return 1
+    for label, const, actual in (
+            ("MUST_BLOCK_PER_FLAVOR", MUST_BLOCK_PER_FLAVOR,
+             len([x for x in results if x.get("want") not in (0, None)])),
+            ("MUST_ALLOW_PER_FLAVOR", MUST_ALLOW_PER_FLAVOR,
+             len([x for x in results if x.get("want") == 0]))):
+        if actual != const * per:
+            print(f"\n  FIGURE DRIFT: {actual} cases in this half, but {label} says "
+                  f"{const * per} for this run. Update {label} at the top of this file "
+                  f"and re-run scripts/check_numbers.py.", file=sys.stderr)
+            return 1
 
     if nfail == 0:
         print("\n  Every one of these is enforced by a shell script and an exit code.")

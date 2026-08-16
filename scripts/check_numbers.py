@@ -39,6 +39,20 @@ def as_int(tok: str) -> int:
     return int(tok) if tok.isdigit() else WORD[tok.lower()]
 
 
+def _const(rel: str, name: str) -> int:
+    """Read a module-level integer constant that its own script asserts against reality.
+
+    Most of these suites generate cases at run time, so a static scan of the source undercounts.
+    The pattern used here instead: the script declares the number, fails loudly if the real count
+    differs, and this reads the declaration. That makes the constant as trustworthy as a run.
+    """
+    m = re.search(rf'^{name}\s*=\s*(\d+)',
+                  (ROOT / rel).read_text(encoding="utf-8"), re.M)
+    if not m:
+        sys.exit(f"{rel} no longer defines {name}, so its published figure cannot be policed.")
+    return int(m.group(1))
+
+
 def canonical() -> dict[str, int]:
     r = subprocess.run([sys.executable, str(ROOT / "benchmark/benchmark.py"), "--json"],
                        capture_output=True, text=True, cwd=ROOT)
@@ -79,6 +93,19 @@ def canonical() -> dict[str, int]:
         "eval_cases": int(re.search(r'^CASES_PER_FLAVOR\s*=\s*(\d+)',
                                     (ROOT / "eval/guardrail_eval.py").read_text(encoding="utf-8"),
                                     re.M).group(1)),
+        # The same total split by intent, and the port adapter's own suite. All three are quoted
+        # in the deck outline, all three are asserted against reality by the script that owns
+        # them, and all three drifted unnoticed: the outline claimed "15 must-block, 25 must-allow"
+        # beside a "107/107" that the split does not add up to, and "5/5" for a suite of 18.
+        "eval_block": _const("eval/guardrail_eval.py", "MUST_BLOCK_PER_FLAVOR"),
+        "eval_allow": _const("eval/guardrail_eval.py", "MUST_ALLOW_PER_FLAVOR"),
+        # Both flavors run, so the published figure is per-flavor x 2.
+        "adapter_cases": 2 * _const("harness-bootstrap/scripts/port.py", "CHECKS_PER_FLAVOR"),
+        # Baseline A replays only the hook suite's must-block payloads, which is a SUBSET of
+        # eval_block: the rest of the eval covers scaffold, ledger and toggle behaviour, which
+        # is not a safety win to count here. Two different true numbers, so two keys - a single
+        # "N must-block" rule would have to call one of them wrong.
+        "bench_block": d["guardrails"]["cases"],
     }
 
 
@@ -157,6 +184,32 @@ EVAL_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
 # it slipped through for several releases while also implying the suite was failing.
 EVAL_BADGE = re.compile(r"guardrail(?:%20|\s)eval-(\d{1,3})/(\d{1,3})", re.I)
 
+# The eval total split by intent, and the size of the suite it is a split of. These are quoted
+# only where the suite is described, so they are checked only there: CHANGELOG entries state what
+# was true at their release and must not be rewritten, and benchmark/RESULTS.md quotes the hook
+# subset instead (see bench_block). Every one of these drifted at once - the deck claimed
+# "15 must-block, 25 must-allow" beside a 107/107 the pair does not add up to, and eval/README.md
+# claimed a split summing to 69 - because the prose rule below only inspects EQUAL pairs.
+SPLIT_FILES = {"docs/PRESENTATION-OUTLINE.md", "docs/ASSESSMENT.md", "eval/README.md",
+               "docs/tools/claude-code.md", "README.md", "README.ja.md"}
+SPLIT_CHECKS = [
+    ("must-block split", r"(\d+) must-block", "eval_block"),
+    ("must-allow split", r"(\d+) must-allow", "eval_allow"),
+    ("blocked split",    r"\((\d+) blocked,", "eval_block"),
+    ("allowed split",    r"(\d+) allowed\)", "eval_allow"),
+    ("payload total",    r"(?:fires|\() ?(\d+) payloads", "eval_cases"),
+]
+# Baseline A's own subset, stated only in the benchmark write-up.
+BENCH_FILES = {"benchmark/RESULTS.md"}
+BENCH_CHECKS = [
+    ("baseline block count", r"(\d+) must-block payloads", "bench_block"),
+    ("eval cases per flavor", r"(\d+) cases per flavor", "eval_cases"),
+]
+# The port adapter's self-test result. It needs its own rule because the prose pair rule below
+# deliberately EXCLUDES any pair whose context mentions an adapter or a self-test - which is why
+# "5/5" survived in three places while the suite grew to 18.
+ADAPTER_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
+
 BYTE_CHECKS = [
     ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
     ("write-path after bytes", r"95,064\s*\|\s*([\d,]{4,})",  "write_bytes_after"),
@@ -188,9 +241,17 @@ def self_test(c: dict[str, int]) -> list[str]:
         "media agent count":      "{agents} agents",
         "read-path after bytes":  "| Read path | 234,196 | {read_bytes_after} | -63% |",
         "write-path after bytes": "| Write path | 95,064 | {write_bytes_after} | -85% |",
+        "must-block split":       "{eval_block} must-block, {eval_allow} must-allow",
+        "must-allow split":       "{eval_block} must-block, {eval_allow} must-allow",
+        "blocked split":          "**107/107** ({eval_block} blocked, {eval_allow} allowed)",
+        "allowed split":          "**107/107** ({eval_block} blocked, {eval_allow} allowed)",
+        "payload total":          "fires {eval_cases} payloads at a real generated harness",
+        "baseline block count":   "counts only the {bench_block} must-block payloads",
+        "eval cases per flavor":  "the eval's full {eval_cases} cases per flavor include",
     }
     dead = []
-    for name, pat, key in CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS:
+    for name, pat, key in (CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS
+                           + SPLIT_CHECKS + BENCH_CHECKS):
         probe = lines[name].format(**c)
         if not re.search(pat, probe, re.I):
             dead.append(f"{name}: pattern never matches, so it can never fail")
@@ -252,7 +313,21 @@ def main() -> int:
                 print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
                       f"{c['eval_cases']}/{c['eval_cases']}")
                 bad += 1
-        active = CHECKS + (COUNT_CHECKS if rel in COUNT_FILES else [])
+        # The adapter self-test result, wherever it is quoted next to what produced it.
+        for m in ADAPTER_PAIR.finditer(text):
+            a, b = int(m.group(1)), int(m.group(2))
+            ctx = text[max(0, m.start() - 130):m.start() + 70].lower()
+            if a == b and a != c["adapter_cases"] \
+                    and re.search(r"adapter|port\.py|--self-test", ctx) \
+                    and not re.search(r"->|→|\bwas\b|from", ctx):
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  port adapter self-test: says {a}/{b}, "
+                      f"reality is {c['adapter_cases']}/{c['adapter_cases']}")
+                bad += 1
+        active = (CHECKS
+                  + (COUNT_CHECKS if rel in COUNT_FILES else [])
+                  + (SPLIT_CHECKS if rel in SPLIT_FILES else [])
+                  + (BENCH_CHECKS if rel in BENCH_FILES else []))
         for name, pat, key in active:
             reqs = REQUIRED_SUBSTR.get(name)
             if reqs is not None and not any(r in text_lower for r in reqs):

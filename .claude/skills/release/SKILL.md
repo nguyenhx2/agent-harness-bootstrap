@@ -72,7 +72,7 @@ block, whose diagrams do not render, or whose figures contradict the scripts.
 ```bash
 python eval/guardrail_eval.py                       # every case green; the count is derived, never hardcoded
 python benchmark/benchmark.py                       # must exit 0
-python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 5/5
+python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 18/18
 python scripts/check_numbers.py                     # figures match the scripts
 python scripts/check_mermaid.py                     # every diagram renders (needs node)
 ```
