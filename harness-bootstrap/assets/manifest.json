@@ -1,5 +1,5 @@
 {
-  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR; 'when_not' skips when ANY listed flag is set. Flags: ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests, deploy_ask, long, solo_review, terse, rtk, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
+  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR; 'when_not' skips when ANY listed flag is set. Flags: ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests, deploy_ask, long, solo_review, terse, rtk, pr_cli, and exactly one of windows|posix. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
   "files": [
     {
       "src": "claude/agents/ba-analyst.md",

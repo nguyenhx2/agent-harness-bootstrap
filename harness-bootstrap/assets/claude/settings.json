@@ -15,7 +15,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git worktree list)",
-      "Bash(python .claude/scripts/:*)",
+{{#IF_PR_CLI}}      "Bash({{PR_CLI}} list:*)",
+      "Bash({{PR_CLI}} view:*)",
+      "Bash({{CI_STATUS_CMD}}:*)",
+{{/IF_PR_CLI}}      "Bash(python .claude/scripts/:*)",
       "Bash(python3 .claude/scripts/:*)",
 {{#IF_TESTS}}      "Bash({{TEST_CMD}}:*)",
 {{/IF_TESTS}}      "Bash({{LINT_CMD}}:*)",
@@ -48,10 +51,10 @@
       "Bash({{DB_RESET_CMD}}:*)"
     ],
     "ask": [
-{{#IF_DEPLOY_ASK}}
-      "Bash({{DEPLOY_CMD}}:*)"
-{{/IF_DEPLOY_ASK}}
-    ]
+{{#IF_PR_CLI}}      "Bash({{PR_CLI}} create:*)",
+      "Bash({{PR_CLI}} merge:*)"{{#IF_DEPLOY_ASK}},{{/IF_DEPLOY_ASK}}
+{{/IF_PR_CLI}}{{#IF_DEPLOY_ASK}}      "Bash({{DEPLOY_CMD}}:*)"
+{{/IF_DEPLOY_ASK}}    ]
   },
   "hooks": {
     "PreToolUse": [

@@ -275,7 +275,7 @@ class Solution(Scene):
         caption(self, "契約書、強制、永続する状態、選ばれた請求額。", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("ガードレール評価 89/89", GREEN_HI, fs=19),
+            tag("ガードレール評価 107/107", GREEN_HI, fs=19),
             tag("Opus -> Haiku: バイト単位で同一の安全性", GREEN_HI, fs=19),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(

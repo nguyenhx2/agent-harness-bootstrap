@@ -45,7 +45,7 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 89
+CASES_PER_FLAVOR = 107
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -54,6 +54,7 @@ VARS = {
     "vars": {k: v for k, v in {
         "PROJECT_NAME": "EvalTarget", "PROJECT_SLUG": "eval_target",
         "DEFAULT_BRANCH": "main", "PR_OR_MR": "PR", "CI_PLATFORM": "GitHub Actions",
+        "GIT_PLATFORM": "GitHub", "PR_CLI": "gh pr", "CI_STATUS_CMD": "gh pr checks",
         "HOSTING": "Fly.io", "UNIT_FRAMEWORK": "Vitest", "E2E_FRAMEWORK": "Playwright",
         "COVERAGE_TARGET": "80", "TEST_CMD": "npm test", "LINT_CMD": "npm run lint",
         "BUILD_CMD": "npm run build", "DB_RESET_CMD": "prisma migrate reset",
@@ -80,7 +81,7 @@ VARS = {
     }.items()},
     # tests/unit/e2e keep qa-test on the roster (the spawn cases need the seat to exist);
     # long keeps history-tracker on it (the model-escalation case names that seat).
-    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long", "rtk"],
+    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long", "pr_cli", "rtk"],
 }
 
 # (name, hook, expected_exit, payload_builder, assertions={})  exit 2 = BLOCKED, 0 = allowed.
@@ -648,6 +649,70 @@ def run_scaffold_validation_suite(workdir: pathlib.Path, flavor: str) -> list[di
         print(f"    malformed paths: frontmatter -> {'; '.join(bad_rules[:4])}", file=sys.stderr)
     rec(f"frontmatter: {checked} scoped rules parse cleanly", "scaffold-frontmatter",
         ok, 0, r.returncode)
+
+    # --- review tooling: the right CLI, and only the right CLI ---------------------------
+    # {{PR_CLI}} decides what every seat is told to run to open and merge work. Two ways this
+    # goes wrong quietly: a project gets a CLI it does not have (the seat runs a command that
+    # is not installed), or create/merge land in `allow` and an agent publishes or merges with
+    # no human in the loop. Both are silent - nothing errors, the wrong thing just happens.
+    PLATFORMS = {
+        "github":    ("GitHub",    "PR", "gh pr",   "gh pr checks",   True,  ["glab"]),
+        "gitlab":    ("GitLab",    "MR", "glab mr", "glab ci status", True,  ["gh pr"]),
+        "bitbucket": ("Bitbucket", "PR", "-",       "-",              False, ["gh pr", "glab"]),
+        "nocli":     ("none",      "PR", "-",       "-",              False, ["gh pr", "glab"]),
+    }
+    for key, (platform, prmr, cli, ci, has_cli, foreign) in PLATFORMS.items():
+        v = base_vars(flavor)
+        v["vars"]["GIT_PLATFORM"] = platform
+        v["vars"]["PR_OR_MR"] = prmr
+        v["vars"]["PR_CLI"] = cli
+        v["vars"]["CI_STATUS_CMD"] = ci
+        v["flags"] = [f for f in v["flags"] if f != "pr_cli"] + (["pr_cli"] if has_cli else [])
+        r, target = run_scaffold(workdir, f"prcli-{key}-{flavor}", v)
+        settings = target / ".claude/settings.json"
+
+        cfg = None
+        if r.returncode == 0 and settings.is_file():
+            try:
+                cfg = json.loads(settings.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                cfg = None
+        rec(f"pr-cli: {key} renders valid settings.json", "pr-cli",
+            cfg is not None, 0, r.returncode)
+        if cfg is None:
+            continue
+
+        allow = cfg["permissions"]["allow"]
+        ask = cfg["permissions"]["ask"]
+
+        if has_cli:
+            reads_allowed = all(e in allow for e in
+                                (f"Bash({cli} list:*)", f"Bash({cli} view:*)", f"Bash({ci}:*)"))
+            rec(f"pr-cli: {key} read-only commands are pre-approved", "pr-cli",
+                reads_allowed, 0, r.returncode)
+            # the one that matters: publishing and merging must never be silent
+            writes_gated = (all(e in ask for e in
+                                (f"Bash({cli} create:*)", f"Bash({cli} merge:*)"))
+                            and not any(e in allow for e in
+                                        (f"Bash({cli} create:*)", f"Bash({cli} merge:*)")))
+            rec(f"pr-cli: {key} create and merge ASK, never allow", "pr-cli",
+                writes_gated, 0, r.returncode)
+        else:
+            silent = [e for e in allow + ask
+                      if "gh pr" in e or "glab mr" in e or "glab ci" in e]
+            rec(f"pr-cli: {key} ships no CLI permission at all", "pr-cli",
+                not silent, 0, r.returncode)
+
+        intruder = [e for e in allow + ask if any(f in e for f in foreign)]
+        rec(f"pr-cli: {key} grants no other platform's CLI", "pr-cli",
+            not intruder, 0, r.returncode)
+
+        # the review gate and force-push protection must survive the new surface
+        deny = cfg["permissions"]["deny"]
+        still_safe = ("Bash(git push --force:*)" in deny
+                      and not any("push --force" in e for e in allow + ask))
+        rec(f"pr-cli: {key} leaves force-push denied", "pr-cli",
+            still_safe, 0, r.returncode)
 
     return results
 

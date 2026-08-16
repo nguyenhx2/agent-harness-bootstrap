@@ -134,7 +134,7 @@ shipping since the first release.
   as an installed script, inventing two edges the Python scanner correctly omitted. Both scanners
   now produce byte-identical graphs on a full 72-node harness, not just on the small fixture.
 
-Guardrail eval: 89/89 per hook flavor, 178/178 across both.
+Guardrail eval: 107/107 per hook flavor, 214/214 across both.
 
 ## v1.8.1
 
@@ -168,7 +168,7 @@ A fitted harness instead of a fixed one, a map of what got built, and runtime co
   guardrail silently dead; the toggle refuses path traversal; a corrupt ledger aborts instead of
   resurrecting disabled controls; and the generated graph page escapes repository content.
 
-Guardrail eval: 89/89 per hook flavor, 178/178 across both. Read path 45 percent below the
+Guardrail eval: 107/107 per hook flavor, 214/214 across both. Read path 45 percent below the
 predecessor skill. Figures from `eval/guardrail_eval.py` and `benchmark/benchmark.py`.
 
 ## v1.7.0

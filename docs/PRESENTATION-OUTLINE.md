@@ -286,7 +286,7 @@ shape behaviour; they do not enforce it.
 ### The strongest claim in the talk
 
 `eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **15 must-block, 25 must-allow, 89/89 correct.**
+at it: **15 must-block, 25 must-allow, 107/107 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -370,7 +370,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
    - `git commit` on `main` → blocked, with the hook's message
    - Edit an Accepted ADR → blocked
 6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **89/89** in seconds. Say it: *"No model was consulted. These are exit codes."*
+   **107/107** in seconds. Say it: *"No model was consulted. These are exit codes."*
 7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
    session and watch it pick up mid-task.
 
@@ -389,7 +389,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **89/89** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **107/107** (15 blocked, 25 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **5/5** | `port.py --self-test` |
 
@@ -397,7 +397,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **129,638** | **-40%** |
+| Read path (bytes pulled into context) | 234,196 | **144,645** | **-38%** |
 | Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **13,881** | **-85%** |
 
@@ -507,9 +507,9 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - **16** agents (+1 dev-agent template), **15** rules, **22** commands, **9** hooks
 - **6** rules unconditional, **9** path-scoped → **63%** of rule content stays out of session
 - Always-RAM rules **27,805 bytes**; path-scoped **52,131 bytes**
-- Read path **-40%** (234,196 → 129,638 bytes), files read **-58%** (24 → 10)
+- Read path **-38%** (234,196 -> 144,645 bytes), files read **-58%** (24 -> 10)
 - Write path **-85%** (95,064 → 13,881 bytes)
-- Guardrail eval **89/89** (15 must-block, 25 must-allow), model-independent
+- Guardrail eval **107/107** (15 must-block, 25 must-allow), model-independent
 - Port adapter self-test **5/5**
 - Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
 - Scaffold **~0.2s**, 73 paths, idempotent on re-run

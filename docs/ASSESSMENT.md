@@ -8,7 +8,7 @@ backed by a file or a runnable script in this repo is marked as not delivered.
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
-| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 40 payloads (15 must-block, 25 must-allow) at it: 89/89 correct, 178/178 when both hook flavors (`sh` and `ps1`) run. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
+| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 40 payloads (15 must-block, 25 must-allow) at it: 107/107 correct, 214/214 when both hook flavors (`sh` and `ps1`) run. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
 | ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -45%, write path -85%). The read-path number moved from -54% to -45% this cycle because the skill grew real capability (tech-presets catalogue, wider skill sourcing, more intake coverage) faster than compression could claw it back - see `benchmark/RESULTS.md` Goal 2 for the trade. Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
 | Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
@@ -195,8 +195,8 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
 
 ## What the repo supports today
 
-1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 89/89
-   (178/178 across both hook flavors).
+1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 107/107
+   (214/214 across both hook flavors).
 2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
    Measured: 45% less to read (down from 54% - the skill grew capability faster than compression
    could recover it, see `benchmark/RESULTS.md`), 85% less to author, 63% of rule content kept out
