@@ -34,6 +34,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = [
     "tools/harness-view/src/ui.html",
     "harness-bootstrap/assets/scripts/graph-html.py",
+    # The deck is the largest JavaScript blob in the repo and the file most often
+    # edited by figure propagation, which reaches into object literals by hand.
+    # A broken quote there would ship silently: nothing else parses this file.
+    "presentation/index.html",
+    "video/html/04-solution.html",
+    "video/html/ja/04-solution.html",
 ]
 
 SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
