@@ -117,6 +117,7 @@ def main() -> int:
     # the only place that number comes from, so a drift here means a downloaded .exe
     # reports a version the release never had. Checked here rather than left to a human.
     cargo = ROOT / "tools" / "harness-view" / "Cargo.toml"
+    cargo_v: str | None = None
     if cargo.is_file():
         text = cargo.read_text(encoding="utf-8")
         m = re.search(r'^version\s*=\s*"(\d+\.\d+\.\d+)"', text, re.M)
@@ -131,6 +132,24 @@ def main() -> int:
                     f"tools/harness-view/Cargo.toml is {cargo_v} but the repo version is "
                     f"{expected} - bump it, or the released binary reports the wrong version"
                 )
+
+    # Cargo.lock records the crate's own version too, and the release workflow builds with
+    # --locked, which refuses to update it. Bumping Cargo.toml alone therefore fails all four
+    # platform builds AFTER the tag is pushed, leaving a published release with no binaries.
+    # That happened on v1.12.1. Checked here so the failure lands before the tag instead.
+    lock = ROOT / "tools" / "harness-view" / "Cargo.lock"
+    if lock.is_file() and cargo_v is not None:
+        m = re.search(r'^name\s*=\s*"harness-view"\s*\nversion\s*=\s*"(\d+\.\d+\.\d+)"',
+                      lock.read_text(encoding="utf-8"), re.M)
+        if not m:
+            errs.append("tools/harness-view/Cargo.lock has no version for the harness-view "
+                        "package - `cargo update -p harness-view` regenerates it")
+        elif m.group(1) != cargo_v:
+            errs.append(
+                f"tools/harness-view/Cargo.lock says {m.group(1)} but Cargo.toml says "
+                f"{cargo_v} - run `cargo update -p harness-view`, or the release workflow's "
+                "`cargo build --locked` fails on every platform"
+            )
 
     # The tool's binaries are attached to the release, so the release body has to describe
     # them. scripts/release_notes.py reads this file; without an entry the download appears
