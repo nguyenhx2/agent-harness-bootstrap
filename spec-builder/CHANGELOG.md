@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.12.0] - 2026-08-16
+
+### Fixed
+
+- The scaffolder validates flags and honours the disabled ledger, so a typo no longer drops a
+  section silently and a command the user disabled is no longer resurrected.
+
 ## [1.11.1] - 2026-08-16
 
 ### Changed

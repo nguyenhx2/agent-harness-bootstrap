@@ -7,6 +7,14 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.12.0] - 2026-08-16
+
+### Added
+
+- `assess`, as a tab and a command: a deterministic score of a harness against the project's own
+  quality gate, with every finding naming its file and linking to the node.
+- Skill nodes, so you can see which installed skills are wired to a seat and which are not.
+
 ## [1.11.1] - 2026-08-16
 
 ### Added
