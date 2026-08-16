@@ -8,6 +8,23 @@ agent's model and effort - and get confirmation before writing anything.
 questions with no safe default and confirms the rest as one table, which is usually the right trade
 below preset M.
 
+## Ask in the user's language
+
+**Infer the language from how the user wrote to you, and ask every question in it.** Not just the
+documents it produces - the question text, the option labels, and the option descriptions. Someone
+who opened in Vietnamese is interviewed in Vietnamese; someone who opened in Japanese, in Japanese.
+Default to English only when the input is genuinely too short or too mixed to tell, and never
+interrogate a person in a language they did not choose to write in.
+
+This is separate from Q2. Q2 sets the language of the `docs/` prose the harness will author later
+and is a deliberate project decision; the language of the interview itself is never a question,
+it is inferred. The two can differ: a Vietnamese team may well choose English docs, and asking them
+in English to find that out is the wrong order.
+
+Two things stay English regardless, because they are identifiers rather than prose: flag names and
+`{{VAR}}` names as they appear in `vars.json`, and every agent-facing file (`CLAUDE.md`,
+`AGENTS.md`, `.claude/*`). Translate the question, not the value it records.
+
 ## Asking mechanics, and the express path
 
 Tags: **AQ** = `AskUserQuestion` (closed choice, max 4 options, recommended first labeled
@@ -23,14 +40,27 @@ ran, the labeled "Recommended" option otherwise); print the assumed defaults as 
 confirmation before writing anything. Batch G (audit mode) is never express - scope cannot be
 guessed.
 
+**Every skipped question must still yield a value.** Express mode changes who supplies the answer,
+never whether there is one: a question with no CONFIRM finding and no "(Recommended)" option has no
+express default, and skipping it leaves its `{{VAR}}` unset. The scaffolder writes the whole tree
+and only then fails on the unresolved variable, so the cost lands at the very end. Before scaffolding
+in express mode, check the vars table below and confirm every row has a value.
+
 ## Batch A - project identity
 
 1. **[chat]** Project name, domain, one-line purpose. Brownfield: a manifest's `name` field or the repo
    directory is a candidate to suggest, never to assume silently.
-2. **[AQ]** **Documentation language** for `docs/` content (Vietnamese / Japanese / English / other -
-   max 4 options). ALL agent-facing files (`CLAUDE.md`, `AGENTS.md`, `.claude/*`) plus codes, enums,
-   and filenames stay English. The scaffolded `docs/README.md` records the choice so later agents
-   author docs prose in it without re-asking.
+2. **[AQ, the inferred interview language first, labeled "(Recommended)"]** **Documentation
+   language** for `docs/` content (Vietnamese / Japanese / English / other - max 4 options). ALL
+   agent-facing files (`CLAUDE.md`, `AGENTS.md`, `.claude/*`) plus codes, enums, and filenames stay
+   English. The scaffolded `docs/README.md` records the choice so later agents author docs prose in
+   it without re-asking.
+
+   Recommend the language the user is writing in (the one you inferred above) - it is the best
+   available guess and it gives express intake a defined default. **This question must always
+   resolve to a value**, including in express mode: `{{DOC_LANGUAGE}}` has no default in the
+   scaffolder, so an unset one fails the run AFTER the files are written, which is the worst place
+   to fail.
 3. **[CONFIRM - presence of `docs/specs/`]** Do specs already exist? If not, invoke `spec-builder` via
    the `Skill` tool first (state the handoff if unavailable) - the bootstrap is better with FRs.
 
@@ -112,8 +142,16 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
     [`tech-presets.md`](tech-presets.md) (Vitest + Playwright for Vite-based JS/TS, Jest where
     already invested, pytest for Python - never one framework as universal), and CONFIRM the real
     test/lint/build commands from the repo's scripts.
-14. **[AQ, 4 options, "DDD (Recommended)" first]** **Development methodology** - how should the
-    dev seats be disciplined? Purpose and cost of each, honestly:
+14. **[AQ, "DDD (Recommended)" first; the TDD options are OFFERED ONLY IF Q13 chose a test kind]**
+    **Development methodology** - how should the dev seats be disciplined? Purpose and cost of each,
+    honestly.
+
+    **Gate this question on Q13.** If Q13 answered "None", drop both TDD options from the list and
+    offer only DDD and Lightweight, saying why in one line: test-first discipline cannot be applied
+    to a project that automates no tests. The scaffolder enforces this (`tdd` requires `tests`) and
+    fails the whole run, so offering the combination here is a dead end the user cannot escape
+    without hand-editing `vars.json`. If the user wants TDD, that is a reason to go back and change
+    Q13, not a reason to set both flags.
     - **DDD (Recommended)** (flag `ddd`) - `rules/ddd.md`: the spec glossary becomes the ubiquitous
       language, each dev agent's scope a bounded context, aggregate-root discipline applies. Tests
       ship in the same change, proving the acceptance criteria - not required first, which keeps
@@ -176,6 +214,23 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
       (Q20 collects the DB one); ask if there are others (infra teardown, queue purge).
     - Every dial here is changeable later with `/harness-tune` - a starting posture, not a permanent
       one.
+**Optional add-ons - [AQ, multi-select, both default OFF].** Two independent opt-ins that
+    wrap other people's work. Both are credited in the README, both ship off unless chosen, and
+    either can be turned off later with `/harness-toggle` rather than a re-scaffold. Offer them,
+    do not assume them - and state the cost, because neither is free.
+    - **Terser answers** (flag `terse`) - ships `rules/output-style.md`, adapted from the
+      MIT-licensed `i-have-adhd` ruleset: answers lead with the next action instead of a preamble,
+      multi-step work gets numbered, lists stay short. Be honest about the trade: this SPENDS
+      context rather than saving it, roughly 1,700 tokens per session, to make what comes back
+      easier to act on. It cannot be path-scoped because it shapes every answer, so it is a
+      7th always-loaded rule.
+    - **Smaller command output** (flag `rtk`) - ships `hooks/rtk-rewrite.{sh,ps1}`, a wrapper
+      around the Apache-2.0 `rtk` binary that rewrites a Bash command into a form whose output is
+      smaller (`git log -30` measured at 17,653 chars to 6,380). The binary is NOT bundled: the
+      user installs it themselves and the hook stays silent when it is absent, so choosing this
+      never breaks a machine that lacks it. The wrapper refuses to hand rtk any command our own
+      guards inspect. Mention that rtk has a telemetry endpoint compiled in, off by default, and
+      that the generated `settings.json` sets `RTK_TELEMETRY_DISABLED=1` as a second lock.
 
 ## Batch E - database operations and seed data
 
@@ -263,6 +318,7 @@ variable or flag; the remaining variables come from the analysis.
 | agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook. `HISTORY_KEEP` counts per-run files to retain; `0` means never prune (minimal/off write no per-run files, so 0 is their natural value) |
 | 17 operations posture | no var - into `tech-stack.md`; broadens `{{INCIDENT_CONTACT}}` (set at Q27) |
 | 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands |
+| optional add-ons (asked at the end of Batch D) | flags `terse` (ships `rules/output-style.md`) and `rtk` (ships `hooks/rtk-rewrite.{sh,ps1}` and sets `RTK_TELEMETRY_DISABLED=1` in settings.json). No vars. Both default OFF and are removable later with `/harness-toggle` |
 | 19 DB agents + seed policy | flags `db_engineer`, `db_seeder` (with `db`, gate their seats and `/seed-db`); seed scope |
 | 20 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` |
 | 21-22 branding, icons, a11y | flag `ui`, `{{UI_GLOBS}}`; `rules/frontend.md` body |
@@ -271,13 +327,14 @@ variable or flag; the remaining variables come from the analysis.
 | 25 residency | `{{DATA_RESIDENCY}}` |
 | 26 licences + ownership | `{{ALLOWED_LICENCES}}`, `{{DENIED_LICENCES}}`, `{{IP_OWNERSHIP_STATEMENT}}` |
 | 27 gated actions + incident path | `{{GATED_ACTIONS}}`, `{{INCIDENT_CONTACT}}` (any production incident) |
-| - dependency manifests (from analysis) | `{{DEP_MANIFEST_GLOBS}}` |
+| - dependency manifests (from analysis) | `{{DEP_MANIFEST_GLOBS}}` - EVERY manifest and lockfile the analysis actually found, per the ecosystem table in [`codebase-analysis.md`](codebase-analysis.md) pass 1, not just the first one. It path-scopes `rules/ip-compliance.md`; a glob that matches nothing means the licence rule never loads |
 | - deploy command (from analysis or Q6) | `{{DEPLOY_CMD}}` |
 | - glossary seed rows (from spec section 03 when spec-builder hands off; `-` if none) | `{{GLOSSARY_SEED}}` |
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
 
 Flags are exactly: `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`,
-`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, and exactly one of `windows`/`posix`.
+`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, and exactly one of
+`windows`/`posix`.
 `ddd` is the default methodology; `tdd` is opt-in and `light` replaces both - never assumed. `tests`
 is derived: set it whenever `unit` or `e2e` is set, never alone.
 

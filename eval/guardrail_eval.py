@@ -45,7 +45,7 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 69
+CASES_PER_FLAVOR = 89
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -80,7 +80,7 @@ VARS = {
     }.items()},
     # tests/unit/e2e keep qa-test on the roster (the spawn cases need the seat to exist);
     # long keeps history-tracker on it (the model-escalation case names that seat).
-    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long"],
+    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long", "rtk"],
 }
 
 # (name, hook, expected_exit, payload_builder, assertions={})  exit 2 = BLOCKED, 0 = allowed.
@@ -117,6 +117,39 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("secret: cat .env.local via shell", "protect-secrets",  2, p("Bash", command="cat .env.local")),
         ("secret: read .env.test directly",  "protect-secrets",  2, p("Read", file_path=".env.test")),
         ("secret: read private key",         "protect-secrets",  2, p("Read", file_path="id_rsa")),
+        # --- a wrapper prefix must not defeat a guard -------------------------------------
+        # The anchors used to require the command to START with `git`, so any prefix walked
+        # straight through: `rtk git commit`, `env git commit`, `time git push`. This is not
+        # about one tool - it is the whole class, which is why the cases spell three of them.
+        ("commit: prefixed git commit (rtk)", "check-commit-msg", 2,
+         p("Bash", command='rtk git commit -m "stuff"')),
+        ("commit: prefixed git commit (env)", "check-commit-msg", 2,
+         p("Bash", command='env git commit -m "stuff"')),
+        ("commit: prefixed git commit to main", "guard-main-commit", 2,
+         p("Bash", command="rtk git commit -m 'feat(x): y'")),
+        ("commit: prefixed git push to main", "guard-main-commit", 2,
+         p("Bash", command="time git push origin main")),
+        # --- a .env read through a verb no allowlist would have listed ---------------------
+        # protect-secrets matched a closed list of reader verbs, so anything off the list read
+        # secrets freely. It now matches the FILE, which is why these block.
+        ("secret: strings .env", "protect-secrets", 2, p("Bash", command="strings .env")),
+        ("secret: rtk read .env", "protect-secrets", 2, p("Bash", command="rtk read .env")),
+        ("secret: xxd .env.local", "protect-secrets", 2, p("Bash", command="xxd .env.local")),
+        # --- MUST ALLOW: the legitimate env paths -----------------------------------------
+        # This class was missing entirely, and its absence is exactly why a real user hit
+        # "agents cannot read env when they genuinely need it". A guard that blocks the work
+        # is a bug, not caution.
+        ("allow: read .env.example", "protect-secrets", 0,
+         p("Read", file_path=".env.example")),
+        ("allow: cat .env.example", "protect-secrets", 0,
+         p("Bash", command="cat .env.example")),
+        ("allow: seed a local env from the example", "protect-secrets", 0,
+         p("Bash", command="cp .env.example .env.local")),
+        ("allow: write a local env file", "protect-secrets", 0,
+         p("Bash", command="echo 'PORT=3000' >> .env.local")),
+        ("allow: env-read list (value-free)", "protect-secrets", 0,
+         p("Bash", command="python .claude/scripts/env-read.py list .env.local")),
+
         ("commit: straight to main",         "guard-main-commit", 2, p("Bash", command="git commit -m 'feat(x): y'")),
         ("commit: non-conventional message", "check-commit-msg", 2, p("Bash", command='git commit -m "stuff"')),
         # A newline in the -m value used to make the subject extraction return empty, which fell
@@ -419,6 +452,8 @@ def run_flavor(workdir: pathlib.Path, flavor: str, ps_bin: str | None = None) ->
     results += run_scaffold_validation_suite(workdir, flavor)
     results += run_ledger_security_suite(workdir, flavor, repo)
     results += run_graph_resilience_suite(repo, flavor)
+    results += run_wiring_suite(repo, flavor)
+    results += run_rtk_suite(repo, flavor, ps_bin)
     return results
 
 
@@ -762,6 +797,133 @@ def run_graph_resilience_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
     else:
         cg.unlink(missing_ok=True)
 
+    return results
+
+
+def run_wiring_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
+    """Three blockers shipped as "installed but not connected": a hook nothing registered, a
+    board directory no hook could find, an adapter pointing at the wrong flavor. Asking "is it
+    present" never caught any of them. Asking "is it wired" catches all three, which is why this
+    suite exists at all rather than one more per-hook case."""
+    results: list[dict] = []
+
+    def rec(name: str, ok: bool) -> None:
+        results.append({"name": name, "hook": "wiring", "flavor": flavor,
+                        "want": 0, "got": 0 if ok else 1,
+                        "status": "pass" if ok else "FAIL"})
+
+    settings_blob = (repo / ".claude/settings.json").read_text(encoding="utf-8", errors="replace")
+    hooks_dir = repo / ".claude/hooks"
+    unwired = sorted({f.stem for f in hooks_dir.iterdir()
+                      if f.suffix in (".sh", ".ps1") and f.is_file()
+                      and "hooks/" + f.stem + "." not in settings_blob})
+    rec("wiring: every installed hook is registered in settings.json"
+        + (" (unwired: " + ", ".join(unwired) + ")" if unwired else ""), not unwired)
+
+    # guard-agent-spawn keys its task-linkage check off docs/tasks/active. When the scaffolder
+    # never created it, the check was inert from the moment of install and the eval hid that by
+    # creating the directory itself.
+    missing = [d for d in ("docs/tasks/active", "docs/tasks/pending") if not (repo / d).is_dir()]
+    rec("wiring: the board directories a shipped hook keys off exist"
+        + (" (missing: " + ", ".join(missing) + ")" if missing else ""), not missing)
+    return results
+
+
+def run_rtk_suite(repo: pathlib.Path, flavor: str, ps_bin: str | None) -> list[dict]:
+    """The optional rtk wrapper hook. Two properties matter, and neither depends on rtk itself:
+
+    1. With no rtk on PATH the hook is SILENT and exits 0. That is the normal state - the flag
+       ships the wrapper, the user installs the binary separately - so a noisy or failing hook
+       would break every Bash call on a machine that simply never installed it.
+    2. A command any of our own guards inspect is NEVER handed to rtk. rtk really does rewrite
+       `git commit` into `rtk git commit`, so a compressor becoming the reason a guard did not
+       fire is a live risk, not a theoretical one.
+
+    Property 2 needs a present binary, so this supplies a STUB rather than depending on the real
+    rtk. The stub appends to a marker file on every invocation, which lets the pass-through cases
+    assert the strong thing - rtk was never CALLED - instead of the weak thing, that its output
+    happened to be empty. It also keeps the case count identical on every machine, which
+    CASES_PER_FLAVOR requires.
+    """
+    results: list[dict] = []
+    ext = "ps1" if flavor == "ps1" else "sh"
+    hook = repo / (".claude/hooks/rtk-rewrite." + ext)
+
+    def rec(name: str, ok: bool, got: int) -> None:
+        results.append({"name": name, "hook": "rtk-rewrite", "flavor": flavor,
+                        "want": 0, "got": got, "status": "pass" if ok else "FAIL"})
+
+    def fire(command: str, extra: pathlib.Path | None) -> tuple:
+        env = dict(os.environ)
+        # The machine running the eval may have a real rtk installed; prune it so the
+        # absent-binary case is deterministic rather than machine-dependent.
+        keep = [d for d in env.get("PATH", "").split(os.pathsep)
+                if d and not (pathlib.Path(d) / "rtk").exists()
+                and not (pathlib.Path(d) / "rtk.exe").exists()
+                and not (pathlib.Path(d) / "rtk.cmd").exists()]
+        if extra:
+            keep.insert(0, str(extra))
+        env["PATH"] = os.pathsep.join(keep)
+        payload = json.dumps({"cwd": repo.as_posix(), "tool_name": "Bash",
+                              "tool_input": {"command": command}})
+        # POSIX-RELATIVE path with cwd=repo, never an absolute Windows path: bash cannot resolve
+        # `C:\...` and exits 127, which reads exactly like a hook that declined to act. The same
+        # trap is documented at the main hook runner above.
+        rel = ".claude/hooks/rtk-rewrite." + ext
+        argv = ([ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", rel]
+                if flavor == "ps1" else ["bash", rel])
+        pr = subprocess.run(argv, input=payload, capture_output=True, text=True,
+                            env=env, cwd=str(repo))
+        return pr.returncode, (pr.stdout or "")
+
+    if not hook.is_file():
+        rec("rtk: wrapper hook is installed under the rtk flag", False, 1)
+        return results
+
+    rc, out = fire("git status", None)
+    rec("rtk: absent binary exits 0 and writes nothing", rc == 0 and out.strip() == "", rc)
+
+    if flavor == "ps1" and not ps_bin:
+        return results
+
+    stub_dir = repo / ".eval-rtk-stub"
+    stub_dir.mkdir(exist_ok=True)
+    marker = stub_dir / "called.log"
+    rewrite = ('{"hookSpecificOutput":{"hookEventName":"PreToolUse",'
+               '"permissionDecisionReason":"stub","updatedInput":{"command":"STUBBED"}}}')
+    if flavor == "ps1":
+        lines = ["@echo off",
+                 'if "%1"=="--version" (echo rtk 0.45.0& exit /b 0)',
+                 'echo called >> "%~dp0called.log"',
+                 "echo " + rewrite.replace("&", "^&"),
+                 "exit /b 0"]
+        (stub_dir / "rtk.cmd").write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")
+    else:
+        lines = ["#!/usr/bin/env bash",
+                 'if [ "$1" = "--version" ]; then echo "rtk 0.45.0"; exit 0; fi',
+                 'echo called >> .eval-rtk-stub/called.log',
+                 "cat >/dev/null",
+                 "echo '" + rewrite + "'",
+                 "exit 0"]
+        stub = stub_dir / "rtk"
+        stub.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+        stub.chmod(0o755)
+
+    marker.unlink(missing_ok=True)
+    rc, out = fire("git status", stub_dir)
+    rec("rtk: unguarded command is relayed to rtk",
+        rc == 0 and "STUBBED" in out and marker.is_file(), rc)
+
+    for label, command in (("git commit", 'git commit -m "feat: x"'),
+                           ("git push", "git push origin main"),
+                           (".env read", "cat .env"),
+                           (".env via any verb", "strings .env.local")):
+        marker.unlink(missing_ok=True)
+        rc, out = fire(command, stub_dir)
+        ok = rc == 0 and out.strip() == "" and not marker.is_file()
+        rec("rtk: " + label + " passed through untouched, rtk never invoked", ok, rc)
+
+    shutil.rmtree(stub_dir, ignore_errors=True)
     return results
 
 

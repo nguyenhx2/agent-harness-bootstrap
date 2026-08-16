@@ -33,8 +33,16 @@ $allowPattern  = '\.env\.example$'
 # NOTE: the leading char class is a hand-rolled word boundary. POSIX ERE (grep -E) has no portable
 # \b, so the .sh twin cannot use one; we use the identical construct here so the two regexes stay
 # literally the same modulo \s vs [[:space:]].
-$cmdPattern    = '(^|[^a-zA-Z0-9_.-])(cat|type|more|less|head|tail|Get-Content|gc|copy|cp|echo)\s+[^\s]*\.env(\.[a-zA-Z0-9_-]+)?(\s|$|"|'')'
-$cmdAllow      = '\.env\.example'
+# Parity with the .sh flavor: match the FILE, not a closed list of reader verbs. A verb list
+# let `strings .env` and any wrapper through. Scrubs below remove the forms that may
+# legitimately name a .env file, before the test runs.
+$cmdPattern    = '(^|[^a-zA-Z0-9_./-])[^\s]*\.env(\.[a-zA-Z0-9_-]+)?(\s|$|"|''|;|&)'
+$cmdScrubs     = @(
+    '(?i)(cp|copy|mv|Copy-Item)\s+[^\s]*\.env\.example\s+[^\s]*\.env(\.[a-zA-Z0-9_-]+)?',
+    '>>?\s*[^\s]*\.env(\.[a-zA-Z0-9_-]+)?',
+    '[^\s]*env-read\.py[^;&|]*',
+    '[^\s]*\.env\.example'
+)
 $dbResetPattern = '{{DB_RESET_PATTERN}}'
 
 # --- 1. file access ---------------------------------------------------------------------------
@@ -50,8 +58,10 @@ if ($path) {
 # --- 2 + 3. shell commands --------------------------------------------------------------------
 $cmd = $payload.tool_input.command
 if ($cmd) {
-    if ($cmd -match $cmdPattern -and $cmd -notmatch $cmdAllow) {
-        [Console]::Error.WriteLine("BLOCKED: this command reads/copies a .env file. If you need the variable list, read .env.example.")
+    $cmdScrubbed = $cmd
+    foreach ($rx in $cmdScrubs) { $cmdScrubbed = $cmdScrubbed -replace $rx, '' }
+    if ($cmdScrubbed -match $cmdPattern) {
+        [Console]::Error.WriteLine("BLOCKED: this command names a .env file. Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed).")
         exit 2
     }
     if ($cmd -match $dbResetPattern) {

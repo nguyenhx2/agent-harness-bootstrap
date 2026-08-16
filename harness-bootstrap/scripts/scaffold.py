@@ -75,7 +75,7 @@ class ScaffoldError(Exception):
 KNOWN_FLAGS = {
     "ui", "db", "db_engineer", "db_seeder", "ai", "audit", "tdd", "ddd",
     "light", "unit", "e2e", "tests", "deploy_ask", "long", "solo_review",
-    "windows", "posix",
+    "windows", "posix", "terse", "rtk",
 }
 
 # OS flag -> the derived hook runner/extension vars. The flavor of the shipped
@@ -238,6 +238,7 @@ def main() -> int:
                   "controls).", file=sys.stderr)
             return 1
 
+    pending: list[tuple[pathlib.Path, bytes, bool]] = []
     added: list[str] = []
     kept: list[str] = []
     conflicts: list[str] = []
@@ -285,11 +286,7 @@ def main() -> int:
             if not args.force:
                 continue
 
-        if not args.dry_run:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(payload)
-            if entry.get("exec"):
-                dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        pending.append((dest, payload, bool(entry.get("exec"))))
         added.append(dest_rel)
 
     # ---- report -------------------------------------------------------------
@@ -331,7 +328,16 @@ def main() -> int:
         )
     if all_missing:
         print("\nFAIL: unresolved variables. Add them to vars.json and re-run.")
+        print("Nothing was written: the target is untouched, so a failed run cannot leave a "
+              "half-built harness or a settings.json with a raw placeholder in it.")
         return 1
+
+    if not args.dry_run:
+        for dest, payload, is_exec in pending:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(payload)
+            if is_exec:
+                dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     # Spawn-boundary invariant: exactly one seat (the orchestrator) may hold the Agent tool.
     # A second Agent-holding seat is a second uncontrolled dispatch point - the exact escape the
@@ -343,14 +349,78 @@ def main() -> int:
         spawners = []
         for f in sorted(agents_dir.glob("*.md")):
             head = f.read_text(encoding="utf-8", errors="replace")[:2000]
-            m = _re.search(r"^tools:\s*(.+)$", head, _re.MULTILINE)
-            if m and _re.search(r"(^|[,\s])Agent(,|\s|$)", m.group(1)):
+            if _re.search(r"(^|[,\s\[\"\'])Agent([,\s\]\"\']|$)", tools_value(head)):
                 spawners.append(f.stem)
         if len(spawners) > 1:
             print(f"\nFAIL: {len(spawners)} agents hold the Agent tool: {', '.join(spawners)}.")
             print("Only the orchestrator may spawn. Remove Agent from the others' tools: line.")
             return 1
+    # Wiring invariant. Three separate defects shipped with the same shape: a control that is
+    # INSTALLED but not WIRED. A Cursor adapter that pointed at the wrong hook flavor, a task
+    # board directory no hook could find, and an audit-mode hook nothing registered. Each was
+    # invisible because every test asked "is the control present", never "is it connected".
+    problems = wiring_problems(args.target)
+    if problems:
+        print("\nFAIL: controls are installed but not wired:")
+        for line in problems:
+            print(f"  {line}")
+        print("An unwired control looks like protection and provides none.")
+        return 1
     return 0
+
+
+def tools_value(head: str) -> str:
+    """The `tools:` frontmatter value, inline or YAML block form, as one flat string.
+
+    `tools: Read, Agent` and a block list of `- Agent` are both valid frontmatter, and reading
+    only the inline form let a second Agent-holding seat ship undetected.
+    """
+    import re as _re
+    m = _re.search(r"^tools:[ \t]*(.*)$", head, _re.MULTILINE)
+    if not m:
+        return ""
+    value = m.group(1).strip()
+    if value:
+        return value
+    out = []
+    for line in head[m.end():].splitlines():
+        if not line.strip():
+            continue
+        if _re.match(r"^[ \t]+-[ \t]*(.+)$", line):
+            out.append(_re.match(r"^[ \t]+-[ \t]*(.+)$", line).group(1).strip())
+            continue
+        break
+    return ", ".join(out)
+
+
+def wiring_problems(target: pathlib.Path) -> list[str]:
+    """-> human-readable problems where an installed control is not connected to anything."""
+    import json as _json
+    out: list[str] = []
+    claude = target / ".claude"
+    hooks_dir = claude / "hooks"
+    settings = claude / "settings.json"
+
+    if hooks_dir.is_dir() and settings.is_file():
+        try:
+            blob = settings.read_text(encoding="utf-8", errors="replace")
+            _json.loads(blob)
+        except (OSError, ValueError):
+            out.append("settings.json is not valid JSON, so no hook is registered at all")
+            blob = ""
+        if blob:
+            installed = {f.stem for f in hooks_dir.iterdir()
+                         if f.suffix in (".sh", ".ps1") and f.is_file()}
+            for name in sorted(installed):
+                if f"hooks/{name}." not in blob:
+                    out.append(f"hook {name} is installed but never registered in settings.json")
+
+    # Directories the shipped guards key off. guard-agent-spawn refuses a write dispatch when the
+    # board is absent, which is only safe because the board is always created.
+    for rel in ("docs/tasks/active", "docs/tasks/pending"):
+        if not (target / rel).is_dir():
+            out.append(f"{rel}/ is missing, and a shipped hook keys off it")
+    return out
 
 
 if __name__ == "__main__":

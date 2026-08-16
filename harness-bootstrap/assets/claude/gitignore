@@ -19,3 +19,7 @@ state/*
 
 # Local overrides a developer may keep beside the shared settings.
 settings.local.json
+
+# rtk's per-repo config and cache, when the optional rtk hook is in use. A committed
+# .rtk/filters.toml can change what command output the model sees, so it stays local.
+.rtk/

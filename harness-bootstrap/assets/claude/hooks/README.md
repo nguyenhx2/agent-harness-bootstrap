@@ -41,6 +41,38 @@ scaffold or a hand edit brings a disabled hook back, `harness-toggle.py reapply`
   is precisely the thing that hook exists to stop. The eval pins this so it stays a decision rather
   than an accident.
 
+## Env files: what a seat may read, and how
+
+A blanket block is not a policy. Seats genuinely need env values to do their work - does
+`DATABASE_URL` exist in `.env.test`, run the migration with `.env.local` loaded - and a harness
+that refuses all of it gets the hook switched off, which is strictly worse than a rule people can
+follow. What must never happen is a VALUE reaching the transcript, because from there it is in the
+archive and the provider's logs permanently.
+
+| Action | Verdict | Why |
+|---|---|---|
+| Read `.env.example` | allowed | It is the tracked placeholder. It holds names, never values. |
+| Read any other `.env*` | blocked | The value would land in the transcript. |
+| Write or append to a local `.env.local` / `.env.dev` / `.env.test` | allowed | Setting up a dev environment is not disclosure. |
+| `cp .env.example .env.local` | allowed | Seeding a local file from the placeholder. |
+| Anything naming a prod/production/live/release env file | blocked | Never a target, whatever the verb. |
+| `.claude/scripts/env-read.py list / check / diff` | allowed | Presence and shape, never values. |
+| `.claude/scripts/env-read.py run -- <cmd>` | allowed | Values load into the child's environment; its output is captured and every value is replaced with `[redacted:KEY]` before printing. |
+
+`env-read.py` is the sanctioned path and it is deliberately narrow: `printenv`, `env`, `set` and
+inline shells (`sh -c`, `bash -c`, `powershell -c`) are refused outright, because their output IS
+the secret and redacting it would leave a lie. Its honest limit is written in its own docstring:
+redaction matches values literally, so a command that deliberately transforms a value before
+printing it defeats it. That stops accidents and casual misuse, which is what actually happens. It
+is not a sandbox, and a seat you would not trust with the value should not be given `run`.
+
+Two layers enforce this and they must agree. `protect-secrets` matches the FILE rather than a list
+of reader verbs, because a verb allowlist let `strings .env` and any wrapper through. The
+`settings.json` deny rules are the speed bump behind it; they name the value-bearing files
+explicitly rather than globbing `.env.*`, which used to catch `.env.example` and block the one file
+every error message tells the agent to read. If you add a deny rule here, check it against the
+allow cases in the guardrail eval before shipping it.
+
 ## Gotchas that bit us
 
 - **`agent-history` is `SubagentStop`, not `PostToolUse`.** The subagent tool is `Agent` (there is

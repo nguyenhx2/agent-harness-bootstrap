@@ -142,16 +142,22 @@ fi
 if [ -f "$agents_dir/$stype.md" ]; then
   seat_tools=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^tools:' | head -1)
   if printf '%s' "$seat_tools" | grep -Eq '(^|[,: ])(Edit|Write)(,| |$)'; then
-    if [ -d "$base_cwd/docs/tasks/active" ]; then
-      task_id=$(printf '%s' "${JF[3]}" | grep -oE 'TASK-[0-9]{1,5}' | head -1)
-      if [ -z "$task_id" ]; then
-        echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN. Work with no registered task is invisible to the board and becomes an orphan. Register the task (see /new-task), put its code in the dispatch prompt, and dispatch again." >&2
-        exit 2
-      fi
-      if ! ls "$base_cwd/docs/tasks/active/"*"$task_id"* >/dev/null 2>&1; then
-        echo "BLOCKED: this dispatch names $task_id but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-control.md). Register it first, then dispatch." >&2
-        exit 2
-      fi
+    # No -d gate here. It used to skip the whole check when the board was missing, and the
+    # scaffolder never created docs/tasks/active/, so this arm was inert on every fresh
+    # bootstrap. A missing board means no task can be registered, which is precisely when a
+    # write dispatch must be refused, not waved through.
+    if [ ! -d "$base_cwd/docs/tasks/active" ]; then
+      echo "BLOCKED: '$stype' can write, but docs/tasks/active/ does not exist, so no task can be registered. Create the task board (harness-bootstrap ships it; /harness-update restores it), register the task, then dispatch." >&2
+      exit 2
+    fi
+    task_id=$(printf '%s' "${JF[3]}" | grep -oE 'TASK-[0-9]{1,5}' | head -1)
+    if [ -z "$task_id" ]; then
+      echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN. Work with no registered task is invisible to the board and becomes an orphan. Register the task (see /new-task), put its code in the dispatch prompt, and dispatch again." >&2
+      exit 2
+    fi
+    if ! ls "$base_cwd/docs/tasks/active/"*"$task_id"* >/dev/null 2>&1; then
+      echo "BLOCKED: this dispatch names $task_id but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-control.md). Register it first, then dispatch." >&2
+      exit 2
     fi
   fi
 fi

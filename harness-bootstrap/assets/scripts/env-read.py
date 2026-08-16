@@ -15,7 +15,18 @@ comes back is presence, shape, and exit codes.
   diff    which keys does .env.example promise that this file lacks, and vice versa
   run     execute a command with the file's variables loaded into its environment
 
-Production is never a target: a file whose name says prod/production/live, or one outside the
+`run` is the dangerous one, so it is the constrained one. The child's output is CAPTURED, not
+inherited, and every value from the env file is replaced with [redacted:KEY] before anything is
+printed. Commands whose whole purpose is to dump the environment (printenv, env, set) and shell
+one-liners (sh -c, bash -c, powershell -c) are refused outright, because their output is the
+secret by construction and redacting it would leave nothing but a lie.
+
+The honest limit: redaction matches values literally. A command that deliberately transforms a
+value before printing it - base64, reversed, one character per line - defeats it. This blocks
+accidental disclosure and casual misuse, which is what actually happens; it is not a sandbox, and
+a seat you would not trust with the value should not be given `run` at all.
+
+Production is never a target: a file whose PATH says prod/production/live, or one outside the
 repo, is refused outright. Values are redacted even in error messages.
 
   python .claude/scripts/env-read.py list .env.local
@@ -41,17 +52,34 @@ def refuse(msg: str) -> int:
     return 2
 
 
+def repo_root() -> pathlib.Path:
+    """The repo, not the shell's cwd. Anchoring on cwd made the boundary move with the caller:
+    from a subdirectory it refused the repo's own .env, and from above the repo it silently
+    widened to include everything under that parent."""
+    here = pathlib.Path.cwd().resolve()
+    for cand in (here, *here.parents):
+        if (cand / ".git").exists() or (cand / ".claude").is_dir():
+            return cand
+    return here
+
+
 def resolve(target: str) -> tuple[pathlib.Path | None, str]:
     p = pathlib.Path(target)
-    root = pathlib.Path.cwd().resolve()
+    root = repo_root()
     try:
         full = (root / p).resolve() if not p.is_absolute() else p.resolve()
     except OSError:
         return None, "unreadable path"
     if root not in full.parents and full != root:
         return None, "the file is outside this repo"
-    if PROD_RE.search(full.name):
-        return None, (f"{full.name} names a production environment. Production values are not read "
+    # The whole path, not just the filename: envs/production/.env is a production file even
+    # though its name is the innocent half.
+    try:
+        rel = full.relative_to(root).as_posix()
+    except ValueError:
+        rel = full.name
+    if any(PROD_RE.search(seg) for seg in rel.split("/")):
+        return None, (f"{rel} names a production environment. Production values are not read "
                       "by agents through any path, including this one.")
     if not full.is_file():
         return None, f"{target} does not exist"
@@ -85,6 +113,43 @@ def shape(val: str) -> str:
     if re.search(r"[^A-Za-z0-9]", val):
         kinds.append("symbols")
     return f"{len(val)} chars, {'+'.join(kinds)}"
+
+
+# Commands whose entire output IS the environment, plus the shell one-liners that can print it
+# without ever naming a variable. Redaction cannot save these: `sh -c 'echo $API_KEY | base64'`
+# emits a transformed value that matches nothing. Refusing them is the honest boundary.
+DUMPERS = {"printenv", "env", "set", "export", "declare", "typeset", "compgen"}
+SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "csh", "fish", "powershell", "pwsh", "cmd"}
+SHELL_EVAL = {"-c", "-command", "/c", "/k", "-e"}
+
+
+def forbidden(argv: list[str]) -> str:
+    """-> a refusal reason, or "" when the command is allowed."""
+    exe = pathlib.PurePath(argv[0]).name.lower()
+    exe = exe[:-4] if exe.endswith(".exe") else exe
+    if exe in DUMPERS:
+        return (f"`{argv[0]}` exists to print the environment. Its output is the secret, so there "
+                "would be nothing left to redact. Use `list` to see which variables are defined, "
+                "or `check` to test one against a shape.")
+    if exe in SHELLS and any(a.lower() in SHELL_EVAL for a in argv[1:]):
+        return (f"`{argv[0]}` with an inline command can print a transformed value that redaction "
+                "cannot match. Run the real command directly instead of through a shell.")
+    return ""
+
+
+def redact(text: str, env: dict[str, str]) -> str:
+    """Replace every value from the env file with [redacted:KEY].
+
+    Longest first, so a value that contains a shorter one is not left half-substituted. Values
+    under 4 characters are skipped: they collide with ordinary words ("1", "on", "true") and
+    redacting those would corrupt the output while protecting nothing worth protecting.
+    """
+    if not text:
+        return text
+    for key, val in sorted(env.items(), key=lambda kv: len(kv[1]), reverse=True):
+        if len(val) >= 4:
+            text = text.replace(val, f"[redacted:{key}]")
+    return text
 
 
 def main() -> int:
@@ -147,12 +212,29 @@ def main() -> int:
         argv = [a for a in args.argv if a != "--"]
         if not argv:
             return refuse("no command given after --")
+        bad = forbidden(argv)
+        if bad:
+            return refuse(bad)
         file_env = parse(path)
         merged = dict(os.environ)
         merged.update(file_env)
         print(f"running with {path.name} loaded ({len(file_env)} variables, values not shown): "
               f"{' '.join(argv)}")
-        r = subprocess.run(argv, env=merged)
+        # Captured, not inherited. An inherited stdout puts whatever the child prints straight
+        # into the transcript, which is exactly what this script exists to prevent.
+        try:
+            r = subprocess.run(argv, env=merged, capture_output=True, text=True,
+                               errors="replace")
+        except FileNotFoundError:
+            return refuse(f"{argv[0]} not found")
+        except OSError as e:
+            return refuse(f"could not run {argv[0]}: {e.strerror or e}")
+        out = redact(r.stdout, file_env)
+        err = redact(r.stderr, file_env)
+        if out:
+            sys.stdout.write(out if out.endswith("\n") else out + "\n")
+        if err:
+            sys.stderr.write(err if err.endswith("\n") else err + "\n")
         return r.returncode
 
     return 2

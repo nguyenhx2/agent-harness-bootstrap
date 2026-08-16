@@ -188,9 +188,9 @@ class Solution(Scene):
 
         grid = VGroup(
             box("エージェント16\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
-            box("ルール15\n常時6、スコープ9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("ルール16\n常時7、スコープ9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
             box("コマンド22", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("フック9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("フック10", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  クラッシュを生き延びるボード", NEUTRAL, WHITE, w=6.8, h=0.7, fs=17).move_to(
@@ -275,7 +275,7 @@ class Solution(Scene):
         caption(self, "契約書、強制、永続する状態、選ばれた請求額。", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("ガードレール評価 69/69", GREEN_HI, fs=19),
+            tag("ガードレール評価 89/89", GREEN_HI, fs=19),
             tag("Opus -> Haiku: バイト単位で同一の安全性", GREEN_HI, fs=19),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
@@ -291,6 +291,37 @@ class Solution(Scene):
         self.play(FadeIn(ports), run_time=0.4)
         self.wait(1.0)
         self.play(FadeOut(VGroup(phead, payoff, ev, ports)), run_time=0.6)
+
+        # ============ Beat 5b: verify it is actually wired right ========
+        vhead = Text("正しく配線されているとどう分かるか", font=JFONT, font_size=26, color=WHITE).move_to([0, 3.0, 0])
+        self.play(FadeIn(vhead), run_time=0.4)
+
+        hv = box("harness-view", GREEN, GREEN_HI, w=3.6, h=0.82, fs=23).move_to([-3.0, 1.3, 0])
+        hv_desc = Text(
+            "「.claude/」を読み込み、\nつながりを可視化、モデル不要",
+            font=JFONT, font_size=16, color=DIM, line_spacing=0.8,
+        ).next_to(hv, DOWN, buff=0.25)
+
+        assess = box("assess", GREEN, GREEN_HI, w=2.6, h=0.82, fs=23).move_to([3.0, 1.3, 0])
+        assess_desc = Text(
+            "プロジェクト自身の品質ゲートで\n採点し、直すべき点を示す",
+            font=JFONT, font_size=16, color=DIM, line_spacing=0.8,
+        ).next_to(assess, DOWN, buff=0.25)
+
+        self.play(GrowFromCenter(hv), FadeIn(hv_desc), run_time=0.45)
+        self.play(GrowFromCenter(assess), FadeIn(assess_desc), run_time=0.45)
+        caption(self, "harness-viewは.claude/を読み込み、実際の配線を可視化する - モデルは不要。", hold=1.5, y=-3.4, size=21)
+
+        scores = VGroup(
+            tag("スキャフォルド生成: 99/100", GREEN_HI, fs=17),
+            tag("手動保守: 79/100", AMBER, fs=17),
+            tag("手動保守: 64/100", RED, fs=17),
+        ).arrange(RIGHT, buff=0.35).move_to([0, -1.1, 0])
+        self.play(FadeIn(scores, lag_ratio=0.25), run_time=0.6)
+        caption(self, "実在する3つのハーネスで検証 - 低スコアの原因は毎セッション読み込まれるルールと、タスクボードが追いつけなかった改名された席。", hold=2.2, y=-3.4, size=19)
+
+        verify_grp = VGroup(vhead, hv, hv_desc, assess, assess_desc, scores)
+        self.play(FadeOut(verify_grp), run_time=0.5)
 
         # ============ Beat 6: brand end card ============================
         card = logo_reveal(self)

@@ -103,7 +103,7 @@ cmd="${JF[0]}"
 [ -z "$cmd" ] && exit 0
 
 # POSIX ERE has no portable \b (BSD grep on macOS), so the trailing boundary is hand-rolled.
-printf '%s' "$cmd" | grep -Eq '(^|[;&|][[:space:]]*)git[[:space:]]+(commit|push)([^a-zA-Z0-9_-]|$)' || exit 0
+printf '%s' "$cmd" | grep -Eq '(^|[^a-zA-Z0-9_.-])git[[:space:]]+(commit|push)([^a-zA-Z0-9_-]|$)' || exit 0
 
 base_cwd=$(norm_path "${JF[1]}")
 [ -z "$base_cwd" ] && base_cwd=$(pwd)

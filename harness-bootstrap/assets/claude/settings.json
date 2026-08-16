@@ -1,6 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "permissions": {
+{{#IF_RTK}}  "env": {
+    "RTK_TELEMETRY_DISABLED": "1"
+  },
+{{/IF_RTK}}  "permissions": {
     "allow": [
       "Read",
       "Grep",
@@ -21,7 +24,13 @@
     "deny": [
       {{RESTRICTED_DENIES}}
       "Read(**/.env)",
-      "Read(**/.env.*)",
+      "Read(**/.env.local)",
+      "Read(**/.env.development)",
+      "Read(**/.env.dev)",
+      "Read(**/.env.test)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.production)",
+      "Read(**/.env.prod)",
       "Read(**/.env_*)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
@@ -71,10 +80,25 @@
           }
         ]
       },
-      {
-        "matcher": "Bash",
+{{#IF_AUDIT}}      {
+        "matcher": "Edit|Write|Bash",
         "hooks": [
           {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/protect-repos.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_AUDIT}}      {
+        "matcher": "Bash",
+        "hooks": [
+{{#IF_RTK}}          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/rtk-rewrite.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+{{/IF_RTK}}          {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-main-commit.{{HOOK_EXT}}",
             "timeout": 10

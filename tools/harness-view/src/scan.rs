@@ -154,6 +154,48 @@ fn as_list(v: &Value) -> Vec<String> {
     }
 }
 
+/// True when a line declares skills for a seat, e.g. "Skills to load when
+/// relevant: webapp-testing." /skill-wire records a wire as an entry under the
+/// seat's "Skills available" section, so a declaration line is the only
+/// trustworthy signal. Matching a bare skill name anywhere in an agent file
+/// invents wiring: five of ost's agents contain the word "performance" while the
+/// skill of that name is wired to no seat.
+pub fn skill_decl_value(line: &str) -> Option<&str> {
+    let lower = line.to_lowercase();
+    let kw = lower.find("skill")?;
+    let colon = line.find(':')?;
+    if colon < kw {
+        return None;
+    }
+    let between = &lower[kw..colon];
+    let marks = ["available", "to load", "in use", "when relevant"];
+    if !marks.iter().any(|m| between.contains(m)) {
+        return None;
+    }
+    Some(&line[colon + 1..])
+}
+
+/// Slug-shaped tokens, trailing punctuation dropped: " webapp-testing." yields
+/// "webapp-testing", not "webapp-testing.".
+pub fn slug_tokens(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut cur = String::new();
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
+            cur.push(c);
+        } else if !cur.is_empty() {
+            out.push(std::mem::take(&mut cur));
+        }
+    }
+    if !cur.is_empty() {
+        out.push(cur);
+    }
+    out.into_iter()
+        .map(|t| t.trim_matches(|c: char| !c.is_ascii_alphanumeric()).to_string())
+        .filter(|t| !t.is_empty())
+        .collect()
+}
+
 fn md_stems(dir: &Path) -> Vec<String> {
     let mut out = Vec::new();
     if let Ok(rd) = fs::read_dir(dir) {
@@ -632,6 +674,72 @@ pub fn scan(root: &Path) -> Value {
             edges.push((rule_id.clone(), format!("agent:{agent}"), "gates".into(), 0));
         }
     }
+    // --- skills: .claude/skills/<slug>/SKILL.md. A skill may ship its own
+    // agents and scripts, but those are internal to the skill and are not roster
+    // seats, so they are meta rather than harness nodes.
+    let mut skill_names: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let skills_dir = claude.join("skills");
+    if let Ok(rd) = fs::read_dir(&skills_dir) {
+        let mut dirs: Vec<_> = rd.flatten().map(|e| e.path()).collect();
+        dirs.sort();
+        for sd in dirs {
+            let sm = sd.join("SKILL.md");
+            if !sd.is_dir() || !sm.is_file() {
+                continue;
+            }
+            let name = match sd.file_name().and_then(|x| x.to_str()) {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            let text = fs::read_to_string(&sm).unwrap_or_default();
+            let mut meta = Map::new();
+            if let Some(d) = description(&frontmatter(&text)) {
+                meta.insert("description".into(), Value::String(d));
+            }
+            for extra in ["agents", "scripts"] {
+                let n = fs::read_dir(sd.join(extra)).map(|r| r.flatten().count()).unwrap_or(0);
+                if n > 0 {
+                    meta.insert(format!("own_{extra}"), json!(n as i64));
+                }
+            }
+            nodes.insert(
+                format!("skill:{name}"),
+                json!({
+                    "id": format!("skill:{name}"),
+                    "type": "skill",
+                    "label": name,
+                    "file": rel(root, &format!(".claude/skills/{name}/SKILL.md")),
+                    "disabled": false,
+                    "meta": Value::Object(meta),
+                }),
+            );
+            skill_names.insert(name);
+        }
+    }
+    // Only installed skills get an edge; a wire to a node that does not exist
+    // would dangle in every viewer. The assessment reports a seat that declares
+    // an uninstalled skill, reading the seat files directly.
+    for (dir_tail, _dis) in [(".claude/agents", false), (".claude/disabled/agents", true)] {
+        for name in md_stems(&root.join(dir_tail)) {
+            let text =
+                fs::read_to_string(root.join(dir_tail).join(format!("{name}.md"))).unwrap_or_default();
+            for line in text.lines() {
+                if let Some(val) = skill_decl_value(line) {
+                    for tok in slug_tokens(val) {
+                        if skill_names.contains(&tok) {
+                            edges.push((
+                                format!("agent:{name}"),
+                                format!("skill:{tok}"),
+                                "uses".into(),
+                                0,
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if agent_names.iter().any(|a| a == "orchestrator") {
         for agent in &agent_names {
             if agent != "orchestrator" {

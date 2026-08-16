@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="940" viewBox="0 0 880 940" role="img" aria-label="エージェントIDEの中で回るAI駆動開発ライフサイクル、左から右へ。入力は人間から: アイデア、書き起こし、議事録、古いPRD、または既存のコードベース。それはspec-builderに流れ込む、モデル上で動くスキルで、ヒアリングし要件を決して勝手に作らない、未記載のものは担当者付きの未解決の課題としてフラグが立つ。次にharness-bootstrapへ流れる、これもモデル上で動き、brownfieldリポジトリならまずコードを読み、greenfieldなら仕様を読み、機能要件のクラスターからエージェントのロースターを決める。帯の上の破線バイパスはbrownfieldの起点を示し、既存リポジトリはspec-builderを飛ばす。両スキルとも実ファイルをコピーするscaffold.pyを同梱する: 決定的、無料、書いたものを決して上書きしない。ディスク上の成果物はdocs/specsのセクション01から13、要件の契約書、そして.claudeフォルダとdocs/tasks、ボード。それらがループに供給される、モデル上で動くループで: スラッシュnew-task、その後オーケストレーターが振り分け、spec-guardianが契約書をロックし、開発エージェントがテストを先に実装し、qa-testが走り、code-reviewerとsecurity-reviewerが読み取り専用ゲートとして働き、スラッシュsecret-scanが走り、作業がマージされ、ボードが更新され、次のタスクが始まる。ループの内側では常に2つが働いている: フック、決定的でexit 2により、mainへのコミット、不正なコミットメッセージ、ADRの編集、.envの読み取りをブロックする。そしてdocs/tasks配下のボード、各ステップがセッションログの行を進みながら追記し、クラッシュしてもディスクから再開する。ループはどのモデル階層でも同じ、ゲートは判断力ではなくシェルスクリプトだから。" font-family="'Yu Gothic UI', 'Meiryo', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
-  <title>エージェントIDEにおけるAI-DLC - spec-builder、harness-bootstrap、そしてその先で回るループ</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1160" viewBox="0 0 880 1160" role="img" aria-labelledby="dlc-title dlc-desc" font-family="'Yu Gothic UI', 'Meiryo', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="dlc-title">エージェントIDEにおけるAI-DLC - spec-builder、harness-bootstrap、そしてその先で回るループ</title>
+  <desc id="dlc-desc">エージェントIDEの中で回るAI駆動開発ライフサイクル、上から下へ。入力は人間から: アイデア、書き起こし、議事録、古いPRD、または既存のコードベース。それはspec-builderに流れ込む、モデル上で動くスキルで、ヒアリングし要件を決して勝手に作らない、未記載のものは担当者付きの未解決の課題としてフラグが立つ。次にharness-bootstrapへ流れる、これもモデル上で動き、brownfieldリポジトリならまずコードを読み、greenfieldなら仕様を読み、固定の顔ぶれではなくフラグに合わせてロースターを組む。帯の上の破線バイパスはbrownfieldの起点を示し、既存リポジトリはspec-builderを飛ばす。両スキルとも実ファイルをコピーするscaffold.pyを同梱する: 決定的、無料、書いたものを決して上書きしない。ディスク上の成果物はdocs/specsのセクション01から13、要件の契約書、そして.claudeフォルダとdocs/tasks、ボード: 16席、16ルール、22コマンド、9フック。次は任意のスキル探索で、候補は検出したスタックに合わせて選ばれ、提示前に全ファイルを読み、チェックを入れないものは入らず、/skill-wireで席に紐付けるまでどのスキルも役に立たない。それらがループに供給される、モデル上で動くループで: スラッシュnew-task、その後オーケストレーターが振り分け、spec-guardianが契約書をロックし、開発エージェントが実装し、テストを選んだ場合にqa-testが走り、code-reviewerとsecurity-reviewerが読み取り専用ゲートとして、あるいはsolo_reviewフラグ下では統合された1席として働き、スラッシュsecret-scanが走り、作業がマージされ、ボードが更新され、次のタスクが始まる。ループの内側では常に2つが働いている: フック、決定的でexit 2により、mainへのコミット、不正なコミットメッセージ、ADRの編集、.envの読み取りをブロックする。そしてdocs/tasks配下のボード、各ステップがセッションログの行を進みながら追記し、クラッシュしてもディスクから再開する。ループの下ではハーネス自体が可視化される: 制御面全体が.claude/state/harness-graph.jsonとして出力され、harness-viewがFlow・Graph・Assess・マスタープランの表示を描き、スラッシュharness-toggleがルール・コマンド・フックを1つずつ、コミット済みの台帳を通して無効化・再有効化する。ループはどのモデル階層でも同じ、ゲートは判断力ではなくシェルスクリプトだから。</desc>
 
-  <rect x="0" y="0" width="880" height="940" rx="10" fill="#23272B"/>
+  <rect x="0" y="0" width="880" height="1160" rx="10" fill="#23272B"/>
 
   <text x="24" y="34" font-size="16" font-weight="700" fill="#F8F9FA">エージェントIDEにおけるAI-DLC - 2つのスキルの位置づけと、その後に回るもの</text>
   <text x="24" y="54" font-size="13" fill="#ADB5BD">左から右へ: 入力、契約書、ハーネス。そして1タスクずつ出荷するループ。</text>
@@ -42,7 +43,7 @@
   <text x="622" y="170" font-size="13" fill="#E0AAFF">まずコードを読む</text>
   <text x="622" y="190" font-size="13" fill="#E0AAFF">（brownfield）、または</text>
   <text x="622" y="210" font-size="13" fill="#E0AAFF">仕様を読む（greenfield）。</text>
-  <text x="622" y="230" font-size="13" fill="#E0AAFF">FRクラスターからロースターを決定。</text>
+  <text x="622" y="230" font-size="13" fill="#E0AAFF">ロースターはフラグに合わせる。</text>
 
   <line x1="439" y1="248" x2="439" y2="261" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,261 445,261 439,272" fill="#ADB5BD"/>
@@ -62,7 +63,7 @@
   <!-- THE SCAFFOLDER - deterministic, free -->
   <rect x="314" y="272" width="540" height="48" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="332" y="293" font-size="13" font-weight="700" fill="#D8F3DC">scaffold.py   -   両スキルに同梱</text>
-  <text x="332" y="311" font-size="13" fill="#D8F3DC">実ファイルをコピーする。決定的、無料、書いたものを決して上書きしない。</text>
+  <text x="332" y="311" font-size="13" fill="#D8F3DC">実ファイルをコピーしフラグブロックを解決する。決定的、無料、上書きしない。</text>
 
   <line x1="439" y1="320" x2="439" y2="329" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,329 445,329 439,340" fill="#ADB5BD"/>
@@ -77,107 +78,126 @@
 
   <rect x="604" y="340" width="250" height="84" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
   <text x="622" y="362" font-size="13" font-weight="700" fill="#F8F9FA">.claude/   +   docs/tasks/</text>
-  <text x="622" y="382" font-size="13" fill="#F8F9FA">エージェント、ルール、フック、設定</text>
-  <text x="622" y="402" font-size="13" fill="#F8F9FA">そしてボード。</text>
+  <text x="622" y="382" font-size="13" fill="#F8F9FA">16席、16ルール、22コマンド、</text>
+  <text x="622" y="402" font-size="13" fill="#F8F9FA">9フック、そしてボード。</text>
 
   <line x1="439" y1="424" x2="439" y2="441" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,441 445,441 439,452" fill="#ADB5BD"/>
   <line x1="729" y1="424" x2="729" y2="441" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="723,441 735,441 729,452" fill="#ADB5BD"/>
 
+  <!-- SKILL DISCOVERY - optional, and the human ticks each box -->
+  <rect x="24" y="452" width="832" height="76" rx="8" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="42" y="475" font-size="14" font-weight="700" fill="#A8DADC">スキル探索   +   /skill-wire   -   任意、そしてチェックを入れるのはあなた</text>
+  <text x="42" y="495" font-size="13" fill="#A8DADC">候補は検出したスタックに合わせて選ばれ、提示する前に全ファイルを読む。スキルはインターネット由来の指示書。</text>
+  <text x="42" y="513" font-size="13" fill="#A8DADC">チェックを入れないものは入らない。/skill-wireで席に紐付けるまで、どのスキルも役に立たない。</text>
+
+  <line x1="440" y1="528" x2="440" y2="535" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="434,535 446,535 440,546" fill="#ADB5BD"/>
+
   <!-- THE LOOP -->
-  <rect x="24" y="452" width="832" height="372" rx="10" fill="#240046" stroke="#E0AAFF" stroke-width="3"/>
-  <text x="42" y="478" font-size="15" font-weight="700" fill="#E0AAFF">ループ   -   /new-taskからマージまで、1タスクずつ</text>
-  <rect x="650" y="462" width="188" height="22" rx="5" fill="#5A189A" stroke="#E0AAFF" stroke-width="1.5"/>
-  <text x="744" y="478" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">モデル上で動く</text>
-  <text x="42" y="500" font-size="13" fill="#E0AAFF">各ゲートは1ステップ。セッションログに記録されて初めて合格とみなす。</text>
+  <rect x="24" y="546" width="832" height="396" rx="10" fill="#240046" stroke="#E0AAFF" stroke-width="3"/>
+  <text x="42" y="572" font-size="15" font-weight="700" fill="#E0AAFF">ループ   -   /new-taskからマージまで、1タスクずつ</text>
+  <rect x="650" y="556" width="188" height="22" rx="5" fill="#5A189A" stroke="#E0AAFF" stroke-width="1.5"/>
+  <text x="744" y="572" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">モデル上で動く</text>
+  <text x="42" y="594" font-size="13" fill="#E0AAFF">各ゲートは1ステップ。セッションログに記録されて初めて合格とみなす。</text>
 
   <!-- loop, top row: left to right -->
-  <rect x="42" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="56" y="538" font-size="13" font-weight="700" fill="#E0AAFF">/new-task</text>
-  <text x="56" y="558" font-size="13" fill="#E0AAFF">ボードの1行と</text>
-  <text x="56" y="576" font-size="13" fill="#E0AAFF">タスクファイル</text>
+  <rect x="42" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="56" y="632" font-size="13" font-weight="700" fill="#E0AAFF">/new-task</text>
+  <text x="56" y="652" font-size="13" fill="#E0AAFF">ボードの1行と</text>
+  <text x="56" y="670" font-size="13" fill="#E0AAFF">タスクファイル</text>
 
-  <line x1="216" y1="552" x2="239" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="239,546 250,552 239,558" fill="#ADB5BD"/>
+  <line x1="216" y1="646" x2="239" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="239,640 250,646 239,652" fill="#ADB5BD"/>
 
-  <rect x="250" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="264" y="538" font-size="13" font-weight="700" fill="#E0AAFF">オーケストレーター</text>
-  <text x="264" y="558" font-size="13" fill="#E0AAFF">1つの担当へ</text>
-  <text x="264" y="576" font-size="13" fill="#E0AAFF">振り分ける</text>
+  <rect x="250" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="264" y="632" font-size="13" font-weight="700" fill="#E0AAFF">オーケストレーター</text>
+  <text x="264" y="652" font-size="13" fill="#E0AAFF">1つの担当へ</text>
+  <text x="264" y="670" font-size="13" fill="#E0AAFF">振り分ける</text>
 
-  <line x1="424" y1="552" x2="447" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="447,546 458,552 447,558" fill="#ADB5BD"/>
+  <line x1="424" y1="646" x2="447" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="447,640 458,646 447,652" fill="#ADB5BD"/>
 
-  <rect x="458" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="472" y="538" font-size="13" font-weight="700" fill="#E0AAFF">spec-guardian</text>
-  <text x="472" y="558" font-size="13" fill="#E0AAFF">契約書を</text>
-  <text x="472" y="576" font-size="13" fill="#E0AAFF">ロックする</text>
+  <rect x="458" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="472" y="632" font-size="13" font-weight="700" fill="#E0AAFF">spec-guardian</text>
+  <text x="472" y="652" font-size="13" fill="#E0AAFF">契約書を</text>
+  <text x="472" y="670" font-size="13" fill="#E0AAFF">ロックする</text>
 
-  <line x1="632" y1="552" x2="655" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="655,546 666,552 655,558" fill="#ADB5BD"/>
+  <line x1="632" y1="646" x2="655" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="655,640 666,646 655,652" fill="#ADB5BD"/>
 
-  <rect x="666" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="680" y="538" font-size="13" font-weight="700" fill="#E0AAFF">開発エージェント</text>
-  <text x="680" y="558" font-size="13" fill="#E0AAFF">実装する、</text>
-  <text x="680" y="576" font-size="13" fill="#E0AAFF">テストは同時に届く</text>
+  <rect x="666" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="680" y="632" font-size="13" font-weight="700" fill="#E0AAFF">開発エージェント</text>
+  <text x="680" y="652" font-size="13" fill="#E0AAFF">実装する、選んだ</text>
+  <text x="680" y="670" font-size="13" fill="#E0AAFF">方法論に従って</text>
 
   <!-- loop turns down the right side -->
-  <line x1="751" y1="592" x2="751" y2="721" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="745,721 757,721 751,732" fill="#ADB5BD"/>
+  <line x1="751" y1="686" x2="751" y2="815" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="745,815 757,815 751,826" fill="#ADB5BD"/>
 
   <!-- ALWAYS ON, inside the loop: the hooks -->
-  <rect x="160" y="604" width="560" height="52" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="176" y="626" font-size="14" font-weight="700" fill="#D8F3DC">フック   -   常時稼働、決定的、exit 2</text>
-  <text x="176" y="646" font-size="13" fill="#D8F3DC">mainへのコミット、不正なメッセージ、ADR編集、.envの読み取りをブロックする。</text>
+  <rect x="160" y="698" width="560" height="52" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="176" y="720" font-size="14" font-weight="700" fill="#D8F3DC">フック   -   常時稼働、決定的、exit 2</text>
+  <text x="176" y="740" font-size="13" fill="#D8F3DC">mainへのコミット、不正なメッセージ、ADR編集、.env読み取りをブロックする。</text>
 
   <!-- ALWAYS ON, inside the loop: the board -->
-  <rect x="160" y="664" width="560" height="52" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
-  <text x="176" y="686" font-size="14" font-weight="700" fill="#F8F9FA">ボード   -   docs/tasks/</text>
-  <text x="176" y="706" font-size="13" fill="#F8F9FA">各ステップがセッションログの行を追記していく。クラッシュしてもディスクから再開する。</text>
+  <rect x="160" y="758" width="560" height="52" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="176" y="780" font-size="14" font-weight="700" fill="#F8F9FA">ボード   -   docs/tasks/</text>
+  <text x="176" y="800" font-size="13" fill="#F8F9FA">各ステップがセッションログの行を追記していく。クラッシュしてもディスクから再開する。</text>
 
   <!-- loop, bottom row: right to left -->
-  <rect x="666" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="680" y="754" font-size="13" font-weight="700" fill="#E0AAFF">qa-test</text>
-  <text x="680" y="774" font-size="13" fill="#E0AAFF">テストがgreen</text>
+  <rect x="666" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="680" y="848" font-size="13" font-weight="700" fill="#E0AAFF">qa-test</text>
+  <text x="680" y="868" font-size="13" fill="#E0AAFF">テストがgreen</text>
+  <text x="680" y="886" font-size="13" fill="#E0AAFF">テストを選んだ</text>
+  <text x="680" y="904" font-size="13" fill="#E0AAFF">ときだけ</text>
 
-  <line x1="662" y1="768" x2="639" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="639,762 628,768 639,774" fill="#ADB5BD"/>
+  <line x1="662" y1="868" x2="639" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="639,862 628,868 639,874" fill="#ADB5BD"/>
 
-  <rect x="458" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="472" y="754" font-size="13" font-weight="700" fill="#E0AAFF">code-reviewer +</text>
-  <text x="472" y="774" font-size="13" font-weight="700" fill="#E0AAFF">security-reviewer</text>
-  <text x="472" y="792" font-size="13" fill="#E0AAFF">読み取り専用ゲート</text>
+  <rect x="458" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="472" y="848" font-size="13" font-weight="700" fill="#E0AAFF">code-reviewer +</text>
+  <text x="472" y="868" font-size="13" font-weight="700" fill="#E0AAFF">security-reviewer</text>
+  <text x="472" y="886" font-size="13" fill="#E0AAFF">読み取り専用ゲート</text>
+  <text x="472" y="904" font-size="13" fill="#E0AAFF">または統合1席</text>
 
-  <line x1="454" y1="768" x2="431" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="431,762 420,768 431,774" fill="#ADB5BD"/>
+  <line x1="454" y1="868" x2="431" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="431,862 420,868 431,874" fill="#ADB5BD"/>
 
-  <rect x="250" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="264" y="754" font-size="13" font-weight="700" fill="#E0AAFF">/secret-scan</text>
-  <text x="264" y="774" font-size="13" fill="#E0AAFF">その後マージ</text>
+  <rect x="250" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="264" y="848" font-size="13" font-weight="700" fill="#E0AAFF">/review-changes</text>
+  <text x="264" y="868" font-size="13" font-weight="700" fill="#E0AAFF">/secret-scan</text>
+  <text x="264" y="886" font-size="13" fill="#E0AAFF">その後マージ</text>
 
-  <line x1="246" y1="768" x2="223" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="223,762 212,768 223,774" fill="#ADB5BD"/>
+  <line x1="246" y1="868" x2="223" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="223,862 212,868 223,874" fill="#ADB5BD"/>
 
-  <rect x="42" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="56" y="754" font-size="13" font-weight="700" fill="#E0AAFF">ボード更新</text>
-  <text x="56" y="774" font-size="13" fill="#E0AAFF">次のタスクへ</text>
+  <rect x="42" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="56" y="848" font-size="13" font-weight="700" fill="#E0AAFF">ボード更新</text>
+  <text x="56" y="868" font-size="13" fill="#E0AAFF">次のタスクへ</text>
 
   <!-- loop closes up the left side -->
-  <line x1="127" y1="728" x2="127" y2="599" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="121,599 133,599 127,588" fill="#ADB5BD"/>
+  <line x1="127" y1="822" x2="127" y2="693" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="121,693 133,693 127,682" fill="#ADB5BD"/>
+
+  <!-- YOU CAN SEE IT - the harness inspects itself, deterministically -->
+  <rect x="24" y="962" width="832" height="76" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="42" y="986" font-size="14" font-weight="700" fill="#D8F3DC">そして可視化できる   -   .claude/state/harness-graph.json</text>
+  <text x="42" y="1006" font-size="13" fill="#D8F3DC">harness-viewが同じファイルをFlow・Graph・Assess・マスタープランで描き、採点する。モデルなし、ネットワークなし。</text>
+  <text x="42" y="1024" font-size="13" fill="#D8F3DC">/harness-toggleはルール・コマンド・フックを1つずつ無効化し、コミット済みの.claude/disabled.jsonに記録する。</text>
 
   <!-- the safety property -->
-  <rect x="24" y="844" width="832" height="44" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="440" y="871" font-size="14" font-weight="700" fill="#D8F3DC" text-anchor="middle">ループはどのモデル階層でも同じ - ゲートは判断力ではなくシェルスクリプトだから。</text>
+  <rect x="24" y="1058" width="832" height="44" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="440" y="1085" font-size="14" font-weight="700" fill="#D8F3DC" text-anchor="middle">ループはどのモデル階層でも同じ - ゲートは判断力ではなくシェルスクリプトだから。</text>
 
   <!-- legend -->
-  <rect x="24" y="904" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="48" y="917" font-size="13" fill="#DEE2E6">決定的 - 無料</text>
-  <rect x="212" y="904" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="236" y="917" font-size="13" fill="#DEE2E6">モデル - トークンを消費</text>
-  <rect x="400" y="904" width="16" height="16" rx="3" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
-  <text x="424" y="917" font-size="13" fill="#DEE2E6">人間</text>
-  <rect x="488" y="904" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
-  <text x="512" y="917" font-size="13" fill="#DEE2E6">成果物 - ディスク上のファイル</text>
+  <rect x="24" y="1118" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="48" y="1131" font-size="13" fill="#DEE2E6">決定的 - 無料</text>
+  <rect x="212" y="1118" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="236" y="1131" font-size="13" fill="#DEE2E6">モデル - トークンを消費</text>
+  <rect x="400" y="1118" width="16" height="16" rx="3" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="424" y="1131" font-size="13" fill="#DEE2E6">人間</text>
+  <rect x="488" y="1118" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="512" y="1131" font-size="13" fill="#DEE2E6">成果物 - ディスク上のファイル</text>
 </svg>

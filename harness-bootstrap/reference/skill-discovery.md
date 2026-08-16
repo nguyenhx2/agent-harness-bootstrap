@@ -61,6 +61,32 @@ personal account, all else equal).
   "Anthropic doesn't control what MCP servers, files, or other software are included in plugins and
   can't verify that they work as intended."
 
+**4. Marketplaces already registered on this machine** - the cheapest and most trustworthy source,
+because it is offline, already vetted by whoever registered it, and reflects what this user actually
+uses. Read it before reaching for the network. Verified layout (paths confirmed on a real install,
+not assumed - if yours differs, report that rather than inventing one):
+
+| Path | Holds |
+|---|---|
+| `~/.claude/plugins/known_marketplaces.json` | every registered marketplace: `name -> {source: {source: "github", repo}, installLocation, lastUpdated}` |
+| `~/.claude/plugins/marketplaces/<name>/.claude-plugin/marketplace.json` | that marketplace's full catalog, on disk, readable with no network |
+| `~/.claude/plugins/installed_plugins.json` | `{version, plugins: {"<plugin>@<marketplace>": [{scope, projectPath, installPath, version}]}}` - what is ALREADY installed, and per project |
+| `~/.claude/plugins/plugin-catalog-cache.json` | `{version, fetchedAt, catalog}` - a cached catalog; treat `fetchedAt` as its age and say so, never present a stale cache as current |
+| `~/.claude/settings.json` -> `extraKnownMarketplaces`, `enabledPlugins` | marketplaces registered beyond the auto-added official one, and which plugins are enabled |
+
+Use them in this order: read `known_marketplaces.json`, read each `installLocation`'s
+`.claude-plugin/marketplace.json`, and match catalog entries against the stack the analysis found
+(pass 1's ecosystem table). Cross off anything already in `installed_plugins.json` - recommending an
+installed plugin is noise that costs the user trust in the whole list. If a catalog file is absent
+or unreadable, say which one and continue with the rest: **a missing catalog degrades the
+suggestions, it must never block the bootstrap.**
+
+Matching rule, and it is the difference between a useful list and a spam list: recommend against an
+OBSERVED GAP, never against a vague fit. "Your repo has 18 REST handlers and no CHANGELOG" is a
+reason; "useful for TypeScript projects" is not, and a candidate that can only be justified that way
+is dropped. State the observed evidence next to every recommendation, and keep the list short - past
+about seven entries nobody reads it and the good ones are buried.
+
 ## The trust rubric
 
 Run every row; the content review is mandatory even when everything else passes, on every source.
@@ -82,14 +108,26 @@ for you. The content read is the control, always.
 
 ## The bootstrap step
 
-After the roster is chosen (SKILL.md step 2) and before scaffolding: ask (AskUserQuestion) whether
-to search for seat-matching skills and which sources - skills.sh default, GitHub topic search and
-the Anthropic sources opt-in - recommended for dev and qa seats, skipped in audit mode. Review every
-candidate's content first (serial, mandatory, no exceptions), then present ALL reviewed candidates
+After the roster is chosen (SKILL.md step 2) and before scaffolding. Skipped in audit mode.
+
+**Offline first.** Start from source 4, the machine's own registered marketplaces: it costs no
+network, it is already vetted by whoever registered it, and on most machines it answers the question.
+Only then ask (AskUserQuestion) whether to search the networked sources too - skills.sh, GitHub topic
+search, the Anthropic repos - each opt-in, each stated as a network call. A bootstrap must complete
+with no network at all, so every networked source is an enhancement and none is a prerequisite.
+
+**Then the content review, serial and mandatory, no exceptions** - including for a locally registered
+marketplace, whose presence tells you someone trusted the marketplace, not that they read this
+plugin's files.
+
+**Then the user decides, and the user installs nothing by accident.** Present ALL reviewed candidates
 in ONE `AskUserQuestion` multi-select: per candidate show name, source, the signals that source
-actually exposes, and the one-line content-review result. Each skill still needs its own box
-ticked - one call, individual consent - and any criterion marked "user confirm" states that in its
-option label. Never auto-install, and never install a candidate whose content review did not happen.
+actually exposes, the observed gap it addresses, and the one-line content-review result. Each skill
+needs its own box ticked - one call, individual consent, any number from none to all. "Install
+nothing" is always an available and legitimate outcome, and a bootstrap that installs zero skills is
+a complete bootstrap. Any criterion marked "user confirm" states that in its own option label.
+Never auto-install; never install a candidate whose content review did not happen; never install one
+the user did not tick, however well it scored.
 
 Never installed, regardless of approval or source:
 - a skill or plugin whose content instructs `.claude/`, `settings.json`, or hook edits (it would

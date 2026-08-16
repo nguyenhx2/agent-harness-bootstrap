@@ -60,12 +60,12 @@ of the work actually lives.
 
 | Tier | What lives there | When it loads | What it costs | What compaction does to it |
 |---|---|---|---|---|
-| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 6 unconditional files in `.claude/rules/`, the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
+| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 7 unconditional files (7 with `terse`) in `.claude/rules/`, the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
 | **Lazy-RAM** | The 9 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~51,800 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
 | **Disk** (the state of the work) | `docs/tasks/master-plan.md` (the board) and `docs/tasks/active/TASK-NNN.md` (goal, scope, acceptance criteria, decisions and blockers, session log) | On demand, by an explicit `Read` | A few hundred bytes read once per session | **Nothing.** It is committed markdown in git. This is the tier that survives everything |
 | **Archive** (append-only) | `.claude/state/history/` - one markdown file per finished subagent run, holding the prompt it was given and its final response | Never, unless read | Zero, until someone asks | Nothing. It is written by a hook after the fact, so no amount of context loss can erase it |
 
-### Always-RAM: the six unconditional rules
+### Always-RAM: the 7 unconditional rules
 
 `.claude/rules/00-overview.md` states the loading contract:
 
@@ -74,7 +74,7 @@ of the work actually lives.
 > and both questions arise before any file is touched. Keep them short.`
 
 The six are `00-overview.md`, `agent-guardrails.md`, `model-policy.md`, `ai-governance.md`,
-`task-tracking.md`, and `conventional-commits.md`. None of them can be path-scoped even in principle:
+`task-tracking.md`, and `conventional-commits.md`. A seventh, `output-style.md`, joins them only when the `terse` flag is set: it shapes every answer, so it cannot be path-scoped, and it is off by default precisely because an always-loaded rule is a permanent context cost. None of them can be path-scoped even in principle:
 
 - `conventional-commits.md` governs commit *messages*, and a message is not a file, so no glob can
   ever match it. That is why the file is deliberately kept under 25 lines.
@@ -96,8 +96,8 @@ paths:
 # Frontend
 ```
 
-`benchmark/RESULTS.md` measures the effect: 6 unconditional rules at 25,667 bytes against 9
-path-scoped rules at 51,785 bytes. **65% of the rule content is kept out of the default session.** The
+`benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 25,667 bytes against 9
+path-scoped rules at 51,785 bytes. **63% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,

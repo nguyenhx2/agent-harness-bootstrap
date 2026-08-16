@@ -201,3 +201,76 @@ fn scores_fall_only_for_the_category_that_failed() {
     assert_eq!(c["Safety"]["score"], 100);
     assert_eq!(c["Board health"]["score"], 100);
 }
+
+#[test]
+fn installed_skill_nobody_wires_is_reported() {
+    let d = tmp("skill-unwired");
+    good(&d);
+    write(&d, ".claude/skills/webapp-testing/SKILL.md",
+          "---\nname: webapp-testing\ndescription: Drive a browser in tests.\n---\nBody.\n");
+    let found = checks(&run(&d));
+    assert!(found.contains(&"skill-not-wired".to_string()),
+            "an installed but unwired skill should be reported, got {found:?}");
+}
+
+#[test]
+fn wired_skill_is_not_reported_and_the_edge_exists() {
+    let d = tmp("skill-wired");
+    good(&d);
+    write(&d, ".claude/skills/webapp-testing/SKILL.md",
+          "---\nname: webapp-testing\ndescription: Drive a browser in tests.\n---\nBody.\n");
+    // the declaration line is what /skill-wire writes into the seat
+    let qa = d.join(".claude/agents/qa-test.md");
+    if qa.is_file() {
+        let mut body = fs::read_to_string(&qa).unwrap();
+        body.push_str("\nSkills to load when relevant: webapp-testing.\n");
+        fs::write(&qa, body).unwrap();
+    } else {
+        write(&d, ".claude/agents/qa-test.md",
+              "---\nname: qa-test\nmodel: sonnet\neffort: medium\ntools: Read, Grep, Bash\n---\n\
+               Skills to load when relevant: webapp-testing.\n");
+    }
+    let g = scan::scan(&d);
+    let uses: Vec<_> = g["edges"].as_array().unwrap().iter()
+        .filter(|e| e["type"] == "uses").collect();
+    assert_eq!(uses.len(), 1, "expected exactly one uses edge, got {uses:?}");
+    assert_eq!(uses[0]["to"], "skill:webapp-testing");
+    let found = checks(&assess::assess(&d, &g));
+    assert!(!found.contains(&"skill-not-wired".to_string()),
+            "a wired skill must not be reported, got {found:?}");
+}
+
+#[test]
+fn a_skill_name_in_prose_is_not_a_wire() {
+    // ost has five agents containing the word "performance" while the skill of
+    // that name is wired to nobody. Substring matching would invent five wires.
+    let d = tmp("skill-prose");
+    good(&d);
+    write(&d, ".claude/skills/performance/SKILL.md",
+          "---\nname: performance\ndescription: Tune hot paths.\n---\nBody.\n");
+    write(&d, ".claude/agents/capture-dev.md",
+          "---\nname: capture-dev\nmodel: sonnet\neffort: medium\ntools: Read, Edit\n---\n\
+           Respect both performance budgets: p95 under 3s.\n");
+    let g = scan::scan(&d);
+    let uses = g["edges"].as_array().unwrap().iter().filter(|e| e["type"] == "uses").count();
+    assert_eq!(uses, 0, "prose mentioning a skill name must not create a wire");
+}
+
+#[test]
+fn wire_to_an_uninstalled_skill_is_reported() {
+    let d = tmp("skill-missing");
+    good(&d);
+    // the seat promises a skill that was never installed
+    write(&d, ".claude/agents/qa-test.md",
+          "---
+name: qa-test
+model: sonnet
+effort: medium
+tools: Read, Grep, Bash
+---
+           Skills to load when relevant: webapp-testing.
+");
+    let found = checks(&run(&d));
+    assert!(found.contains(&"skill-wire-missing".to_string()),
+            "a wire to an uninstalled skill should be reported, got {found:?}");
+}

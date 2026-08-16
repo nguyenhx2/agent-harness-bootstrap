@@ -2,7 +2,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **69/69 correct (34 must-block, 35 must-allow).**
+`python eval/guardrail_eval.py` -> **89/89 correct (34 must-block, 35 must-allow).**
 
 The count moved from 46 to 68 with a round of security-refusal cases against `scaffold.py` and
 `harness-toggle.py` directly (not just the hooks): flag validation, contradictory methodology
@@ -13,7 +13,7 @@ item name, and both graph scripts surviving a malformed `code-graph.json`. See
 [What changed](#what-changed).
 
 Pass `--flavor ps1` to ALSO run the identical payloads through the `.ps1` hooks (Windows parity),
-for **138/138** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+for **178/178** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
@@ -131,7 +131,7 @@ failed forever otherwise.
 hooks (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
 `guard-agent-spawn`) were audited against both sides. Only `guard-main-commit` had a gap - no
 must-allow case existed, so a hook broken to block every commit unconditionally would still have
-passed 69/69. The new case points the payload's `cwd` at a sibling git checkout on a non-default
+passed 89/89. The new case points the payload's `cwd` at a sibling git checkout on a non-default
 branch (`feat/allow-test`, with a real commit - `git rev-parse --abbrev-ref HEAD` fails on an unborn
 branch on current git, which would silently fall back to resolving the wrong repo's branch) and
 asserts the commit is allowed.

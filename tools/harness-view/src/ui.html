@@ -295,9 +295,10 @@
 const COLORS = {
   agent: "#2563eb", rule: "#ea580c", command: "#16a34a", hook: "#ca8a04",
   settings: "#e11d48", state: "#64748b", script: "#7c3aed", module: "#0891b2",
-  task: "#475569", doc: "#0d9488", gate: "#c2410c", human: "#0f766e"
+  task: "#475569", doc: "#0d9488", gate: "#c2410c", human: "#0f766e",
+  skill: "#9333ea"
 };
-const FLOW_COL = { rule: 0, hook: 1, settings: 1, agent: 2, gate: 3, human: 4, command: 5, script: 6, module: 6, task: 7 };
+const FLOW_COL = { rule: 0, hook: 1, settings: 1, skill: 1, agent: 2, gate: 3, human: 4, command: 5, script: 6, module: 6, task: 7 };
 const HIDE_DEFAULT = new Set(["module", "task", "script"]);
 // Hook event -> short badge. The scan carries the full event name; the node is
 // too small for "PostToolUse", and Pre/Post is the distinction that matters.

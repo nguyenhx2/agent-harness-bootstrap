@@ -192,9 +192,9 @@ class HarnessBootstrap(Scene):
             "Tier 0は無条件、\nプリセットS / M / L、明示的な\nmodel: と effort:",
             font=JFONT, font_size=14, color=DIM, line_spacing=0.75,
         ).next_to(roster, DOWN, buff=0.2)
-        skills = chip("スキルの発見・導入", PURPLE, PURPLE_HI, fs=18, h=0.8, w=3.6).move_to([-1.55, 1.7, 0])
+        skills = chip("スキル: 適合・審査・配線", PURPLE, PURPLE_HI, fs=18, h=0.8, w=3.6).move_to([-1.55, 1.7, 0])
         sks = Text(
-            "担当席ごとにskills.shを検索、\n信頼基準 + 内容の必読、\nスキルごとにyes",
+            "検出したスタックに合わせ、\n提案前に必ずレビューし、\n選んだら配線される",
             font=JFONT, font_size=14, color=DIM, line_spacing=0.75,
         ).next_to(skills, DOWN, buff=0.2)
         osd = chip("開発OSを検出", PURPLE, PURPLE_HI, fs=18, h=0.8, w=3.3).move_to([1.9, 1.7, 0])
@@ -214,7 +214,7 @@ class HarnessBootstrap(Scene):
         self.play(GrowFromCenter(roster), FadeIn(rs), run_time=0.5)
         caption(self, "全エージェントに明示的なmodelとeffort - Tier 0は無条件、その後プリセット。", hold=0.8, y=-3.35, size=21)
         self.play(Create(br1), GrowFromCenter(skills), FadeIn(sks), run_time=0.5)
-        caption(self, "各担当席がskills.shを検索できる - 信頼基準と内容の必読が全ての導入をゲートする。", hold=1.1, y=-3.35, size=19)
+        caption(self, "スキルはスタックに合わせて絞り込み、全文レビューした上で、選んだものだけ配線される。", hold=1.1, y=-3.35, size=19)
         self.play(Create(br2), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
         self.play(Create(br3), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
         caption(self, "決定事項はvars.jsonに入る - 方法論も含む: 既定はDDD、他にTDD、TDD+DDD、Lightweightも選べる。", hold=1.5, y=-3.35, size=20)

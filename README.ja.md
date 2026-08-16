@@ -7,7 +7,7 @@
 <p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 69/69](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 89/89](https://img.shields.io/badge/guardrail%20eval-40%2F40-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -45,7 +45,7 @@
   まずあなたのコードを読み込むので、生成される内容は*あなたの*リポジトリに合ったものになる。「合わせて作る」
   の具体的な中身は[手に入るもの](#-手に入るもの)を参照。
 - ガードレールはシェルスクリプトと終了コードであり、モデルの判断力に頼らない。すべてのエージェントを
-  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、69/69。
+  Opus から Haiku に差し替えても安全の下限は完全に同じ - `python eval/guardrail_eval.py` が証明する、89/89。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
@@ -138,6 +138,43 @@ agent-harness-bootstrap.zip をダウンロードし、同じリリースの SHA
 
 ---
 
+## 💬 何を聞かれるか
+
+どちらのスキルも、何かを書き出す前にヒアリングを行う。**質問はあなたが書いた言語で返ってくる** -
+ベトナム語で話しかければベトナム語で聞かれる。選択式の質問は最大4問ずつまとめて提示され、
+自由記述はチャットのまま。1画面の計画を承認するまで、何も生成されない。
+
+**`harness-bootstrap` - 8つのバッチ。その多くは「確認」で済む。** 既存リポジトリではまずコードを読み、
+答えられるものは埋めた状態で出すので、ゼロから入力するのではなく、findings を訂正する作業になる。
+
+| バッチ | 決めること | 主に |
+|---|---|---|
+| A 識別 | 名前、ドキュメント言語、仕様の有無、対象AIツール | 質問 |
+| B スタック | 言語、DB、連携先、環境、認可モデル、開発OS | コードから確認 |
+| C git | プラットフォーム、コミット識別情報、既定ブランチ、コミット規約 | gitから確認 |
+| D 品質と安全 | ロースター構成、テスト、方法論、データ機微性、effort、権限レベル | 質問 |
+| E データベース | どのDBエージェントか、実際のリセットコマンド | DBがある場合のみ |
+| F フロントエンド | ブランド資産、アイコン方針、アクセシビリティ目標 | UIがある場合のみ |
+| G 監査 | 対象リポジトリ、スキャナ、修正担当 | 監査モードのみ |
+| H ガバナンス | モデル主権、データ所在地、ライセンス、ゲート対象の操作 | 質問。既定値は作らない |
+
+バッチHだけは決して推測しない。どれも組織にしか持てない方針であり、もっともらしい捏造は
+信じられてしまうぶん、空欄より有害だからである。「まだ決まっていない」も正当な回答で、
+その場合はタスクとして登録される。
+
+**急いでいる場合**は、そう伝えれば**エクスプレス経路**になる。安全な既定値が存在しない質問
+(プロジェクト識別、デプロイ権限、バッチH全体)だけを聞き、残りは既定値を適用したうえで
+1つの表として提示し確認を取る。監査モードはエクスプレス対象外 - スコープは推測できない。
+
+**`spec-builder` - 4バッチ + セットアップ質問。** セットアップで出力言語、作成するセクション
+(コアは固定、それ以外は素材から裏付けの取れたものを事前選択した状態で提示)、準拠する標準の
+プロファイルを決める。その後、スコープ / 関係者 / データと外部システム / 制約の順に進む。
+要件を捏造することはない - 述べられていないことは推測ではなく、IDの付いた未解決事項になる。
+
+質問ごとの詳細と、それを聞く理由: [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md)。
+
+---
+
 ## 📦 手に入るもの
 
 固定のバンドルではなく、**このリポジトリに合わせて作られる** `.claude/` ハーネス。ロースター、
@@ -193,8 +230,8 @@ AGENTS.md + CLAUDE.md
 `guard-agent-spawn` フックが強制するものであり、エージェントが逸脱しうるルールではない。
 
 この「合わせて作る」が引き出す元になっている出荷済みツールボックス - 資産の全体集合であり、
-プロジェクトごとの保証ではない: 16個のエージェント、15個のルール、22個のスラッシュコマンド、
-9個のフック。デフォルトのインストールで実際に入るのはおおむね8〜10個。`long` プロジェクトなら
+プロジェクトごとの保証ではない: 16個のエージェント、16個のルール、22個のスラッシュコマンド、
+10個のフック（常時は9個、rtk ラッパーはフラグを立てた場合のみ）。デフォルトのインストールで実際に入るのはおおむね8〜10個。`long` プロジェクトなら
 `brainstormer` + `tech-researcher` + `history-tracker` が加わり、`tests` なら `qa-test` が加わり、
 `solo_review` なら分割されたレビューアの代わりに統合された `reviewer` 1つに置き換わる。実際に
 `.claude/` に入るものは上記の各観点次第 - 全シート一覧は
@@ -286,33 +323,76 @@ FRの実装、テストの実行、diffのレビュー、デプロイなど。�
 
 ## 🗺️ ドキュメント一覧
 
-| | |
-|---|---|
-| [`docs/FLOWS.md`](docs/FLOWS.md) | 7つの図とデリバリーコマンドのリファレンス: スキャフォルダ、機能追加の一連の流れ、コンテキストの読み込み |
-| [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) | RAM とディスク、クラッシュからの再開プロトコル、ハード制御とソフト制御の違い |
-| [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) | スコアカード。できないことも含む |
-| [`docs/TUNING.md`](docs/TUNING.md) | ブートストラップ後の8個のチューニングコマンドと `spec-builder` の ingest/retract ペアの完全版 |
-| [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) | 各スキルの質問セットが何を探るか、なぜ重要か - 両スキルのフロー図付き |
-| [`docs/RELEASING.md`](docs/RELEASING.md) | セマンティックバージョニング、成果物、リリースノートの書式 |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | 開発環境のセットアップ、PRが通るべきゲート、アセット編集のルール |
-| [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) | EN / VI / JP |
-| [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) | クリップ6本、音声なしキャプション付き、ダウンロード不要 |
-| [`roster.md`](harness-bootstrap/reference/roster.md) | 各エージェントの model / effort / tools / turn limit とその理由 |
-| [`cost-model.md`](harness-bootstrap/reference/cost-model.md) | model・effort・tools・キャッシュの安定性が費用にどう影響するか |
-| [`task-control.md`](harness-bootstrap/reference/task-control.md) | オーケストレーションのループ、クラッシュからの復旧、マージの規律 |
-| [`ba-standards.md`](spec-builder/reference/ba-standards.md) | 仕様セクションが依拠する標準 |
-| [`benchmark/RESULTS.md`](benchmark/RESULTS.md) | ベンチマークの数値とその注意点 |
+```text
+agent-harness-bootstrap
+├── docs/                          仕組みと、そのコスト
+│   ├── FLOWS.md                   7つの図 + デリバリーコマンドのリファレンス
+│   ├── CONTEXT-MANAGEMENT.md      RAMとディスク、クラッシュ再開、ハード制御とソフト制御
+│   ├── QUESTIONNAIRES.md          各スキルが何を聞くか、その理由 - 両方のフロー図
+│   ├── TUNING.md                  8つのチューニングコマンド + spec-builder の ingest/retract
+│   ├── ASSESSMENT.md              スコアカード。できないことも含めて
+│   └── RELEASING.md               semver、成果物、リリースノートの形式
+│
+├── harness-bootstrap/             スキル1 - ハーネスを構築する
+│   ├── SKILL.md                   モデルが従う手順
+│   └── reference/
+│       ├── intake.md              27問のインテーク、バッチごとに
+│       ├── roster.md              各エージェントの model / effort / tools / turn 上限と、その理由
+│       ├── cost-model.md          model・effort・tools・キャッシュ安定性が費用に与える影響
+│       ├── task-control.md        オーケストレーションのループ、クラッシュ復旧、マージ規律
+│       ├── codebase-analysis.md   既存リポジトリを書き込み前にどう読むか
+│       ├── skill-discovery.md     サードパーティスキルの発見・検証・接続
+│       ├── tech-presets.md        スタックの既定値とバージョン鮮度のルール
+│       ├── control-surfaces.md    各ガードレールが実際にどこにあるか
+│       └── audit-mode.md          エージェントが触れてはならないソース向けの読み取り専用モード
+│
+├── spec-builder/                  スキル2 - ハーネスの元になる仕様を書く
+│   ├── SKILL.md                   手順と、選択式のセクション構成
+│   └── reference/
+│       ├── elicitation.md         質問の仕方と、決して推測しないもの
+│       ├── writing-rules.md       ID体系、アンカー、空欄禁止のルール
+│       └── ba-standards.md        各仕様セクションが依拠する標準
+│
+├── tools/harness-view/            任意のネイティブビューア(上記参照)
+├── benchmark/RESULTS.md           ベンチマークの数値と、その但し書き
+├── eval/README.md                 ガードレールeval: 全ケースと、それが何を証明するか
+└── CONTRIBUTING.md                開発環境、PRが通すべきゲート、アセット編集のルール
+```
+
+公開物: [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)
+(EN / VI / JP) と [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
+(6本、字幕付き、ダウンロード不要)。
 
 **数値**は、本プロジェクトが置き換える旧スキルとの比較で計測 - `python benchmark/benchmark.py` で再現可能:
 
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 129,639 | **-45%** |
+| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 141,409 | **-40%** |
 | モデルが出力として書くバイト数 | 95,064 | 13,881 | **-85%** |
 | デフォルトのセッションから除外されるルール内容 | - | 52,131 of 79,936 B | **65%** |
-| ガードレール評価 | - | **69/69** | - |
+| ガードレール評価 | - | **89/89** | - |
 
 ---
+
+## 🙏 サードパーティクレジット
+
+ハーネスのオプション機能のうち 2 つは他者の成果物の上に成り立っています。いずれもオプトインで、
+いずれも寛容型ライセンスであり、ライセンスが求めるとおりここに明記します。
+
+| 用途 | プロジェクト | ライセンス | 作者 |
+|---|---|---|---|
+| 出力スタイルのルール（`terse` フラグ） | [i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | Ayoub Ghriss |
+| コマンド出力を縮めるラッパーフック（`rtk` フラグ） | [rtk](https://github.com/rtk-ai/rtk) | Apache-2.0 | rtk-ai および rtk-ai Labs |
+
+ルール本文は同プロジェクトのスキルを基に構成し、コミット `2ed0640` に固定、MIT 表記を生成ファイル
+内に保持しています。
+
+**rtk はバンドルしていません。** ハーネスが配置するのは `hooks/rtk-rewrite.{sh,ps1}`、つまり当方が
+書いたラッパーだけです。バイナリを導入済みなら呼び出し、未導入なら何もしないため、このフラグを
+選んでも未導入の環境が壊れることはありません。さらにこのラッパーは、当方のガードが検査する
+コマンドを rtk に渡すことを拒否します。圧縮ツールがガードの不発の原因になってはならないからです。
+
+いずれのプロジェクトも本プロジェクトを推奨するものではありません。
 
 ## 👤 作者について
 

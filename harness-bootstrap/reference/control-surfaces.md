@@ -3,7 +3,7 @@
 The distinction that matters is **enforced** versus **advisory**. This one-pager states which of the
 harness's controls are which, citable from the quality gate and from `docs/CONTEXT-MANAGEMENT.md`.
 
-<img src="../../docs/assets/control-layers.svg" alt="Control layers ranked by hardness: settings.json deny rules, PreToolUse hooks, tool allowlists, and maxTurns are enforced; rules, agent bodies, and effort are advisory">
+<img src="../../docs/assets/control-layers.svg" alt="Control layers ranked by hardness. The four enforcement layers named in the quality gate: settings.json deny rules, PreToolUse hooks that exit 2, the agent-guardrails rule, and the review commands. Shown enforced alongside them but outside the four: the per-agent tools allowlist and maxTurns. A runtime band underneath covers /harness-toggle and the committed .claude/disabled.json ledger. Rules, agent bodies, and effort remain advisory">
 
 ## Enforced: the model does not get a vote
 
@@ -14,9 +14,11 @@ harness's controls are which, citable from the quality gate and from `docs/CONTE
 | `tools:` allowlist in agent frontmatter | e.g. `code-reviewer` and `security-reviewer` get `Read, Grep, Glob, Bash` | What the agent cannot **reach**. A reviewer with `Edit` has stopped being a reviewer, and the frontmatter is what makes that structural rather than aspirational |
 | `maxTurns` | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. `cost-model.md`: *"the cost of a stuck agent is unbounded"* |
 
-`eval/guardrail_eval.py` scaffolds a harness and fires the guardrail payload suite at it: 11
-must-block and 14 must-allow cases, **all judged correctly**. Every block is a shell script and an
-exit code, which is what the eval's header describes:
+`eval/guardrail_eval.py` scaffolds a harness and fires the guardrail payload suite at it, both
+must-block and must-allow cases, **all judged correctly**. The suite declares its own case count in
+`CASES_PER_FLAVOR` and asserts it against the real one on every run, so the number lives there and
+not in this sentence, where it went stale twice. Every block is a shell script and an exit code,
+which is what the eval's header describes:
 
 > `A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an accepted
 > ADR. It cannot ship an AI-attribution trailer. Not because it knows better, but because the hook
@@ -77,7 +79,7 @@ rule everywhere else.**
 The memory hierarchy (`docs/CONTEXT-MANAGEMENT.md`, section 1) and the control ranking above are two
 views of the same stack.
 
-<img src="../../docs/assets/harness-architecture.svg" alt="Harness reference architecture in seven layers, bottom-up: the work, the enforcement plane, the state plane, the context plane, the policy plane, the model slot, and orchestration - with every layer below the model slot deterministic and model-agnostic">
+<img src="../../docs/assets/harness-architecture.svg" alt="Harness reference architecture read bottom-up: the work, the enforcement plane, the state plane, the context plane, the policy plane, the model slot, and orchestration, with every layer below the model slot deterministic and model-agnostic. A band across the bottom shows the observability path: harness-graph.json feeding harness-view with its Flow, Graph, Assess and Master-plan views, no model in the loop">
 
 Read it bottom-up: the work at the bottom, everything above it protecting it. The enforcement plane
 is the thickest band because it is the only one that does not negotiate - shell scripts and glob

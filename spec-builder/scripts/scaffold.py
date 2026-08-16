@@ -91,6 +91,23 @@ def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set
     return VAR_RE.sub(repl, text), missing
 
 
+# The closed set this skill actually understands. Every one is consumed by a manifest `when`
+# or by an {{#IF_}} block in a template. Without this check a typo silently dropped a whole
+# spec section and still exited 0, which is the same failure the harness twin was hardened
+# against.
+KNOWN_FLAGS = {"access", "ai", "db", "design", "feasibility", "flows",
+               "integration", "stakeholders", "ui"}
+
+
+def validate_flags(flags: set[str]) -> list[str]:
+    """-> list of human-readable problems; empty means the flag set is sane."""
+    unknown = sorted(flags - KNOWN_FLAGS)
+    if not unknown:
+        return []
+    return [f"unknown flag(s): {', '.join(unknown)}. "
+            f"Valid flags: {', '.join(sorted(KNOWN_FLAGS))}"]
+
+
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
@@ -119,6 +136,11 @@ def main() -> int:
     cfg = json.loads(args.vars.read_text(encoding="utf-8"))
     variables: dict[str, str] = cfg.get("vars", {})
     flags: set[str] = {f.lower() for f in cfg.get("flags", [])}
+    flag_problems = validate_flags(flags)
+    if flag_problems:
+        for problem in flag_problems:
+            print(f"FAIL: {problem}", file=sys.stderr)
+        return 1
     manifest: list[dict] = json.loads(manifest_path.read_text(encoding="utf-8"))["files"]
 
     target = args.target.resolve()
@@ -130,12 +152,46 @@ def main() -> int:
     skipped: list[str] = []
     all_missing: dict[str, set[str]] = {}
 
+    # This skill writes into .claude/commands/, the same namespace harness-toggle.py
+    # quarantines. Without this, `/harness-toggle disable command/spec-ingest` was undone by
+    # the next spec-builder run, silently. Only rules, commands and hooks inside their own
+    # .claude/ directory may be honored: a ledger entry naming a root file must never
+    # withhold an asset from a scaffold.
+    TOGGLE_PREFIX = {"rule": ".claude/rules/", "command": ".claude/commands/",
+                     "hook": ".claude/hooks/"}
+    disabled_dests: set[str] = set()
+    dj = target / ".claude" / "disabled.json"
+    if dj.is_file():
+        try:
+            for e in json.loads(dj.read_text(encoding="utf-8")).get("disabled", []):
+                if not (isinstance(e, dict) and e.get("from")):
+                    continue
+                frm = str(e["from"]).replace("\\", "/")
+                kind = e.get("kind")
+                prefix = TOGGLE_PREFIX.get(kind)
+                if (prefix is None or not frm.startswith(prefix)
+                        or ".." in frm or "/" in frm[len(prefix):]):
+                    print(f"  [warn] disabled.json entry ignored (kind `{kind}`, from "
+                          f"`{frm}`): only rules, commands, and hooks inside their own "
+                          ".claude/ directories can be disabled.", file=sys.stderr)
+                    continue
+                disabled_dests.add(frm)
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            print(f"FAIL: {dj} is unreadable - fix or delete it before re-running (a corrupt "
+                  "ledger must not resurrect disabled controls).", file=sys.stderr)
+            return 1
+
+    disabled_skips: list[str] = []
+
     for entry in manifest:
         src_rel = entry["src"]
         if args.only and not src_rel.startswith(args.only):
             continue
         if not wanted(entry, flags):
             skipped.append(src_rel)
+            continue
+        if entry["dest"].replace("\\", "/") in disabled_dests:
+            disabled_skips.append(entry["dest"])
             continue
 
         src = assets / src_rel
@@ -185,6 +241,7 @@ def main() -> int:
     verb = "WOULD ADD" if args.dry_run else "ADDED"
     show(verb, added)
     show("KEPT (already identical)", kept)
+    show("DISABLED (respected - listed in .claude/disabled.json, not re-added)", disabled_skips)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
     if skipped:
@@ -198,7 +255,8 @@ def main() -> int:
 
     print(
         f"\nSummary: {len(added)} written, {len(kept)} kept, "
-        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags."
+        f"{len(conflicts)} conflict, {len(skipped)} skipped by flags, "
+        f"{len(disabled_skips)} disabled."
     )
 
     if conflicts and not args.force:

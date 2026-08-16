@@ -191,9 +191,9 @@ class HarnessBootstrap(Scene):
             "Tier 0 unconditional,\npreset S / M / L, explicit\nmodel: AND effort:",
             font=FONT, font_size=15, color=DIM, line_spacing=0.75,
         ).next_to(roster, DOWN, buff=0.2)
-        skills = chip("Skill discovery + install", PURPLE, PURPLE_HI, fs=19, h=0.8, w=3.6).move_to([-1.55, 1.7, 0])
+        skills = chip("Skills: match, review, wire", PURPLE, PURPLE_HI, fs=19, h=0.8, w=3.6).move_to([-1.55, 1.7, 0])
         sks = Text(
-            "search skills.sh per seat,\ntrust rubric + mandatory\ncontent read, yes per skill",
+            "matched to the stack found,\nreviewed before suggested,\nyou choose, then it's wired",
             font=FONT, font_size=15, color=DIM, line_spacing=0.75,
         ).next_to(skills, DOWN, buff=0.2)
         osd = chip("Detect the dev OS", PURPLE, PURPLE_HI, fs=19, h=0.8, w=3.3).move_to([1.9, 1.7, 0])
@@ -213,7 +213,7 @@ class HarnessBootstrap(Scene):
         self.play(GrowFromCenter(roster), FadeIn(rs), run_time=0.5)
         caption(self, "Every agent gets an explicit model and effort - Tier 0 unconditional, then a preset.", hold=0.8, y=-3.35, size=22)
         self.play(Create(br1), GrowFromCenter(skills), FadeIn(sks), run_time=0.5)
-        caption(self, "Each seat can search skills.sh - a trust rubric and a mandatory content read gate every install.", hold=1.1, y=-3.35, size=21)
+        caption(self, "Skills are matched to what your stack needs, reviewed in full, and only wired in once you choose them.", hold=1.1, y=-3.35, size=21)
         self.play(Create(br2), GrowFromCenter(osd), FadeIn(oss), run_time=0.5)
         self.play(Create(br3), GrowFromCenter(vj), FadeIn(vjs), run_time=0.5)
         caption(self, "The decisions land in vars.json - including methodology: DDD by default, or TDD, TDD+DDD, Lightweight.", hold=1.5, y=-3.35, size=21)

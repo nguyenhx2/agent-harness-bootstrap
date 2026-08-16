@@ -18,7 +18,7 @@ try {
 
 $cmd = $payload.tool_input.command
 if (-not $cmd) { exit 0 }
-if ($cmd -notmatch '(^|[;&|]\s*)git\s+(commit|push)\b') { exit 0 }
+if ($cmd -notmatch '(^|[^a-zA-Z0-9_.-])git\s+(commit|push)\b') { exit 0 }
 
 $baseCwd = if ($payload.cwd) { $payload.cwd } else { (Get-Location).Path }
 $targetDir = $baseCwd

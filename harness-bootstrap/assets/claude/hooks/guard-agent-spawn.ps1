@@ -87,7 +87,14 @@ if (Test-Path $seatFile) {
     }
     if ($toolsLine -and $toolsLine -match '(^|[,\s])(Edit|Write)(,|\s|$)') {
         $activeDir = Join-Path $baseCwd 'docs/tasks/active'
-        if (Test-Path $activeDir) {
+        # Parity with the .sh flavor: a missing board is a refusal, not a skip. The old
+        # Test-Path gate made this arm inert on every fresh bootstrap, because the scaffolder
+        # never created the directory.
+        if (-not (Test-Path $activeDir)) {
+            [Console]::Error.WriteLine("BLOCKED: '$stype' can write, but docs/tasks/active/ does not exist, so no task can be registered. Create the task board (harness-bootstrap ships it; /harness-update restores it), register the task, then dispatch.")
+            exit 2
+        }
+        if ($true) {
             $taskId = $null
             if ($payload.tool_input.prompt -match 'TASK-\d{1,5}') { $taskId = $Matches[0] }
             if (-not $taskId) {
