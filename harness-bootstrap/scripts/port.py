@@ -106,6 +106,11 @@ def port_cursor_rules(claude_rules: pathlib.Path, dest: pathlib.Path) -> list[st
 
 # --------------------------------------------------------------------------- hooks
 
+# Adapter checks the self-test runs per hook flavor, asserted against the real count at the end of
+# self_test_flavor() and read by scripts/check_numbers.py to police the published figure. Only
+# meaningful on a full run: a machine with no interpreter for a flavor skips the behaviour half.
+CHECKS_PER_FLAVOR = 9
+
 # The Bash-matching hooks that need no per-payload adaptation on Codex.
 BASH_HOOKS = ["guard-main-commit", "check-commit-msg", "protect-secrets"]
 # Hooks that inspect a file path.
@@ -365,6 +370,13 @@ def self_test_flavor(flavor: str) -> int:
             npass += ok
             nfail += not ok
         print(f"  {npass}/{npass + nfail} {flavor} adapter checks pass.")
+        # The deck and the outline quote this total, and it sat at "5/5" for several releases
+        # after the suite grew. scripts/check_numbers.py reads the constant; this asserts it.
+        if npass + nfail != CHECKS_PER_FLAVOR:
+            print(f"  FIGURE DRIFT: ran {npass + nfail} checks, but CHECKS_PER_FLAVOR says "
+                  f"{CHECKS_PER_FLAVOR}. Update it at the top of this file and re-run "
+                  f"scripts/check_numbers.py to refresh the published figures.", file=sys.stderr)
+            nfail += 1
         return 1 if nfail else 0
     finally:
         shutil.rmtree(wd, onexc=_force)

@@ -2,7 +2,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **107/107 correct (34 must-block, 35 must-allow).**
+`python eval/guardrail_eval.py` -> **107/107 correct (40 must-block, 67 must-allow).**
 
 The count moved from 46 to 68 with a round of security-refusal cases against `scaffold.py` and
 `harness-toggle.py` directly (not just the hooks): flag validation, contradictory methodology
