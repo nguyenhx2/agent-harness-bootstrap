@@ -75,7 +75,7 @@ class ScaffoldError(Exception):
 KNOWN_FLAGS = {
     "ui", "db", "db_engineer", "db_seeder", "ai", "audit", "tdd", "ddd",
     "light", "unit", "e2e", "tests", "deploy_ask", "long", "solo_review",
-    "windows", "posix", "terse", "rtk",
+    "windows", "posix", "terse", "rtk", "pr_cli",
 }
 
 # OS flag -> the derived hook runner/extension vars. The flavor of the shipped

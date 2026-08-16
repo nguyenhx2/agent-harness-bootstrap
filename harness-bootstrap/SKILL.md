@@ -103,7 +103,7 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 
 Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `db_engineer`,
 `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`,
-`solo_review`, `terse`, `rtk`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default
+`solo_review`, `terse`, `rtk`, `pr_cli`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default
 (`rules/ddd.md`, tests shipping in the same change); `tdd` (tests strictly first) is opt-in - proof
 discipline at a real cost in delivery speed, so intake asks rather than assumes; `light` replaces
 both with a minimal-ceremony posture that keeps the review gate. Testing is a choice, not a default:

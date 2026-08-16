@@ -106,6 +106,12 @@ Quality gates, in order: {{#IF_TESTS}}`qa-test` (green) → {{/IF_TESTS}}{{#IF_S
 `/secret-scan` → {{PR_OR_MR}}. Never skip a gate. Report a gate as passed ONLY when the task file's
 session log records the run; an unlogged "reviewed" is unverified.
 
+Opening the {{PR_OR_MR}} on {{GIT_PLATFORM}}: `{{PR_CLI}} create`, which asks the human first - it
+publishes work under their name and usually starts CI. When `{{PR_CLI}}` is `-` there is no CLI on
+this project: push the branch and hand the user the "create a {{PR_OR_MR}}" URL the push prints.
+Either way the gates above run first; the {{PR_OR_MR}} is where reviewed work goes, never the place
+review starts.
+
 A failure goes back to the same agent ONCE, with specific feedback, and the re-dispatch brief must
 state what changed since the last attempt - re-sending an identical brief is a loop, not a retry.
 Record the attempt number in the task file's `attempts:` field and its session-log row. **After two

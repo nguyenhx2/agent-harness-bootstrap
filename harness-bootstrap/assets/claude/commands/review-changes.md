@@ -1,6 +1,6 @@
 ---
 description: Run code review and security review on the current diff before opening a {{PR_OR_MR}}.
-allowed-tools: Bash(git diff:*), Bash(git status), Bash(git log:*), Read, Grep, Glob
+allowed-tools: Bash(git diff:*), Bash(git status), Bash(git log:*), Read, Grep, Glob{{#IF_PR_CLI}}, Bash({{CI_STATUS_CMD}}:*), Bash({{PR_CLI}} view:*){{/IF_PR_CLI}}
 ---
 
 Review the current changes before opening or merging a {{PR_OR_MR}}.
@@ -16,7 +16,8 @@ Review the current changes before opening or merging a {{PR_OR_MR}}.
    in `docs/specs/` - one pass, both lenses.
 4. Dispatch `spec-guardian`: verify the acceptance criteria of the linked FR and task are met.
 5. Confirm {{LINT_CMD}}{{#IF_TESTS}} and {{TEST_CMD}}{{/IF_TESTS}} pass locally, and that the {{CI_PLATFORM}} pipeline is
-   green in a terminal state. A pending pipeline is not a green pipeline.
+   green in a terminal state (`{{CI_STATUS_CMD}}`; without a CLI on this project, read it from the
+   {{GIT_PLATFORM}} web UI). A pending pipeline is not a green pipeline.
 6. Aggregate the findings by severity: blocker, should fix, suggestion. Record the review in the
    task file session log; a gate counts as passed only when the log records the run.
 {{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}3. Dispatch `code-reviewer`: coding standards, `.claude/rules/`, and the commit messages on the
@@ -25,7 +26,8 @@ Review the current changes before opening or merging a {{PR_OR_MR}}.
    non-functional requirements in `docs/specs/`.
 5. Dispatch `spec-guardian`: verify the acceptance criteria of the linked FR and task are met.
 6. Confirm {{LINT_CMD}}{{#IF_TESTS}} and {{TEST_CMD}}{{/IF_TESTS}} pass locally, and that the {{CI_PLATFORM}} pipeline is
-   green in a terminal state. A pending pipeline is not a green pipeline.
+   green in a terminal state (`{{CI_STATUS_CMD}}`; without a CLI on this project, read it from the
+   {{GIT_PLATFORM}} web UI). A pending pipeline is not a green pipeline.
 7. Aggregate the findings by severity: blocker, should fix, suggestion. Record the review in the
    task file session log; a gate counts as passed only when the log records the run.
 {{/IF_SOLO_REVIEW}}

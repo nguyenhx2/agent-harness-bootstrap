@@ -102,13 +102,37 @@ step 8 ports via `port.py`); a team may want Cursor support before `.cursor/` ex
 
 ## Batch C - git and CI
 
-11. **[CONFIRM - `git remote -v` + `git config user.name`/`user.email`; chat for the bot sub-part]**
-    **Git platform and commit identity.** Platform: GitHub / GitLab, cloud or self-hosted (ask
-    which!) / Bitbucket / none - drives the CLI (`gh`/`glab`), PR-vs-MR wording, and the CI file.
-    Self-hosted GitLab: capture the hostname and that CI secrets are masked + protected. Identity:
-    name/email on THAT platform - a wrong email misattributes commits. Also: does a bot hold
-    commit/merge rights on the default branch (Dependabot, Renovate, auto-merge)? No var - into
-    `known-issues.md`, and a `merge-manager` exception if that agent is fielded.
+11. **[CONFIRM - pass 10 of [`codebase-analysis.md`](codebase-analysis.md); chat for the bot sub-part]**
+    **Git platform, review tooling, and commit identity.** Platform: GitHub / GitLab, cloud or
+    self-hosted (ask which!) / Bitbucket / none. Self-hosted GitLab: capture the hostname and that CI
+    secrets are masked + protected. Identity: name/email on THAT platform - a wrong email misattributes
+    commits. Also: does a bot hold commit/merge rights on the default branch (Dependabot, Renovate,
+    auto-merge)? No var - into `known-issues.md`, and a `merge-manager` exception if that agent is
+    fielded.
+
+    **Confirm the platform whenever pass 10 was not conclusive, and confirm the CLI always.** Detection
+    is evidence, not permission: a repo can host on GitHub while the team opens every PR in the browser.
+    The answer sets how every seat is told to open and merge a change, so a wrong guess here is a
+    workflow the team does not use.
+
+    | Answer | `{{GIT_PLATFORM}}` | `{{PR_OR_MR}}` | `{{PR_CLI}}` | `{{CI_STATUS_CMD}}` | flag |
+    |---|---|---|---|---|---|
+    | GitHub, `gh` installed and authenticated | `GitHub` | `PR` | `gh pr` | `gh pr checks` | `pr_cli` |
+    | GitLab, `glab` installed and authenticated | `GitLab` | `MR` | `glab mr` | `glab ci status` | `pr_cli` |
+    | Bitbucket | `Bitbucket` | `PR` | `-` | `-` | none |
+    | Platform, but no CLI (absent, logged out, or the team prefers the browser) | the platform | `PR`/`MR` | `-` | `-` | none |
+    | No platform, local git only | `none` | `PR` | `-` | `-` | none |
+
+    `{{PR_CLI}}` is a command PREFIX: `gh pr` and `glab mr` both take `create`, `list`, `view` and
+    `merge` after it, so one variable covers four operations. CI status has a different shape, hence
+    its own variable.
+
+    **Bitbucket has no first-party CLI of this shape** - `gh` and `glab` are vendor-published,
+    Atlassian ships no equivalent, and the community wrappers are unmaintained. Do not invent a
+    `bb pr create`. The no-CLI path is a real workflow, not a degraded one: push the branch and hand
+    the human the "create a pull request" URL that all three platforms print on first push. Do not
+    route around it with `curl` against the REST API - that needs an app password, and a seat holding
+    a platform credential is what `protect-secrets` and the deny rules exist to prevent.
 12. **[CONFIRM - `git symbolic-ref`/remote HEAD + `git log`; chat for the scope list]** **Default
     branch and commit convention.** Branch: default `main`, naming `feat/fix/chore/...` - feeds
     `guard-main-commit`. Convention: Conventional Commits is default - confirm the type list
@@ -308,7 +332,7 @@ variable or flag; the remaining variables come from the analysis.
 | 8 environments, ownership, and configuration | `.env.example` groups (authored, not templated) |
 | 9 authorization model and tenancy | no var - into `data-model.md`'s entity notes; a break-glass path becomes a `settings.json` entry |
 | 10 dev OS | flag `windows` or `posix`; `{{HOOK_RUNNER}}`/`{{HOOK_EXT}}` are DERIVED from the flag by the scaffolder - do not set them in vars.json |
-| 11 git platform + commit identity + CI bots | `{{PR_OR_MR}}`, `{{CI_PLATFORM}}`; identity: no var; bot answer: no var, `known-issues.md` + merge-manager exception if fielded |
+| 11 git platform + review tooling + commit identity + CI bots | `{{PR_OR_MR}}`, `{{CI_PLATFORM}}`, `{{GIT_PLATFORM}}`, `{{PR_CLI}}`, `{{CI_STATUS_CMD}}`; flag `pr_cli` when a CLI was chosen; identity: no var; bot answer: no var, `known-issues.md` + merge-manager exception if fielded. `{{PR_CLI}}` and `{{CI_STATUS_CMD}}` take `-` on the no-CLI path and MUST still be set - the scaffolder fails on an unresolved variable |
 | 12 default branch + commit convention | `{{DEFAULT_BRANCH}}`; `{{COMMIT_TYPES}}`, `{{COMMIT_SCOPES}}` |
 | roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16; `{{AGENT_ROSTER_TABLE}}` (the confirmed roster, rendered as the AGENTS.md table) |
 | 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests`; `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` (framework vars only for selected kinds; unselected take `-`) |
@@ -333,8 +357,8 @@ variable or flag; the remaining variables come from the analysis.
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
 
 Flags are exactly: `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`,
-`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, and exactly one of
-`windows`/`posix`.
+`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, `pr_cli`, and exactly
+one of `windows`/`posix`.
 `ddd` is the default methodology; `tdd` is opt-in and `light` replaces both - never assumed. `tests`
 is derived: set it whenever `unit` or `e2e` is set, never alone.
 

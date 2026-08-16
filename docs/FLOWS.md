@@ -120,7 +120,7 @@ flowchart TD
     ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
     SKILLS["Skill discovery and install<br/>search skills.sh per seat, trust rubric +<br/>mandatory content read, yes per skill"]
     OS["Detect the dev OS<br/>Windows to .ps1, macOS or Linux to .sh<br/>sets the windows / posix flag"]
-    VARS[/"vars.json<br/>vars + 18 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk,<br/>exactly one of windows / posix"/]
+    VARS[/"vars.json<br/>vars + 19 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk, pr_cli,<br/>exactly one of windows / posix"/]
 
     DRY["scaffold.py --dry-run"]
     SCAFFOLD["scaffold.py<br/>deterministic copy of assets/"]

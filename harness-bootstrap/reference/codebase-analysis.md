@@ -62,8 +62,27 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
 9. **Existing agent surface** - `.claude/`, `CLAUDE.md`, `AGENTS.md`, other tools' instruction files,
    the docs tree. What exists, what is stale (references to files that no longer exist), what conflicts
    with the standard.
-10. **Git reality** - default branch, branch naming, hosting platform from `git remote -v` (cloud vs
-    self-hosted, from the hostname), existing PR/MR conventions.
+10. **Git reality** - default branch, branch naming, hosting platform, existing PR/MR conventions.
+
+    The platform decides which CLI the seats are told to use, so rank the evidence - the remote
+    alone is not conclusive, because self-hosted GitLab and Bitbucket Server both sit on a company
+    hostname that names neither product.
+
+    | Evidence | Reads as | Strength |
+    |---|---|---|
+    | `.gitlab-ci.yml` at the repo root | GitLab | Strong. A GitLab runner is the only thing that consumes this file |
+    | `.github/workflows/` | GitHub | Strong. Same reasoning |
+    | `bitbucket-pipelines.yml` | Bitbucket | Strong |
+    | `git remote get-url origin` host is `github.com` / `gitlab.com` / `bitbucket.org` | that platform | Strong for cloud, absent for self-hosted |
+    | Remote host is neither, plus one of the CI files above | that platform, self-hosted | Strong when the CI file agrees |
+    | Remote host is neither and there is no CI file | unknown | None. ASK, do not guess |
+
+    Disagreeing signals (a `.gitlab-ci.yml` under a `github.com` origin is a real migration state)
+    mean ASK, reporting both sides.
+
+    Then check the CLI is usable, since a missing or logged-out one changes what a seat can be told
+    to do: `gh auth status`, `glab auth status`. Record authenticated, logged-out, or absent.
+    Bitbucket has no CLI of this shape - Q11 in [`intake.md`](intake.md) covers what happens instead.
 
 ## Phase B - the Inventory Report
 
