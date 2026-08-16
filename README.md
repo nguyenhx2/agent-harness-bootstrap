@@ -57,7 +57,7 @@ coding agent:
 ## 🧵 How it all fits together
 
 <p align="center">
-  <img src="docs/assets/harness-loom.svg" alt="The harness drawn as a loom: raw intent enters as loose tangled threads on the left, spec-builder routes any input format into one contract, then inside the harness frame rules and hooks come down into the agents while state feeds in from the left and skills are wired in from the right, and three ordered outputs leave below - docs with a graph, a plan, and code with a graph - with the harness viewer underneath" width="960">
+  <img src="docs/assets/harness-loom.svg" alt="The harness drawn as a loom. On the left, input arrives as the forms it really comes in: a one-line idea, a meeting transcript, legacy documents, an existing repo, an empty repo, half-written specs. Tangled threads carry them into spec-builder, which routes any format into one contract. Inside the harness-bootstrap frame, rules and hooks come down into the agents, while a skill rail on the right finds skills that match the project's tech stack and wires a chosen one to the agent that needs it. Three ordered outputs leave below - docs with a graph, a plan, and code with a graph - state at the foot of the frame holds the prompt, run history and task board, and the harness viewer underneath reads that state to show, score, toggle and watch the whole control plane" width="960">
 </p>
 
 A loom is the honest picture. Threads go in tangled and cloth comes out, and nothing about that is

@@ -70,6 +70,13 @@ jobs:
       - name: Embedded page JavaScript must parse
         run: python scripts/check_js.py
 
+      # A figure fails silently: it renders as a blank box, or as a box with a
+      # missing connection, and nothing errors. All three checks here are a
+      # failure that shipped - text that only existed once an animation ran, an
+      # external font that never loaded, and an output box no arrow reached.
+      - name: Figures must be self-contained and fully connected
+        run: python scripts/check_svg.py
+
       # The application icon is compiled into the Windows .exe by build.rs. A missing or
       # truncated icon.ico fails that build on the release runner, long after the commit
       # that broke it; this catches it on the PR instead.
