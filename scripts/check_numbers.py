@@ -277,16 +277,24 @@ def main() -> int:
         if SKIP_PARTS & set(p.parts):
             continue
         text = p.read_text(encoding="utf-8")
-        # Blank out inline code spans. A figure in backticks is a quotation - a changelog entry
-        # naming the wrong number it fixed, for instance - not a claim the repo is making. Skip
-        # the regex entirely when there is no backtick to blank - cheap and exact, same result.
-        if "`" in text:
-            text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
         # A shields.io badge URL escapes its slash as %2F, so "107%2F107" hid from the
         # pair regex below. The README carried 38/40 in the image while its own alt text
         # said 107/107, and this checker saw only the alt text. This shifts character
-        # offsets but adds no newline, so the reported line numbers stay correct.
+        # offsets but adds no newline, so the reported line numbers stay correct. Done
+        # before the blanking below so raw and text stay offset-aligned.
         text = text.replace("%2F", "/").replace("%2f", "/")
+        # Blank out inline code spans. A figure in backticks is a quotation - a changelog entry
+        # naming the wrong number it fixed, for instance - not a claim the repo is making. Skip
+        # the regex entirely when there is no backtick to blank - cheap and exact, same result.
+        #
+        # `raw` keeps the spans, because blanking them also erased the words that IDENTIFY a
+        # claim. "`port.py --self-test` is 5/5" lost its subject and read as a bare pair, so a
+        # stale figure sat in the release skill's own quality gate while this checker was green.
+        # Blanking replaces each span with spaces of equal length, so the two share offsets:
+        # match on `text` (a backticked figure is still not a claim), read context from `raw`.
+        raw = text
+        if "`" in text:
+            text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
         rel = p.relative_to(ROOT).as_posix()
         text_lower = text.lower()
         # The shields badge states the suite result outright, so both halves must be the
@@ -299,11 +307,15 @@ def main() -> int:
                 print(f"    MISMATCH  {rel}:{line}  guardrail eval badge: says {a}/{b}, "
                       f"reality is {c['eval_cases']}/{c['eval_cases']}")
                 bad += 1
+        # A changelog entry states what was true at ITS release: "5/5" in an older section is a
+        # correct historical record, not a stale claim, and rewriting it would falsify the
+        # history. Current-state documents get no such exemption.
+        historical = rel.endswith("CHANGELOG.md")
         # Eval badge in prose: "26/26" near eval-ish words is a claim about the suite. This drifted
         # across fifteen files at once while only the media files were scanned.
-        for m in EVAL_PAIR.finditer(text):
+        for m in (() if historical else EVAL_PAIR.finditer(text)):
             a, b = int(m.group(1)), int(m.group(2))
-            ctx = text[max(0, m.start() - 120):m.start() + 60].lower()
+            ctx = raw[max(0, m.start() - 120):m.start() + 60].lower()
             if a == b and a != c["eval_cases"] and a != 2 * c["eval_cases"] \
                     and re.search(r"eval|guardrail|payload|forbidden|permitted|judged|"
                                   r"floor hold|proof|禁止|許可|bị cấm", ctx) \
@@ -314,9 +326,9 @@ def main() -> int:
                       f"{c['eval_cases']}/{c['eval_cases']}")
                 bad += 1
         # The adapter self-test result, wherever it is quoted next to what produced it.
-        for m in ADAPTER_PAIR.finditer(text):
+        for m in (() if historical else ADAPTER_PAIR.finditer(text)):
             a, b = int(m.group(1)), int(m.group(2))
-            ctx = text[max(0, m.start() - 130):m.start() + 70].lower()
+            ctx = raw[max(0, m.start() - 130):m.start() + 70].lower()
             if a == b and a != c["adapter_cases"] \
                     and re.search(r"adapter|port\.py|--self-test", ctx) \
                     and not re.search(r"->|→|\bwas\b|from", ctx):
