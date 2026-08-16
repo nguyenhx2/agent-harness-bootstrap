@@ -6,6 +6,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.12.1] - 2026-08-16
+
+### Fixed
+
+- The Cursor adapter no longer crashes on macOS and Linux. It invoked PowerShell as `powershell`,
+  a name that exists only on Windows, so every tool call raised a traceback and the guard never
+  ran. It now resolves the interpreter at run time and fails closed when none exists.
+- `port.py --self-test` covers both halves of that behaviour: the adapter must offer every
+  interpreter name its platform may use, and must deny a call it cannot evaluate.
+
 ## [1.12.0] - 2026-08-16
 
 ### Fixed

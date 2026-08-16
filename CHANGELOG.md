@@ -5,6 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.12.1
+
+A patch release. v1.12.0 shipped a Cursor adapter that could not run outside Windows, and a set of
+published figures that had drifted away from the suites they describe.
+
+### Fixed
+
+- **The ported Cursor adapter crashed on macOS and Linux.** It invoked PowerShell by the name
+  `powershell`, which exists only on Windows; everywhere else the binary is `pwsh`. A harness
+  ported to Cursor and then opened on another machine raised a traceback on every tool call, so
+  the guard never ran. It now tries every candidate name, and denies with an actionable message
+  when none is present rather than allowing the call it could not evaluate.
+- **Eight published figures contradicted the suites they describe.** The eval split was quoted as
+  "15 must-block, 25 must-allow" beside a 107/107 the pair does not add up to, the port adapter
+  self-test as 5/5 for a suite of 18, and Baseline A as 15 payloads of 69 when it replays 22 of
+  107. Each figure now has a constant that its own script asserts on every run.
+- **The figure checker could not see a claim whose subject sat in backticks.** It blanked inline
+  code spans before building context, which erased the words identifying what a number referred
+  to. That is why "5/5" survived in the release skill's own quality gate.
+
+Guardrail eval: 107/107 per hook flavour, 214/214 across both. Port adapter self-test: 18/18.
+
 ## v1.12.0
 
 A security audit of both skills found three controls that were installed but never wired, and this
