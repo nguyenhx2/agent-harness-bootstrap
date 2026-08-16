@@ -31,7 +31,7 @@
   </a>
 </p>
 
-<p align="center"><i>プロダクト全体を1本のクリップで。</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">ギャラリーで全編を見る</a></b> - クリップ6本、音声なしキャプション付き、ダウンロード不要。</p>
+<p align="center"><i>プロダクト全体を1本のクリップで。</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">ギャラリーで全編を見る</a></b> - クリップ7本、音声なしキャプション付き、ダウンロード不要。</p>
 
 - **[`spec-builder`](spec-builder/)** は、あなたとAIが共に理解できるものを作る - アイデア、書き起こし、
   議事録、あるいは既存の古いドキュメントの山から、安定した要件IDと受け入れ基準を持つ番号付きセクションの

@@ -31,7 +31,7 @@ coding agent:
   </a>
 </p>
 
-<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set in the gallery</a></b> - six clips, sound-free captions, no download.</p>
+<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set in the gallery</a></b> - seven clips, sound-free captions, no download.</p>
 
 - **[`spec-builder`](spec-builder/)** creates the thing you and the AI both understand - one shared
   voice, built from an idea, a transcript, meeting notes, or a pile of legacy docs, into a contract
@@ -408,7 +408,7 @@ agent-harness-bootstrap
 
 Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)
 (EN / VI / JP) and the [video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
-(six clips, captions, no download).
+(seven clips, captions, no download).
 
 **Numbers**, measured against the predecessor skill this replaces - reproduce with
 `python benchmark/benchmark.py`:

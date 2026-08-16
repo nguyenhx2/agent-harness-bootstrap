@@ -179,7 +179,9 @@ MEDIA_CHECKS = [
 ]
 # "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
 # far from the canonical count (a video timestamp, a score in an example) is not either.
-EVAL_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
+# The optional spaces matter. A clip rendered the eval result as "26 / 26" and this regex,
+# which demanded a tight slash, walked past it for four releases while the suite grew to 107.
+EVAL_PAIR = re.compile(r"\b(\d{1,3}) ?/ ?(\d{1,3})\b")
 
 # The guardrail-eval shields badge, whose numbers are a direct claim about the suite.
 # It needs its own check because the prose rule above only looks at EQUAL pairs, to
@@ -211,7 +213,7 @@ BENCH_CHECKS = [
 # The port adapter's self-test result. It needs its own rule because the prose pair rule below
 # deliberately EXCLUDES any pair whose context mentions an adapter or a self-test - which is why
 # "5/5" survived in three places while the suite grew to 18.
-ADAPTER_PAIR = re.compile(r"\b(\d{1,3})/(\d{1,3})\b")
+ADAPTER_PAIR = re.compile(r"\b(\d{1,3}) ?/ ?(\d{1,3})\b")
 
 BYTE_CHECKS = [
     ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
