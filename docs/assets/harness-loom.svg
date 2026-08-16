@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="782" viewBox="0 0 1200 782" role="img" aria-labelledby="loom-title loom-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="loom-title">The harness is a loom: tangled intent in, ordered work out</title>
+  <desc id="loom-desc">An overview of the whole system, drawn as a loom. On the left, loose multicoloured threads stand for raw intent and an unmanaged agent: whatever the user asks for, in whatever shape it arrives. Those threads pass through spec-builder, which routes any input format into one contract written to international standards. They then enter the Harness, drawn as a large frame. Inside the frame, rules and hooks come down from above into the agents at the centre: rules carry conventions such as conventional commits and protecting secrets, and hooks fire before and after a tool call. State, meaning the prompt and the run history, sits to the left of the agents. To the right sit skills, fed by skill discovery, which reads the project manifests to work out the stack: Python requirements and Pipfile and poetry and uv, Ruby Gemfile and gemspec, dotnet and NuGet project and package files, Java and Kotlin gradle files, and monorepo markers for pnpm workspaces, turbo and nx. Skill wire then connects a chosen skill to the agent that needs it. The agents are the narrow waist of the loom where everything is woven together, and out of it come three ordered outputs in a single colour: documents with a graph, which carry stable identifiers such as FR and BR, a plan of tasks with owners, and code with a graph. Below the frame sits the harness viewer, which renders the whole control plane and lets any part of it be switched off on demand. The point of the picture is that chaos goes in and controlled, inspectable work comes out.</desc>
+
+  <defs>
+    <radialGradient id="waist" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD79A" stop-opacity="0.55"/>
+      <stop offset="45%" stop-color="#F2A33C" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#F2A33C" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="heat" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#A75FA8"/>
+      <stop offset="50%" stop-color="#F2A33C"/>
+      <stop offset="100%" stop-color="#6FB8F5"/>
+    </linearGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#6FB8F5"/>
+    </marker>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#F2A33C"/>
+    </marker>
+    <marker id="ard" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#93A4C0"/>
+    </marker>
+
+    <style>
+      /* Every element below is fully drawn and fully opaque WITHOUT animation.
+         The animation only nudges what is already there: dashes drift, the ring
+         turns, a pulse slides. This is deliberate. GitHub renders a README image
+         in an img context that does not run the animation clock, and an earlier
+         asset in this repo whose text depended on its animation shipped as an
+         empty box. Visibility is never something an animation grants here. */
+      .drift  { animation: drift 9s linear infinite; }
+      .drift2 { animation: drift 13s linear infinite; }
+      .ring   { animation: spin 26s linear infinite; transform-origin: 560px 352px; }
+      .ring2  { animation: spin 38s linear infinite reverse; transform-origin: 560px 352px; }
+      /* The travelling pulses move via CSS offset-path, not SMIL animateMotion.
+         SMIL is deliberately avoided here: a media query cannot switch it off,
+         so a reduced-motion reader would still get travelling dots. Everything
+         that moves in this file is driven by a CSS animation for exactly that
+         reason. Base state is offset-distance 0 and opacity 0, so a frozen
+         clock shows no stray dots at all. */
+      .pulse, .pulse2, .pulse3 { offset-rotate: 0deg; }
+      .pulse  { offset-path: path("M14,318 C120,340 240,352 486,352");
+                animation: travel 7s ease-in-out infinite; }
+      .pulse2 { offset-path: path("M634,352 C700,352 760,420 800,470");
+                animation: travel 7s ease-in-out infinite 2.3s; }
+      .pulse3 { offset-path: path("M560,378 C560,420 560,440 560,470");
+                animation: travel 7s ease-in-out infinite 4.6s; }
+      .breathe{ animation: breathe 5s ease-in-out infinite; }
+
+      @keyframes drift   { to { stroke-dashoffset: -44; } }
+      @keyframes spin    { to { transform: rotate(360deg); } }
+      @keyframes breathe { 0%,100% { opacity: .30; } 50% { opacity: .62; } }
+      @keyframes travel  {
+        0%       { offset-distance: 0%;   opacity: 0; }
+        8%, 52%  { opacity: .95; }
+        60%,100% { offset-distance: 100%; opacity: 0; }
+      }
+
+      /* Graceful degradation, not a kill switch: the loom stops turning and the
+         pulses stop travelling, but no labelled element moves or vanishes,
+         because the resting state was already the complete picture. Reduced
+         motion lands on exactly the same frame GitHub's img context shows. */
+      @media (prefers-reduced-motion: reduce) {
+        .drift, .drift2, .ring, .ring2, .breathe {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+        .pulse, .pulse2, .pulse3 { animation: none !important; }
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="782" fill="#0E1424"/>
+
+  <!-- ===== title ===== -->
+  <text x="40" y="40" font-size="21" font-weight="700" fill="#E8EEF9">The harness is a loom</text>
+  <text x="40" y="64" font-size="13" fill="#93A4C0">Tangled intent goes in on the left. Ordered, inspectable work comes out. Everything between is the harness.</text>
+
+  <!-- ===== LEFT: the tangle ===== -->
+  <g fill="none" stroke-width="2" stroke-linecap="round" opacity="0.75">
+    <path class="drift"  d="M14,150 C60,180 40,230 92,246 C132,258 120,300 150,330" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="drift2" d="M14,206 C70,214 44,272 104,286 C138,294 122,326 150,346" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+    <path class="drift"  d="M14,262 C58,286 52,300 100,318 C130,330 126,342 150,358" stroke="#C98A3A" stroke-dasharray="8 4"/>
+    <path class="drift2" d="M14,318 C66,318 48,342 106,350 C132,354 128,358 150,364" stroke="#5A7FD4" stroke-dasharray="5 7"/>
+    <path class="drift"  d="M14,374 C60,362 46,392 104,378 C134,370 126,378 150,372" stroke="#A75FA8" stroke-dasharray="7 5"/>
+    <path class="drift2" d="M14,430 C70,414 44,430 104,404 C136,392 124,392 150,382" stroke="#3FA9A0" stroke-dasharray="6 6"/>
+    <path class="drift"  d="M14,486 C58,458 52,452 100,428 C132,412 124,404 150,390" stroke="#C98A3A" stroke-dasharray="8 4"/>
+    <path class="drift2" d="M14,542 C66,500 48,478 106,444 C136,424 124,414 150,398" stroke="#5A7FD4" stroke-dasharray="5 7"/>
+  </g>
+  <text x="14" y="586" font-size="12" font-weight="700" fill="#B79ACB">RAW INTENT</text>
+  <text x="14" y="604" font-size="11" fill="#7C8AA6">an idea, a transcript,</text>
+  <text x="14" y="620" font-size="11" fill="#7C8AA6">legacy docs, a bare repo</text>
+
+  <!-- ===== spec-builder, outside the harness ===== -->
+  <rect x="150" y="318" width="176" height="84" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="2"/>
+  <text x="238" y="344" font-size="14" font-weight="700" fill="#E8EEF9" text-anchor="middle">spec-builder</text>
+  <text x="238" y="364" font-size="10.5" fill="#93A4C0" text-anchor="middle">format routing for tool call</text>
+  <text x="238" y="380" font-size="10.5" fill="#93A4C0" text-anchor="middle">use international standards</text>
+  <text x="238" y="394" font-size="10" fill="#6FB8F5" text-anchor="middle">one contract you and the AI share</text>
+  <path d="M326,360 L344,360" stroke="#6FB8F5" stroke-width="2.5" marker-end="url(#ar)"/>
+
+  <!-- ===== the harness frame ===== -->
+  <rect x="346" y="92" width="832" height="556" rx="14" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
+  <text x="762" y="86" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">HARNESS</text>
+
+  <!-- rules -->
+  <rect x="452" y="124" width="132" height="42" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="518" y="150" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Rule(s)</text>
+  <rect x="366" y="184" width="200" height="44" rx="8" fill="#151E36" stroke="#3B5478" stroke-width="1"/>
+  <text x="378" y="203" font-size="10.5" fill="#93A4C0">conventional commits,</text>
+  <text x="378" y="219" font-size="10.5" fill="#93A4C0">protect secrets, scoped by path</text>
+  <path d="M478,166 L452,184" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
+
+  <!-- hooks -->
+  <rect x="628" y="124" width="132" height="42" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="694" y="150" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Hook(s)</text>
+  <path d="M668,166 L646,190" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
+  <path d="M720,166 L742,190" stroke="#3B5478" stroke-width="1.2" marker-end="url(#ard)"/>
+  <text x="640" y="206" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Pre</text>
+  <text x="748" y="206" font-size="11" font-weight="700" fill="#93A4C0" text-anchor="middle">Post</text>
+  <text x="694" y="226" font-size="10" fill="#7C8AA6" text-anchor="middle">exit 2 blocks the call</text>
+
+  <!-- skill discovery panel -->
+  <rect x="800" y="104" width="366" height="152" rx="10" fill="#151E36" stroke="#3B5478" stroke-width="1.2"/>
+  <text x="983" y="124" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Discovery</text>
+  <text x="983" y="140" font-size="10" fill="#7C8AA6" text-anchor="middle">reads the manifests, works out the stack</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#93A4C0">
+    <text x="812" y="160">Python: requirements*.txt, Pipfile, poetry.lock, uv.lock</text>
+    <text x="812" y="175">Ruby: Gemfile, Gemfile.lock, *.gemspec</text>
+    <text x="812" y="190">.NET / NuGet: *.fsproj, Directory.Packages.props,</text>
+    <text x="812" y="204">packages.lock.json, nuget.config</text>
+    <text x="812" y="219">Java / Kotlin: build.gradle, build.gradle.kts,</text>
+    <text x="812" y="233">settings.gradle*</text>
+    <text x="812" y="248">Monorepo: pnpm-workspace.yaml, turbo.json, nx.json</text>
+  </g>
+
+  <!-- state -->
+  <rect x="366" y="330" width="106" height="48" rx="8" fill="#1B2540" stroke="#3B5478" stroke-width="1.2"/>
+  <text x="419" y="350" font-size="12" font-weight="700" fill="#E8EEF9" text-anchor="middle">State</text>
+  <text x="419" y="368" font-size="10" fill="#93A4C0" text-anchor="middle">prompt, history</text>
+
+  <!-- ===== THE WAIST: agents ===== -->
+  <circle cx="560" cy="352" r="104" fill="url(#waist)" class="breathe"/>
+  <g fill="none" stroke="#F2A33C" stroke-width="1.2" opacity="0.5">
+    <circle class="ring"  cx="560" cy="352" r="80" stroke-dasharray="10 12"/>
+    <circle class="ring2" cx="560" cy="352" r="94" stroke-dasharray="4 16"/>
+  </g>
+
+  <!-- threads converging into the waist -->
+  <g fill="none" stroke-width="1.6" opacity="0.62">
+    <path d="M472,354 C500,354 508,352 518,352" stroke="#A75FA8"/>
+    <path d="M346,300 C420,300 470,330 512,344" stroke="#3FA9A0"/>
+    <path d="M346,420 C420,420 470,382 512,362" stroke="#C98A3A"/>
+    <path d="M518,166 C518,240 530,300 546,326" stroke="#5A7FD4"/>
+    <path d="M694,236 C694,290 620,320 596,332" stroke="#6FB8F5"/>
+    <path d="M676,352 C650,352 630,352 610,352" stroke="#6FB8F5"/>
+  </g>
+
+  <rect x="486" y="326" width="148" height="52" rx="10" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
+  <text x="560" y="349" font-size="15" font-weight="700" fill="#1A1206" text-anchor="middle">Agent(s)</text>
+  <text x="560" y="367" font-size="10" fill="#4A3208" text-anchor="middle">the weave point</text>
+
+  <!-- Travelling pulses, garnish only. Nothing here is labelled and nothing
+       here carries meaning: if the clock never runs, the picture is unchanged. -->
+  <circle class="pulse"  cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
+  <circle class="pulse2" cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
+  <circle class="pulse3" cx="0" cy="0" r="3.2" fill="#FFD79A" opacity="0"/>
+
+  <!-- skills -->
+  <rect x="676" y="330" width="112" height="46" rx="8" fill="#1B2540" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="732" y="358" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill(s)</text>
+  <path d="M760,330 C790,300 800,280 812,258" stroke="#3B5478" stroke-width="1.4" fill="none" marker-end="url(#ard)"/>
+
+  <!-- skill wire -->
+  <rect x="828" y="322" width="188" height="62" rx="10" fill="#151E36" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="922" y="344" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Skill Wire</text>
+  <text x="922" y="361" font-size="10" fill="#93A4C0" text-anchor="middle">wire an agent to the skill</text>
+  <text x="922" y="376" font-size="10" fill="#6FB8F5" text-anchor="middle">you pick what gets installed</text>
+  <path d="M788,352 L826,352" stroke="#6FB8F5" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+
+  <!-- ===== ordered output: one colour, parallel ===== -->
+  <g fill="none" stroke="#6FB8F5" stroke-width="2" opacity="0.85">
+    <path d="M528,378 C520,420 500,436 476,470" marker-end="url(#ar)"/>
+    <path d="M560,378 L560,470" marker-end="url(#ar)"/>
+    <path d="M596,378 C606,420 630,436 660,470" marker-end="url(#ar)"/>
+  </g>
+
+  <rect x="382" y="470" width="188" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="476" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Docs with Graph</text>
+  <text x="476" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">traceable, one defining home</text>
+
+  <rect x="588" y="470" width="150" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="663" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Plan</text>
+  <text x="663" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">task, owner, status</text>
+
+  <rect x="756" y="470" width="150" height="54" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.5"/>
+  <text x="831" y="492" font-size="12.5" font-weight="700" fill="#E8EEF9" text-anchor="middle">Code with Graph</text>
+  <text x="831" y="510" font-size="10" fill="#93A4C0" text-anchor="middle">who owns which module</text>
+
+  <path d="M476,524 L476,548" stroke="#3B5478" stroke-width="1.4" fill="none" marker-end="url(#ard)"/>
+  <text x="476" y="566" font-size="11" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#93A4C0" text-anchor="middle">ID: FR-01, BR-04, NFR-SEC-02</text>
+
+  <text x="762" y="600" font-size="11" fill="#7C8AA6" text-anchor="middle">Same colour, same direction: the output is ordered because the frame made it so.</text>
+
+  <!-- ===== viewer band, below the frame ===== -->
+  <rect x="346" y="668" width="832" height="58" rx="12" fill="#17203A" stroke="#F2A33C" stroke-width="1.5"/>
+  <text x="366" y="694" font-size="13" font-weight="700" fill="#FFD79A">Harness Viewer</text>
+  <text x="366" y="712" font-size="11" fill="#93A4C0">See the whole weave, score it, and switch any single thread off on demand. No model in the loop.</text>
+  <path d="M762,648 L762,666" stroke="#F2A33C" stroke-width="1.6" fill="none" marker-end="url(#arw)"/>
+
+  <text x="40" y="700" font-size="11" font-weight="700" fill="#6FB8F5">ORDER, NOT LUCK</text>
+  <text x="40" y="718" font-size="10.5" fill="#7C8AA6">Guardrails are shell</text>
+  <text x="40" y="733" font-size="10.5" fill="#7C8AA6">scripts and exit codes,</text>
+  <text x="40" y="748" font-size="10.5" fill="#7C8AA6">not the model's judgment.</text>
+</svg>

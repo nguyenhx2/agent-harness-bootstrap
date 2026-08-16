@@ -54,6 +54,42 @@ coding agent:
 
 ---
 
+## 🧵 How it all fits together
+
+<p align="center">
+  <img src="docs/assets/harness-loom.svg" alt="The harness drawn as a loom: raw intent enters as loose tangled threads on the left, spec-builder routes any input format into one contract, then inside the harness frame rules and hooks come down into the agents while state feeds in from the left and skills are wired in from the right, and three ordered outputs leave below - docs with a graph, a plan, and code with a graph - with the harness viewer underneath" width="960">
+</p>
+
+A loom is the honest picture. Threads go in tangled and cloth comes out, and nothing about that is
+magic: the frame is what makes the difference. Everything inside the blue box is frame.
+`spec-builder` sits outside it and does one job, turning whatever you brought (an idea, a
+transcript, legacy docs, a bare repo) into one contract written to international standards. Inside,
+rules and hooks come down into the agents, state and skills feed in from either side, and what
+leaves the waist is the same three things every time, all carrying stable IDs.
+
+The point of the drawing is the colour. Going in, every thread is a different colour and none of
+them are parallel. Coming out they are one colour, running the same direction. That is the whole
+claim of this repo, and it is a claim about the frame, not about the model.
+
+### Seeing the weave
+
+The harness is not a diagram you take on trust. `harness-view` renders the real thing from
+`.claude/state/harness-graph.json`, and every node is a file you can open.
+
+<p align="center">
+  <img src="docs/assets/harness-view-flow.png" alt="harness-view Flow view of a real project: rules on the left feeding through hooks into agent seats and converging on a merge gate" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 64 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and a findings list naming each problem" width="900">
+</p>
+
+Both are a real harness, not a mock-up: 172 nodes, 505 edges, scored 64/100 by the deterministic
+assess engine. No model is involved in that score, so a browser and a CI run cannot disagree
+about it.
+
+---
+
 ## 📋 What `spec-builder` produces
 
 Not prose retyped from scratch each time - a fixed structure of numbered sections under
@@ -405,6 +441,14 @@ break a machine that lacks it. The wrapper also refuses to hand rtk any command 
 inspect, so a compressor cannot become the reason a guard did not fire.
 
 Neither project endorses this one.
+
+The overview figure borrows its central idea from the Temporal Loom in the Marvel Cinematic
+Universe: a machine that takes tangled, divergent threads and weaves them into something ordered
+and inspectable. Only the idea was borrowed. No Marvel artwork was copied, traced or embedded, and
+the figure is drawn from scratch. Reference:
+[Temporal Loom](https://marvelcinematicuniverse.fandom.com/wiki/Temporal_Loom) on the Marvel
+Cinematic Universe Wiki. Marvel and Disney do not endorse this project.
+
 
 ## 👤 Who made this
 
