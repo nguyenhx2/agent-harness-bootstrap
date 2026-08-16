@@ -405,7 +405,7 @@ Every claim above traces to a file in this repository:
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`, `hooks/README.md` - the SubagentStop archive.
 - `harness-bootstrap/reference/cost-model.md` - path-scoped rules, byte-stability, `maxTurns`.
 - `benchmark/RESULTS.md` - the 67% figure.
-- `eval/guardrail_eval.py` - 33/33.
+- `eval/guardrail_eval.py` - 107/107.
 - `docs/ASSESSMENT.md` - what is enforced, what is advisory, and why routing cannot be hooked.
 
 External:
