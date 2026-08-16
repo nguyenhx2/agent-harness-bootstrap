@@ -93,7 +93,7 @@ class Layers(Scene):
 
         # model swap Opus -> Haiku, identical result
         model = chip("Opus", PURPLE, PURPLE_HI, fs=26, h=0.85, w=2.4).move_to([2.2, 0.7, 0])
-        result = chip("26 / 26", GREEN, GREEN_HI, fs=30, h=0.9, w=2.6).move_to([2.2, -1.2, 0])
+        result = chip("107 / 107", GREEN, GREEN_HI, fs=30, h=0.9, w=3.4).move_to([2.2, -1.2, 0])
         res_label = Text("guardrail eval", font=FONT, font_size=20, color=DIM).next_to(result, DOWN, buff=0.2)
         arrow = Arrow(model.get_bottom(), result.get_top(), buff=0.2, color=DIM, stroke_width=3)
 

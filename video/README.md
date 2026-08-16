@@ -1,21 +1,21 @@
 # Explainer clips
 
-Six explainer clips for **Agent Harness Bootstrap**, each delivered as an MP4 (rendered with Manim)
-and a self-contained HTML animation. Core message across all six:
+Seven explainer clips for **Agent Harness Bootstrap**, each delivered as an MP4 (rendered with Manim)
+and a self-contained HTML animation. Core message across all seven:
 
 > Give an AI agent a repo it can actually understand, and a harness it cannot escape.
 
 Every claim is taken from `README.md` and `docs/FLOWS.md`. Nothing is invented.
 
 **Watch online** (plays in the browser, no download): <https://nguyenhx2.github.io/agent-harness-bootstrap/video/>
-The clips are served by GitHub Pages, and [`index.html`](index.html) is the gallery that embeds all six.
+The clips are served by GitHub Pages, and [`index.html`](index.html) is the gallery that embeds all seven.
 
 Every clip is captioned, because playback is muted by default. A viewer with no audio can follow the
 whole clip from the burned-in captions alone.
 
 ## The set
 
-Start with **04 solution** - it is the whole product in one clip. The other five go deeper.
+Start with **04 solution** - it is the whole product in one clip. The other six go deeper.
 
 | Clip | Length | MP4 (1080p) | HTML | What it says |
 |---|---:|---|---|---|
@@ -25,6 +25,7 @@ Start with **04 solution** - it is the whole product in one clip. The other five
 | 03 layers | ~32s | [`mp4/03-layers.mp4`](mp4/03-layers.mp4) | [`html/03-layers.html`](html/03-layers.html) | The control layers: deny list, hooks, the spawn boundary, path-scoped rules, review gates. The guardrails are shell scripts and glob rules, so Opus to Haiku is byte-identical safety. State lives on disk. Ports with enforcement. |
 | 05 spec-builder | ~58s | [`mp4/05-spec-builder.mp4`](mp4/05-spec-builder.mp4) | [`html/05-spec-builder.html`](html/05-spec-builder.html) | spec-builder in depth, mirroring [`docs/FLOWS.md`](../docs/FLOWS.md) diagram 5: raw input, elicit, confirm the FR list FIRST, scaffold the 13 sections, fill in order, traceability check, and the rule that nothing is invented - anything unstated becomes a flagged AS-nn or OI-nn. |
 | 06 harness-bootstrap | ~68s | [`mp4/06-harness-bootstrap.mp4`](mp4/06-harness-bootstrap.mp4) | [`html/06-harness-bootstrap.html`](html/06-harness-bootstrap.html) | harness-bootstrap in depth, mirroring [`docs/FLOWS.md`](../docs/FLOWS.md) diagram 2: mode, the mandatory codebase analysis and Inventory Report, intake plus the tool questionnaire, a roster with explicit model and effort, skills matched to the detected stack and reviewed before they are ever suggested, wired in once you choose them, the scaffold reporting ADDED / KEPT / CONFLICT without ever clobbering, orchestration wiring, and building both knowledge graphs with their HTML exports. |
+| 07 skills and view | ~39s | [`mp4/07-skills-and-view.mp4`](mp4/07-skills-and-view.mp4) | [`html/07-skills-and-view.html`](html/07-skills-and-view.html) | The operating flow of [`docs/assets/harness-loom.svg`](../docs/assets/harness-loom.svg) end to end, then the three mechanisms that keep it honest and the problem each one solves: Skill Discovery reads this project's manifests to find skills matching its stack, Skill Wire connects a chosen skill to the agent seat that needs it, and harness-view answers whether any of it is actually wired right. |
 
 Lengths are rounded from `ffprobe`; re-check them with the probe command below.
 

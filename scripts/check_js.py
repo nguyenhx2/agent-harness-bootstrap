@@ -38,8 +38,15 @@ SOURCES = [
     # edited by figure propagation, which reaches into object literals by hand.
     # A broken quote there would ship silently: nothing else parses this file.
     "presentation/index.html",
-    "video/html/04-solution.html",
-    "video/html/ja/04-solution.html",
+]
+
+# Every clip carries its own inline timeline. These are globbed rather than listed,
+# because a hand-maintained list only covers the files someone remembered to add:
+# clip 07 was written, shipped, and checked green while its JavaScript was never
+# parsed at all. A glob cannot forget a new clip.
+SOURCE_GLOBS = [
+    "video/html/*.html",
+    "video/html/ja/*.html",
 ]
 
 SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
@@ -66,7 +73,11 @@ def main() -> int:
 
     problems = 0
     checked = 0
-    for rel in SOURCES:
+    targets = list(SOURCES)
+    for pattern in SOURCE_GLOBS:
+        targets.extend(sorted(p.relative_to(ROOT).as_posix()
+                              for p in ROOT.glob(pattern)))
+    for rel in targets:
         path = ROOT / rel
         if not path.is_file():
             print(f"  [warn] {rel} is missing - skipped")
