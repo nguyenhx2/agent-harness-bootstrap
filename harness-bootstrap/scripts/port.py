@@ -116,6 +116,12 @@ CURSOR_ADAPTER = r'''#!/usr/bin/env python3
 # Cursor's {"permission": ...} output. Do not edit by hand; re-run port.py to regenerate.
 import json, subprocess, sys, pathlib
 
+# Filled in by port.py from the harness that was actually scaffolded. A windows harness ships
+# only .ps1 hooks, and an adapter that looked for .sh found nothing, skipped every hook, and
+# returned allow for everything while the command printed that it blocked.
+HOOK_EXT = "__HOOK_EXT__"
+HOOK_RUNNER = __HOOK_RUNNER__
+
 event = sys.argv[1] if len(sys.argv) > 1 else ""
 try:
     payload = json.load(sys.stdin)
@@ -135,15 +141,19 @@ elif event == "read":
     claude = {"cwd": cwd, "tool_name": "Read",
               "tool_input": {"file_path": payload.get("file_path", "")}}
     names = ["protect-adr", "protect-secrets"]
+elif event == "edit":
+    claude = {"cwd": cwd, "tool_name": "Edit",
+              "tool_input": {"file_path": payload.get("file_path", "")}}
+    names = ["protect-adr", "protect-secrets"]
 else:
     print(json.dumps({"permission": "allow"})); sys.exit(0)
 
 blob = json.dumps(claude)
 for name in names:
-    rel = f".claude/hooks/{name}.sh"
+    rel = f".claude/hooks/{name}.{HOOK_EXT}"
     if not (pathlib.Path(cwd) / rel).is_file():
         continue
-    r = subprocess.run(["bash", rel], input=blob, capture_output=True, text=True, cwd=cwd)
+    r = subprocess.run([*HOOK_RUNNER, rel], input=blob, capture_output=True, text=True, cwd=cwd)
     if r.returncode == 2:  # the hook blocked
         print(json.dumps({"permission": "deny",
                           "user_message": (r.stderr.strip() or f"{name} blocked this action.")}))
@@ -177,15 +187,21 @@ def port_codex_hooks(claude_hooks: pathlib.Path, dest: pathlib.Path, ext: str) -
     return out
 
 
-def port_cursor_hooks(dest: pathlib.Path) -> list[pathlib.Path]:
+def port_cursor_hooks(dest: pathlib.Path, ext: str) -> list[pathlib.Path]:
     dest.mkdir(parents=True, exist_ok=True)
     adapter = dest / "cursor-adapter.py"
-    adapter.write_text(CURSOR_ADAPTER, encoding="utf-8")
+    runner = ["bash"] if ext == "sh" else [
+        "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+    body = (CURSOR_ADAPTER
+            .replace("__HOOK_EXT__", ext)
+            .replace("__HOOK_RUNNER__", repr(runner)))
+    adapter.write_text(body, encoding="utf-8")
     reg = {
         "version": 1,
         "hooks": {
             "beforeShellExecution": [{"command": f"python3 .cursor/hooks/{adapter.name} shell"}],
             "beforeReadFile": [{"command": f"python3 .cursor/hooks/{adapter.name} read"}],
+            "afterFileEdit": [{"command": f"python3 .cursor/hooks/{adapter.name} edit"}],
         },
     }
     regfile = dest.parent / "hooks.json"
@@ -196,10 +212,20 @@ def port_cursor_hooks(dest: pathlib.Path) -> list[pathlib.Path]:
 # --------------------------------------------------------------------------- self-test
 
 def self_test() -> int:
+    """Both flavors. Posix-only coverage is why a windows harness once produced a Cursor adapter
+    that allowed everything while the command printed that it blocked."""
+    rc = 0
+    for flavor in ("posix", "windows"):
+        rc |= self_test_flavor(flavor)
+    return rc
+
+
+def self_test_flavor(flavor: str) -> int:
     """Run the Cursor adapter logic against the documented sample payloads, in a temp harness, so
-    the translation is exercised rather than trusted. Needs bash and a scaffolded harness on disk;
-    if neither is present, this reports SKIP rather than a false pass."""
+    the translation is exercised rather than trusted. Needs a runner and a scaffolded harness on
+    disk; if neither is present, this reports SKIP rather than a false pass."""
     import shutil
+    ext = "sh" if flavor == "posix" else "ps1"
     here = pathlib.Path(__file__).resolve().parent
     scaffold = here / "scaffold.py"
     if not scaffold.is_file():
@@ -208,7 +234,7 @@ def self_test() -> int:
     # Scaffold into a workdir next to this script, not the system temp dir: on Windows the bash that
     # runs the hooks may not share a filesystem view with a Python temp dir, which would make the
     # hooks look broken when they are fine.
-    wd = here.parent / ".port-selftest"
+    wd = here.parent / f".port-selftest-{flavor}"
     def _force(fn, path, _e):
         import os as _os
         _os.chmod(path, 0o700); fn(path)
@@ -218,7 +244,12 @@ def self_test() -> int:
     try:
         repo = wd / "repo"
         vars_json = wd / "vars.json"
-        vars_json.write_text(json.dumps(_TEST_VARS), encoding="utf-8")
+        payload = json.loads(json.dumps(_TEST_VARS))   # deep copy per flavor
+        payload["flags"] = [f for f in payload["flags"] if f not in ("posix", "windows")] + [flavor]
+        payload["vars"]["HOOK_RUNNER"] = (
+            "bash" if ext == "sh" else "powershell -NoProfile -ExecutionPolicy Bypass -File")
+        payload["vars"]["HOOK_EXT"] = ext
+        vars_json.write_text(json.dumps(payload), encoding="utf-8")
         r = subprocess.run([sys.executable, str(scaffold), "--target", str(repo),
                             "--vars", str(vars_json)], capture_output=True, text=True)
         if r.returncode != 0:
@@ -231,9 +262,25 @@ def self_test() -> int:
                   ["git", "commit", "-qm", "init"]):
             subprocess.run(c, cwd=str(repo), capture_output=True)
 
-        port_cursor_hooks(repo / ".cursor" / "hooks")
+        port_cursor_hooks(repo / ".cursor" / "hooks", ext)
         adapter = (repo / ".cursor/hooks/cursor-adapter.py").resolve()
         rcwd = repo.resolve().as_posix()
+
+        # Static wiring check first. This is the one that matters: a windows harness with an
+        # adapter pointing at .sh finds no hook, skips every one, and returns allow for
+        # everything while the command prints that it blocks. That shipped once.
+        body = adapter.read_text(encoding="utf-8")
+        wired = f'HOOK_EXT = "{ext}"' in body
+        print(f"  {'ok  ' if wired else 'FAIL'}  {flavor:5} adapter targets .{ext} hooks")
+        npass = int(wired)
+        nfail = int(not wired)
+
+        runner = "bash" if ext == "sh" else (shutil.which("pwsh") or shutil.which("powershell"))
+        if ext == "sh" and not shutil.which("bash"):
+            runner = None
+        if runner is None:
+            print(f"  SKIP: no runner for .{ext} hooks; wiring checked, behaviour not exercised")
+            return 1 if nfail else 0
 
         cases = [
             ("shell", {"command": "cat .env", "cwd": rcwd}, "deny"),
@@ -241,8 +288,9 @@ def self_test() -> int:
             ("shell", {"command": "npm test", "cwd": rcwd}, "allow"),
             ("read",  {"file_path": f"{rcwd}/.env", "cwd": rcwd}, "deny"),
             ("read",  {"file_path": f"{rcwd}/src/x.ts", "cwd": rcwd}, "allow"),
+            ("edit",  {"file_path": f"{rcwd}/docs/architecture/decisions/ADR-001.md",
+                       "cwd": rcwd}, "deny"),
         ]
-        npass = nfail = 0
         for event, payload, want in cases:
             r = subprocess.run([sys.executable, str(adapter), event],
                                input=json.dumps(payload), capture_output=True, text=True,
@@ -252,11 +300,11 @@ def self_test() -> int:
             except Exception:
                 got = f"BAD OUTPUT: {r.stdout!r} {r.stderr[:120]!r}"
             ok = got == want
-            label = payload.get("command") or payload.get("file_path")
-            print(f"  {'ok  ' if ok else 'FAIL'}  {event:5} {label:<40} -> {got} (want {want})")
+            label = payload.get("command") or payload.get("file_path", "").split("/")[-1]
+            print(f"  {'ok  ' if ok else 'FAIL'}  {flavor:5} {event:5} {label:<34} -> {got} (want {want})")
             npass += ok
             nfail += not ok
-        print(f"\n  {npass}/{len(cases)} adapter cases pass.")
+        print(f"  {npass}/{npass + nfail} {flavor} adapter checks pass.")
         return 1 if nfail else 0
     finally:
         shutil.rmtree(wd, onexc=_force)
@@ -295,7 +343,7 @@ def port(target: pathlib.Path, tool: str) -> None:
 
     if tool in ("cursor", "all"):
         r = port_cursor_rules(rules, target / ".cursor" / "rules")
-        f = port_cursor_hooks(target / ".cursor" / "hooks")
+        f = port_cursor_hooks(target / ".cursor" / "hooks", ext)
         print(f"\nCursor:")
         print(f"  .cursor/rules/      {len(r)} rules (.md -> .mdc, paths: -> globs:)")
         print(f"  .cursor/hooks.json  registers the beforeShellExecution / beforeReadFile adapter")

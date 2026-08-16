@@ -20,11 +20,29 @@ files, dispatch THREE `Explore` agents in ONE message and merge their reports -
 Each prompt names its passes verbatim from the list below and requires evidence paths. A smaller
 repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism.
 
-1. **Stack** - manifests (`package.json`, `pyproject.toml`, `go.mod`, `*.csproj`, `pom.xml`) →
-   language, framework, test runner, lint/format tools, pinned versions. Lockfile → package manager.
-   The scripts block → the real test/lint/build/deploy commands. Installed reality always beats any
-   preset - see [`tech-presets.md`](tech-presets.md) for the currency rule and how a contradicting
-   preset becomes a migration proposal, not a silent rewrite.
+1. **Stack** - manifests → language, framework, test runner, lint/format tools, pinned versions.
+   Lockfile → package manager. The scripts block → the real test/lint/build/deploy commands.
+   Installed reality always beats any preset - see [`tech-presets.md`](tech-presets.md) for the
+   currency rule and how a contradicting preset becomes a migration proposal, not a silent rewrite.
+
+   Glob for all of these; a project is often two of them at once, and finding only the first hides
+   half the stack. Each row states what the finding is FOR - a detector whose result changes nothing
+   is noise, so do not extend this list without an answer in the third column.
+
+   | Ecosystem | Manifests and lockfiles | What the finding drives |
+   |---|---|---|
+   | JS/TS | `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb` | Framework and test runner; the `scripts` block IS `{{TEST_CMD}}`/`{{LINT_CMD}}`/`{{BUILD_CMD}}`; lockfile names the package manager |
+   | Python | `pyproject.toml`, `requirements*.txt`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `uv.lock`, `setup.cfg`, `tox.ini` | Runner (pytest vs unittest) for Q13; `uv.lock`/`poetry.lock`/`Pipfile` each name a different package manager, so the install and test commands differ |
+   | Ruby | `Gemfile`, `Gemfile.lock`, `*.gemspec` | Rails vs plain Ruby; `rspec` vs `minitest`; `*.gemspec` means the repo SHIPS a library, which changes the licence question in Q26 |
+   | .NET | `*.csproj`, `*.fsproj`, `Directory.Packages.props`, `packages.lock.json`, `nuget.config` | Target framework and test project layout; `Directory.Packages.props` means central version management, so versions are NOT in the individual project files; `nuget.config` can name a private feed, which is a supply-chain fact for `ip-compliance` |
+   | Java/Kotlin | `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts` | Maven vs Gradle drives the real build/test command; `settings.gradle*` enumerates the modules, which is the module map for Phase D |
+   | Go / Rust / PHP | `go.mod`, `Cargo.toml`, `Cargo.lock`, `composer.json`, `composer.lock` | Toolchain and test command |
+   | Monorepo | `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, `settings.gradle*`, Cargo `[workspace]` | The repo is MULTI-package: glob sets take the union across packages (see Phase C), and the module map comes from the workspace member list, not from a guess at `src/` |
+
+   A monorepo marker changes the shape of everything downstream, so check for one before writing any
+   glob. Every manifest found also belongs in `{{DEP_MANIFEST_GLOBS}}`, which is what path-scopes
+   `rules/ip-compliance.md`: a licence rule that does not match the repo's real manifest never loads,
+   and the licence gate is silently absent.
 2. **Layout and modules** - source dirs one and two levels deep (`src/*`, `app/*`, `lib/*`,
    `packages/*`). Per module: purpose, rough size, and the dependencies visible cheaply.
 3. **Data layer** - ORM and schema files (`schema.prisma`, `models/`, `migrations/`, `*.sql`); the DB

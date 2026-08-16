@@ -571,6 +571,92 @@ fn check_dangling_scripts(c: &Ctx, out: &mut Vec<Finding>) {
 /// Docs quality: a blank line inside a GFM table ends it, so the remaining rows
 /// render as a paragraph of pipes. Correct per spec, confusing on screen, and
 /// nearly always unintended.
+/// A skill sitting in `.claude/skills/` that no seat declares is procedural text
+/// nobody follows. /skill-wire exists precisely because installing is not wiring.
+fn check_skill_wiring(c: &Ctx, out: &mut Vec<Finding>) {
+    let wired: BTreeSet<&str> = c
+        .edges
+        .iter()
+        .filter(|e| e.get("type").and_then(|x| x.as_str()) == Some("uses"))
+        .filter_map(|e| e.get("to").and_then(|x| x.as_str()))
+        .collect();
+    let ids: BTreeSet<&str> = c
+        .nodes
+        .iter()
+        .filter_map(|n| n.get("id").and_then(|x| x.as_str()))
+        .collect();
+
+    for n in c.nodes.iter() {
+        if n.get("type").and_then(|x| x.as_str()) != Some("skill") {
+            continue;
+        }
+        let id = n.get("id").and_then(|x| x.as_str()).unwrap_or("");
+        if wired.contains(id) {
+            continue;
+        }
+        let label = n.get("label").and_then(|x| x.as_str()).unwrap_or(id);
+        out.push(Finding {
+            check: "skill-not-wired",
+            category: "Traceability",
+            sev: Sev::Low,
+            title: format!("skill `{label}` is installed but wired to no seat"),
+            why: "An unwired skill still costs review and update attention while changing \
+                  nothing about how the harness behaves.",
+            node: Some(id.to_string()),
+            file: n.get("file").and_then(|x| x.as_str()).map(|f| f.to_string()),
+        });
+    }
+
+    // A wire to an uninstalled skill produces no edge, by design, so the graph
+    // cannot reveal it. Read the seat files directly, as the hook check reads
+    // settings.json for the same reason.
+    let _ = &ids;
+    let agents_dir = c.root.join(".claude/agents");
+    let mut seats: Vec<String> = Vec::new();
+    if let Ok(rd) = std::fs::read_dir(&agents_dir) {
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.extension().and_then(|x| x.to_str()) == Some("md") {
+                if let Some(stem) = p.file_stem().and_then(|x| x.to_str()) {
+                    seats.push(stem.to_string());
+                }
+            }
+        }
+    }
+    seats.sort();
+    let installed: BTreeSet<String> = c
+        .nodes
+        .iter()
+        .filter(|n| n.get("type").and_then(|x| x.as_str()) == Some("skill"))
+        .filter_map(|n| n.get("label").and_then(|x| x.as_str()).map(|s| s.to_string()))
+        .collect();
+
+    for seat in seats {
+        let text =
+            std::fs::read_to_string(agents_dir.join(format!("{seat}.md"))).unwrap_or_default();
+        for line in text.lines() {
+            if let Some(val) = crate::scan::skill_decl_value(line) {
+                for tok in crate::scan::slug_tokens(val) {
+                    if !installed.contains(&tok) {
+                        out.push(Finding {
+                            check: "skill-wire-missing",
+                            category: "Traceability",
+                            sev: Sev::Medium,
+                            title: format!(
+                                "`{seat}` declares skill `{tok}`, which is not installed"
+                            ),
+                            why: "The seat's instructions promise a capability the repo cannot \
+                                  supply, so the model follows a procedure that is not there.",
+                            node: Some(format!("agent:{seat}")),
+                            file: Some(format!(".claude/agents/{seat}.md")),
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn check_broken_tables(c: &Ctx, out: &mut Vec<Finding>) {
     let mut checked = 0usize;
     for n in c.of_type("task").into_iter().chain(c.of_type("doc")) {
@@ -790,6 +876,7 @@ pub fn assess(root: &Path, graph: &Value) -> Value {
     check_task_owners(&c, &mut f);
     check_board(&c, &mut f);
     check_dangling_scripts(&c, &mut f);
+    check_skill_wiring(&c, &mut f);
     check_broken_tables(&c, &mut f);
 
     f.sort_by(|a, b| {

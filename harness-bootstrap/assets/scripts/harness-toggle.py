@@ -329,6 +329,16 @@ def do_enable(root: pathlib.Path, kind: str, name: str) -> int:
     if entry is None and not files:
         return die(f"{kind}/{name} is not disabled.")
 
+    # The mirror of the case below, and the one that was missing: a ledger entry with NO
+    # quarantined files. Enabling moved nothing, restored the settings.json registration, and
+    # consumed the record - leaving every matching tool call pointed at a script that is not
+    # there, with no ledger left for `reapply` to repair from. Refuse, and keep the record.
+    if entry is not None and not files:
+        return die(f"cannot enable {kind}/{name}: its ledger entry exists but no file is "
+                   f"quarantined under .claude/disabled/{DIRS[kind]}/. Restoring the "
+                   "registration would point it at a missing script. Put the file back, or "
+                   "drop the entry from .claude/disabled.json by hand. The record is kept.")
+
     # A hook's saved registration must be restorable BEFORE anything moves:
     # dropping the record while settings.json is missing or unparseable would
     # leave the hook permanently unregistered while reporting success.

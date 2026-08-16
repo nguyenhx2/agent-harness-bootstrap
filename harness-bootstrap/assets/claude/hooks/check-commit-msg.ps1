@@ -20,7 +20,7 @@ try {
 
 $cmd = $payload.tool_input.command
 if (-not $cmd) { exit 0 }
-if ($cmd -notmatch '(^|[;&|]\s*)git\s+commit\b') { exit 0 }
+if ($cmd -notmatch '(^|[^a-zA-Z0-9_.-])git\s+commit\b') { exit 0 }
 if ($cmd -match '--amend' -and $cmd -match '--no-edit') { exit 0 }
 
 # AI-attribution trailers, checked FIRST and against the RAW command.

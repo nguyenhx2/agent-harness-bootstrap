@@ -80,8 +80,19 @@ sys.stdout.write("\0".join(out) + "\0")
 
 secret_pattern='(^|/)\.env(\.[^/]+)?$|(^|/)(secrets?|credentials?)/|\.(pem|key|pfx|p12|ppk|asc|gpg)$|service[-_]?account.*\.json$|(^|/)id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$|(^|/)\.(npmrc|pypirc|netrc)$|(^|/)\.aws/credentials$|(^|/)\.ssh/'
 allow_pattern='\.env\.example$'
-cmd_pattern='(^|[^a-zA-Z0-9_.-])(cat|type|more|less|head|tail|Get-Content|gc|copy|cp|echo)[[:space:]]+[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([[:space:]]|$|"|'"'"')'
-cmd_allow='\.env\.example'
+# A closed list of reader verbs was the wrong shape: anything off the list read secrets
+# freely (`strings .env`, `rtk read .env`, any wrapper installed tomorrow). Match the FILE
+# instead, then subtract the forms that may legitimately name it. Best-effort by nature - a
+# command can obfuscate the path - which is why settings.json deny rules sit behind this.
+cmd_pattern='(^|[^a-zA-Z0-9_./-])[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([[:space:]]|$|"|'"'"'|;|&)'
+# Scrubbed off BEFORE the test, so a command whose only secret mentions are these is allowed:
+#   > .env.local                  writing a local env file is setup, not disclosure
+#   .env.example                  the tracked placeholder
+#   env-read.py                   the sanctioned value-free path
+#   cp .env.example .env.local    seeding a local file from the example
+# Scrubbing rather than a second allow-regex matters: `cat .env > .env.bak` must still block,
+# and it does, because only the redirect target is removed and `cat .env` survives the scrub.
+cmd_scrub='s/(cp|copy|mv|Copy-Item)[[:space:]]+[^[:space:]]*\.env\.example[[:space:]]+[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/>>?[[:space:]]*[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/[^[:space:]]*\.env\.example//g; s/[^[:space:]]*env-read\.py[^;&|]*//g'
 db_reset_pattern='{{DB_RESET_PATTERN}}'
 
 payload=$(cat)
@@ -101,9 +112,9 @@ fi
 
 # --- 2 + 3. shell commands --------------------------------------------------------------------
 if [ -n "$cmd" ]; then
-  if printf '%s' "$cmd" | grep -Eqi "$cmd_pattern" \
-     && ! printf '%s' "$cmd" | grep -Eqi "$cmd_allow"; then
-    echo "BLOCKED: this command reads/copies a .env file. If you need the variable list, read .env.example." >&2
+  cmd_scrubbed=$(printf '%s' "$cmd" | sed -E "$cmd_scrub")
+  if printf '%s' "$cmd_scrubbed" | grep -Eqi "$cmd_pattern"; then
+    echo "BLOCKED: this command names a .env file. Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed)." >&2
     exit 2
   fi
   if printf '%s' "$cmd" | grep -Eqi "$db_reset_pattern"; then

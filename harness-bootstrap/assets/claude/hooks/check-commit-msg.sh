@@ -36,7 +36,7 @@ cmd=$(json_str tool_input.command)
 [ -z "$cmd" ] && exit 0
 
 # POSIX ERE has no portable \b (BSD grep on macOS), so the trailing boundary is hand-rolled.
-printf '%s' "$cmd" | grep -Eq '(^|[;&|][[:space:]]*)git[[:space:]]+commit([^a-zA-Z0-9_-]|$)' || exit 0
+printf '%s' "$cmd" | grep -Eq '(^|[^a-zA-Z0-9_.-])git[[:space:]]+commit([^a-zA-Z0-9_-]|$)' || exit 0
 if printf '%s' "$cmd" | grep -q -- '--amend' && printf '%s' "$cmd" | grep -q -- '--no-edit'; then exit 0; fi
 
 # AI-attribution trailers, checked FIRST and against the RAW command.

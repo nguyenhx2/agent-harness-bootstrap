@@ -43,7 +43,10 @@ parameterize every later step.
 
 **1. Intake** - [`reference/intake.md`](reference/intake.md). Closed-choice questions go through
 **`AskUserQuestion`**, free-text stays plain chat - the batching mechanics and the express path are
-defined at the top of the reference. In brownfield, pre-fill every answer the analysis produced and
+defined at the top of the reference. **Ask in the language the user wrote to you in** - question
+text, option labels and descriptions - inferring it from their own messages and defaulting to
+English only when it is genuinely unclear. That is separate from Q2, which chooses the language of
+the `docs/` prose; the interview language is inferred, never asked. In brownfield, pre-fill every answer the analysis produced and
 only ask what code cannot decide: docs language, commit identity, data sensitivity, gated actions.
 **If no specs exist** (intake Q3), invoke the `spec-builder` skill via the **`Skill`** tool before
 continuing - do not just note the gap; if the `Skill` tool is unavailable, state the exact handoff
@@ -100,7 +103,7 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 
 Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `db_engineer`,
 `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`,
-`solo_review`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default
+`solo_review`, `terse`, `rtk`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default
 (`rules/ddd.md`, tests shipping in the same change); `tdd` (tests strictly first) is opt-in - proof
 discipline at a real cost in delivery speed, so intake asks rather than assumes; `light` replaces
 both with a minimal-ceremony posture that keeps the review gate. Testing is a choice, not a default:
@@ -109,6 +112,16 @@ and `rules/testing.md`). `long` fields the planning pair and `history-tracker`; 
 the two reviewers for one merged `reviewer`; `db_engineer`/`db_seeder` extend `db`. `deploy_ask`
 moves `{{DEPLOY_CMD}}` from `permissions.deny` to `permissions.ask` - only when intake's
 control-level question chose agent-initiated deploys.
+
+Two flags are opt-in wrappers around other people's work, both off by default and both listed in
+the README credits. `terse` ships `rules/output-style.md`, adapted from the MIT-licensed
+`i-have-adhd` ruleset: it makes answers lead with the next action rather than the preamble. It
+costs context rather than saving it (roughly 1,700 tokens per session), which is why it is a
+choice. `rtk` ships `hooks/rtk-rewrite.{sh,ps1}`, a wrapper around the Apache-2.0 `rtk` binary that
+rewrites a Bash command into a form whose OUTPUT is smaller. The binary is NOT bundled: the hook
+stays silent when it is absent. The wrapper never hands rtk a command our own guards inspect
+(`git commit`, `git push`, anything naming a `.env`), so a compressor can never be the reason a
+guard did not fire.
 
 The scaffolder **never overwrites an existing file**. It reports `ADDED` / `KEPT` (already identical) /
 `CONFLICT` (exists and differs). **CONFLICT is not an error - it is the brownfield reconciliation

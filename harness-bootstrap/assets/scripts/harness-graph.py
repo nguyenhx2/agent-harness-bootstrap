@@ -40,9 +40,20 @@ import re
 import sys
 
 NODE_TYPES = ("agent", "rule", "command", "hook", "settings", "script",
-              "module", "task", "gate", "human")
+              "module", "task", "gate", "human", "skill")
 EDGE_TYPES = ("gates", "triggers", "enforces", "reviews", "owns", "spawns",
-              "runs", "invokes", "escalates", "references")
+              "runs", "invokes", "escalates", "references", "uses")
+
+# A wired skill is recorded in the SEAT's body: /skill-wire adds "a new entry
+# under the seat's Skills available section". A declaration line is therefore the
+# only trustworthy signal. Matching a bare skill name anywhere in an agent file
+# invents wiring: five of ost's agents contain the word "performance"
+# ("performance budgets", "performance NFRs") while the skill of that name is
+# wired to no seat at all.
+SKILL_DECL_RE = re.compile(
+    r"^[^\n]*\bskills?\b[^\n:]*(?:available|to load|in use|when relevant)[^\n:]*:(.+)$",
+    re.I | re.M)
+SKILL_TOKEN_RE = re.compile(r"[A-Za-z0-9][\w.-]*[A-Za-z0-9]|[A-Za-z0-9]")
 
 # Which rule each hook exists to enforce. This relationship lives in prose
 # (hooks/README.md, the rules themselves); the table makes it machine-readable.
@@ -139,8 +150,14 @@ def load_disabled(claude: pathlib.Path) -> dict[str, dict]:
             for e in data.get("disabled", []):
                 if isinstance(e, dict) and e.get("kind") and e.get("name"):
                     out[f"{e['kind']}/{e['name']}"] = e
-        except (json.JSONDecodeError, TypeError):
-            pass
+        # AttributeError/KeyError too: a file that is VALID JSON but the wrong shape (a
+        # list where a dict belongs, a dict missing 'edges') raises neither of the two
+        # errors this used to catch, so the docstring's "never fails the caller" was
+        # false for exactly the hand-edited state files most likely to be wrong.
+        except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
+            data = {}
+        if not isinstance(data, dict):
+            data = {}
     return out
 
 
@@ -157,7 +174,9 @@ def hook_registrations(claude: pathlib.Path) -> dict[str, dict]:
         return reg
     try:
         data = json.loads(read_text(f))
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
+        return reg
+    if not isinstance(data, dict):
         return reg
     for event, groups in (data.get("hooks") or {}).items():
         if not isinstance(groups, list):
@@ -226,6 +245,37 @@ def build(root: pathlib.Path) -> dict:
                      disabled=dis, meta=meta)
             if not dis:
                 agents.append(a.stem)
+    # skills: .claude/skills/<slug>/SKILL.md. A skill may carry its own agents
+    # and scripts, but those are internal to the skill and are NOT roster seats,
+    # so they are recorded as meta rather than drawn as harness nodes.
+    skills_dir = claude / "skills"
+    skills: set[str] = set()
+    for sd in sorted(skills_dir.iterdir()) if skills_dir.is_dir() else []:
+        sm = sd / "SKILL.md"
+        if not sd.is_dir() or not sm.is_file():
+            continue
+        skills.add(sd.name)
+        smeta: dict = {}
+        sdesc = description_field(read_text(sm))
+        if sdesc:
+            smeta["description"] = sdesc
+        for extra in ("agents", "scripts"):
+            n = len(list((sd / extra).glob("*"))) if (sd / extra).is_dir() else 0
+            if n:
+                smeta["own_" + extra] = n
+        add_node(f"skill:{sd.name}", "skill", sd.name, file=rel(sm), meta=smeta)
+
+    # agent -uses-> skill, from the declaration line only, and only when the
+    # skill is actually installed: an edge to a node that does not exist would
+    # dangle in every viewer. A seat declaring a skill that is NOT installed is
+    # reported by the assessment, which reads the seat files directly.
+    for d, dis in agent_dirs:
+        for a in sorted(d.glob("*.md")) if d.is_dir() else []:
+            for decl in SKILL_DECL_RE.findall(read_text(a)):
+                for tok in SKILL_TOKEN_RE.findall(decl):
+                    if tok in skills:
+                        add_edge(f"agent:{a.stem}", f"skill:{tok}", "uses")
+
     if "orchestrator" in agents:
         for name in agents:
             if name != "orchestrator":
@@ -317,15 +367,31 @@ def build(root: pathlib.Path) -> dict:
     if cg.is_file():
         try:
             g = json.loads(read_text(cg))
-        except (json.JSONDecodeError, TypeError):
+        # AttributeError/KeyError too: a file that is VALID JSON but the wrong shape (a
+        # list where a dict belongs, a dict missing 'edges') raises neither of the two
+        # errors this used to catch, so the docstring's "never fails the caller" was
+        # false for exactly the hand-edited state files most likely to be wrong.
+        except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
             g = {}
-        for mod, info in (g.get("modules") or {}).items():
+        # Valid JSON of the wrong SHAPE is the common case for a hand-edited state file, and it
+        # raises nothing at parse time. Normalise here so every .get() below is safe.
+        if not isinstance(g, dict):
+            g = {}
+        mods = g.get("modules")
+        for mod, info in (mods if isinstance(mods, dict) else {}).items():
+            # Element shape is as untrusted as container shape: a JSON file can be a valid dict
+            # whose values are strings. Skip what is not usable rather than crashing the caller.
+            if not isinstance(info, dict):
+                continue
             owner = info.get("owner", "-") or "-"
             add_node(f"mod:{mod}", "module", mod,
                      meta={"files": len(info.get("files", [])), "owner": owner})
             if owner != "-" and f"agent:{owner}" in nodes:
                 add_edge(f"agent:{owner}", f"mod:{mod}", "owns")
-        for e in g.get("edges") or []:
+        raw_edges = g.get("edges")
+        for e in (raw_edges if isinstance(raw_edges, list) else []):
+            if not isinstance(e, dict):
+                continue
             f_, t_ = f"mod:{e.get('from')}", f"mod:{e.get('to')}"
             if f_ in nodes and t_ in nodes:
                 add_edge(f_, t_, "references", int(e.get("refs", 1)))

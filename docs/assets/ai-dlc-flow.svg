@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="940" viewBox="0 0 880 940" role="img" aria-label="AI-driven development lifecycle inside an agent IDE, read left to right. Input, from a human: an idea, a transcript, meeting notes, an old PRD, or an existing codebase. It flows into spec-builder, which runs on the model: it elicits and never invents a requirement, so anything unstated becomes a flagged open issue with a named owner. It flows on into harness-bootstrap, also on the model: it reads the code first on a brownfield repo, or the specs on a greenfield one, and decides the agent roster from the functional-requirement clusters. A dashed bypass lane above the strip shows the brownfield entry point, where an existing repo skips spec-builder. Both skills ship a scaffold.py that copies real files: deterministic, free, and it never overwrites what you wrote. The artifacts on disk are docs/specs sections 01 to 13, the requirements contract, and the .claude folder plus docs/tasks, the board. Those feed the loop, which runs on the model: slash new-task, then the orchestrator routes, spec-guardian locks the contract, a dev agent implements tests first, qa-test runs, code-reviewer and security-reviewer act as read-only gates, slash secret-scan runs, the work merges, the board is updated, and the next task begins. Two things are always on inside the loop: the hooks, which are deterministic and exit 2 to block a commit to main, a bad commit message, an ADR edit, or a read of .env; and the board under docs/tasks, where every step appends a session-log row as it goes, so a crash resumes from disk. The loop is the same on any model tier, because the gates are shell scripts, not judgment." font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
-  <title>AI-DLC in an agent IDE - spec-builder, harness-bootstrap, and the loop they hand off to</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1160" viewBox="0 0 880 1160" role="img" aria-labelledby="dlc-title dlc-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="dlc-title">AI-DLC in an agent IDE - spec-builder, harness-bootstrap, and the loop they hand off to</title>
+  <desc id="dlc-desc">The AI-driven development lifecycle inside an agent IDE, read top to bottom. Input from a human: an idea, a transcript, meeting notes, an old PRD, or an existing codebase. It flows into spec-builder, which runs on the model: it elicits and never invents a requirement, so anything unstated becomes a flagged open issue with a named owner. It flows on into harness-bootstrap, also on the model: it reads the code first on a brownfield repo or the specs on a greenfield one, and fits the roster to the flags rather than fielding a fixed cast. A dashed bypass lane above the strip shows the brownfield entry point, where an existing repo skips spec-builder. Both skills ship a scaffold.py that copies real files: deterministic, free, and it never overwrites what you wrote. The artifacts on disk are docs/specs sections 01 to 13, the requirements contract, and the .claude folder plus docs/tasks, the board: 16 seat files, 16 rules, 22 commands, 9 hooks. Next comes optional skill discovery, where candidates are matched to the detected stack, every file is read before one is offered, nothing installs unticked, and nothing serves a seat until slash skill-wire binds it. Those feed the loop, which runs on the model: slash new-task, then the orchestrator routes, spec-guardian locks the contract, a dev agent implements, qa-test runs when testing was chosen, the reviewers act as read-only gates or one merged reviewer under the solo_review flag, slash secret-scan runs, the work merges, the board is updated, and the next task begins. Two things are always on inside the loop: the hooks, which are deterministic and exit 2 to block a commit to main, a bad commit message, an ADR edit, or a read of .env; and the board under docs/tasks, where every step appends a session-log row as it goes, so a crash resumes from disk. Below the loop, the harness becomes visible: the whole control plane is emitted as .claude/state/harness-graph.json, harness-view renders Flow, Graph, Assess and Master-plan views of it, and slash harness-toggle turns a single rule, command or hook off and back on through a committed ledger. The loop is the same on any model tier, because the gates are shell scripts, not judgment.</desc>
 
-  <rect x="0" y="0" width="880" height="940" rx="10" fill="#23272B"/>
+  <rect x="0" y="0" width="880" height="1160" rx="10" fill="#23272B"/>
 
   <text x="24" y="34" font-size="17" font-weight="700" fill="#F8F9FA">AI-DLC in an agent IDE - where the two skills sit, and what runs after them</text>
   <text x="24" y="54" font-size="13" fill="#ADB5BD">Left to right: the input, the contract, the harness. Then the loop that ships one task at a time.</text>
@@ -41,8 +42,8 @@
   <text x="622" y="144" font-size="13" fill="#E0AAFF">model - costs tokens</text>
   <text x="622" y="170" font-size="13" fill="#E0AAFF">Reads the code first</text>
   <text x="622" y="190" font-size="13" fill="#E0AAFF">(brownfield) or the specs</text>
-  <text x="622" y="210" font-size="13" fill="#E0AAFF">(greenfield). Decides the</text>
-  <text x="622" y="230" font-size="13" fill="#E0AAFF">roster from the FR clusters.</text>
+  <text x="622" y="210" font-size="13" fill="#E0AAFF">(greenfield), then FITS the</text>
+  <text x="622" y="230" font-size="13" fill="#E0AAFF">roster to the flags.</text>
 
   <line x1="439" y1="248" x2="439" y2="261" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,261 445,261 439,272" fill="#ADB5BD"/>
@@ -62,7 +63,7 @@
   <!-- THE SCAFFOLDER - deterministic, free -->
   <rect x="314" y="272" width="540" height="48" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="332" y="293" font-size="13" font-weight="700" fill="#D8F3DC">scaffold.py   -   both skills ship one</text>
-  <text x="332" y="311" font-size="13" fill="#D8F3DC">Copies real files. Deterministic, free, never overwrites what you wrote.</text>
+  <text x="332" y="311" font-size="13" fill="#D8F3DC">Copies real files, resolves the flag blocks. Deterministic, free, never overwrites.</text>
 
   <line x1="439" y1="320" x2="439" y2="329" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,329 445,329 439,340" fill="#ADB5BD"/>
@@ -77,107 +78,126 @@
 
   <rect x="604" y="340" width="250" height="84" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
   <text x="622" y="362" font-size="13" font-weight="700" fill="#F8F9FA">.claude/   +   docs/tasks/</text>
-  <text x="622" y="382" font-size="13" fill="#F8F9FA">agents, rules, hooks, settings</text>
-  <text x="622" y="402" font-size="13" fill="#F8F9FA">and the board.</text>
+  <text x="622" y="382" font-size="13" fill="#F8F9FA">16 seats, 16 rules, 22 commands,</text>
+  <text x="622" y="402" font-size="13" fill="#F8F9FA">9 hooks, and the board.</text>
 
   <line x1="439" y1="424" x2="439" y2="441" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="433,441 445,441 439,452" fill="#ADB5BD"/>
   <line x1="729" y1="424" x2="729" y2="441" stroke="#ADB5BD" stroke-width="2" fill="none"/>
   <polygon points="723,441 735,441 729,452" fill="#ADB5BD"/>
 
+  <!-- SKILL DISCOVERY - optional, and the human ticks each box -->
+  <rect x="24" y="452" width="832" height="76" rx="8" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="42" y="475" font-size="14" font-weight="700" fill="#A8DADC">SKILL DISCOVERY   +   /skill-wire   -   optional, and you are the one who ticks the box</text>
+  <text x="42" y="495" font-size="13" fill="#A8DADC">Candidates are matched to the detected stack, and every file is read before one is offered - a skill is instructions from</text>
+  <text x="42" y="513" font-size="13" fill="#A8DADC">the internet. Nothing installs unticked, and nothing serves a seat until /skill-wire binds it to one.</text>
+
+  <line x1="440" y1="528" x2="440" y2="535" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="434,535 446,535 440,546" fill="#ADB5BD"/>
+
   <!-- THE LOOP -->
-  <rect x="24" y="452" width="832" height="372" rx="10" fill="#240046" stroke="#E0AAFF" stroke-width="3"/>
-  <text x="42" y="478" font-size="15" font-weight="700" fill="#E0AAFF">THE LOOP   -   one task, from /new-task to merge</text>
-  <rect x="650" y="462" width="188" height="22" rx="5" fill="#5A189A" stroke="#E0AAFF" stroke-width="1.5"/>
-  <text x="744" y="478" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">RUNS ON THE MODEL</text>
-  <text x="42" y="500" font-size="13" fill="#E0AAFF">Every gate is a step. A gate counts as passed only when the session log records the run.</text>
+  <rect x="24" y="546" width="832" height="396" rx="10" fill="#240046" stroke="#E0AAFF" stroke-width="3"/>
+  <text x="42" y="572" font-size="15" font-weight="700" fill="#E0AAFF">THE LOOP   -   one task, from /new-task to merge</text>
+  <rect x="650" y="556" width="188" height="22" rx="5" fill="#5A189A" stroke="#E0AAFF" stroke-width="1.5"/>
+  <text x="744" y="572" font-size="13" font-weight="700" fill="#E0AAFF" text-anchor="middle">RUNS ON THE MODEL</text>
+  <text x="42" y="594" font-size="13" fill="#E0AAFF">Every gate is a step. A gate counts as passed only when the session log records the run.</text>
 
   <!-- loop, top row: left to right -->
-  <rect x="42" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="56" y="538" font-size="13" font-weight="700" fill="#E0AAFF">/new-task</text>
-  <text x="56" y="558" font-size="13" fill="#E0AAFF">a board row and</text>
-  <text x="56" y="576" font-size="13" fill="#E0AAFF">a task file</text>
+  <rect x="42" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="56" y="632" font-size="13" font-weight="700" fill="#E0AAFF">/new-task</text>
+  <text x="56" y="652" font-size="13" fill="#E0AAFF">a board row and</text>
+  <text x="56" y="670" font-size="13" fill="#E0AAFF">a task file</text>
 
-  <line x1="216" y1="552" x2="239" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="239,546 250,552 239,558" fill="#ADB5BD"/>
+  <line x1="216" y1="646" x2="239" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="239,640 250,646 239,652" fill="#ADB5BD"/>
 
-  <rect x="250" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="264" y="538" font-size="13" font-weight="700" fill="#E0AAFF">orchestrator</text>
-  <text x="264" y="558" font-size="13" fill="#E0AAFF">routes to one</text>
-  <text x="264" y="576" font-size="13" fill="#E0AAFF">owner agent</text>
+  <rect x="250" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="264" y="632" font-size="13" font-weight="700" fill="#E0AAFF">orchestrator</text>
+  <text x="264" y="652" font-size="13" fill="#E0AAFF">routes to one</text>
+  <text x="264" y="670" font-size="13" fill="#E0AAFF">owner agent</text>
 
-  <line x1="424" y1="552" x2="447" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="447,546 458,552 447,558" fill="#ADB5BD"/>
+  <line x1="424" y1="646" x2="447" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="447,640 458,646 447,652" fill="#ADB5BD"/>
 
-  <rect x="458" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="472" y="538" font-size="13" font-weight="700" fill="#E0AAFF">spec-guardian</text>
-  <text x="472" y="558" font-size="13" fill="#E0AAFF">locks the</text>
-  <text x="472" y="576" font-size="13" fill="#E0AAFF">contract</text>
+  <rect x="458" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="472" y="632" font-size="13" font-weight="700" fill="#E0AAFF">spec-guardian</text>
+  <text x="472" y="652" font-size="13" fill="#E0AAFF">locks the</text>
+  <text x="472" y="670" font-size="13" fill="#E0AAFF">contract</text>
 
-  <line x1="632" y1="552" x2="655" y2="552" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="655,546 666,552 655,558" fill="#ADB5BD"/>
+  <line x1="632" y1="646" x2="655" y2="646" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="655,640 666,646 655,652" fill="#ADB5BD"/>
 
-  <rect x="666" y="516" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="680" y="538" font-size="13" font-weight="700" fill="#E0AAFF">dev agent</text>
-  <text x="680" y="558" font-size="13" fill="#E0AAFF">implements,</text>
-  <text x="680" y="576" font-size="13" fill="#E0AAFF">tests ship with the code</text>
+  <rect x="666" y="610" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="680" y="632" font-size="13" font-weight="700" fill="#E0AAFF">dev agent</text>
+  <text x="680" y="652" font-size="13" fill="#E0AAFF">implements, per the</text>
+  <text x="680" y="670" font-size="13" fill="#E0AAFF">chosen methodology</text>
 
   <!-- loop turns down the right side -->
-  <line x1="751" y1="592" x2="751" y2="721" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="745,721 757,721 751,732" fill="#ADB5BD"/>
+  <line x1="751" y1="686" x2="751" y2="815" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="745,815 757,815 751,826" fill="#ADB5BD"/>
 
   <!-- ALWAYS ON, inside the loop: the hooks -->
-  <rect x="160" y="604" width="560" height="52" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="176" y="626" font-size="14" font-weight="700" fill="#D8F3DC">HOOKS   -   always on, deterministic, exit 2</text>
-  <text x="176" y="646" font-size="13" fill="#D8F3DC">Blocks a commit to main, a bad message, an ADR edit, a read of .env.</text>
+  <rect x="160" y="698" width="560" height="52" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="176" y="720" font-size="14" font-weight="700" fill="#D8F3DC">HOOKS   -   always on, deterministic, exit 2</text>
+  <text x="176" y="740" font-size="13" fill="#D8F3DC">Blocks a commit to main, a bad message, an ADR edit, a read of .env, a stray spawn.</text>
 
   <!-- ALWAYS ON, inside the loop: the board -->
-  <rect x="160" y="664" width="560" height="52" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
-  <text x="176" y="686" font-size="14" font-weight="700" fill="#F8F9FA">THE BOARD   -   docs/tasks/</text>
-  <text x="176" y="706" font-size="13" fill="#F8F9FA">Every step appends a session-log row as it goes. A crash resumes from disk.</text>
+  <rect x="160" y="758" width="560" height="52" rx="8" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="176" y="780" font-size="14" font-weight="700" fill="#F8F9FA">THE BOARD   -   docs/tasks/</text>
+  <text x="176" y="800" font-size="13" fill="#F8F9FA">Every step appends a session-log row as it goes. A crash resumes from disk.</text>
 
   <!-- loop, bottom row: right to left -->
-  <rect x="666" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="680" y="754" font-size="13" font-weight="700" fill="#E0AAFF">qa-test</text>
-  <text x="680" y="774" font-size="13" fill="#E0AAFF">tests green</text>
+  <rect x="666" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="680" y="848" font-size="13" font-weight="700" fill="#E0AAFF">qa-test</text>
+  <text x="680" y="868" font-size="13" fill="#E0AAFF">tests green</text>
+  <text x="680" y="886" font-size="13" fill="#E0AAFF">only when testing</text>
+  <text x="680" y="904" font-size="13" fill="#E0AAFF">was chosen</text>
 
-  <line x1="662" y1="768" x2="639" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="639,762 628,768 639,774" fill="#ADB5BD"/>
+  <line x1="662" y1="868" x2="639" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="639,862 628,868 639,874" fill="#ADB5BD"/>
 
-  <rect x="458" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="472" y="754" font-size="13" font-weight="700" fill="#E0AAFF">code-reviewer +</text>
-  <text x="472" y="774" font-size="13" font-weight="700" fill="#E0AAFF">security-reviewer</text>
-  <text x="472" y="792" font-size="13" fill="#E0AAFF">read-only gates</text>
+  <rect x="458" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="472" y="848" font-size="13" font-weight="700" fill="#E0AAFF">code-reviewer +</text>
+  <text x="472" y="868" font-size="13" font-weight="700" fill="#E0AAFF">security-reviewer</text>
+  <text x="472" y="886" font-size="13" fill="#E0AAFF">read-only gates,</text>
+  <text x="472" y="904" font-size="13" fill="#E0AAFF">or one merged seat</text>
 
-  <line x1="454" y1="768" x2="431" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="431,762 420,768 431,774" fill="#ADB5BD"/>
+  <line x1="454" y1="868" x2="431" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="431,862 420,868 431,874" fill="#ADB5BD"/>
 
-  <rect x="250" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="264" y="754" font-size="13" font-weight="700" fill="#E0AAFF">/secret-scan</text>
-  <text x="264" y="774" font-size="13" fill="#E0AAFF">then merge</text>
+  <rect x="250" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="264" y="848" font-size="13" font-weight="700" fill="#E0AAFF">/review-changes</text>
+  <text x="264" y="868" font-size="13" font-weight="700" fill="#E0AAFF">/secret-scan</text>
+  <text x="264" y="886" font-size="13" fill="#E0AAFF">then merge</text>
 
-  <line x1="246" y1="768" x2="223" y2="768" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="223,762 212,768 223,774" fill="#ADB5BD"/>
+  <line x1="246" y1="868" x2="223" y2="868" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="223,862 212,868 223,874" fill="#ADB5BD"/>
 
-  <rect x="42" y="732" width="170" height="72" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="56" y="754" font-size="13" font-weight="700" fill="#E0AAFF">board updated</text>
-  <text x="56" y="774" font-size="13" fill="#E0AAFF">next task</text>
+  <rect x="42" y="826" width="170" height="84" rx="6" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="56" y="848" font-size="13" font-weight="700" fill="#E0AAFF">board updated</text>
+  <text x="56" y="868" font-size="13" fill="#E0AAFF">next task</text>
 
   <!-- loop closes up the left side -->
-  <line x1="127" y1="728" x2="127" y2="599" stroke="#ADB5BD" stroke-width="2" fill="none"/>
-  <polygon points="121,599 133,599 127,588" fill="#ADB5BD"/>
+  <line x1="127" y1="822" x2="127" y2="693" stroke="#ADB5BD" stroke-width="2" fill="none"/>
+  <polygon points="121,693 133,693 127,682" fill="#ADB5BD"/>
+
+  <!-- YOU CAN SEE IT - the harness inspects itself, deterministically -->
+  <rect x="24" y="962" width="832" height="76" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="42" y="986" font-size="14" font-weight="700" fill="#D8F3DC">AND NOW YOU CAN SEE IT   -   .claude/state/harness-graph.json</text>
+  <text x="42" y="1006" font-size="13" fill="#D8F3DC">harness-view renders Flow, Graph, Assess and Master-plan views of that file, and scores the harness. No model, no network.</text>
+  <text x="42" y="1024" font-size="13" fill="#D8F3DC">/harness-toggle turns one rule, command or hook off and back on, recorded in the committed .claude/disabled.json ledger.</text>
 
   <!-- the safety property -->
-  <rect x="24" y="844" width="832" height="44" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="440" y="871" font-size="14" font-weight="700" fill="#D8F3DC" text-anchor="middle">The loop is the same on any model tier - the gates are shell scripts, not judgment.</text>
+  <rect x="24" y="1058" width="832" height="44" rx="8" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="440" y="1085" font-size="14" font-weight="700" fill="#D8F3DC" text-anchor="middle">The loop is the same on any model tier - the gates are shell scripts, not judgment.</text>
 
   <!-- legend -->
-  <rect x="24" y="904" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
-  <text x="48" y="917" font-size="13" fill="#DEE2E6">deterministic - free</text>
-  <rect x="212" y="904" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
-  <text x="236" y="917" font-size="13" fill="#DEE2E6">model - costs tokens</text>
-  <rect x="400" y="904" width="16" height="16" rx="3" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
-  <text x="424" y="917" font-size="13" fill="#DEE2E6">human</text>
-  <rect x="488" y="904" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
-  <text x="512" y="917" font-size="13" fill="#DEE2E6">artifact - file on disk</text>
+  <rect x="24" y="1118" width="16" height="16" rx="3" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
+  <text x="48" y="1131" font-size="13" fill="#DEE2E6">deterministic - free</text>
+  <rect x="212" y="1118" width="16" height="16" rx="3" fill="#5A189A" stroke="#240046" stroke-width="2"/>
+  <text x="236" y="1131" font-size="13" fill="#DEE2E6">model - costs tokens</text>
+  <rect x="400" y="1118" width="16" height="16" rx="3" fill="#1D3557" stroke="#0B1B2B" stroke-width="2"/>
+  <text x="424" y="1131" font-size="13" fill="#DEE2E6">human</text>
+  <rect x="488" y="1118" width="16" height="16" rx="3" fill="#495057" stroke="#212529" stroke-width="2"/>
+  <text x="512" y="1131" font-size="13" fill="#DEE2E6">artifact - file on disk</text>
 </svg>

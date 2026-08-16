@@ -120,6 +120,21 @@ The richest input, and the one most likely to be over-read. Discipline:
   decisions - ask, and if nobody has decided, it is an OI blocking every FR that depends on cutover,
   not an assumption you make on their behalf.
 
+## Ask in the user's language
+
+**Infer the language from how the user wrote to you, and ask every question in it** - the question
+text, the option labels and the option descriptions, not only the spec you eventually produce.
+Default to English only when the input is genuinely too short or too mixed to tell. Interviewing
+someone in a language they did not choose to write in costs you answer quality on exactly the
+questions that need nuance.
+
+This is separate from the output-language choice in the setup batch below. That one is a deliberate
+decision about the document; the interview language is inferred and never asked. They can differ,
+and the interview has to happen in the user's language to find that out.
+
+IDs, codes, filenames, entity and enum names stay English regardless, per
+[`writing-rules.md`](writing-rules.md) - translate the question, never the identifier.
+
 ## Batching questions
 
 Closed-choice questions (output language, security posture category, and similar - a fixed, small set

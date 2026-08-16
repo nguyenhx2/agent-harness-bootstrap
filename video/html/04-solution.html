@@ -30,6 +30,7 @@
   .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
   .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
   .tag.r{color:var(--red);border-color:var(--red)}
+  .tag.a{color:var(--amber);border-color:var(--amber)}
   .chip{border-radius:12px;padding:.5em .9em;font-size:clamp(10px,1.5vw,20px);font-weight:600;
     display:inline-flex;align-items:center;text-align:center;justify-content:center;
     border:2px solid transparent;line-height:1.25}
@@ -185,9 +186,9 @@
         <span class="mono">.claude/</span>
         <div class="grid2">
           <span class="chip green">16 agents<br>model + effort</span>
-          <span class="chip green">15 rules<br>6 always, 9 scoped</span>
+          <span class="chip green">16 rules<br>7 always, 9 scoped</span>
           <span class="chip green">22 commands</span>
-          <span class="chip green">9 hooks</span>
+          <span class="chip green">10 hooks</span>
         </div>
         <span class="chip neutral">docs/tasks/ - a board that survives a crash</span>
         <div class="foot"><span class="a">scaffold: ~0.2s</span><span class="b">reconciles, never overwrites</span></div>
@@ -224,14 +225,40 @@
       <span class="chip green">the bill is chosen, not inherited</span>
     </div>
     <div class="evrow" id="evrow">
-      <span class="tag g">guardrail eval 69/69</span>
+      <span class="tag g">guardrail eval 89/89</span>
       <span class="tag g">Opus -&gt; Haiku: byte-identical safety</span>
     </div>
     <div class="ports" id="ports">shell scripts + glob rules | ports to Claude Code, Cursor and Codex with enforcement</div>
   </section>
 
-  <!-- Scene 6: brand end card -->
+  <!-- Scene 6: verify it's wired right -->
   <section class="scene" data-s="6">
+    <h2>How do you know it's wired right?</h2>
+    <div class="split" style="gap:4%">
+      <div class="work" style="flex:1">
+        <span class="chip green">harness-view</span>
+        <div class="notes" style="align-items:center;text-align:center">
+          <span class="n2">reads .claude/, shows how it all connects</span>
+          <span class="n2">deterministic - no model involved</span>
+        </div>
+      </div>
+      <div class="work" style="flex:1">
+        <span class="chip green">assess</span>
+        <div class="notes" style="align-items:center;text-align:center">
+          <span class="n2">scores it against the project's own quality gate</span>
+          <span class="n2">names the fix, links back to the node</span>
+        </div>
+      </div>
+    </div>
+    <div class="evrow on" style="margin-top:6px">
+      <span class="tag g">scaffolded: 99/100</span>
+      <span class="tag a">hand-maintained: 79/100</span>
+      <span class="tag r">hand-maintained: 64/100</span>
+    </div>
+  </section>
+
+  <!-- Scene 7: brand end card -->
+  <section class="scene" data-s="7">
     <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
     <div class="brand">AGENT HARNESS BOOTSTRAP</div>
   </section>
@@ -326,7 +353,12 @@
       at(8000,function(){q('ports').classList.add('on')});
       at(10400,hush);
     }},
-    {s:6,d:2400,run:function(){}}
+    {s:6,d:9000,run:function(){
+      at(500,function(){say('harness-view reads .claude/ and shows how it is actually wired - no model involved.')});
+      at(4600,function(){say('Run against three real harnesses - the low scores traced to a rule loading every session and a renamed seat the board never caught up with.')});
+      at(8500,hush);
+    }},
+    {s:7,d:2400,run:function(){}}
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
 

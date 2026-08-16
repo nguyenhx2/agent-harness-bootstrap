@@ -208,9 +208,9 @@ class Solution(Scene):
 
         grid = VGroup(
             box("16 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("15 rules\n6 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("16 rules\n7 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("22 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("9 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("10 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  a board that survives a crash", NEUTRAL, WHITE, w=6.8, h=0.7, fs=19).move_to(
@@ -295,7 +295,7 @@ class Solution(Scene):
         caption(self, "Contract, enforcement, durable state, a chosen bill.", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("guardrail eval 69/69", GREEN_HI, fs=20),
+            tag("guardrail eval 89/89", GREEN_HI, fs=20),
             tag("Opus -> Haiku: byte-identical safety", GREEN_HI, fs=20),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
@@ -311,6 +311,37 @@ class Solution(Scene):
         self.play(FadeIn(ports), run_time=0.4)
         self.wait(1.0)
         self.play(FadeOut(VGroup(phead, payoff, ev, ports)), run_time=0.6)
+
+        # ============ Beat 5b: verify it is actually wired right ========
+        vhead = Text("How do you know it's wired right?", font=FONT, font_size=28, color=WHITE).move_to([0, 3.0, 0])
+        self.play(FadeIn(vhead), run_time=0.4)
+
+        hv = box("harness-view", GREEN, GREEN_HI, w=3.6, h=0.82, fs=23).move_to([-3.0, 1.3, 0])
+        hv_desc = Text(
+            "reads .claude/, shows how it\nall connects, no model involved",
+            font=FONT, font_size=17, color=DIM, line_spacing=0.8,
+        ).next_to(hv, DOWN, buff=0.25)
+
+        assess = box("assess", GREEN, GREEN_HI, w=2.6, h=0.82, fs=23).move_to([3.0, 1.3, 0])
+        assess_desc = Text(
+            "scores it against the project's\nown quality gate, names the fix",
+            font=FONT, font_size=17, color=DIM, line_spacing=0.8,
+        ).next_to(assess, DOWN, buff=0.25)
+
+        self.play(GrowFromCenter(hv), FadeIn(hv_desc), run_time=0.45)
+        self.play(GrowFromCenter(assess), FadeIn(assess_desc), run_time=0.45)
+        caption(self, "harness-view reads .claude/ and shows how it is actually wired - no model involved.", hold=1.5, y=-3.4, size=22)
+
+        scores = VGroup(
+            tag("scaffolded: 99/100", GREEN_HI, fs=19),
+            tag("hand-maintained: 79/100", AMBER, fs=19),
+            tag("hand-maintained: 64/100", RED, fs=19),
+        ).arrange(RIGHT, buff=0.35).move_to([0, -1.1, 0])
+        self.play(FadeIn(scores, lag_ratio=0.25), run_time=0.6)
+        caption(self, "Run against three real harnesses - the low scores traced to a rule loading every session, and a renamed seat the board never caught up with.", hold=2.2, y=-3.4, size=20)
+
+        verify_grp = VGroup(vhead, hv, hv_desc, assess, assess_desc, scores)
+        self.play(FadeOut(verify_grp), run_time=0.5)
 
         # ============ Beat 6: brand end card ============================
         card = logo_reveal(self)

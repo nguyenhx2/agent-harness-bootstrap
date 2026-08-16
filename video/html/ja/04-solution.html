@@ -30,6 +30,7 @@
   .tag.g{color:var(--green-hi);border-color:var(--green-hi)}
   .tag.p{color:var(--purple-hi);border-color:var(--purple-hi)}
   .tag.r{color:var(--red);border-color:var(--red)}
+  .tag.a{color:var(--amber);border-color:var(--amber)}
   .chip{border-radius:12px;padding:.5em .9em;font-size:clamp(10px,1.5vw,20px);font-weight:600;
     display:inline-flex;align-items:center;text-align:center;justify-content:center;
     border:2px solid transparent;line-height:1.25}
@@ -185,9 +186,9 @@
         <span class="mono">.claude/</span>
         <div class="grid2">
           <span class="chip green">エージェント16<br>model + effort</span>
-          <span class="chip green">ルール15<br>常時6、スコープ9</span>
+          <span class="chip green">ルール16<br>常時7、スコープ9</span>
           <span class="chip green">コマンド22</span>
-          <span class="chip green">フック9</span>
+          <span class="chip green">フック10</span>
         </div>
         <span class="chip neutral">docs/tasks/ - クラッシュを生き延びるボード</span>
         <div class="foot"><span class="a">スキャフォルド: 約0.2秒</span><span class="b">突き合わせる、決して上書きしない</span></div>
@@ -224,14 +225,40 @@
       <span class="chip green">請求額は選ばれる、押し付けられない</span>
     </div>
     <div class="evrow" id="evrow">
-      <span class="tag g">ガードレール評価 69/69</span>
+      <span class="tag g">ガードレール評価 89/89</span>
       <span class="tag g">Opus -&gt; Haiku: バイト単位で同一の安全性</span>
     </div>
     <div class="ports" id="ports">シェルスクリプト + グロブルール | Claude Code・Cursor・Codexへ強制ごと移植</div>
   </section>
 
-  <!-- Scene 6: brand end card -->
+  <!-- Scene 6: verify it's wired right -->
   <section class="scene" data-s="6">
+    <h2>正しく配線されているとどう分かるか</h2>
+    <div class="split" style="gap:4%">
+      <div class="work" style="flex:1">
+        <span class="chip green">harness-view</span>
+        <div class="notes" style="align-items:center;text-align:center">
+          <span class="n2">.claude/ を読み込み、つながりを可視化</span>
+          <span class="n2">決定的 - モデルは不要</span>
+        </div>
+      </div>
+      <div class="work" style="flex:1">
+        <span class="chip green">assess</span>
+        <div class="notes" style="align-items:center;text-align:center">
+          <span class="n2">プロジェクト自身の品質ゲートで採点</span>
+          <span class="n2">直すべき点を示し、該当ノードへリンク</span>
+        </div>
+      </div>
+    </div>
+    <div class="evrow on" style="margin-top:6px">
+      <span class="tag g">スキャフォルド生成: 99/100</span>
+      <span class="tag a">手動保守: 79/100</span>
+      <span class="tag r">手動保守: 64/100</span>
+    </div>
+  </section>
+
+  <!-- Scene 7: brand end card -->
+  <section class="scene" data-s="7">
     <svg class="brandmark-big" viewBox="0 0 256 256"><use href="#brand-logo"></use></svg>
     <div class="brand">AGENT HARNESS BOOTSTRAP</div>
   </section>
@@ -326,7 +353,12 @@
       at(8000,function(){q('ports').classList.add('on')});
       at(10400,hush);
     }},
-    {s:6,d:2400,run:function(){}}
+    {s:6,d:9000,run:function(){
+      at(500,function(){say('harness-viewは.claude/を読み込み、実際の配線を可視化する - モデルは不要。')});
+      at(4600,function(){say('実在する3つのハーネスで検証 - 低スコアの原因は毎セッション読み込まれるルールと、タスクボードが追いつけなかった改名された席。')});
+      at(8500,hush);
+    }},
+    {s:7,d:2400,run:function(){}}
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
 

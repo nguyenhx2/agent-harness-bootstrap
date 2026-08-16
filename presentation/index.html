@@ -222,9 +222,6 @@
     font:inherit;font-size:.82em;cursor:pointer}
   .vtabs button.on{background:var(--brand);color:#fff}
 
-  .qrwrap{display:grid;place-items:center}
-  .qrcard{background:#fff;border-radius:22px;padding:1.2em;box-shadow:0 10px 32px rgba(53,52,143,.16)}
-  .qrcard img{width:17em;height:17em;display:block;image-rendering:pixelated}
   .cta{display:flex;flex-wrap:wrap;gap:.6em;margin-top:.4em}
   .cta a{display:inline-flex;align-items:center;gap:.5em;text-decoration:none;background:var(--brand);
     color:#fff;padding:.65em 1.2em;border-radius:12px;font-weight:700;font-size:.93em}
@@ -399,7 +396,6 @@
     .coverwrap,.quote2col,.quotesplit{grid-template-columns:1fr;text-align:left}
     .coverwrap .art,.quote2col .qmain img{max-height:none;width:100%}
     .rings{min-height:15em;margin:.5em 0}
-    .qrcard img{width:min(72vw,15em);height:auto}
 
     .arrow{position:fixed;top:auto;bottom:14px;transform:none;z-index:40;
       width:44px;height:44px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -794,6 +790,27 @@ const S = [
       ja:"すべてが削除可能なファイル。<code>.claude/</code> を消せば元通りです。"}}],
  nav:{en:"Six components", vi:"Sáu thành phần", ja:"6つの構成要素"}},
 
+/* 7c - skill discovery and wiring, as a user benefit */
+{icon:"i-puzzle", kind:"bullets", cls:"purple", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+ title:{en:"Skills that match your stack, not a grab bag", vi:"Skill khớp với stack của bạn, không phải một mớ hổ lốn", ja:"あなたのスタックに合うスキルを、寄せ集めではなく"},
+ sub:{en:"harness-bootstrap does not hand you a pile of skills to sort through. It does the sorting first.",
+      vi:"harness-bootstrap không đưa cho bạn một đống skill để tự lọc. Nó lọc trước giúp bạn.",
+      ja:"harness-bootstrap は選別すべき山のようなスキルを渡してくるわけではありません。先に選別を済ませます。"},
+ items:[
+  {t:{en:"Matched to what your repo actually is", vi:"Khớp với bản chất thật của repo bạn", ja:"あなたのリポジトリの実態に合わせて"},
+   d:{en:"The detected tech stack decides what gets looked for, so the candidates are relevant before anyone reviews them.",
+      vi:"Stack công nghệ được phát hiện quyết định thứ gì được tìm kiếm, nên các ứng viên đã liên quan từ trước khi ai đó review chúng.",
+      ja:"検出された技術スタックが何を探すかを決めるため、レビューされる前から候補は的を射ています。"}},
+  {t:{en:"Reviewed before it is ever suggested", vi:"Được review trước khi nó được đề xuất", ja:"提案される前に必ずレビュー済み"},
+   d:{en:"Every candidate is read in full before it reaches you. A big install count or a well-known publisher is a signal, never the pass.",
+      vi:"Mọi ứng viên đều được đọc toàn bộ trước khi tới tay bạn. Số lượt cài lớn hay nhà phát hành nổi tiếng chỉ là tín hiệu, không phải giấy thông hành.",
+      ja:"どの候補も、あなたに届く前に全文が読まれます。インストール数の多さや著名な発行元は判断材料であって、通過条件ではありません。"}},
+  {t:{en:"You choose, then it is wired in", vi:"Bạn chọn, rồi nó được nối vào", ja:"あなたが選び、それから配線される"},
+   d:{en:"Nothing installs itself. You tick the ones you want, and <code>/skill-wire</code> connects each one to the agent or command that will actually use it - not just left sitting on disk.",
+      vi:"Không có gì tự cài. Bạn tick chọn cái mình muốn, rồi <code>/skill-wire</code> nối từng cái vào agent hoặc command sẽ thực sự dùng nó, chứ không phải nằm im trên đĩa.",
+      ja:"何も自動ではインストールされません。欲しいものにチェックを入れると、<code>/skill-wire</code> がそれぞれを実際に使うエージェントやコマンドへつなぎます。ディスクに置かれたままにはしません。"}}],
+ nav:{en:"Skills that fit", vi:"Skill vừa vặn", ja:"合うスキル"}},
+
 /* 8 */
 {icon:"i-layers", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
  title:{en:"Three mechanisms do the managing", vi:"Ba cơ chế đảm nhiệm việc quản lí", ja:"管理を担う3つの仕組み"},
@@ -1026,14 +1043,14 @@ const S = [
       vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
       ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"69/69", cls:"g", l:{en:"<b>Does the floor hold?</b> 34 forbidden and 35 permitted actions, every one judged correctly", vi:"<b>Sàn có giữ được không?</b> 34 hành động bị cấm và 35 được phép, tất cả đều phán đúng", ja:"<b>下限は保たれるか</b> 禁止34件と許可35件、すべて正しく判定"}},
+  {v:"89/89", cls:"g", l:{en:"<b>Does the floor hold?</b> 26 forbidden actions blocked, 63 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 26 hành động bị cấm đều chặn, 63 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止26件を遮断、許可と配線検査63件を維持"}},
   {v:"Opus = Haiku", cls:"g", l:{en:"<b>Does it depend on the model?</b> Re-run on the cheapest tier, the result is byte-identical", vi:"<b>Có phụ thuộc model không?</b> Chạy lại trên tier rẻ nhất, kết quả giống hệt từng byte", ja:"<b>モデルに依存するか</b> 最安ティアで再実行しても結果はバイト単位で同一"}},
-  {v:"80/80", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
+  {v:"89/89", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
   {v:"5/5", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断"}}],
  note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
        vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
        ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
- nav:{en:"69/69 proof", vi:"Bằng chứng 69/69", ja:"69/69 の証明"}},
+ nav:{en:"89/89 proof", vi:"Bằng chứng 89/89", ja:"89/89 の証明"}},
 
 /* 16 */
 {icon:"i-coins", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
@@ -1073,6 +1090,46 @@ const S = [
        ja:"正直な限界が3点: Codexは apply_patch 経由で編集するため{{g:adr|ADR}}ガードはベストエフォート、Cursorの afterFileEdit は観測のみでADR編集は報告止まり、そして guard-agent-spawn はまったく移植できません - どちらのツールも Claude Code の Agent ツールを持たないため、subagent-spawn のフックポイント自体が存在しません。"},
  nav:{en:"Cursor & Codex", vi:"Cursor & Codex", ja:"Cursor と Codex"}},
 
+/* 17c - harness-view: how do you see whether the harness was set up correctly */
+{icon:"i-target", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+ title:{en:"So how do you know it is actually wired right?", vi:"Vậy làm sao biết nó thực sự được nối đúng?", ja:"では実際に正しく配線されているとどう分かるか"},
+ sub:{en:"That question is the whole point of harness-view, not the graph it happens to draw.",
+      vi:"Đó là toàn bộ lý do tồn tại của harness-view, chứ không phải cái đồ thị nó vẽ ra.",
+      ja:"harness-view が存在する理由はまさにこの問いに答えるためであり、たまたま描くグラフのためではありません。"},
+ cards:[
+  {ic:"i-flow", cls:"p", t:{en:"Everything, and how it connects", vi:"Mọi thứ, và cách chúng kết nối", ja:"すべてと、その繋がり"},
+   d:{en:"Reads a repo's <code>.claude/</code> and shows the agents, rules, commands, hooks and tasks, and the edges between them.",
+      vi:"Đọc <code>.claude/</code> của repo và hiển thị agents, rules, commands, hooks và tasks, cùng các liên kết giữa chúng.",
+      ja:"リポジトリの <code>.claude/</code> を読み込み、エージェント、ルール、コマンド、フック、タスクと、それらの間のつながりを表示します。"}},
+  {ic:"i-layers", cls:"g", t:{en:"Flow: the chain of control", vi:"Flow: chuỗi kiểm soát", ja:"Flow: 制御の連鎖"},
+   d:{en:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; the merge gate &rarr; the human. One view of how a change is actually kept in check.",
+      vi:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; merge gate &rarr; con người. Một góc nhìn cho thấy một thay đổi thực sự bị kiểm soát ra sao.",
+      ja:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; マージゲート &rarr; 人間。変更が実際にどう抑えられているかを一望できます。"}},
+  {ic:"i-chart", cls:"a", t:{en:"Assess: a score with a reason", vi:"Assess: một điểm số có lý do", ja:"Assess: 理由のあるスコア"},
+   d:{en:"Scores the harness against the project's own quality gate and lists what is wrong. Each finding links back to the node that caused it.",
+      vi:"Chấm điểm harness theo đúng quality gate của chính dự án và liệt kê những gì sai. Mỗi phát hiện liên kết ngược về node gây ra nó.",
+      ja:"プロジェクト自身の品質ゲートに照らしてハーネスを採点し、何が問題かを列挙します。各所見は原因となったノードへリンクします。"}},
+  {ic:"i-box", cls:"r", t:{en:"Deterministic, and it runs anywhere", vi:"Tất định, và chạy được ở mọi nơi", ja:"決定的で、どこでも動く"},
+   d:{en:"A plain rules engine, no model in the loop. Ships as a standalone binary for Windows, macOS and Linux, and also runs from source.",
+      vi:"Một rules engine thuần tuý, không model nào tham gia. Phát hành dưới dạng binary độc lập cho Windows, macOS và Linux, và cũng chạy được từ source.",
+      ja:"純粋なルールエンジンで、モデルは一切介在しません。Windows・macOS・Linux 向けのスタンドアロンバイナリとして配布され、ソースからも実行できます。"}}],
+ nav:{en:"harness-view", vi:"harness-view", ja:"harness-view"}},
+
+/* 17d - harness-view: measured evidence against real harnesses */
+{icon:"i-target", kind:"stats", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+ title:{en:"Run against three real harnesses, not fixtures", vi:"Chạy trên ba harness thật, không phải fixture", ja:"実在する3つのハーネスで検証、フィクスチャではない"},
+ sub:{en:"The same score a pipeline would see, since assess is what gates it.",
+      vi:"Cùng một điểm số mà một pipeline sẽ thấy, vì assess chính là thứ gác cổng nó.",
+      ja:"パイプラインが目にするのと同じスコアです。ゲートしているのが assess そのものだからです。"},
+ stats:[
+  {v:"99/100", cls:"g", l:{en:"A harness generated by the scaffolder itself", vi:"Một harness do chính scaffolder sinh ra", ja:"スキャフォルダー自身が生成したハーネス"}},
+  {v:"79/100", cls:"a", l:{en:"A hand-maintained harness, lightly drifted", vi:"Một harness bảo trì thủ công, trôi lệch nhẹ", ja:"手作業で保守されたハーネス、軽度のずれ"}},
+  {v:"64/100", cls:"r", l:{en:"A hand-maintained harness, drifted further", vi:"Một harness bảo trì thủ công, trôi lệch nhiều hơn", ja:"手作業で保守されたハーネス、さらに大きなずれ"}}],
+ note:{en:"The two lower scores were driven by things like eighteen rules loading in every session, and agent seats renamed without the task board following. assess names the exact node for each finding.",
+       vi:"Hai điểm thấp hơn đến từ những thứ như mười tám rule nạp trong mọi phiên, và các vai agent bị đổi tên mà bảng task không theo kịp. assess nêu đích danh node cho từng phát hiện.",
+       ja:"低い2つのスコアは、たとえば毎セッション読み込まれる18個のルールや、タスクボードが追いつけていないエージェント席の改名などが原因でした。assess は所見ごとに該当ノードを名指しします。"},
+ nav:{en:"harness-view score", vi:"Điểm harness-view", ja:"harness-view のスコア"}},
+
 /* 18 */
 {icon:"i-play", kind:"video", step:{en:"See it run", vi:"Xem nó chạy", ja:"動作を見る"},
  title:{en:"The harness in motion", vi:"Harness khi vận hành", ja:"動作するハーネス"},
@@ -1097,9 +1154,9 @@ const S = [
  stats:[
   {v:"-45%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
   {v:"-85%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
-  {v:"65%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
+  {v:"63%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
   {v:"~0.2s", cls:"g", l:{en:"to scaffold 91 paths, idempotent on re-run", vi:"để scaffold 91 đường dẫn, chạy lại vẫn bất biến", ja:"91パスのscaffold、再実行しても冪等"}},
-  {v:"16", cls:"a", l:{en:"agents, 15 rules, 22 commands, 9 hooks", vi:"agents, 15 rules, 22 commands, 9 hooks", ja:"エージェント、15ルール、22コマンド、9フック"}},
+  {v:"16", cls:"a", l:{en:"agents, 16 rules, 22 commands, 10 hooks", vi:"agents, 16 rules, 22 commands, 10 hooks", ja:"エージェント、16ルール、22コマンド、10フック"}},
   {v:"$2.44", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
  note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
        vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",
@@ -1112,16 +1169,7 @@ const S = [
  sub:{en:"Context survives. Work is registered and gated. Damage is blocked before it happens.",
       vi:"Context sống sót. Công việc được đăng ký và qua cổng. Thiệt hại bị chặn trước khi xảy ra.",
       ja:"コンテキストは残る。作業は登録されゲートを通る。被害は起きる前に遮断される。"},
- nav:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"}},
-
-/* 23 - post-seminar survey */
-{icon:"i-chat", kind:"qr", step:{en:"Thank you", vi:"Thank you", ja:"Thank you"},
- title:{en:"Post-seminar survey", vi:"Post-seminar survey", ja:"Post-seminar survey"},
- sub:{en:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback.",
-      vi:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback.",
-      ja:"AI Development Life Cycle seminar. Scan the code to share two minutes of feedback."},
- qr:"img/survey-qr.png",
- nav:{en:"Survey", vi:"Survey", ja:"Survey"}}
+ nav:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"}}
 
 ];
 
@@ -1255,11 +1303,6 @@ function slideHTML(s){
          <div class="core">${L(s.core)}</div></div>
          <div class="ringcols">${s.cols4.map(c=>
            `<div class="rc ${c.cls}"><b>${L(c.t)}</b><span>${L(c.d)}</span></div>`).join('')}</div>`;
-  }
-  if(s.kind==='qr'){
-    body = `<div class="qrwrap">
-      <div class="qrcard"><img src="${s.qr}" alt="Survey QR code"></div>
-    </div>`;
   }
   if(s.kind==='close'){
     const c1 = lang==='vi'?'viết hợp đồng trước':lang==='ja'?'先に契約を書く':'write the contract first';

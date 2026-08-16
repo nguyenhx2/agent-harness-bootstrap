@@ -120,7 +120,7 @@ flowchart TD
     ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
     SKILLS["Skill discovery and install<br/>search skills.sh per seat, trust rubric +<br/>mandatory content read, yes per skill"]
     OS["Detect the dev OS<br/>Windows to .ps1, macOS or Linux to .sh<br/>sets the windows / posix flag"]
-    VARS[/"vars.json<br/>vars + 16 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, exactly one of windows / posix"/]
+    VARS[/"vars.json<br/>vars + 18 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk,<br/>exactly one of windows / posix"/]
 
     DRY["scaffold.py --dry-run"]
     SCAFFOLD["scaffold.py<br/>deterministic copy of assets/"]
@@ -498,8 +498,8 @@ flowchart TD
     class TOUCH hum
 ```
 
-Six unconditional rules, nine path-scoped ones. On the shipped asset set that is 27,805 bytes always
-loaded against 52,131 bytes loaded on demand: **65% of the rule content is kept out of the default
+7 unconditional rules, nine path-scoped ones (the seventh, `output-style.md`, only with the `terse` flag). On the shipped asset set that is 27,805 bytes always
+loaded against 52,131 bytes loaded on demand: **63% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 

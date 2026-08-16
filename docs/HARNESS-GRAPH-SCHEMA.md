@@ -27,8 +27,8 @@ extra keys; anything that writes it must preserve the guarantees below.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | `<prefix>:<name>` - prefixes: `agent:` `rule:` `cmd:` `hook:` `script:` `mod:` `task:` `gate:`; plus the bare ids `settings` and `human` |
-| `type` | enum | `agent` `rule` `command` `hook` `settings` `script` `module` `task` `gate` `human` |
+| `id` | string | `<prefix>:<name>` - prefixes: `agent:` `rule:` `cmd:` `hook:` `script:` `mod:` `task:` `gate:` `skill:`; plus the bare ids `settings` and `human` |
+| `type` | enum | `agent` `rule` `command` `hook` `settings` `script` `module` `task` `gate` `human` `skill` |
 | `label` | string | ALWAYS present. Commands are `/<name>`; the synthetic nodes are `Merge request` and `Human`; settings is `settings.json`; scripts are `<name>.py`; modules are the module path; everything else the bare name |
 | `file` | string? | repo-relative path, absent for synthetic and module nodes. When a hook has both flavors, `file` points at the `.sh` if present, else the `.ps1` (an active flavor beats a disabled one at equal extension) |
 | `disabled` | bool | ALWAYS present; `false` when not applicable. True when the item sits under `.claude/disabled/` or is listed in `.claude/disabled.json` |
@@ -48,6 +48,7 @@ extra keys; anything that writes it must preserve the guarantees below.
   the task frontmatter. A trailing YAML comment is stripped, so the template's
   `status: Done # Active | Blocked | Pending | Done` reads as `Done`.
 - `module`: `files` (int) AND `owner` (agent name from code-graph.json, `"-"` when unowned)
+- `skill`: `description`? (frontmatter `description:`, same rule as the agent one), `own_agents`? (int) and `own_scripts`? (int) when the skill ships its own `agents/` or `scripts/` directory. Those files are internal to the skill and are deliberately NOT emitted as harness nodes: they are not roster seats.
 - `settings`: no meta - the settings node carries `id`/`type`/`label`/`file`/`disabled` only
 
 Inventory rules:
@@ -56,6 +57,14 @@ Inventory rules:
   Nodes are strictly the on-disk inventory: a script referenced by a command but missing on
   disk gets NO node - the `runs` edge is kept dangling on purpose, and the HTML viewer renders
   the missing endpoint as a greyed "(missing)" stub so the broken reference is diagnosable.
+- **Skills**: EVERY `.claude/skills/<slug>/SKILL.md` is a node. A `uses` edge is drawn only
+  from a DECLARATION LINE in a seat's body (a line naming skills, such as `Skills available:`
+  or `Skills to load when relevant:`), never from a bare mention of the skill's name. That
+  distinction is load-bearing: five agents in one real harness contain the word
+  "performance" ("performance budgets") while the skill of that name is wired to no seat,
+  so substring matching would invent five wires. Only INSTALLED skills get an edge; a seat
+  declaring a skill that is not installed is reported by `harness-view assess`
+  (`skill-wire-missing`), which reads the seat files directly.
 - **Tasks**: EVERY `TASK-*.md` under `docs/tasks/**` is a node; `references` edges are added
   only where the task body names a module path.
 
@@ -79,6 +88,7 @@ Inventory rules:
 | `spawns` | the orchestrator can dispatch a seat | agent:orchestrator -> agent |
 | `owns` | a dev agent owns a code module, or owns a task (its `owner:` frontmatter) | agent -> module, agent -> task |
 | `references` | module imports module, or a task names a module | module -> module, task -> module |
+| `uses` | a seat declares a wired skill, per `/skill-wire` | agent -> skill |
 
 ## Inputs the scanner merges
 

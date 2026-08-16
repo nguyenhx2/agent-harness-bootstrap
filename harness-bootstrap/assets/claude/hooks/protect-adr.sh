@@ -108,11 +108,18 @@ path="${JF[0]}"
 
 # Resolve against the payload's cwd so a relative file_path is checked against the right file
 # (parity with the PowerShell flavor).
+#
+# An ABSOLUTE file_path must go through norm_path too, not just the cwd. Under a bash that
+# translates paths (WSL, and Cygwin the same way), `[ -f "C:/repo/docs/.../ADR-001.md" ]` is
+# false, so the -f test below fell through and this hook allowed the edit. The PowerShell twin
+# accepts `C:/...` natively, so the guard held on Windows and failed open on posix - the exact
+# asymmetry the port self-test caught once it started exercising both flavors.
 base=$(norm_path "${JF[1]}")
 [ -z "$base" ] && base=$(pwd)
 abs=${path//\\//}
 case "$abs" in
-  /*|[A-Za-z]:/*) ;;
+  [A-Za-z]:/*) abs=$(norm_path "$abs") ;;
+  /*) ;;
   *) abs="${base//\\//}/$abs" ;;
 esac
 

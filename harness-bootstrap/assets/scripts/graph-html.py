@@ -355,15 +355,19 @@ def specs_graph(root: pathlib.Path) -> str | None:
         return None
     try:
         g = json.loads(src.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, OSError, AttributeError, KeyError, TypeError) as e:
         # contract: never fail the caller - a broken input narrows the output
         print(f"graph-html: {src} unreadable ({e}); skipping the specs graph",
               file=sys.stderr)
         return None
-    linked = {e["from"] for e in g["edges"]} | {e["to"] for e in g["edges"]}
+    # .get, not [], and outside the try above: a valid-JSON dict with no "edges" key would
+    # otherwise raise here, past the guard, and take the caller down with it.
+    _raw = g.get("edges") if isinstance(g, dict) else None
+    g_edges = [e for e in (_raw if isinstance(_raw, list) else []) if isinstance(e, dict)]
+    linked = {e["from"] for e in g_edges} | {e["to"] for e in g_edges}
     nodes = [{"id": d, "label": d.split("/")[-1], "cat": "doc", "detail": d}
              for d in sorted(linked)]
-    edges = [{"from": e["from"], "to": e["to"], "refs": e["refs"]} for e in g["edges"]]
+    edges = [{"from": e["from"], "to": e["to"], "refs": e.get("refs", 1)} for e in g_edges]
     out = root / "docs" / "context" / "specs-graph.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(render("Specs graph", "documents linked by shared requirement / decision / task IDs",
@@ -417,7 +421,7 @@ def harness_graph(root: pathlib.Path) -> str | None:
                        encoding="utf-8")
     try:
         g = json.loads(src.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
+    except (json.JSONDecodeError, OSError, AttributeError, KeyError, TypeError) as e:
         # contract: never fail the caller - a broken input narrows the output
         print(f"graph-html: {src} unreadable ({e}); skipping the harness graph",
               file=sys.stderr)
