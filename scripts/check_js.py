@@ -49,7 +49,16 @@ SOURCE_GLOBS = [
     "video/html/ja/*.html",
 ]
 
-SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script>", re.S | re.I)
+# CodeQL flags this as py/bad-tag-filter, and it is right that a regex cannot parse
+# HTML in general. It is not doing that job here: the input is this repository's own
+# files, and the output decides which text to hand to `node --check`. A miss means a
+# block goes unchecked, which is a weaker linter, not a way in - there is no
+# untrusted input and nothing is being sanitised.
+#
+# The closing tag still tolerates whitespace, because `</script >` is legal HTML and
+# would silently truncate a block, and a truncated block reports a syntax error that
+# is not in the source.
+SCRIPT_RE = re.compile(r"<script\b[^>]*>(.*?)</script\s*>", re.S | re.I)
 
 
 def blocks(path: pathlib.Path) -> list[tuple[int, str]]:
