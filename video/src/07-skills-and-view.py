@@ -152,6 +152,53 @@ class SkillsAndView(Scene):
         )
 
         # =================================================================
+        # BEAT A2 - the step between the contract and the harness
+        # =================================================================
+        h1b = Text("Tailored, not comprehensive", font=FONT, font_size=34,
+                   color=WHITE, weight="BOLD")
+        h1b.move_to([0, 2.35, 0])
+        p1b = small("Most kits install everything, then hope the project needs it.",
+                    fs=22, color=DIM)
+        p1b.move_to([0, 1.7, 0])
+        self.play(FadeIn(h1b, shift=0.15 * DOWN), FadeIn(p1b), run_time=0.6)
+
+        kit = RoundedRectangle(width=5.4, height=2.5, corner_radius=0.14, fill_color=BG,
+                               fill_opacity=1.0, stroke_color=RED, stroke_width=2)
+        kit.move_to([-3.5, -0.85, 0])
+        kit_t = Text("every agent, a hundred skills", font=FONT, font_size=21, color="#E5575B")
+        kit_t.move_to(kit.get_center() + 0.72 * UP)
+        kit_lines = VGroup(*[Text(s, font=FONT, font_size=16, color=DIM)
+                             for s in ["you pay context for all of it",
+                                       "seats no module owns",
+                                       "advice too general to act on"]])
+        kit_lines.arrange(DOWN, buff=0.2, aligned_edge=np.array([-1.0, 0, 0]))
+        kit_lines.move_to(kit.get_center() + 0.34 * DOWN)
+        self.play(Create(kit), FadeIn(kit_t), run_time=0.5)
+        self.play(FadeIn(kit_lines, shift=0.1 * UP), run_time=0.5)
+
+        fit = RoundedRectangle(width=5.4, height=2.5, corner_radius=0.14, fill_color=BG,
+                               fill_opacity=1.0, stroke_color=GREEN_HI, stroke_width=2)
+        fit.move_to([3.5, -0.85, 0])
+        fit_t = Text("7 to 15 of the 16 seats", font=FONT, font_size=21, color=GREEN_HI)
+        fit_t.move_to(fit.get_center() + 0.72 * UP)
+        fit_lines = VGroup(*[Text(s, font=FONT, font_size=16, color=DIM)
+                             for s in ["derived from the contract",
+                                       "and the modules that exist",
+                                       "one dev agent per module"]])
+        fit_lines.arrange(DOWN, buff=0.2, aligned_edge=np.array([-1.0, 0, 0]))
+        fit_lines.move_to(fit.get_center() + 0.34 * DOWN)
+        self.play(Create(fit), FadeIn(fit_t), run_time=0.5)
+        self.play(FadeIn(fit_lines, shift=0.1 * UP), run_time=0.5)
+
+        swap = Arrow(kit.get_right(), fit.get_left(), buff=0.12, stroke_width=3,
+                     max_tip_length_to_length_ratio=0.3, color=GREEN_HI)
+        self.play(Create(swap), run_time=0.4)
+        caption(self, "A seat nobody owns is a cost, not a capability.", hold=1.5)
+
+        self.play(FadeOut(VGroup(h1b, p1b, kit, kit_t, kit_lines,
+                                 fit, fit_t, fit_lines, swap)), run_time=0.5)
+
+        # =================================================================
         # BEAT B - skill discovery
         # =================================================================
         h2 = Text("Skill Discovery", font=FONT, font_size=34, color=WHITE, weight="BOLD")

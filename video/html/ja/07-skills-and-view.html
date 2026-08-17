@@ -50,6 +50,13 @@
   .card.on{opacity:1;transform:none}
   .card .nm{font-weight:700;font-size:clamp(10px,1.35vw,18px)}
   .card .ds{color:var(--dim);font-size:clamp(8px,1.05vw,14px);margin-top:3px}
+  .panel{border-radius:10px;padding:.7em .9em;flex:1 1 0;min-width:0;text-align:left}
+  .panel.bad{border:2px solid var(--red-hi)}
+  .panel.good{border:2px solid var(--green-hi)}
+  .panel .ph{font-weight:700;font-size:clamp(10px,1.35vw,18px);margin-bottom:.45em;text-align:center}
+  .panel.bad .ph{color:var(--red-hi)}
+  .panel.good .ph{color:var(--green-hi)}
+  .panel .pl{color:var(--dim);font-size:clamp(8px,1.1vw,15px);margin:.22em 0}
   .pill{border:2px solid var(--green-hi);color:var(--green-hi);border-radius:999px;
     padding:.35em 1em;font-size:clamp(10px,1.35vw,18px)}
   .fadein{animation:fi .5s ease both}
@@ -112,8 +119,25 @@
     <div class="state">状態: プロンプト・実行履歴・タスクボード</div>
   </section>
 
-  <!-- Scene 1: skill discovery -->
+  <!-- Scene 1: tailored, not comprehensive -->
   <section class="scene" data-s="1">
+    <h2>網羅ではなく、適合</h2>
+    <div class="prob">多くのキットはすべてを入れてから、必要であることを期待する。</div>
+    <div class="flow" style="margin-top:14px;align-items:stretch">
+      <div class="panel bad">
+        <div class="ph">エージェント全種、スキル百個</div>
+        <div class="pl">その全部にコンテキスト代を払う</div><div class="pl">どのモジュールも持たない席</div><div class="pl">一般的すぎて行動に移せない助言</div>
+      </div>
+      <span class="arrow g">&#8594;</span>
+      <div class="panel good">
+        <div class="ph">16席のうち7〜15席</div>
+        <div class="pl">契約から導かれ</div><div class="pl">実在するモジュールから導かれる</div><div class="pl">モジュールごとに開発エージェント1名</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2: skill discovery -->
+  <section class="scene" data-s="2">
     <h2>スキル探索</h2>
     <div class="prob">課題: 読んだこともないカタログから選ぶことはできない。</div>
     <div class="flow" style="margin-top:6px">
@@ -125,8 +149,8 @@
     </div>
   </section>
 
-  <!-- Scene 2: skill wire -->
-  <section class="scene" data-s="2">
+  <!-- Scene 3: skill wire -->
+  <section class="scene" data-s="3">
     <h2>スキル配線</h2>
     <div class="prob">課題: 誰も使うよう指示されていないスキルは、ただの死荷重。</div>
     <div class="flow" style="margin-top:14px">
@@ -136,16 +160,16 @@
     </div>
   </section>
 
-  <!-- Scene 3: harness-view -->
-  <section class="scene" data-s="3">
+  <!-- Scene 4: harness-view -->
+  <section class="scene" data-s="4">
     <h2>harness-view</h2>
     <div class="prob">課題: 本当に正しく配線されていると、どう分かるのか。</div>
     <div class="cards" id="cards" style="margin-top:8px"><div class="card"><div class="nm">フロー / グラフ</div><div class="ds">全ての配線をディスクから</div></div><div class="card"><div class="nm">評価</div><div class="ds">採点と、何が問題か</div></div><div class="card"><div class="nm">切り替え</div><div class="ds">任意のルールやフックを無効化</div></div><div class="card"><div class="nm">監視</div><div class="ds">ファイル変更に応じて再走査</div></div></div>
     <span class="pill fadein" style="margin-top:12px">ブラウザと CI が食い違うことはない</span>
   </section>
 
-  <!-- Scene 4: brand end card -->
-  <section class="scene" data-s="4">
+  <!-- Scene 5: brand end card -->
+  <section class="scene" data-s="5">
     <div class="big dim">混沌が入り、</div>
     <div class="big green">制御され検証可能な成果が出てくる。</div>
     <svg class="brandmark-big" viewBox="0 0 256 256" style="margin-top:14px"><use href="#brand-logo"></use></svg>
@@ -164,10 +188,11 @@
     {s:0,d:9000,cap:'入力は来た形のまま入り、一つの契約になる。',capAt:2600},
     {s:0,d:6000,cap:'ルールとフックが上から降りてくる。終了コード 2 は呼び出しを遮断する。',capAt:400},
     {s:0,d:6500,cap:'秩序ある三つの成果物。状態は与えられるものではなく、書かれるもの。',capAt:400},
-    {s:1,d:9500,cap:'汎用の一覧ではなく、このプロジェクトのマニフェストを読む。勝手にインストールはされない。',capAt:2800,reveal:'disc'},
-    {s:2,d:7000,cap:'配線は文書上の慣習ではなく、グラフ上のノードとして残る。',capAt:2400},
-    {s:3,d:9500,cap:'実行が書いた状態を読む。モデルは一切介在しない。',capAt:2600,reveal:'cards'},
-    {s:4,d:2600,cap:'',capAt:0}
+    {s:1,d:8500,cap:'誰も持たない席は、能力ではなくコストである。',capAt:3000},
+    {s:2,d:9500,cap:'汎用の一覧ではなく、このプロジェクトのマニフェストを読む。勝手にインストールはされない。',capAt:2800},
+    {s:3,d:7000,cap:'配線は文書上の慣習ではなく、グラフ上のノードとして残る。',capAt:2400},
+    {s:4,d:9500,cap:'実行が書いた状態を読む。モデルは一切介在しない。',capAt:2600,reveal:'cards'},
+    {s:5,d:2600,cap:'',capAt:0}
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
   function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}

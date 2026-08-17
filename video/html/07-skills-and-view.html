@@ -50,6 +50,13 @@
   .card.on{opacity:1;transform:none}
   .card .nm{font-weight:700;font-size:clamp(10px,1.35vw,18px)}
   .card .ds{color:var(--dim);font-size:clamp(8px,1.05vw,14px);margin-top:3px}
+  .panel{border-radius:10px;padding:.7em .9em;flex:1 1 0;min-width:0;text-align:left}
+  .panel.bad{border:2px solid var(--red-hi)}
+  .panel.good{border:2px solid var(--green-hi)}
+  .panel .ph{font-weight:700;font-size:clamp(10px,1.35vw,18px);margin-bottom:.45em;text-align:center}
+  .panel.bad .ph{color:var(--red-hi)}
+  .panel.good .ph{color:var(--green-hi)}
+  .panel .pl{color:var(--dim);font-size:clamp(8px,1.1vw,15px);margin:.22em 0}
   .pill{border:2px solid var(--green-hi);color:var(--green-hi);border-radius:999px;
     padding:.35em 1em;font-size:clamp(10px,1.35vw,18px)}
   .fadein{animation:fi .5s ease both}
@@ -112,8 +119,25 @@
     <div class="state">state: prompt, run history, task board</div>
   </section>
 
-  <!-- Scene 1: skill discovery -->
+  <!-- Scene 1: tailored, not comprehensive -->
   <section class="scene" data-s="1">
+    <h2>Tailored, not comprehensive</h2>
+    <div class="prob">Most kits install everything, then hope the project needs it.</div>
+    <div class="flow" style="margin-top:14px;align-items:stretch">
+      <div class="panel bad">
+        <div class="ph">every agent, a hundred skills</div>
+        <div class="pl">you pay context for all of it</div><div class="pl">seats no module owns</div><div class="pl">advice too general to act on</div>
+      </div>
+      <span class="arrow g">&#8594;</span>
+      <div class="panel good">
+        <div class="ph">7 to 15 of the 16 seats</div>
+        <div class="pl">derived from the contract</div><div class="pl">and the modules that exist</div><div class="pl">one dev agent per module</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scene 2: skill discovery -->
+  <section class="scene" data-s="2">
     <h2>Skill Discovery</h2>
     <div class="prob">The problem: you cannot choose from a catalog you have never read.</div>
     <div class="flow" style="margin-top:6px">
@@ -125,8 +149,8 @@
     </div>
   </section>
 
-  <!-- Scene 2: skill wire -->
-  <section class="scene" data-s="2">
+  <!-- Scene 3: skill wire -->
+  <section class="scene" data-s="3">
     <h2>Skill Wire</h2>
     <div class="prob">The problem: an installed skill nobody is told to use is dead weight.</div>
     <div class="flow" style="margin-top:14px">
@@ -136,16 +160,16 @@
     </div>
   </section>
 
-  <!-- Scene 3: harness-view -->
-  <section class="scene" data-s="3">
+  <!-- Scene 4: harness-view -->
+  <section class="scene" data-s="4">
     <h2>harness-view</h2>
     <div class="prob">The problem: how do you know it is actually wired right?</div>
     <div class="cards" id="cards" style="margin-top:8px"><div class="card"><div class="nm">Flow / Graph</div><div class="ds">every wire, read off disk</div></div><div class="card"><div class="nm">Assess</div><div class="ds">a score, and what is wrong</div></div><div class="card"><div class="nm">Toggle</div><div class="ds">switch any rule or hook off</div></div><div class="card"><div class="nm">Watch</div><div class="ds">re-scan as files change</div></div></div>
     <span class="pill fadein" style="margin-top:12px">a browser and CI cannot disagree</span>
   </section>
 
-  <!-- Scene 4: brand end card -->
-  <section class="scene" data-s="4">
+  <!-- Scene 5: brand end card -->
+  <section class="scene" data-s="5">
     <div class="big dim">Chaos in.</div>
     <div class="big green">Controlled, inspectable work out.</div>
     <svg class="brandmark-big" viewBox="0 0 256 256" style="margin-top:14px"><use href="#brand-logo"></use></svg>
@@ -164,10 +188,11 @@
     {s:0,d:9000,cap:'Input arrives in whatever shape it arrives in, and becomes ONE contract.',capAt:2600},
     {s:0,d:6000,cap:'Rules and hooks come down into the agents. exit 2 blocks the call.',capAt:400},
     {s:0,d:6500,cap:'Three ordered outputs. State is written, not supplied.',capAt:400},
-    {s:1,d:9500,cap:'It reads this project\'s manifests, not a generic list. Nothing installs itself.',capAt:2800,reveal:'disc'},
-    {s:2,d:7000,cap:'The wire is a node in the graph, not a convention in a document.',capAt:2400},
-    {s:3,d:9500,cap:'It reads the state the run wrote. No model is in the loop.',capAt:2600,reveal:'cards'},
-    {s:4,d:2600,cap:'',capAt:0}
+    {s:1,d:8500,cap:'A seat nobody owns is a cost, not a capability.',capAt:3000},
+    {s:2,d:9500,cap:'It reads this project\'s manifests, not a generic list. Nothing installs itself.',capAt:2800},
+    {s:3,d:7000,cap:'The wire is a node in the graph, not a convention in a document.',capAt:2400},
+    {s:4,d:9500,cap:'It reads the state the run wrote. No model is in the loop.',capAt:2600,reveal:'cards'},
+    {s:5,d:2600,cap:'',capAt:0}
   ];
   var total=TL.reduce(function(a,b){return a+b.d},0);
   function showScene(i){scenes.forEach(function(sc){sc.classList.toggle('on',+sc.dataset.s===i)})}

@@ -150,6 +150,51 @@ class SkillsAndView(Scene):
         )
 
         # =================================================================
+        # ビートA2 - 契約とハーネスの間にある工程
+        # =================================================================
+        h1b = Text("網羅ではなく、適合", font=JFONT, font_size=34, color=WHITE, weight="BOLD")
+        h1b.move_to([0, 2.35, 0])
+        p1b = small("多くのキットはすべてを入れてから、必要であることを期待する。", fs=22, color=DIM)
+        p1b.move_to([0, 1.7, 0])
+        self.play(FadeIn(h1b, shift=0.15 * DOWN), FadeIn(p1b), run_time=0.6)
+
+        kit = RoundedRectangle(width=5.6, height=2.5, corner_radius=0.14, fill_color=BG,
+                               fill_opacity=1.0, stroke_color=RED, stroke_width=2)
+        kit.move_to([-3.4, -0.85, 0])
+        kit_t = Text("エージェント全種、スキル百個", font=JFONT, font_size=20, color="#E5575B")
+        kit_t.move_to(kit.get_center() + 0.72 * UP)
+        kit_lines = VGroup(*[Text(s, font=JFONT, font_size=15, color=DIM)
+                             for s in ["その全部にコンテキスト代を払う",
+                                       "どのモジュールも持たない席",
+                                       "一般的すぎて行動に移せない助言"]])
+        kit_lines.arrange(DOWN, buff=0.2, aligned_edge=np.array([-1.0, 0, 0]))
+        kit_lines.move_to(kit.get_center() + 0.34 * DOWN)
+        self.play(Create(kit), FadeIn(kit_t), run_time=0.5)
+        self.play(FadeIn(kit_lines, shift=0.1 * UP), run_time=0.5)
+
+        fit = RoundedRectangle(width=5.6, height=2.5, corner_radius=0.14, fill_color=BG,
+                               fill_opacity=1.0, stroke_color=GREEN_HI, stroke_width=2)
+        fit.move_to([3.4, -0.85, 0])
+        fit_t = Text("16席のうち7〜15席", font=JFONT, font_size=20, color=GREEN_HI)
+        fit_t.move_to(fit.get_center() + 0.72 * UP)
+        fit_lines = VGroup(*[Text(s, font=JFONT, font_size=15, color=DIM)
+                             for s in ["契約から導かれ",
+                                       "実在するモジュールから導かれる",
+                                       "モジュールごとに開発エージェント1名"]])
+        fit_lines.arrange(DOWN, buff=0.2, aligned_edge=np.array([-1.0, 0, 0]))
+        fit_lines.move_to(fit.get_center() + 0.34 * DOWN)
+        self.play(Create(fit), FadeIn(fit_t), run_time=0.5)
+        self.play(FadeIn(fit_lines, shift=0.1 * UP), run_time=0.5)
+
+        swap = Arrow(kit.get_right(), fit.get_left(), buff=0.12, stroke_width=3,
+                     max_tip_length_to_length_ratio=0.3, color=GREEN_HI)
+        self.play(Create(swap), run_time=0.4)
+        caption(self, "誰も持たない席は、能力ではなくコストである。", hold=1.5)
+
+        self.play(FadeOut(VGroup(h1b, p1b, kit, kit_t, kit_lines,
+                                 fit, fit_t, fit_lines, swap)), run_time=0.5)
+
+        # =================================================================
         # ビートB - スキル探索
         # =================================================================
         h2 = Text("スキル探索", font=JFONT, font_size=34, color=WHITE, weight="BOLD")
