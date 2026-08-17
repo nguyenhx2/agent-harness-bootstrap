@@ -1,0 +1,73 @@
+name: codeql
+
+# Static analysis for the three languages GitHub detects in this repo. The language
+# list is not a guess: `gh api repos/OWNER/REPO/code-scanning/default-setup` reports
+# ["actions", "python", "rust"], and that is what is configured here.
+#
+# `actions` is the one worth saying out loud. This repo ships three other workflows
+# and a release pipeline that publishes artifacts, so a vulnerable workflow is a
+# supply-chain problem for anyone installing the skills. CodeQL scans the workflow
+# files themselves for that class.
+#
+# Advanced setup (this file) rather than default setup, deliberately: every control
+# in this repository is a file you can read, diff and delete. A scanner configured
+# through a settings page is not.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a newly published CodeQL query reaches this repo without waiting
+    # for the next commit. Monday 03:17 UTC - an odd minute, to avoid the top-of-hour
+    # rush that makes hosted runners queue.
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write   # required to upload the SARIF results
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: rust
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-extended adds the lower-severity and precision queries on top of
+          # the default suite. This repo is small enough that the extra noise is
+          # affordable, and the whole point of the harness is catching things early.
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
