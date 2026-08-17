@@ -13,6 +13,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege, declared rather than inherited. Without this the jobs run with
+# whatever the repository default grants, which CodeQL flags as
+# actions/missing-workflow-permissions - and it is right: nothing here writes.
+permissions:
+  contents: read
+
 jobs:
   guardrails:
     name: guardrail eval (both hook flavors)
@@ -41,7 +47,7 @@ jobs:
       # unless told, and it downloads its own otherwise. Point it at the installed browser so the
       # step does not spend a minute fetching a second copy.
       - name: Set up Chrome for the mermaid renderer
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
         id: chrome
         with:
           chrome-version: stable
