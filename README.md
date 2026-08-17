@@ -54,6 +54,53 @@ coding agent:
 
 ---
 
+## 🧩 Tailored, not comprehensive
+
+The usual way to ship an agent kit is to ship all of it: every agent, a hundred skills, every rule
+and every hook, installed before anyone has read the codebase. It looks generous. What it actually
+does is hand you a team you did not pick, for a project it has never seen.
+
+That costs more than it looks like it costs:
+
+- **You pay context for all of it, in every session.** A rule that matches no file in your repo is
+  not free. It is a tax on every request, forever.
+- **Seats end up with no owner.** An agent nobody routes work to is not capability held in reserve.
+  It is a name in a routing table that makes the table harder to read.
+- **The advice goes generic.** Guidance written to be true in any repository is rarely specific
+  enough to act on in yours.
+- **You cannot tell what is load-bearing.** When everything is installed, nothing signals that it
+  was chosen, so nobody can safely remove anything.
+
+Completeness gets mistaken for fit. They are not the same thing, and only one of them is worth
+paying for.
+
+<p align="center">
+  <img src="docs/assets/tailored-build.svg" alt="A figure in two halves. The top half shows the step joining spec-builder to harness-bootstrap: the contract with its FR, NFR and BR identifiers, and the codebase analysis with modules, detected stack and risky operations, both feeding a step labelled TAILOR whose job is to decide the team from evidence rather than a catalogue. Out of it come the roster, 7 to 15 of the 16 seats plus one dev agent per module that exists; the skills, only what the manifests justify and only if chosen; and the rules, scoped to paths that exist. Those three become the harness. The bottom half compares the kit approach, which installs everything before reading the codebase and so pays context for all of it and ends up with orphan seats and generic advice, against the tailored build, whose roster comes from the contract and the real modules and where everything installed has a named owner." width="960">
+</p>
+
+### The step in the middle
+
+`spec-builder` ends with a contract. `harness-bootstrap` begins with a codebase. **The step between
+them is where the team gets decided**, and it is the step most kits do not have at all.
+
+Both sides are evidence. The contract says what has to be built, in numbered requirements. The
+codebase analysis says what is already here: the modules, the stack it detected, the operations that
+are dangerous. The roster is derived from those two, and from nothing else:
+
+| Decided from | What it decides |
+|---|---|
+| The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
+| The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
+| The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
+| The paths that exist | Which rules are path-scoped, which keeps **63%** of rule content out of the default session. |
+
+The numbers above are measured, not claimed: scaffold with the leanest answers and you get 7 seats;
+answer yes to databases, tests and a long-lived project and you get 15. Nothing installs itself, and
+`harness-view assess` will name any seat without a module, any rule without a path, and any skill
+without an agent.
+
+---
+
 ## 🧵 How it all fits together
 
 <p align="center">

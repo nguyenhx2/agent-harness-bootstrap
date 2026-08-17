@@ -53,6 +53,39 @@ def _const(rel: str, name: str) -> int:
     return int(m.group(1))
 
 
+def roster_range() -> tuple[int, int]:
+    """How many of the shipped agent seats a single run can install, at least and at most.
+
+    "Tailored, not comprehensive" is the claim the README makes about the roster, and a range
+    is the honest way to state it. It is computed with the scaffolder's OWN `wanted()` over
+    every combination of the flags that gate an agent, so it cannot drift from what a real run
+    would install: re-implementing the selection rule here would just create a second answer.
+    dev-agent is a template instantiated per module, not a seat, and is excluded.
+    """
+    import itertools
+
+    sys.path.insert(0, str(ROOT / "harness-bootstrap" / "scripts"))
+    import scaffold  # noqa: E402
+
+    manifest = json.loads((ROOT / "harness-bootstrap/assets/manifest.json")
+                          .read_text(encoding="utf-8"))
+    entries = manifest if isinstance(manifest, list) else manifest.get(
+        "files", manifest.get("items", []))
+    agents = [e for e in entries
+              if "agents/" in str(e.get("dest", ""))
+              and pathlib.Path(str(e.get("dest"))).stem != "dev-agent"]
+
+    gating = sorted({f for e in agents
+                     for f in (e.get("when") or []) + (e.get("when_any") or [])
+                     + (e.get("when_not") or [])})
+    counts = []
+    for r in range(len(gating) + 1):
+        for combo in itertools.combinations(gating, r):
+            flags = set(combo)
+            counts.append(sum(1 for e in agents if scaffold.wanted(e, flags)))
+    return min(counts), max(counts)
+
+
 def canonical() -> dict[str, int]:
     r = subprocess.run([sys.executable, str(ROOT / "benchmark/benchmark.py"), "--json"],
                        capture_output=True, text=True, cwd=ROOT)
@@ -106,6 +139,9 @@ def canonical() -> dict[str, int]:
         # is not a safety win to count here. Two different true numbers, so two keys - a single
         # "N must-block" rule would have to call one of them wrong.
         "bench_block": d["guardrails"]["cases"],
+        # The tailored-roster claim: how few and how many seats a run can install.
+        "roster_min": roster_range()[0],
+        "roster_max": roster_range()[1],
     }
 
 
@@ -123,6 +159,10 @@ CHECKS = [
     ("rule content kept out", r"[Rr]ule content kept out[^\n]*?\*\*(\d\d)%\*\*", "tax_pct"),
     ("unconditional rules",   rf"{NUM} unconditional rules?\b", "unconditional_rules"),
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
+    # The roster range behind "tailored, not comprehensive". Both ends are checked, because a
+    # claim that the build is smaller than the catalogue is only worth making if it is true.
+    ("roster range low",      r"\b(\d+) to \d+ of (?:the |them|its )?\d* ?seats?\b", "roster_min"),
+    ("roster range high",     r"\b\d+ to (\d+) of (?:the |them|its )?\d* ?seats?\b", "roster_max"),
 ]
 
 # A cheap plain-substring pre-check before each CHECKS regex: every pattern above requires one of
@@ -171,11 +211,18 @@ COUNT_CHECKS = [
 # is the first thing a visitor reads, so it is policed the same way. Its Japanese twin is a
 # translation of the checked English source, exactly as the video files are.
 MEDIA_FILES = ["presentation/index.html", "index.html", "index.ja.html"]
-MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html", "video/src/ja/*.py"]
+# The figures bake the same numbers as the prose and nothing was reading them: the roster
+# range and the session-tax percentage both appear inside docs/assets/*.svg.
+MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html",
+               "video/src/ja/*.py", "docs/assets/*.svg"]
 MEDIA_CHECKS = [
     ("media command count", r"(\d+) commands\b", "commands"),
     ("media hook count",    r"(\d+) (?:blocking )?hooks\b", "hooks"),
     ("media agent count",   r"(\d+) agents\b", "agents"),
+    # The deck and the figures quote the roster range too, so it is policed on both paths:
+    # the markdown walk covers the READMEs, this covers the deck and docs/assets/*.svg.
+    ("media roster low",    r"\b(\d+) to \d+ of (?:the |them|its )?\d* ?seats?\b", "roster_min"),
+    ("media roster high",   r"\b\d+ to (\d+) of (?:the |them|its )?\d* ?seats?\b", "roster_max"),
 ]
 # "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
 # far from the canonical count (a video timestamp, a score in an example) is not either.
@@ -253,6 +300,10 @@ def self_test(c: dict[str, int]) -> list[str]:
         "payload total":          "fires {eval_cases} payloads at a real generated harness",
         "baseline block count":   "counts only the {bench_block} must-block payloads",
         "eval cases per flavor":  "the eval's full {eval_cases} cases per flavor include",
+        "roster range low":      "installs {roster_min} to {roster_max} of the 16 seats",
+        "roster range high":     "installs {roster_min} to {roster_max} of the 16 seats",
+        "media roster low":      "{roster_min} to {roster_max} of the 16 seats",
+        "media roster high":     "{roster_min} to {roster_max} of the 16 seats",
     }
     dead = []
     for name, pat, key in (CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS

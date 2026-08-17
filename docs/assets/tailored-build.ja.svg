@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="830" viewBox="0 0 1300 830" role="img" aria-labelledby="tb-title tb-desc" font-family="'Yu Gothic UI', 'Meiryo', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="tb-title">テーラーメイド構築: チームを決めるのはカタログではなく、契約とコードベース</title>
+  <desc id="tb-desc">二つの半分からなる図。上半分は spec-builder と harness-bootstrap をつなぐ工程を示す。入力は二つ。安定 ID を持つ機能要件・非機能要件・業務ルールからなる契約と、モジュール・検出された技術スタック・危険な操作からなるコードベース分析である。二本の矢印は「テーラー」と名づけられた工程に入る。その仕事は、カタログからではなく証拠からチームを決めることだ。そこから三つの結果が出る。ロースターは、用意された16席のうち7から15席に、実在するモジュールごとの開発エージェント1名を加えたもの。スキルは、このプロジェクトのマニフェストが正当化するものだけで、利用者が選ばない限りインストールされない。ルールは、このリポジトリに実在するパスにスコープされる。この三つがハーネスになる。下半分は比較である。左は「キット方式」: 付属のエージェントを全部入れ、念のためスキルを百個入れ、ルールとフックをすべて配り、しかもコードベースを誰も読む前にそれをやる。その結果として、毎セッションその全部にコンテキスト代を払うこと、どのモジュールも持ち主にならない席、どのパスにも一致しないルール、どこでも正しいがここでは役に立たない助言が並ぶ。網羅性が適合と取り違えられている。右は「テーラーメイド構築」: ロースターは契約と実在モジュールから導かれ、スキルはマニフェストから来て利用者が選び、ルールは実在するパスにスコープされ、導入されたものにはすべて名前のついた担当がいる。左のパネルから右へ「その代わりに」と書かれた矢印が伸びる。締めの一行は、誰も持たない席は能力ではなくコストである、と述べる。</desc>
+
+  <defs>
+    <marker id="tb-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#6FB8F5"/>
+    </marker>
+    <marker id="tb-arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#3FA9A0"/>
+    </marker>
+    <marker id="tb-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#F2A33C"/>
+    </marker>
+
+    <style>
+      /* Fully drawn without animation, for the same reason as every other figure
+         here: GitHub renders README images in an img context that never starts
+         the animation clock. The only motion is the dashed feed into the Tailor
+         step, and it is decoration on a line that is already solid. */
+      .flow { animation: drift 9s linear infinite; }
+      @keyframes drift { to { stroke-dashoffset: -48; } }
+      @media (prefers-reduced-motion: reduce) {
+        .flow { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1300" height="830" fill="#0E1424"/>
+
+  <text x="40" y="44" font-size="21" font-weight="700" fill="#E8EEF9">契約とハーネスの間にある工程</text>
+  <text x="40" y="68" font-size="13" fill="#93A4C0">多くのキットはこれを飛ばす。すべてを入れてから、たまたま必要であることを期待する。</text>
+
+  <!-- ===== TOP: the bridge ===== -->
+  <rect x="40" y="118" width="228" height="82" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.6"/>
+  <text x="154" y="146" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">契約</text>
+  <text x="154" y="167" font-size="10.5" fill="#93A4C0" text-anchor="middle">FR・NFR・BR、それぞれに</text>
+  <text x="154" y="183" font-size="10.5" fill="#93A4C0" text-anchor="middle">安定 ID を持つ</text>
+  <text x="154" y="108" font-size="10" fill="#6FB8F5" text-anchor="middle">spec-builder から</text>
+
+  <rect x="40" y="228" width="228" height="82" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.6"/>
+  <text x="154" y="256" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">コードベース</text>
+  <text x="154" y="277" font-size="10.5" fill="#93A4C0" text-anchor="middle">モジュール、検出された</text>
+  <text x="154" y="293" font-size="10.5" fill="#93A4C0" text-anchor="middle">技術スタック、危険な操作</text>
+
+  <path class="flow" d="M268,159 C300,159 306,190 330,206" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" marker-end="url(#tb-ar)"/>
+  <path class="flow" d="M268,269 C300,269 306,238 330,222" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" marker-end="url(#tb-ar)"/>
+
+  <rect x="334" y="150" width="196" height="128" rx="12" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
+  <text x="432" y="196" font-size="19" font-weight="700" fill="#1A1206" text-anchor="middle">テーラー</text>
+  <text x="432" y="222" font-size="10.5" fill="#4A3208" text-anchor="middle">チームを決めるのは</text>
+  <text x="432" y="238" font-size="10.5" fill="#4A3208" text-anchor="middle">カタログではなく</text>
+  <text x="432" y="254" font-size="10.5" fill="#4A3208" text-anchor="middle">証拠から</text>
+
+  <path d="M530,214 L590,214" stroke="#F2A33C" stroke-width="2.4" fill="none" marker-end="url(#tb-arw)"/>
+
+  <rect x="594" y="112" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="136" font-size="12.5" font-weight="700" fill="#E8EEF9">ロースター</text>
+  <text x="608" y="156" font-size="10.5" fill="#93A4C0">16席のうち7〜15席、加えて実在する</text>
+  <text x="608" y="171" font-size="10.5" fill="#93A4C0">モジュールごとに開発エージェント1名</text>
+
+  <rect x="594" y="188" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="212" font-size="12.5" font-weight="700" fill="#E8EEF9">スキル</text>
+  <text x="608" y="232" font-size="10.5" fill="#93A4C0">マニフェストが正当化するものだけ、</text>
+  <text x="608" y="247" font-size="10.5" fill="#93A4C0">しかもあなたが選んだ場合に限る</text>
+
+  <rect x="594" y="264" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="288" font-size="12.5" font-weight="700" fill="#E8EEF9">ルール</text>
+  <text x="608" y="308" font-size="10.5" fill="#93A4C0">ここに実在するパスにスコープされ、</text>
+  <text x="608" y="323" font-size="10.5" fill="#93A4C0">該当する時だけ読み込まれる</text>
+
+  <path d="M886,145 C920,145 920,200 946,212" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+  <path d="M886,221 L946,221" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+  <path d="M886,297 C920,297 920,242 946,230" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+
+  <rect x="950" y="112" width="310" height="218" rx="12" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
+  <text x="1105" y="150" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">harness-bootstrap</text>
+  <text x="1105" y="178" font-size="11" fill="#93A4C0" text-anchor="middle">このリポジトリが実際に必要とする .claude/ を、</text>
+  <text x="1105" y="195" font-size="11" fill="#93A4C0" text-anchor="middle">必要としないものは入れずに</text>
+  <text x="1105" y="228" font-size="10.5" fill="#7C8AA6" text-anchor="middle">どの席にもモジュールがある。</text>
+  <text x="1105" y="245" font-size="10.5" fill="#7C8AA6" text-anchor="middle">どのルールにもパスがある。</text>
+  <text x="1105" y="262" font-size="10.5" fill="#7C8AA6" text-anchor="middle">どのスキルにもエージェントがいる。</text>
+  <text x="1105" y="296" font-size="10" fill="#3FA9A0" text-anchor="middle">harness-view はこの三つを検証し、</text>
+  <text x="1105" y="311" font-size="10" fill="#3FA9A0" text-anchor="middle">満たさないものを名指しする</text>
+
+  <line x1="40" y1="372" x2="1260" y2="372" stroke="#26324F" stroke-width="1"/>
+
+  <!-- ===== BOTTOM: the comparison ===== -->
+  <rect x="40" y="404" width="576" height="332" rx="12" fill="#191320" stroke="#E5383B" stroke-width="1.6"/>
+  <text x="62" y="436" font-size="13" font-weight="700" fill="#E5575B">キット方式</text>
+  <text x="62" y="456" font-size="10.5" fill="#7C8AA6">網羅的であり、それこそが問題である。</text>
+
+  <g font-size="11.5" fill="#C9D4E6">
+    <text x="62" y="490">付属のエージェントを全部インストールする。</text>
+    <text x="62" y="514">念のため、スキルを百個インストールする。</text>
+    <text x="62" y="538">ルールもフックも全部配る。</text>
+    <text x="62" y="562">しかも誰かがコードベースを読む前に、それを済ませる。</text>
+  </g>
+
+  <line x1="62" y1="582" x2="594" y2="582" stroke="#3B2430" stroke-width="1"/>
+  <text x="62" y="606" font-size="11" font-weight="700" fill="#E5575B">その結果</text>
+  <g font-size="11" fill="#93A4C0">
+    <text x="62" y="628">毎セッション、その全部にコンテキスト代を払う</text>
+    <text x="62" y="648">どのモジュールも持たない席と、どのパスにも一致しないルール</text>
+    <text x="62" y="668">どこでも正しいが、ここでは役に立たない助言</text>
+    <text x="62" y="688">何が要で何が飾りかを見分ける手段がない</text>
+  </g>
+  <text x="62" y="718" font-size="11.5" font-style="italic" fill="#E5575B">網羅性が適合と取り違えられる。</text>
+
+  <path d="M618,570 C640,570 640,570 660,570" stroke="#F2A33C" stroke-width="2.4" fill="none" marker-end="url(#tb-arw)"/>
+  <text x="639" y="556" font-size="9.5" font-weight="700" fill="#F2A33C" text-anchor="middle">代わりに</text>
+
+  <rect x="664" y="404" width="596" height="332" rx="12" fill="#111F1D" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="686" y="436" font-size="13" font-weight="700" fill="#3FA9A0">テーラーメイド構築</text>
+  <text x="686" y="456" font-size="10.5" fill="#7C8AA6">意図的に小さく、どの部品にも説明責任がある。</text>
+
+  <g font-size="11.5" fill="#C9D4E6">
+    <text x="686" y="490">ロースターは契約と実在するモジュールから導かれる。</text>
+    <text x="686" y="514">スキルはマニフェスト由来で、選ぶのはあなた。</text>
+    <text x="686" y="538">ルールはこのリポジトリに実在するパスにスコープされる。</text>
+    <text x="686" y="562">コードベースを読む前には、何もインストールしない。</text>
+  </g>
+
+  <line x1="686" y1="582" x2="1238" y2="582" stroke="#1E3A36" stroke-width="1"/>
+  <text x="686" y="606" font-size="11" font-weight="700" fill="#3FA9A0">その結果</text>
+  <g font-size="11" fill="#93A4C0">
+    <text x="686" y="628">ルール本文の63%が既定セッションの外に出る</text>
+    <text x="686" y="648">モジュールごとに名前のついた担当がつき、孤立した席がない</text>
+    <text x="686" y="668">実際に読んだうえで、あなたのスタックを名指しする指針</text>
+    <text x="686" y="688">どこが配線済みでどこがそうでないかを示す採点</text>
+  </g>
+  <text x="686" y="718" font-size="11.5" font-style="italic" fill="#3FA9A0">最適化の対象は「適合」である。</text>
+
+  <text x="650" y="786" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">誰も持たない席は、能力ではなくコストである。</text>
+  <text x="650" y="808" font-size="10.5" fill="#7C8AA6" text-anchor="middle">誰も使うよう言われていないスキルも、リポジトリのどのファイルにも一致しないルールも、同じことである。</text>
+</svg>

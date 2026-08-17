@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="830" viewBox="0 0 1300 830" role="img" aria-labelledby="tb-title tb-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="tb-title">Tailored build: the contract and the codebase decide the team, not a catalogue</title>
+  <desc id="tb-desc">A figure in two halves. The top half shows the step that joins spec-builder to harness-bootstrap. Two inputs feed it: the contract, holding functional requirements, non-functional requirements and business rules with stable identifiers, and the codebase analysis, holding the modules, the detected stack and the risky operations. Both arrows enter a step labelled Tailor, whose job is to decide the team from evidence rather than from a catalogue. Out of it come three results: the roster, which is between seven and fifteen of the sixteen available seats plus one development agent per module that actually exists; the skills, which are only the ones the project's own manifests justify and which are never installed without the user choosing them; and the rules, which are scoped to paths that exist in this repository. Those three become the harness. The bottom half is a comparison. On the left, the kit approach: install every agent, install a hundred skills, ship every rule and every hook, and do it before anyone has read the codebase. Its consequences are listed as paying context for all of it in every session, seats that no module owns, rules that match no path, and advice too generic to act on. Completeness is mistaken for fit. On the right, the tailored build: the roster is derived from the contract and the modules, the skills come from the manifests, the rules are scoped to real paths, and everything installed has a named owner. An arrow runs from the left panel to the right, labelled instead. The closing line reads: a seat nobody owns is a cost, not a capability.</desc>
+
+  <defs>
+    <marker id="tb-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#6FB8F5"/>
+    </marker>
+    <marker id="tb-arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#3FA9A0"/>
+    </marker>
+    <marker id="tb-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#F2A33C"/>
+    </marker>
+
+    <style>
+      /* Fully drawn without animation, for the same reason as every other figure
+         here: GitHub renders README images in an img context that never starts
+         the animation clock. The only motion is the dashed feed into the Tailor
+         step, and it is decoration on a line that is already solid. */
+      .flow { animation: drift 9s linear infinite; }
+      @keyframes drift { to { stroke-dashoffset: -48; } }
+      @media (prefers-reduced-motion: reduce) {
+        .flow { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1300" height="830" fill="#0E1424"/>
+
+  <text x="40" y="44" font-size="21" font-weight="700" fill="#E8EEF9">The step between the contract and the harness</text>
+  <text x="40" y="68" font-size="13" fill="#93A4C0">Most kits skip it. They install everything, then hope the project happens to need it.</text>
+
+  <!-- ===== TOP: the bridge ===== -->
+  <rect x="40" y="118" width="228" height="82" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.6"/>
+  <text x="154" y="146" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">The contract</text>
+  <text x="154" y="167" font-size="10.5" fill="#93A4C0" text-anchor="middle">FR, NFR and BR, each with</text>
+  <text x="154" y="183" font-size="10.5" fill="#93A4C0" text-anchor="middle">a stable ID</text>
+  <text x="154" y="108" font-size="10" fill="#6FB8F5" text-anchor="middle">from spec-builder</text>
+
+  <rect x="40" y="228" width="228" height="82" rx="10" fill="#17203A" stroke="#6FB8F5" stroke-width="1.6"/>
+  <text x="154" y="256" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">The codebase</text>
+  <text x="154" y="277" font-size="10.5" fill="#93A4C0" text-anchor="middle">modules, detected stack,</text>
+  <text x="154" y="293" font-size="10.5" fill="#93A4C0" text-anchor="middle">risky operations</text>
+
+  <path class="flow" d="M268,159 C300,159 306,190 330,206" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" marker-end="url(#tb-ar)"/>
+  <path class="flow" d="M268,269 C300,269 306,238 330,222" stroke="#6FB8F5" stroke-width="2" stroke-dasharray="7 5" fill="none" marker-end="url(#tb-ar)"/>
+
+  <rect x="334" y="150" width="196" height="128" rx="12" fill="#F2A33C" stroke="#FFD79A" stroke-width="2"/>
+  <text x="432" y="196" font-size="19" font-weight="700" fill="#1A1206" text-anchor="middle">TAILOR</text>
+  <text x="432" y="222" font-size="10.5" fill="#4A3208" text-anchor="middle">decide the team from</text>
+  <text x="432" y="238" font-size="10.5" fill="#4A3208" text-anchor="middle">evidence, not from</text>
+  <text x="432" y="254" font-size="10.5" fill="#4A3208" text-anchor="middle">a catalogue</text>
+
+  <path d="M530,214 L590,214" stroke="#F2A33C" stroke-width="2.4" fill="none" marker-end="url(#tb-arw)"/>
+
+  <rect x="594" y="112" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="136" font-size="12.5" font-weight="700" fill="#E8EEF9">The roster</text>
+  <text x="608" y="156" font-size="10.5" fill="#93A4C0">7 to 15 of the 16 seats, plus one dev</text>
+  <text x="608" y="171" font-size="10.5" fill="#93A4C0">agent per module that exists</text>
+
+  <rect x="594" y="188" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="212" font-size="12.5" font-weight="700" fill="#E8EEF9">The skills</text>
+  <text x="608" y="232" font-size="10.5" fill="#93A4C0">only what your manifests justify,</text>
+  <text x="608" y="247" font-size="10.5" fill="#93A4C0">and only if you choose them</text>
+
+  <rect x="594" y="264" width="288" height="66" rx="10" fill="#17203A" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="608" y="288" font-size="12.5" font-weight="700" fill="#E8EEF9">The rules</text>
+  <text x="608" y="308" font-size="10.5" fill="#93A4C0">scoped to paths that exist here,</text>
+  <text x="608" y="323" font-size="10.5" fill="#93A4C0">so they load only when they apply</text>
+
+  <path d="M886,145 C920,145 920,200 946,212" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+  <path d="M886,221 L946,221" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+  <path d="M886,297 C920,297 920,242 946,230" stroke="#3FA9A0" stroke-width="1.8" fill="none" marker-end="url(#tb-arg)"/>
+
+  <rect x="950" y="112" width="310" height="218" rx="12" fill="#111A2E" stroke="#3B6FE0" stroke-width="2"/>
+  <text x="1105" y="150" font-size="14" font-weight="700" fill="#6FB8F5" text-anchor="middle">harness-bootstrap</text>
+  <text x="1105" y="178" font-size="11" fill="#93A4C0" text-anchor="middle">the .claude/ this repo actually needs,</text>
+  <text x="1105" y="195" font-size="11" fill="#93A4C0" text-anchor="middle">and nothing it does not</text>
+  <text x="1105" y="228" font-size="10.5" fill="#7C8AA6" text-anchor="middle">Every seat has a module.</text>
+  <text x="1105" y="245" font-size="10.5" fill="#7C8AA6" text-anchor="middle">Every rule has a path.</text>
+  <text x="1105" y="262" font-size="10.5" fill="#7C8AA6" text-anchor="middle">Every skill has an agent.</text>
+  <text x="1105" y="296" font-size="10" fill="#3FA9A0" text-anchor="middle">harness-view proves each of those three,</text>
+  <text x="1105" y="311" font-size="10" fill="#3FA9A0" text-anchor="middle">and names anything that fails</text>
+
+  <line x1="40" y1="372" x2="1260" y2="372" stroke="#26324F" stroke-width="1"/>
+
+  <!-- ===== BOTTOM: the comparison ===== -->
+  <rect x="40" y="404" width="576" height="332" rx="12" fill="#191320" stroke="#E5383B" stroke-width="1.6"/>
+  <text x="62" y="436" font-size="13" font-weight="700" fill="#E5575B">The kit approach</text>
+  <text x="62" y="456" font-size="10.5" fill="#7C8AA6">Comprehensive, and that is the problem.</text>
+
+  <g font-size="11.5" fill="#C9D4E6">
+    <text x="62" y="490">Install every agent the kit ships.</text>
+    <text x="62" y="514">Install a hundred skills, in case one is needed.</text>
+    <text x="62" y="538">Ship every rule and every hook.</text>
+    <text x="62" y="562">Do all of it before anyone reads the codebase.</text>
+  </g>
+
+  <line x1="62" y1="582" x2="594" y2="582" stroke="#3B2430" stroke-width="1"/>
+  <text x="62" y="606" font-size="11" font-weight="700" fill="#E5575B">So you get</text>
+  <g font-size="11" fill="#93A4C0">
+    <text x="62" y="628">a context bill for all of it, in every single session</text>
+    <text x="62" y="648">seats no module owns, and rules that match no path</text>
+    <text x="62" y="668">advice general enough to be true anywhere, and useless here</text>
+    <text x="62" y="688">no way to tell what is load-bearing and what is decoration</text>
+  </g>
+  <text x="62" y="718" font-size="11.5" font-style="italic" fill="#E5575B">Completeness gets mistaken for fit.</text>
+
+  <path d="M618,570 C640,570 640,570 660,570" stroke="#F2A33C" stroke-width="2.4" fill="none" marker-end="url(#tb-arw)"/>
+  <text x="639" y="558" font-size="10.5" font-weight="700" fill="#F2A33C" text-anchor="middle">instead</text>
+
+  <rect x="664" y="404" width="596" height="332" rx="12" fill="#111F1D" stroke="#3FA9A0" stroke-width="1.6"/>
+  <text x="686" y="436" font-size="13" font-weight="700" fill="#3FA9A0">The tailored build</text>
+  <text x="686" y="456" font-size="10.5" fill="#7C8AA6">Smaller on purpose, and every piece is answerable for.</text>
+
+  <g font-size="11.5" fill="#C9D4E6">
+    <text x="686" y="490">The roster comes from the contract and the real modules.</text>
+    <text x="686" y="514">The skills come from your manifests, and you pick them.</text>
+    <text x="686" y="538">The rules are scoped to paths this repo actually has.</text>
+    <text x="686" y="562">Nothing is installed before the codebase has been read.</text>
+  </g>
+
+  <line x1="686" y1="582" x2="1238" y2="582" stroke="#1E3A36" stroke-width="1"/>
+  <text x="686" y="606" font-size="11" font-weight="700" fill="#3FA9A0">So you get</text>
+  <g font-size="11" fill="#93A4C0">
+    <text x="686" y="628">63% of rule content out of the default session</text>
+    <text x="686" y="648">one named owner per module, and no orphan seats</text>
+    <text x="686" y="668">guidance that names your stack, because it read it</text>
+    <text x="686" y="688">a score that says which parts are wired and which are not</text>
+  </g>
+  <text x="686" y="718" font-size="11.5" font-style="italic" fill="#3FA9A0">Fit is the thing being optimised.</text>
+
+  <text x="650" y="786" font-size="13" font-weight="700" fill="#E8EEF9" text-anchor="middle">A seat nobody owns is a cost, not a capability.</text>
+  <text x="650" y="808" font-size="10.5" fill="#7C8AA6" text-anchor="middle">The same is true of a skill nobody is told to use, and a rule that matches no file in the repo.</text>
+</svg>
