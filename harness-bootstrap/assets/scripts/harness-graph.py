@@ -88,6 +88,45 @@ def frontmatter_field(head: str, key: str) -> str | None:
     return m.group(1) if m else None
 
 
+def _unquote(s: str) -> str:
+    s = s.strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
+        s = s[1:-1]
+    return s.strip()
+
+
+def frontmatter_list(head: str, key: str) -> list[str]:
+    """A frontmatter value that may be written inline or as a YAML block list.
+
+    `tools: Read, Edit` and
+
+        tools:
+          - Read
+          - Edit
+
+    are both legal and both appear in real agent files. frontmatter_field cannot read the
+    second: its `\\s*` crosses the newline, so it returned the single item "- Read" with the
+    dash still attached, while the Rust scanner returned all three. The schema promises the
+    two scanners agree byte for byte, so this is a parity break, not a cosmetic one.
+    """
+    m = re.search(rf"^{key}:[ \t]*(.*)$", head, re.M)
+    if not m:
+        return []
+    inline = m.group(1).strip()
+    if inline:
+        inline = inline.strip().lstrip("[").rstrip("]")
+        return [p for p in (_unquote(x) for x in inline.split(",")) if p]
+    out: list[str] = []
+    for line in head[m.end():].splitlines():
+        if not line.strip():
+            continue
+        stripped = line.lstrip()
+        if not stripped.startswith("- "):
+            break
+        out.append(_unquote(stripped[2:]))
+    return out
+
+
 def strip_comment(s: str) -> str:
     """Drop a trailing YAML comment: `Done # Active | Blocked` -> `Done`.
 
@@ -235,9 +274,13 @@ def build(root: pathlib.Path) -> dict:
             mt = frontmatter_field(head, "maxTurns")
             if mt and mt.isdigit():
                 meta["maxTurns"] = int(mt)
-            tools = frontmatter_field(head, "tools")
-            if tools:
-                meta["tools"] = [t.strip() for t in tools.split(",") if t.strip()]
+            # `tools` first, then `allowed-tools`, first non-empty wins - the same order and
+            # the same fallback the Rust scanner uses.
+            for key in ("tools", "allowed-tools"):
+                tools = frontmatter_list(head, key)
+                if tools:
+                    meta["tools"] = tools
+                    break
             desc = description_field(read_text(a))
             if desc:
                 meta["description"] = desc
@@ -384,17 +427,40 @@ def build(root: pathlib.Path) -> dict:
             if not isinstance(info, dict):
                 continue
             owner = info.get("owner", "-") or "-"
+            # code-graph.json stores files as a path array; a bare COUNT is tolerated for
+            # forward compatibility. The Rust twin already did this and the Python side did
+            # not, so a graph carrying a count crashed this scanner with "object of type
+            # 'int' has no len()" while harness-view scanned it happily - a parity break that
+            # showed up as a crash rather than a diff.
+            raw_files = info.get("files", [])
+            files = len(raw_files) if isinstance(raw_files, (list, tuple)) else (
+                raw_files if isinstance(raw_files, int) else 0)
             add_node(f"mod:{mod}", "module", mod,
-                     meta={"files": len(info.get("files", [])), "owner": owner})
+                     meta={"files": files, "owner": owner})
             if owner != "-" and f"agent:{owner}" in nodes:
                 add_edge(f"agent:{owner}", f"mod:{mod}", "owns")
         raw_edges = g.get("edges")
         for e in (raw_edges if isinstance(raw_edges, list) else []):
-            if not isinstance(e, dict):
+            # code-graph.json writes an edge either as a [from, to] pair or as a
+            # {"from":..., "to":..., "refs":...} object. The Rust twin accepted both and this
+            # side accepted only the object, so a pair-shaped graph produced FEWER edges here
+            # than in harness-view - a silent parity break, and the schema's whole promise is
+            # that the two scanners agree byte for byte.
+            if isinstance(e, (list, tuple)):
+                frm = e[0] if len(e) > 0 else None
+                to = e[1] if len(e) > 1 else None
+                refs = 1
+            elif isinstance(e, dict):
+                frm, to = e.get("from"), e.get("to")
+                raw_refs = e.get("refs", 1)
+                refs = raw_refs if isinstance(raw_refs, int) else 1
+            else:
                 continue
-            f_, t_ = f"mod:{e.get('from')}", f"mod:{e.get('to')}"
+            if not (isinstance(frm, str) and isinstance(to, str)):
+                continue
+            f_, t_ = f"mod:{frm}", f"mod:{to}"
             if f_ in nodes and t_ in nodes:
-                add_edge(f_, t_, "references", int(e.get("refs", 1)))
+                add_edge(f_, t_, "references", refs)
 
     # tasks: EVERY TASK-*.md under docs/tasks/** is a node by contract;
     # references edges only where the body names a module path
@@ -453,8 +519,12 @@ def main() -> int:
     graph = build(root)
     out = root / ".claude" / "state" / "harness-graph.json"
     out.parent.mkdir(parents=True, exist_ok=True)
+    # newline="\n" is load-bearing, not style. Without it write_text uses the platform default,
+    # so this scanner emitted CRLF on Windows while harness-view emitted LF for the same repo -
+    # identical content, different bytes, and the schema's promise is that the two agree BYTE
+    # for byte. It also stops a generated JSON file from churning every diff on a mixed team.
     out.write_text(json.dumps(graph, indent=2, sort_keys=True) + "\n",
-                   encoding="utf-8")
+                   encoding="utf-8", newline="\n")
     if not quiet:
         print(f"harness-graph: {len(graph['nodes'])} nodes, "
               f"{len(graph['edges'])} edges -> {out.relative_to(root).as_posix()}")

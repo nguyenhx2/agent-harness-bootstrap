@@ -52,11 +52,16 @@ source instead.
 
 ### 2. Double-click it (Windows)
 
-Drop `harness-view.exe` into a repo that has a `.claude/` folder and double-click
-it. With no arguments it serves the current directory, prints the URL, and opens
-your browser. The console window stays open while the server runs; closing it
-stops the server. If the folder has no `.claude/`, it says so and waits for a
-keypress instead of flashing shut.
+Drop `harness-view.exe` anywhere and double-click it. With no arguments it serves
+the current directory, prints the URL, and opens your browser. The console window
+stays open while the server runs; closing it stops the server.
+
+Where you put the executable does not matter. If the folder it starts in has no
+`.claude/`, it says so on the console and the page opens on its **No folder
+loaded** state - use **Browse** to pick a repository, and the graph appears. Only
+`scan`, `assess` and `watch` still refuse to run without a `.claude/`, because
+each of those answers a question about one named path and an empty answer would
+look like a result.
 
 This applies **only** to the no-argument launch. Every explicit invocation
 behaves exactly as it always has: nothing opens a browser, nothing pauses.

@@ -1,8 +1,9 @@
 name: codeql
 
-# Static analysis for the three languages GitHub detects in this repo. The language
-# list is not a guess: `gh api repos/OWNER/REPO/code-scanning/default-setup` reports
-# ["actions", "python", "rust"], and that is what is configured here.
+# Static analysis for the languages this repo actually ships. Three of them come
+# from GitHub's own detection - `gh api repos/OWNER/REPO/code-scanning/default-setup`
+# reports ["actions", "python", "rust"] - and javascript-typescript is added on top
+# of that list deliberately, because detection missed it: see the matrix comment.
 #
 # `actions` is the one worth saying out loud. This repo ships three other workflows
 # and a release pipeline that publishes artifacts, so a vulnerable workflow is a
@@ -53,6 +54,21 @@ jobs:
             build-mode: none
           - language: rust
             build-mode: none
+          # JavaScript was absent from that detected list for a bad reason, not a
+          # good one: the repo's JavaScript lived inside <script> blocks
+          # (202,543 bytes of it) with only two standalone .js files, so
+          # detection reported none. The viewer's UI - the one page that renders
+          # a scanned repository's own file contents and node labels into the
+          # DOM, and therefore the one place a DOM XSS sink could exist - is now
+          # tools/harness-view/src/ui.js, a real file the extractor can see.
+          # `node --check` already proved it parses; nothing until now looked at
+          # what it does with innerHTML.
+          - language: javascript-typescript
+            build-mode: none
+            # Only this language gets a config file. The input is optional, and
+            # the other three entries leave it empty, which the action treats as
+            # unset - so their scans are unchanged by it.
+            config-file: .github/codeql/javascript.yml
 
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +78,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          config-file: ${{ matrix.config-file }}
           # security-extended adds the lower-severity and precision queries on top of
           # the default suite. This repo is small enough that the extra noise is
           # affordable, and the whole point of the harness is catching things early.
