@@ -6,7 +6,7 @@ Download the bundle from the [latest release](https://github.com/nguyenhx2/agent
 and unzip it into your skills directory:
 
 ```bash
-unzip agent-harness-bootstrap-v1.12.1.zip -d ~/.claude/skills/
+unzip agent-harness-bootstrap.zip -d ~/.claude/skills/
 ```
 
 Claude Code picks the skills up on the next session. Each archive carries a `VERSION` file inside
