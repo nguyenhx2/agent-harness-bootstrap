@@ -86,6 +86,64 @@ def roster_range() -> tuple[int, int]:
     return min(counts), max(counts)
 
 
+def flag_sync() -> list[str]:
+    """The flag set must be identical in the four places that claim to agree.
+
+    scaffold.py says of KNOWN_FLAGS: "Keep in sync with assets/manifest.json's schema comment,
+    SKILL.md, and reference/intake.md - the auditors check all four agree." No auditor did. The
+    only other reader of KNOWN_FLAGS was build_wiki.py, which renders the set and never compares
+    it, so the sentence described a control that did not exist.
+
+    The failure it lets through is silent both ways: a flag in KNOWN_FLAGS but not in intake.md is
+    a capability no questionnaire can reach, and a flag documented in SKILL.md but not in
+    KNOWN_FLAGS is a scaffolder error the user meets at the worst possible moment.
+
+    Each source is parsed for bare flag tokens rather than for its prose, because the four are
+    written in four different shapes: a Python set, a JSON comment string, and two markdown
+    sentences with backticks.
+    """
+    scaffold = (ROOT / "harness-bootstrap/scripts/scaffold.py").read_text(encoding="utf-8")
+    m = re.search(r"KNOWN_FLAGS = \{(.*?)\}", scaffold, re.S)
+    if not m:
+        return ["scaffold.py no longer defines KNOWN_FLAGS, so the flag set cannot be policed"]
+    # [a-z0-9_]+, not [a-z_]+: an earlier version of this dropped `e2e` on the floor because the
+    # digit did not match, so one real flag was silently exempt from the very check meant to
+    # cover all of them.
+    truth = sorted(set(re.findall(r'"([a-z0-9_]+)"', m.group(1))))
+
+    manifest = json.loads((ROOT / "harness-bootstrap/assets/manifest.json")
+                          .read_text(encoding="utf-8"))
+    comment = manifest.get("_comment", "") if isinstance(manifest, dict) else ""
+
+    skill = (ROOT / "harness-bootstrap/SKILL.md").read_text(encoding="utf-8")
+    intake = (ROOT / "harness-bootstrap/reference/intake.md").read_text(encoding="utf-8")
+
+    def window(text: str, anchor: str, span: int) -> str:
+        i = text.find(anchor)
+        return text[i:i + span] if i != -1 else ""
+
+    # Each source states the set once, in its own shape. Search the enumeration rather than the
+    # whole file: a flag mentioned in passing elsewhere is not the same as being on the list.
+    sources = {
+        "manifest.json _comment": window(comment, "Flags:", 400),
+        "SKILL.md": window(skill, "Flags gate conditional assets", 500),
+        "intake.md": window(intake, "Flags are exactly:", 400),
+    }
+
+    problems = []
+    for name, text in sources.items():
+        if not text:
+            problems.append(f"{name} no longer contains its flag enumeration, so it cannot be "
+                            f"compared - fix the anchor in flag_sync() or restore the list")
+            continue
+        # Word-boundary search, so `db` does not count as found inside `db_engineer`.
+        missing = [f for f in truth if not re.search(rf"(?<![a-z0-9_]){re.escape(f)}(?![a-z0-9_])",
+                                                     text)]
+        if missing:
+            problems.append(f"{name} is missing flag(s) KNOWN_FLAGS has: {', '.join(missing)}")
+    return problems
+
+
 def canonical() -> dict[str, int]:
     r = subprocess.run([sys.executable, str(ROOT / "benchmark/benchmark.py"), "--json"],
                        capture_output=True, text=True, cwd=ROOT)
@@ -340,6 +398,16 @@ def main() -> int:
         for d in dead:
             print(f"    {d}")
         return 1
+
+    flag_problems = flag_sync()
+    print("\n  flag set (scaffold.py vs the three places that claim to match it):")
+    if flag_problems:
+        for p in flag_problems:
+            print(f"    MISMATCH  {p}")
+        print("\n  the flag list has drifted. Fix the source that is wrong, not KNOWN_FLAGS,")
+        print("  unless KNOWN_FLAGS is the one that is wrong.")
+        return 1
+    print("    all four sources list the same flags.")
 
     bad = 0
     print("\n  documents:")
