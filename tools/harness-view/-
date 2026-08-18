@@ -1,0 +1,305 @@
+{
+  "edges": [
+    {
+      "from": "agent:app-dev",
+      "to": "mod:src/app",
+      "type": "owns"
+    },
+    {
+      "from": "agent:code-reviewer",
+      "to": "gate:merge-request",
+      "type": "reviews"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:app-dev",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:code-reviewer",
+      "type": "spawns"
+    },
+    {
+      "from": "cmd:review-changes",
+      "to": "script:code-graph",
+      "type": "runs"
+    },
+    {
+      "from": "cmd:review-changes",
+      "to": "script:graph-html",
+      "type": "runs"
+    },
+    {
+      "from": "gate:merge-request",
+      "to": "human",
+      "type": "escalates"
+    },
+    {
+      "from": "human",
+      "to": "cmd:deploy",
+      "type": "invokes"
+    },
+    {
+      "from": "human",
+      "to": "cmd:review-changes",
+      "type": "invokes"
+    },
+    {
+      "from": "human",
+      "to": "cmd:sync-context",
+      "type": "invokes"
+    },
+    {
+      "from": "mod:src/app",
+      "refs": 1,
+      "to": "mod:src/lib",
+      "type": "references"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:app-dev",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:code-reviewer",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:orchestrator",
+      "type": "gates"
+    },
+    {
+      "from": "settings",
+      "to": "hook:graph-stale",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:protect-secrets",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:specs-reminder",
+      "type": "triggers"
+    },
+    {
+      "from": "task:TASK-01",
+      "to": "mod:src/app",
+      "type": "references"
+    }
+  ],
+  "nodes": [
+    {
+      "disabled": false,
+      "file": ".claude/agents/app-dev.md",
+      "id": "agent:app-dev",
+      "label": "app-dev",
+      "meta": {
+        "effort": "medium",
+        "maxTurns": 50,
+        "model": "sonnet",
+        "tools": [
+          "Read",
+          "Edit",
+          "Write",
+          "Bash",
+          "Grep",
+          "Glob"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/code-reviewer.md",
+      "id": "agent:code-reviewer",
+      "label": "code-reviewer",
+      "meta": {
+        "effort": "high",
+        "maxTurns": 30,
+        "model": "opus",
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/orchestrator.md",
+      "id": "agent:orchestrator",
+      "label": "orchestrator",
+      "meta": {
+        "effort": "high",
+        "maxTurns": 40,
+        "model": "opus",
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob",
+          "Agent"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/commands/deploy.md",
+      "id": "cmd:deploy",
+      "label": "/deploy",
+      "meta": {
+        "description": "Human-gated deploy. Never invoked by the model on its own."
+      },
+      "type": "command"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/commands/review-changes.md",
+      "id": "cmd:review-changes",
+      "label": "/review-changes",
+      "type": "command"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/commands/sync-context.md",
+      "id": "cmd:sync-context",
+      "label": "/sync-context",
+      "meta": {
+        "description": "Refresh the context docs from the current state of the repository."
+      },
+      "type": "command"
+    },
+    {
+      "disabled": false,
+      "id": "gate:merge-request",
+      "label": "Merge request",
+      "synthetic": true,
+      "type": "gate"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/graph-stale.sh",
+      "id": "hook:graph-stale",
+      "label": "graph-stale",
+      "meta": {
+        "blocking": false,
+        "event": "PostToolUse",
+        "matcher": "Edit|Write",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/protect-secrets.sh",
+      "id": "hook:protect-secrets",
+      "label": "protect-secrets",
+      "meta": {
+        "blocking": true,
+        "event": "PreToolUse",
+        "matcher": "Read|Edit|Write|Bash",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/specs-reminder.sh",
+      "id": "hook:specs-reminder",
+      "label": "specs-reminder",
+      "meta": {
+        "blocking": false,
+        "event": "PostToolUse",
+        "matcher": "Edit|Write",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "id": "human",
+      "label": "Human",
+      "synthetic": true,
+      "type": "human"
+    },
+    {
+      "disabled": false,
+      "id": "mod:src/app",
+      "label": "src/app",
+      "meta": {
+        "files": 3,
+        "owner": "app-dev"
+      },
+      "type": "module"
+    },
+    {
+      "disabled": false,
+      "id": "mod:src/lib",
+      "label": "src/lib",
+      "meta": {
+        "files": 2,
+        "owner": "-"
+      },
+      "type": "module"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/rules/agent-guardrails.md",
+      "id": "rule:agent-guardrails",
+      "label": "agent-guardrails",
+      "meta": {
+        "scoped": false
+      },
+      "type": "rule"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/rules/testing.md",
+      "id": "rule:testing",
+      "label": "testing",
+      "meta": {
+        "paths": [
+          "tests/**",
+          "src/**/*.test.ts"
+        ],
+        "scoped": true
+      },
+      "type": "rule"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/scripts/code-graph.py",
+      "id": "script:code-graph",
+      "label": "code-graph.py",
+      "type": "script"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/scripts/graph-html.py",
+      "id": "script:graph-html",
+      "label": "graph-html.py",
+      "type": "script"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/settings.json",
+      "id": "settings",
+      "label": "settings.json",
+      "type": "settings"
+    },
+    {
+      "disabled": false,
+      "file": "docs/tasks/active/TASK-01.md",
+      "id": "task:TASK-01",
+      "label": "TASK-01",
+      "type": "task"
+    }
+  ],
+  "version": 1
+}

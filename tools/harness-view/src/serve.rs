@@ -9,6 +9,13 @@
 //! JSON {"error": ...} the page displays - never an empty graph, because an
 //! empty graph is indistinguishable from a harness with nothing in it.
 //!
+//! That refusal now covers the CLI fallback as well, because `serve` may be
+//! started in a directory with no harness at all - a double-clicked binary
+//! should open a usable window wherever it happens to sit, not refuse to run.
+//! The refusal for that case carries {"noRoot": true}, which is how the page
+//! tells "nothing is loaded yet" (choose a folder) apart from "the path you
+//! gave me is wrong" (a red banner).
+//!
 //! POST /toggle is guarded against cross-origin browser requests: the server
 //! only mutates .claude/ for same-origin calls. Any present Origin header must
 //! name this server's own host:port, any present Sec-Fetch-Site header must be
@@ -22,17 +29,30 @@ use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Request, Response, Server};
 
 const PAGE_TEMPLATE: &str = include_str!("ui.html");
+// The UI script is a real .js file so that GitHub detects JavaScript in this
+// repository and CodeQL actually analyses the one page that renders a scanned
+// repository's own file contents into the DOM. It was inline until then, which
+// made the whole UI invisible to language detection. See the header of ui.js.
+const UI_JS: &str = include_str!("ui.js");
+// The Command Steps parser, split out of ui.js so it can be required by node and
+// tested (tests/steps_test.rs). ui.js touches `document` on its first line and
+// cannot be.
+const UI_STEPS_JS: &str = include_str!("ui-steps.js");
 // Vendored, committed, and inlined rather than fetched: the page must work with
 // no network. See vendor/README.md for versions, licences and provenance.
 const MARKED_JS: &str = include_str!("../vendor/marked.min.js");
 const PURIFY_JS: &str = include_str!("../vendor/purify.min.js");
 
-/// The page with its vendored libraries spliced in. Built once per process.
+/// The page with its vendored libraries and its own UI script spliced in. Built
+/// once per process. Both splices are plain placeholder replacement rather than
+/// a template engine, because the page must remain a file you can open, read and
+/// diff - and because a second <script src=...> would break the one property the
+/// viewer guarantees: it works with no network and serves from one response.
 fn page() -> String {
-    PAGE_TEMPLATE.replace(
-        "/*__VENDOR__*/",
-        &format!("{MARKED_JS}\n{PURIFY_JS}\n"),
-    )
+    PAGE_TEMPLATE
+        .replace("/*__VENDOR__*/", &format!("{MARKED_JS}\n{PURIFY_JS}\n"))
+        .replace("/*__UI_STEPS__*/", UI_STEPS_JS)
+        .replace("/*__UI_JS__*/", UI_JS)
 }
 
 fn header(k: &str, v: &str) -> Header {
@@ -93,35 +113,75 @@ fn query_param(url: &str, key: &str) -> Option<String> {
     None
 }
 
+/// Why a root could not be resolved. `no_root` separates the one refusal that
+/// is not a failure - the server was started somewhere with no harness, which
+/// is a legal way to start it since `serve` lost that precondition - from every
+/// other bad path. The page paints its "choose a folder" state on the flag and
+/// a red banner on everything else. It travels as a flag rather than as wording
+/// because matching an error by its text breaks the moment someone improves the
+/// sentence.
+#[derive(Debug)]
+struct RootError {
+    msg: String,
+    no_root: bool,
+}
+
+impl RootError {
+    fn bad(msg: String) -> Self {
+        Self { msg, no_root: false }
+    }
+    fn none_loaded() -> Self {
+        Self {
+            msg: "no folder loaded yet - choose one with Browse to start analysing".into(),
+            no_root: true,
+        }
+    }
+}
+
 /// Resolve a caller-supplied root, or fall back to the one from the CLI.
 ///
 /// Windows callers paste either separator, so both are accepted and normalized
 /// before the path is touched. The `.claude/` requirement is what makes a wrong
-/// path an explicit error instead of a convincing empty graph.
-fn resolve_root(requested: Option<&str>, default_root: &Path) -> Result<PathBuf, String> {
+/// path an explicit error instead of a convincing empty graph - and it applies
+/// to the CLI fallback too, because `serve` now starts in directories that have
+/// no harness and scanning one of those would produce exactly that empty graph.
+fn resolve_root(requested: Option<&str>, default_root: &Path) -> Result<PathBuf, RootError> {
+    let fallback = || {
+        if default_root.join(".claude").is_dir() {
+            Ok(default_root.to_path_buf())
+        } else {
+            Err(RootError::none_loaded())
+        }
+    };
     let Some(raw) = requested else {
-        return Ok(default_root.to_path_buf());
+        return fallback();
     };
     let trimmed = raw.trim().trim_matches('"');
     if trimmed.is_empty() {
-        return Ok(default_root.to_path_buf());
+        return fallback();
     }
     let normalized = if cfg!(windows) {
         trimmed.replace('/', "\\")
     } else {
         trimmed.replace('\\', "/")
     };
+    // The folder picker always hands back an absolute path (browse() returns
+    // canonicalized directories), so nothing the UI produces depends on where
+    // the executable was started. A path TYPED into the box may still be
+    // relative, and that one resolves against the server's working directory -
+    // the only cwd-relative behaviour left, and the reason the picker is the
+    // path the empty state points at.
     let p = PathBuf::from(&normalized);
     if !p.exists() {
-        return Err(format!("path does not exist: {normalized}"));
+        return Err(RootError::bad(format!("path does not exist: {normalized}")));
     }
     if !p.is_dir() {
-        return Err(format!("not a directory: {normalized}"));
+        return Err(RootError::bad(format!("not a directory: {normalized}")));
     }
     if !p.join(".claude").is_dir() {
-        return Err(format!(
+        return Err(RootError::bad(format!(
             "no .claude/ directory in {normalized} - point this at a repo that ran harness-bootstrap"
-        ));
+        )));
     }
     Ok(p.canonicalize().unwrap_or(p))
 }
@@ -274,6 +334,15 @@ fn json_error(msg: &str, code: u16) -> Response<std::io::Cursor<Vec<u8>>> {
         .with_header(header("Content-Type", "application/json"))
 }
 
+/// A root refusal, carrying the `noRoot` flag the page needs to tell "nothing
+/// loaded yet" apart from "the path you gave me is wrong".
+fn root_error(e: &RootError) -> Response<std::io::Cursor<Vec<u8>>> {
+    let body = serde_json::json!({ "error": e.msg, "noRoot": e.no_root }).to_string();
+    Response::from_string(body)
+        .with_status_code(400)
+        .with_header(header("Content-Type", "application/json"))
+}
+
 /// Same-origin gate for the mutating endpoint. Browsers attach Origin and
 /// Sec-Fetch-Site to cross-origin fetches; a request carrying either with a
 /// foreign value is refused. Non-browser clients (curl) carry neither.
@@ -303,6 +372,13 @@ fn same_origin(request: &Request, port: u16) -> Result<(), String> {
 pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
     let server = Server::http(("127.0.0.1", port)).map_err(|e| e.to_string())?;
     println!("harness-view: serving {} on http://127.0.0.1:{port}/", display_path(&root));
+    // Starting here is legal (see main.rs), and the page says so too - but
+    // someone who ran this from a terminal is looking at the terminal, and an
+    // empty graph with no explanation in either place is how a working viewer
+    // gets reported as broken.
+    if !root.join(".claude").is_dir() {
+        println!("harness-view: no harness here yet - choose a folder in the browser");
+    }
     for mut request in server.incoming_requests() {
         let raw_url = request.url().to_string();
         // route on the path only - a cache-busting query string still matches
@@ -375,7 +451,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                         Response::from_string(scan::to_canonical_json(&graph))
                             .with_header(header("Content-Type", "application/json"))
                     }
-                    Err(msg) => json_error(&msg, 400),
+                    Err(e) => root_error(&e),
                 }
             }
             (Method::Get, "/assess") => {
@@ -389,7 +465,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                         Response::from_string(scan::to_canonical_json(&report))
                             .with_header(header("Content-Type", "application/json"))
                     }
-                    Err(msg) => json_error(&msg, 400),
+                    Err(e) => root_error(&e),
                 }
             }
             (Method::Get, "/file") => {
@@ -424,7 +500,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                 let requested = query_param(&raw_url, "root");
                 let rel = query_param(&raw_url, "path").unwrap_or_default();
                 match resolve_root(requested.as_deref(), &root)
-                    .and_then(|target| resolve_file(&target, &rel))
+                    .and_then(|target| resolve_file(&target, &rel).map_err(RootError::bad))
                 {
                     Ok(path) => match fs::read(&path) {
                         Ok(bytes) => {
@@ -442,7 +518,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                         }
                         Err(e) => json_error(&format!("could not read: {e}"), 400),
                     },
-                    Err(msg) => json_error(&msg, 400),
+                    Err(e) => root_error(&e),
                 }
             }
             (Method::Post, "/toggle") => {
@@ -460,7 +536,9 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                     Ok(v) => {
                         let requested = v.get("root").and_then(|x| x.as_str());
                         match resolve_root(requested, &root) {
-                            Err(msg) => Response::from_string(msg)
+                            // plain text, not JSON: the page shows a toggle
+                            // refusal verbatim in a confirm dialog
+                            Err(e) => Response::from_string(e.msg)
                                 .with_status_code(400)
                                 .with_header(header("Content-Type", "text/plain; charset=utf-8")),
                             Ok(target) => {
@@ -509,6 +587,31 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The UI arrives in the response body or it does not arrive at all: there
+    /// is no second request to fall back on. A renamed placeholder would still
+    /// build, still serve 200, and still render the whole chrome - with a dead
+    /// page underneath it - so the splice is asserted rather than assumed.
+    #[test]
+    fn page_inlines_the_ui_script_and_the_vendored_libraries() {
+        let html = page();
+        assert!(!html.contains("/*__UI_JS__*/"), "the UI script placeholder was never replaced");
+        assert!(!html.contains("/*__UI_STEPS__*/"), "the steps-parser placeholder was never replaced");
+        assert!(!html.contains("/*__VENDOR__*/"), "the vendor placeholder was never replaced");
+        assert!(html.contains("function select("), "the served page carries no UI code");
+        assert!(html.contains("function parseCommandSteps("), "the served page carries no steps parser");
+        assert!(html.contains("DOMPurify"), "the served page carries no sanitiser");
+        assert!(
+            html.len() > PAGE_TEMPLATE.len() + UI_JS.len() + UI_STEPS_JS.len(),
+            "the splice lost content"
+        );
+        // Order is not cosmetic: ui.js calls parseCommandSteps, and a `const` in
+        // an earlier classic script is what puts it in scope for a later one.
+        assert!(
+            html.find("function parseCommandSteps(").unwrap() < html.find("function select(").unwrap(),
+            "the steps parser must be spliced in before the UI that calls it"
+        );
+    }
 
     #[test]
     fn query_param_decodes_windows_paths() {
@@ -578,12 +681,38 @@ mod tests {
         assert!(resolve_root(Some(&with_slash), &default).is_ok());
         // missing path is an error, not a fallback
         let missing = tmp.join("nope").display().to_string();
-        assert!(resolve_root(Some(&missing), &default).unwrap_err().contains("does not exist"));
+        let e = resolve_root(Some(&missing), &default).unwrap_err();
+        assert!(e.msg.contains("does not exist"), "{}", e.msg);
+        assert!(!e.no_root, "a wrong path is a wrong path, not an empty viewer");
         // a directory without .claude/ is refused by name
         let bare = tmp.join("bare");
         std::fs::create_dir_all(&bare).unwrap();
         let e = resolve_root(Some(&bare.display().to_string()), &default).unwrap_err();
-        assert!(e.contains("no .claude/"), "{e}");
+        assert!(e.msg.contains("no .claude/"), "{}", e.msg);
+        assert!(!e.no_root);
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    /// `serve` may be started in a directory with no harness. The fallback must
+    /// then refuse rather than scan it: scanning a directory with no .claude/
+    /// succeeds and returns an empty graph, which looks exactly like a harness
+    /// that has nothing in it - the failure the whole root check exists for.
+    #[test]
+    fn a_cli_root_with_no_harness_is_refused_as_nothing_loaded() {
+        let tmp = std::env::temp_dir().join("hv-serve-noroot-test");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(&tmp).unwrap();
+
+        for requested in [None, Some(""), Some("   ")] {
+            let e = resolve_root(requested, &tmp).unwrap_err();
+            assert!(e.no_root, "expected the nothing-loaded flag, got {}", e.msg);
+            assert!(e.msg.contains("Browse"), "the message must say what to do: {}", e.msg);
+        }
+
+        // and it stops being refused the moment a harness is there
+        std::fs::create_dir_all(tmp.join(".claude")).unwrap();
+        assert_eq!(resolve_root(None, &tmp).unwrap(), tmp);
 
         let _ = std::fs::remove_dir_all(&tmp);
     }

@@ -65,14 +65,25 @@ fn main() {
         i += 1;
     }
     let path = path.canonicalize().unwrap_or(path);
-    if !path.join(".claude").is_dir() {
+    // The .claude/ precondition belongs to the commands that ACT on one named
+    // path, not to the one that opens a window.
+    //
+    // scan writes a graph file, assess prints a score, watch rebuilds on change:
+    // each answers a question about the path it was given, and the honest answer
+    // to "analyse this directory that has no harness" is a refusal. A graph file
+    // full of nothing, or a score computed from nothing, is worse than an error
+    // because it looks like a result.
+    //
+    // serve answers nothing on its own. It is a window, and the folder it looks
+    // at is chosen in the UI, so where the executable happens to sit must not
+    // decide whether it runs at all - a double-clicked binary in Downloads used
+    // to print this line and close, which is the same as not starting.
+    let needs_harness = matches!(cmd.as_str(), "scan" | "assess" | "watch");
+    if needs_harness && !path.join(".claude").is_dir() {
         eprintln!(
             "harness-view: {} has no .claude/ directory - point it at a repo that ran harness-bootstrap",
             path.display()
         );
-        if launched_bare {
-            pause("Press Enter to close");
-        }
         exit(1);
     }
     match cmd.as_str() {

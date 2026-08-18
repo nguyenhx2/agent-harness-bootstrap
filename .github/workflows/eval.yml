@@ -100,9 +100,18 @@ jobs:
       # exactly how wikis go stale. Its reference pages are generated from the assets,
       # so building them here means a change that breaks a page fails the build rather
       # than surfacing weeks later on a page nobody checks. This BUILDS and validates;
-      # publishing stays a deliberate manual step.
+      # wiki.yml is what publishes, and only when the built output actually differs.
       - name: The wiki must still build from the assets
         run: python scripts/build_wiki.py
+
+      # SCHEMA.md promises that harness-graph.py and `harness-view scan` write the SAME bytes
+      # for the same repo, so a project can use either. Nothing checked it, and it had drifted
+      # four ways at once: a files COUNT crashed the Python side, a [from, to] edge pair was
+      # silently dropped by it, a YAML block list of tools came out as one item with the dash
+      # still attached, and on Windows it wrote CRLF against the Rust side's LF. Two scanners
+      # that disagree are worse than one.
+      - name: Both graph scanners must agree byte for byte
+        run: python scripts/check_graph_parity.py
 
       # The application icon is compiled into the Windows .exe by build.rs. A missing or
       # truncated icon.ico fails that build on the release runner, long after the commit
