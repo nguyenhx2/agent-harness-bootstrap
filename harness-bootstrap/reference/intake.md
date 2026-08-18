@@ -180,8 +180,13 @@ the preset table, decides how heavy the agent team is. Echo the resulting roster
       language, each dev agent's scope a bounded context, aggregate-root discipline applies. Tests
       ship in the same change, proving the acceptance criteria - not required first, which keeps
       delivery speed. Best default for products with a real domain.
-    - **TDD** (flag `tdd`) - red/green/refactor, tests strictly first. Stronger proof discipline,
-      measurably slower delivery; pick it when correctness pressure outweighs pace.
+    - **TDD** (flag `tdd`) - red/green/refactor, tests strictly first. Slower delivery, and be
+      clear-eyed about what the order buys inside an agent loop: when the same agent writes the
+      test, runs it red, and then writes the code, a red test proves it ran, not that it failed for
+      the right reason. Published experiments comparing the two workflows found no advantage for
+      test-first, and found tests that computed their expected value from the implementation in
+      BOTH arms. Pick it when a human reviews each failing test before implementation, or when an
+      external mandate requires test-first. Not because it is the stricter-sounding option.
     - **TDD + DDD** (both flags) - the strictest and slowest posture; the two can pull against each
       other (test-first pacing vs model-first design), so choose it deliberately, never as default.
     - **Lightweight** (flag `light`) - no methodology rule installed; small commits, working
@@ -336,7 +341,7 @@ variable or flag; the remaining variables come from the analysis.
 | 12 default branch + commit convention | `{{DEFAULT_BRANCH}}`; `{{COMMIT_TYPES}}`, `{{COMMIT_SCOPES}}` |
 | roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16; `{{AGENT_ROSTER_TABLE}}` (the confirmed roster, rendered as the AGENTS.md table) |
 | 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests`; `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{COVERAGE_TARGET}}`, `{{TEST_GLOBS}}` (framework vars only for selected kinds; unselected take `-`) |
-| 14 methodology | flags `tdd`/`ddd`/`light` - gate `rules/ddd.md` and the tests-first blocks in `testing.md`, `/implement-fr`, `qa-test`, dev agents |
+| 14 methodology | flags `tdd`/`ddd`/`light` - `ddd` ships `rules/ddd.md` plus the bounded-context blocks in `/implement-fr` and the dev agents; `tdd` ships NO file, only the tests-first blocks in `testing.md`, `00-overview.md`, `/implement-fr`, `qa-test`, `AGENTS.md`. What a test is FOR is unconditional (`rules/testing.md`), because the tautology it prevents is not an ordering problem |
 | 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md` or `known-issues.md` |
 | 16 effort profile | no var - the roster allocation; record the choice in `docs/context/tool-changelog.md` |
 | agent history detail (asked with Q16) | `{{HISTORY_LEVEL}}`, `{{HISTORY_KEEP}}` - written to `.claude/state/history-level`, read by the `agent-history` hook. `HISTORY_KEEP` counts per-run files to retain; `0` means never prune (minimal/off write no per-run files, so 0 is their natural value) |
