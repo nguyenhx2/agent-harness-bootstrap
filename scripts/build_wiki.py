@@ -322,6 +322,8 @@ def page_flags() -> str:
         "terse": "install the terse output-style rule",
         "rtk": "install the opt-in rtk wrapper hook",
         "pr_cli": "a pull-request CLI is available, so commands may call it",
+        "target_cursor": "the harness must also run in Cursor; recorded so the port step and `/harness-update` know",
+        "target_codex": "the harness must also run in Codex; recorded so the port step and `/harness-update` know",
     }
     rows = [[f"`{f}`", meaning.get(f, "")] for f in flags]
     return GENERATED_BANNER + f"""# Flag reference

@@ -114,13 +114,13 @@ flowchart TD
     CONFIRM{"User confirms<br/>or corrects the report"}
 
     INTAKE["Intake questionnaire<br/>AskUserQuestion, max 4 per call.<br/>Brownfield: pre-fill from evidence, ask only<br/>what code cannot decide"]
-    TOOLS["Detect + confirm target tools<br/>scan for .cursor/ .codex/ AGENTS.md,<br/>then ask: Claude Code / Cursor / Codex"]
+    TOOLS["Detect + confirm target tools<br/>ranked evidence: only settings.json hooks, .cursor/<br/>and .codex/ own formats are Strong - CLAUDE.md and<br/>.claude/agents are Weak, AGENTS.md alone asks.<br/>Answer persists as target_cursor / target_codex"]
     PLAN{"One-screen setup plan:<br/>created / kept / modified,<br/>roster with model + effort.<br/>User confirms"}
 
     ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
     SKILLS["Skill discovery and install<br/>search skills.sh per seat, trust rubric +<br/>mandatory content read, yes per skill"]
     OS["Detect the dev OS<br/>Windows to .ps1, macOS or Linux to .sh<br/>sets the windows / posix flag"]
-    VARS[/"vars.json<br/>vars + 19 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk, pr_cli,<br/>exactly one of windows / posix"/]
+    VARS[/"vars.json<br/>vars + 21 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk, pr_cli,<br/>target_cursor, target_codex,<br/>exactly one of windows / posix"/]
 
     DRY["scaffold.py --dry-run"]
     SCAFFOLD["scaffold.py<br/>deterministic copy of assets/"]
@@ -137,7 +137,7 @@ flowchart TD
 
     GATE{"Quality gate<br/>structure / cost and context / safety /<br/>grounding / handoff"}
     SMOKE["Smoke-test the loop:<br/>real task file, master-plan row,<br/>session-log row, /task-resume"]
-    PORT["Port to the tools selected at intake<br/>port.py --tool cursor / codex / all:<br/>.cursor/rules + adapter, .codex/hooks.json"]
+    PORT["Port to the RECORDED targets<br/>port.py --tool cursor / codex / all:<br/>.cursor/rules + adapter, .codex/hooks.json.<br/>/harness-update re-reads them, never re-asks"]
     DONE(["Harness runs under orchestration"])
 
     START --> MODE

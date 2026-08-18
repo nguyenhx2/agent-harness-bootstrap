@@ -64,10 +64,51 @@ in express mode, check the vars table below and confirm every row has a value.
 3. **[CONFIRM - presence of `docs/specs/`]** Do specs already exist? If not, invoke `spec-builder` via
    the `Skill` tool first (state the handoff if unavailable) - the bootstrap is better with FRs.
 
-**Target AI tools - [AQ, multi-select].** Detect which tools the repo already uses - `.claude/`/
-`CLAUDE.md` (Claude Code, always primary), `.cursor/`/`.cursorrules` (Cursor), `.codex/` (Codex), a
-shared `AGENTS.md` (both) - as the default, then ask which the harness must run in (sets whether
-step 8 ports via `port.py`); a team may want Cursor support before `.cursor/` exists.
+**Q3a - Target AI tools - [AQ, multi-select; CONFIRM - pass 9 of
+[`codebase-analysis.md`](codebase-analysis.md)].** Which tools must this harness run in? Sets
+whether step 8 ports via `port.py`, and - unlike every other answer in this batch - it is
+**recorded**, so `/harness-update` re-ports the right targets instead of asking every time.
+
+**Pre-select only the Strong rows of pass 9's evidence table, and confirm always.** Detection is
+evidence, not permission: a `.cursor/` can be a colleague's abandoned experiment, and a team can
+want Cursor support months before `.cursor/` exists. A Weak or None finding pre-selects nothing
+and is asked cold - the signals converged (Cursor reads `.claude/` and `CLAUDE.md` natively), so
+a confident guess from a `.claude/` directory is a guess, not a detection.
+
+| Answer | flags | `{{TARGET_TOOLS}}` | Step 8 runs |
+|---|---|---|---|
+| Claude Code only | none | `Claude Code` | nothing - no port step |
+| Claude Code + Cursor | `target_cursor` | `Claude Code, Cursor` | `port.py --tool cursor` |
+| Claude Code + Codex | `target_codex` | `Claude Code, Codex` | `port.py --tool codex` |
+| All three | `target_cursor` + `target_codex` | `Claude Code, Cursor, Codex` | `port.py --tool all` |
+
+Claude Code is always a target and deliberately has no flag: the harness is GENERATED for it and
+the other two are ports of that output, so "Cursor only" is not a state the scaffolder can
+produce. Adding or dropping a target later is a `vars.json` edit plus `/harness-update`, not a
+re-bootstrap.
+
+**This question must always resolve to a value**, express intake included: `{{TARGET_TOOLS}}` has no
+default in the scaffolder, so an unset one fails the run AFTER every file is written. The express
+default is the first row, `Claude Code` with no flags - the honest one, because a port nobody asked
+for is a `.cursor/` directory the team then has to maintain.
+
+**State the losses here, at the point of choosing** - after the port has run is too late, and a
+control that quietly did not travel is worse than one the team knowingly gave up:
+- `maxTurns` has **no equivalent in either tool**. The circuit breaker on a looping agent does
+  not travel, and the cost of a stuck agent is unbounded.
+- Per-seat `tools:` allowlists have **none either**. Cursor offers `readonly`, which covers the
+  reviewer case and nothing finer; Codex offers nothing.
+- Codex has **no path-scoped rule mechanism at all** - its only scoping is nested `AGENTS.md`
+  files. The 7 unconditional rules survive as prose there; the 9 path-scoped ones become advice
+  someone has to ask for, which is also the harness's main recurring token saving gone.
+- `guard-agent-spawn` ports to neither: the spawn boundary is a Claude-Code-only gate, and in
+  the other two the roster is rules text rather than an enforced control.
+- Cursor's ADR guard fires **after** the edit, not before. Codex routes edits through
+  `apply_patch`, so its ADR guard is best-effort as well.
+
+Both ports also have a prerequisite the user should hear now: Codex loads a project-local
+`.codex/` only when the project is marked trusted, and non-managed hooks need a hash-pinned
+review through `/hooks`. Until both are done the ported guards sit on disk and are inert.
 
 ## Batch B - tech stack
 
@@ -329,7 +370,7 @@ variable or flag; the remaining variables come from the analysis.
 | 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{PROJECT_SLUG}}` (kebab-case of the name, used in `.env.example`), `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
 | 2 docs language | `{{DOC_LANGUAGE}}` - recorded in `docs/README.md`; authored `docs/` prose only |
 | 3 specs exist | `{{FR_LIST}}` (from the specs, if any); otherwise the `spec-builder` handoff |
-| target AI tools (Batch A) | no var - drives whether step 8 ports to Cursor / Codex via `port.py` |
+| 3a target AI tools | flags `target_cursor`, `target_codex` (Claude Code is always a target and has no flag); `{{TARGET_TOOLS}}`, recorded in `docs/context/tool-changelog.md`. Drives whether step 8 ports via `port.py`, and is what `/harness-update` reads instead of re-asking - the answer used to be discarded, so a post-bootstrap re-port had nothing to consult |
 | 4 language/framework | `{{SOURCE_GLOBS}}` shape; `tech-stack.md` body; version per [`tech-presets.md`](tech-presets.md), never from memory |
 | 5 database + ORM | flag `db`, `{{ORM}}`, `{{DB_GLOBS}}` |
 | 6 providers / hosting / fallback / update cadence | flag `ai`, `{{HOSTING}}`; fallback/cadence - no var, into `tech-stack.md` and `testing.md`'s provider-wrapper practice |
@@ -362,8 +403,8 @@ variable or flag; the remaining variables come from the analysis.
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
 
 Flags are exactly: `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`,
-`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, `pr_cli`, and exactly
-one of `windows`/`posix`.
+`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, `pr_cli`,
+`target_cursor`, `target_codex`, and exactly one of `windows`/`posix`.
 `ddd` is the default methodology; `tdd` is opt-in and `light` replaces both - never assumed. `tests`
 is derived: set it whenever `unit` or `e2e` is set, never alone.
 

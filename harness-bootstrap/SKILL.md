@@ -54,13 +54,19 @@ in words (what to run, with which inputs). Then echo a one-screen setup plan - w
 kept, and modified, plus **the roster with each agent's model and effort** - and get confirmation
 before writing anything.
 
-**Detect the target tools first, then confirm them.** Before the plan, scan the repo for which AI
-coding tools it already uses, and present the finding as the default - never assume: `CLAUDE.md` or
-`.claude/` -> **Claude Code** (always the primary); `.cursor/` or `.cursorrules` -> **Cursor**;
-`.codex/` -> **Codex**; a shared `AGENTS.md` -> both. Then ask, with `AskUserQuestion`
-(multi-select), which tools the harness must run in - this sets whether step 8 ports to Cursor,
-Codex, both, or neither. Detection only pre-fills; a team may want Cursor support before `.cursor/`
-exists.
+**Detect the target tools first, then confirm them.** Before the plan, rank the evidence with pass 9
+of [`reference/codebase-analysis.md`](reference/codebase-analysis.md) - a Strength column, not a
+lookup. Only three signals are Strong (`.claude/settings.json` with a `hooks` key, `.cursor/`'s own
+formats, `.codex/hooks.json` or `config.toml`); `.claude/agents/`, `.claude/skills/` and `CLAUDE.md`
+are **Weak**, because Cursor reads them natively, and `AGENTS.md` alone is **no evidence at all**.
+Pre-select the Strong findings only, then ask with `AskUserQuestion` (multi-select) - intake Q3a,
+which also states what does not port. Detection is evidence, not permission: a team may want Cursor
+support before `.cursor/` exists, and a `.cursor/` may be an abandoned experiment.
+
+The answer is **persisted**, as the flags `target_cursor` / `target_codex` and `{{TARGET_TOOLS}}` in
+`docs/context/tool-changelog.md`. That is what step 8 ports from and what `/harness-update` re-ports
+from without asking again - it used to be discarded, which left the update command re-deriving it
+from a tree that can no longer tell the tools apart.
 
 **2. Pick the roster** - [`reference/roster.md`](reference/roster.md). Tier 0 is unconditional
 (orchestrator, the two reviewers, spec-guardian, ≥1 dev agent). Choose the preset (S/M/L) that matches
@@ -103,7 +109,8 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 
 Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `db_engineer`,
 `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`,
-`solo_review`, `terse`, `rtk`, `pr_cli`, and exactly one of `windows` / `posix`. Methodology: `ddd` is the default
+`solo_review`, `terse`, `rtk`, `pr_cli`, `target_cursor`, `target_codex`, and exactly one of
+`windows` / `posix`. Methodology: `ddd` is the default
 (`rules/ddd.md`, tests shipping in the same change); `tdd` (tests strictly first) is opt-in - proof
 discipline at a real cost in delivery speed, so intake asks rather than assumes; `light` replaces
 both with a minimal-ceremony posture that keeps the review gate. Testing is a choice, not a default:
@@ -111,7 +118,10 @@ both with a minimal-ceremony posture that keeps the review gate. Testing is a ch
 and `rules/testing.md`). `long` fields the planning pair and `history-tracker`; `solo_review` swaps
 the two reviewers for one merged `reviewer`; `db_engineer`/`db_seeder` extend `db`. `deploy_ask`
 moves `{{DEPLOY_CMD}}` from `permissions.deny` to `permissions.ask` - only when intake's
-control-level question chose agent-initiated deploys.
+control-level question chose agent-initiated deploys. `target_cursor`/`target_codex` gate no asset:
+they RECORD which other tools the harness must run in, so step 8 and `/harness-update` port to the
+answer the user actually gave instead of re-guessing it from a tree where `.claude/` no longer
+identifies a tool.
 
 Two flags are opt-in wrappers around other people's work, both off by default and both listed in
 the README credits. `terse` ships `rules/output-style.md`, adapted from the MIT-licensed

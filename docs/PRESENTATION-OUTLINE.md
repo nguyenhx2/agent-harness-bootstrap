@@ -397,7 +397,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **144,645** | **-38%** |
+| Read path (bytes pulled into context) | 234,196 | **152,164** | **-35%** |
 | Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **13,881** | **-84%** |
 
@@ -507,7 +507,7 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - **16** agents (+1 dev-agent template), **15** rules, **22** commands, **9** hooks
 - **6** rules unconditional, **9** path-scoped → **63%** of rule content stays out of session
 - Always-RAM rules **27,805 bytes**; path-scoped **52,131 bytes**
-- Read path **-38%** (234,196 -> 144,645 bytes), files read **-58%** (24 -> 10)
+- Read path **-35%** (234,196 -> 152,164 bytes), files read **-58%** (24 -> 10)
 - Write path **-85%** (95,064 → 13,881 bytes)
 - Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
 - Port adapter self-test **32/32**

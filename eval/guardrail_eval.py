@@ -82,10 +82,14 @@ VARS = {
         "GLOSSARY_SEED": "| - | seeded at bootstrap | - | - |",
         "DOC_LANGUAGE": "English",
         "HISTORY_LEVEL": "full", "HISTORY_KEEP": "200",
+        "TARGET_TOOLS": "Claude Code, Cursor",
     }.items()},
     # tests/unit/e2e keep qa-test on the roster (the spawn cases need the seat to exist);
     # long keeps history-tracker on it (the model-escalation case names that seat).
-    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long", "pr_cli", "rtk"],
+    # target_cursor gates no asset - it is here so the valid-payload case proves the scaffolder
+    # accepts a recorded target rather than only tolerating its absence.
+    "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e", "long", "pr_cli", "rtk",
+              "target_cursor"],
 }
 
 # (name, hook, expected_exit, payload_builder, assertions={})  exit 2 = BLOCKED, 0 = allowed.
