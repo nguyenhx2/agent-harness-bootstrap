@@ -5,6 +5,57 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.13.0
+
+Static analysis, a generated wiki, a public board, and a testing rule that finally says what a
+test is for. Most of the change to the harness itself is deletion.
+
+### Testing: less of it, and better aimed
+
+The harness was asking for tests nobody needed. Counted across the shipped default, the mocking
+rule appeared in 8 files, the criterion-to-test mapping in 6, and a coverage target in 4 - a
+target the intake never asks for, so a model invented the number and four files repeated it as
+policy while `/test` turned it into a per-run ratchet.
+
+- **The coverage target is gone.** Published comparisons found every arm hitting 92 to 100%
+  coverage while their bug counts spread widely, so the number was never evidence.
+- **1:1 was a floor; it is now a bound.** Every criterion is pinned by at least one test, one test
+  may pin several, and a criterion already pinned does not get a second.
+- **What earns a test is a decision procedure** with three admission questions and a retention
+  rule that says plainly that deleting a redundant test is normal work.
+- **`/scaffold-feature` stops manufacturing a failing test** on the DDD path - a test written
+  against a module with no behaviour, before the design pass runs, is a test written to be
+  rewritten.
+- A test's expected value must come from the acceptance criterion. "I ran it and this is what it
+  returned" is how a bug becomes a fixture.
+
+### Fixed, and these were silent
+
+- **The two graph scanners disagreed four ways.** SCHEMA.md promises `harness-graph.py` and
+  `harness-view scan` write identical bytes. A `files` count crashed the Python side outright, a
+  `[from, to]` edge pair was silently dropped by it, a YAML block list of tools came out as one
+  item with the dash attached, and on Windows it wrote CRLF against the Rust side's LF.
+- **CI proved one hook flavour while everything published claimed two.** Turning on the second
+  found a real defect in the first minute: `rtk-rewrite.ps1` relayed through `cmd.exe`, which does
+  not exist off Windows.
+- **`port.py` overwrote hand edits**, contradicting the invariant the scaffolder states twice. It
+  now reports ADDED / KEPT / CONFLICT and exits non-zero while a conflict stands.
+- **Two claims in the repo were false.** Both Cursor and Codex now expose subagent-start hooks, so
+  the spawn boundary is reachable on both, though equivalent on neither yet.
+- Four checks were green without testing anything, including one written this cycle. Each now
+  carries a mutation test proving it fails on the input it missed.
+
+### Added
+
+- **CodeQL** for actions, python, rust and javascript-typescript. Its first run found five real
+  findings, all resolved. The viewer's UI moved into real `.js` files so it can be analysed at all.
+- **A generated wiki**, published automatically on every merge. Five reference pages are derived
+  from the assets, so their counts cannot drift; the builder validates its own output.
+- **Target-tool detection** from ranked evidence, persisted as flags rather than asked again.
+- **A Command Steps panel** in `harness-view`, and `serve` now starts without a harness so the
+  viewer can be pointed anywhere.
+- Guardrail eval: 107/107 per hook flavour, 214/214 across both, now genuinely run by CI.
+
 ## v1.12.1
 
 A patch release. v1.12.0 shipped a Cursor adapter that could not run outside Windows, and a set of
