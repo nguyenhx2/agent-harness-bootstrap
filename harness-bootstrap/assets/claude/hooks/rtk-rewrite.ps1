@@ -98,7 +98,15 @@ try {
     # WriteAllBytes, not Set-Content: Windows PowerShell would prepend a UTF-8 BOM and rtk would
     # reject the payload. StandardInputEncoding cannot help - it does not exist on 5.1.
     [System.IO.File]::WriteAllBytes($tmp, [System.Text.Encoding]::UTF8.GetBytes($payload))
-    $out = & cmd.exe /c "`"$($rtk.Source)`" hook claude < `"$tmp`" 2>NUL"
+    # PowerShell is not Windows. cmd.exe does not exist on Linux or macOS, so on pwsh there the
+    # relay has to go through the platform's own shell instead - the file redirect is the point,
+    # not the interpreter doing it. $IsWindows is undefined on Windows PowerShell 5.1, where the
+    # comparison below is false and the cmd.exe branch is taken, which is correct for 5.1.
+    if ($IsWindows -eq $false) {
+        $out = & /bin/sh -c "'$($rtk.Source)' hook claude < '$tmp' 2>/dev/null"
+    } else {
+        $out = & cmd.exe /c "`"$($rtk.Source)`" hook claude < `"$tmp`" 2>NUL"
+    }
     if ($LASTEXITCODE -ne 0) { exit 0 }
     $joined = ($out -join "`n")
     if ($joined) { [Console]::Out.Write($joined) }
