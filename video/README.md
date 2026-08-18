@@ -19,7 +19,7 @@ Start with **04 solution** - it is the whole product in one clip. The other six 
 
 | Clip | Length | MP4 (1080p) | HTML | What it says |
 |---|---:|---|---|---|
-| **04 solution** (start here) | ~55s | [`mp4/04-solution.mp4`](mp4/04-solution.mp4) | [`html/04-solution.html`](html/04-solution.html) | The complete solution: four pain points (invented requirements, lost work on compaction, one unsafe turn, an inherited bill), then spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff. Each pain visibly flips from red to green as its fix lands. Closes on the question harness-view exists to answer - how do you know it is actually wired right - and the scores it gave three real harnesses. |
+| **04 solution** (start here) | ~63s | [`mp4/04-solution.mp4`](mp4/04-solution.mp4) | [`html/04-solution.html`](html/04-solution.html) | The complete solution: four pain points (invented requirements, lost work on compaction, one unsafe turn, an inherited bill), then spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff. Each pain visibly flips from red to green as its fix lands. Closes on the question harness-view exists to answer - how do you know it is actually wired right - and the scores it gave three real harnesses. |
 | 01 overview | ~34s | [`mp4/01-overview.mp4`](mp4/01-overview.mp4) | [`html/01-overview.html`](html/01-overview.html) | What it is and why: an unconstrained agent hallucinates, forgets on compaction, and bills at the top tier; two skills build a harness; the result ports to Claude Code, Cursor, Codex. |
 | 02 flow | ~31s | [`mp4/02-flow.mp4`](mp4/02-flow.mp4) | [`html/02-flow.html`](html/02-flow.html) | The operating flow: spec-builder writes the contract, harness-bootstrap reads the code and scaffolds in ~0.2s, then the task loop dispatches scoped agents, hooks block bad actions, and the on-disk board survives a crash. |
 | 03 layers | ~32s | [`mp4/03-layers.mp4`](mp4/03-layers.mp4) | [`html/03-layers.html`](html/03-layers.html) | The control layers: deny list, hooks, the spawn boundary, path-scoped rules, review gates. The guardrails are shell scripts and glob rules, so Opus to Haiku is byte-identical safety. State lives on disk. Ports with enforcement. |
@@ -85,6 +85,28 @@ cp video/media/videos/04-solution/1080p60/04-solution.mp4 video/mp4/04-solution.
 
 The HTML files in `video/html/` are hand-written, fully self-contained (inline CSS/JS/SVG, no external
 fonts or CDNs), and loop on their own; just open one in a browser.
+
+## After every render: record the provenance
+
+Figures inside a clip are burned into pixels, so `check_numbers.py` cannot see them. It reads text,
+and it does check `video/src/**.py` - but nothing connected a SOURCE that was right to an ARTIFACT
+that was stale. `gif/04-solution.gif` read "guardrail eval 69/69" on the README for three releases
+while its own scene source said 107/107; the number had moved twice and the GIF was re-rendered for
+neither.
+
+`video/RENDERED.json` closes that gap: it stores the sha256 of the scene source each shipped clip
+was last rendered from, and `scripts/check_media.py` fails CI when a source has moved on without
+its artifact. So a render is not finished until you record it:
+
+```bash
+py -3.13 scripts/check_media.py --update video/mp4/04-solution.mp4 video/gif/04-solution.gif
+py -3.13 scripts/check_media.py          # must print "ok"
+```
+
+It deliberately does NOT hash `theme.py` / `jatheme.py`. Those change every frame of all fourteen
+clips, and demanding a full re-render for one colour tweak would get the gate switched off. A
+palette change cannot make a published number false, which is the failure this gate exists to stop.
+After a theme change, re-render deliberately and update every entry.
 
 ## Verify
 

@@ -96,6 +96,14 @@ jobs:
       - name: Figures must be self-contained and fully connected
         run: python scripts/check_svg.py
 
+      # check_numbers.py reads text, and every figure in a clip is burned into pixels at render
+      # time, so it could never see them. The README's first moving image read "guardrail eval
+      # 69/69" for three releases while its own scene source said 107/107 - the number moved
+      # twice and the GIF was re-rendered for neither. This compares each artifact against the
+      # hash of the source it was rendered from.
+      - name: Every shipped clip must match the source it was rendered from
+        run: python scripts/check_media.py
+
       # The wiki lives in a separate git repository that nothing else reads, which is
       # exactly how wikis go stale. Its reference pages are generated from the assets,
       # so building them here means a change that breaks a page fails the build rather
