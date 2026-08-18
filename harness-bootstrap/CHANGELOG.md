@@ -6,6 +6,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.13.0] - 2026-08-19
+
+### Changed
+
+- Testing instructions cut back hard: the coverage target is gone from all four places that
+  carried it, the 1:1 criterion mapping became a bound rather than a floor, and five of the eight
+  copies of the mocking rule were removed. What earns a test is now a decision procedure with a
+  retention rule.
+- `/scaffold-feature` no longer writes a failing test on the DDD path.
+- Target-tool detection is a ranked evidence pass, and the answer is persisted as `target_cursor`
+  / `target_codex` plus `{{TARGET_TOOLS}}` instead of being discarded.
+
+### Fixed
+
+- `harness-graph.py` disagreed with `harness-view scan` four ways: a `files` count crashed it, a
+  `[from, to]` edge pair was dropped, a YAML block list of tools parsed as one item, and it wrote
+  CRLF on Windows. A parity gate now runs both scanners and fails on any difference.
+- `rtk-rewrite.ps1` relayed through `cmd.exe`, so it could never work on Linux or macOS.
+- `port.py` overwrote existing files instead of reporting ADDED / KEPT / CONFLICT.
+- Corrected the claim that `guard-agent-spawn` cannot port: both Cursor and Codex expose a
+  subagent-start hook. Reachable on both, equivalent on neither yet.
+
 ## [1.12.1] - 2026-08-16
 
 ### Fixed

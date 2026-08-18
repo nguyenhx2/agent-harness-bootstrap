@@ -7,6 +7,21 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.13.0] - 2026-08-19
+
+### Added
+
+- A Command Steps panel: selecting a command renders its steps and the agents, commands, scripts
+  and rules each one touches, every annotation clickable through to that node. Read-only, with no
+  schema change and no new endpoint.
+- `serve` starts without a harness and offers a folder picker, so the viewer can be pointed at any
+  repository regardless of where the binary sits. `scan`, `assess` and `watch` still require one.
+
+### Changed
+
+- The UI moved from an inline `<script>` block into `src/ui.js` and `src/ui-steps.js`, spliced in
+  at startup, so CodeQL can analyse the one page that renders repository text into a DOM.
+
 ## [1.12.1] - 2026-08-16
 
 ### Fixed
