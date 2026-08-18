@@ -95,8 +95,11 @@ tests should START. Do not lecture about TDD.
 | Tests actually run | Is the test script wired into CI and the repo's task flow? | A suite nobody runs is documentation, not protection (Minor) |
 | Assertions exist | Spot-read for tests that only check "does not throw" | A smoke-only suite gives false confidence (Minor/Info) |
 
-Coverage PERCENTAGE alone is Info at best. Coverage of a path that moves money or grants access is
-what earns Major.
+Coverage PERCENTAGE alone is Info at best, and is never a gate: a suite can execute every line
+without asserting anything. Coverage of a path that moves money or grants access is what earns
+Major. Where the project produces a mutation score, that is the evidence the suite would actually
+catch a regression; where it does not, do not ask for one - standing that up is a project-level
+task, not a per-change requirement.
 
 ## Output contract
 

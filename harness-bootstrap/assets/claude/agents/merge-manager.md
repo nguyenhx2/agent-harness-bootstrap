@@ -46,7 +46,9 @@ your ability to merge, never the requirement to check.
 - **UNION appends.** When both sides add to a list, a table, a board, or a barrel export: keep BOTH.
   `--ours` / `--theirs` on a whole file is banned, except for a regenerable lockfile (reset it and
   regenerate).
-- **Prove nothing was dropped.** The merged test count must be at least the sum of both sides'. A
+- **Prove nothing was dropped.** Every test present on either side is present after the merge, or
+  named in the merge report as deliberately removed by one branch with the test that now covers the
+  criterion. A count that fell with no such note is a silent drop. A
   `git mv` can silently drop the content edits made to the same file - verify that moved-and-edited
   files kept their edits.
 

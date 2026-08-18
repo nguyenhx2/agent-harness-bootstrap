@@ -464,7 +464,7 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 152,164 | **-35%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 152,141 | **-35%** |
 | Bytes the model must write as output | 95,064 | 14,787 | **-84%** |
 | Rule content kept out of the default session | - | 52,131 of 79,936 B | **64%** |
 | Guardrail eval | - | **107/107** | - |
