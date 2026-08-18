@@ -72,10 +72,20 @@ class ScaffoldError(Exception):
 
 # The closed flag set. Keep in sync with assets/manifest.json's schema comment,
 # SKILL.md, and reference/intake.md - the auditors check all four agree.
+#
+# target_cursor / target_codex record which OTHER tools the harness must run in.
+# There is deliberately no target_claude: the harness is GENERATED for Claude Code
+# and the other two are ports of that output, so "Cursor only" is not a state this
+# scaffolder can produce. They gate nothing in the manifest on purpose - what they
+# buy is persistence. Intake used to ask which tools to port to and throw the
+# answer away, so /harness-update's re-port step had nothing to consult and had to
+# re-derive it from the tree - which no longer works, because Cursor reads
+# .claude/ and CLAUDE.md natively.
 KNOWN_FLAGS = {
     "ui", "db", "db_engineer", "db_seeder", "ai", "audit", "tdd", "ddd",
     "light", "unit", "e2e", "tests", "deploy_ask", "long", "solo_review",
-    "windows", "posix", "terse", "rtk", "pr_cli",
+    "windows", "posix", "terse", "rtk", "pr_cli", "target_cursor",
+    "target_codex",
 }
 
 # OS flag -> the derived hook runner/extension vars. The flavor of the shipped

@@ -386,7 +386,7 @@ def scaffold_vars() -> dict:
             "DATA_RESIDENCY", "ALLOWED_LICENCES", "DENIED_LICENCES", "IP_OWNERSHIP_STATEMENT",
             "DEP_MANIFEST_GLOBS", "GATED_ACTIONS", "INCIDENT_CONTACT",
             "RESTRICTED_DENIES", "GLOSSARY_SEED", "DOC_LANGUAGE",
-            "HISTORY_LEVEL", "HISTORY_KEEP",
+            "HISTORY_LEVEL", "HISTORY_KEEP", "TARGET_TOOLS",
         ]},
         "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e"],
     }
