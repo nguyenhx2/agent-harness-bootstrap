@@ -37,14 +37,27 @@ the task names, then make it pass, then clean up.
 - Business logic, handlers, and data transforms are always test-first.
 {{/IF_TDD}}
 {{^IF_TDD}}
-## Tests prove the criteria
+## What earns a test
 
-Every acceptance criterion of the requirement the task names has a test that proves it, written in
-the same change as the implementation - never promised for later. A criterion with no test is not
-done.
+A test is a liability that pays rent by failing. Every acceptance criterion is pinned by at least
+one test, shipped in the same change and never promised for later. One test may pin several
+criteria; a criterion already pinned does not get a second.
 
-- Business logic, handlers, and data transforms always ship with their tests.
+Before writing one, all three must hold:
+
+1. The expected value is stated by the criterion. If it can only be obtained by running the code,
+   that is a spec gap for spec-guardian, not a number to record.
+2. The test can fail for a real reason. A getter, a constructor, a config echo, or a call that
+   only breaks when the framework breaks is not written.
+3. No existing test would have to change for this criterion to break. If one would, the criterion
+   is covered - name that test instead of adding another.
+
+After it passes, it is kept only while it would fail on a plausible future change to this module.
+A test that survives only by being renamed with its symbol is deleted in the change that makes it
+redundant, and the session log names the test that now covers the criterion. **Deleting a
+redundant test is normal work, not a regression.**
 {{/IF_TDD}}
+- Business logic, handlers, and data transforms always ship with their tests.
 - Pure presentation, generated code, and configuration are not - do not perform coverage theater on
   a file with no behavior.
 - A test asserts the acceptance criterion in the requirement, not the implementation that happens
@@ -65,20 +78,22 @@ done.
   mock the wrapper.
 - Real calls make the suite flaky, slow, and offline-hostile; they can mutate real data; and they
   leak credentials into the test environment, which then need to exist there.
-- The mock encodes the provider's CONTRACT, including its failure modes: timeout, rate limit,
-  malformed response, partial response. A mock that only ever returns the happy path tests nothing
-  the code will actually face.
+- The mock encodes the provider's CONTRACT. Cover the failure modes this code actually handles
+  differently: a retry path needs a timeout case, a paginating reader needs a partial response. A
+  failure mode the code treats identically to another does not need its own test.
 - Test data is synthetic and deterministic. No production dump, no real personal data, no real
   credentials - not even expired ones (agent-guardrails.md).
 
-{{#IF_UNIT}}## Coverage
+## When there are many scenarios, review fixtures instead of assertions
 
-- Target for business logic: **{{COVERAGE_TARGET}}**. It is a floor, not a goal.
-- Coverage percentage on its own means little. Coverage of a path that moves money, grants access,
-  or mutates data is what matters, and those paths are covered before the number is discussed.
-- A gap in a critical path is a finding regardless of the overall number; a gap in a getter is not.
+For a subsystem with many variations of one flow, prefer one reviewed runner over many written
+tests: keep the scenarios as data files holding the input and the approved output in a format a
+human can scan, and have a single test execute every file. The test logic is reviewed once; after
+that a new case is a new fixture, and a behavior change shows up as a diff a human reads rather
+than an assertion a human decodes. A fixture a human approved is never re-baselined to make a
+suite green - a changed approved output goes back to the human.
 
-{{/IF_UNIT}}## Before opening a pull request
+## Before opening a pull request
 
 Run the suite. Record the result in the task file's session log - a gate counts as passed only when
 the log records the run (task-tracking.md). A red suite is never merged and never skipped in CI.

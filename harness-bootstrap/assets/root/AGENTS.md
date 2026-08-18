@@ -102,8 +102,7 @@ Run it with `/implement-fr FR-NN`.
 
 ## Testing
 
-{{#IF_TESTS}}{{#IF_UNIT}}{{UNIT_FRAMEWORK}} for unit tests{{#IF_E2E}}, {{E2E_FRAMEWORK}} for end-to-end tests{{/IF_E2E}}, coverage target
-{{COVERAGE_TARGET}}{{/IF_UNIT}}{{^IF_UNIT}}{{E2E_FRAMEWORK}} for end-to-end tests over the critical user flows{{/IF_UNIT}}. Tests {{#IF_TDD}}are written before the implementation and {{/IF_TDD}}name the acceptance criterion
+{{#IF_TESTS}}{{#IF_UNIT}}{{UNIT_FRAMEWORK}} for unit tests{{#IF_E2E}}, {{E2E_FRAMEWORK}} for end-to-end tests{{/IF_E2E}}{{/IF_UNIT}}{{^IF_UNIT}}{{E2E_FRAMEWORK}} for end-to-end tests over the critical user flows{{/IF_UNIT}}. What earns a test, and what does not, is in `.claude/rules/testing.md`. Tests {{#IF_TDD}}are written before the implementation and {{/IF_TDD}}name the acceptance criterion
 they prove.
 
 External providers are always mocked. A test that makes a real network call is a defect, not a
