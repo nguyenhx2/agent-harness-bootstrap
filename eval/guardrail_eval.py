@@ -961,12 +961,27 @@ def run_rtk_suite(repo: pathlib.Path, flavor: str, ps_bin: str | None) -> list[d
     rewrite = ('{"hookSpecificOutput":{"hookEventName":"PreToolUse",'
                '"permissionDecisionReason":"stub","updatedInput":{"command":"STUBBED"}}}')
     if flavor == "ps1":
+        # PowerShell is not Windows. On a Linux runner pwsh resolves a native command from PATH
+        # by the executable bit, and cannot run a .cmd at all - there is no cmd.exe. Shipping only
+        # the batch stub made this case fail the moment CI started exercising the .ps1 flavour,
+        # and that failure was the FIXTURE, not the hook. Write both, and let the platform pick:
+        # Windows resolves rtk.cmd through PATHEXT, everything else resolves the executable.
         lines = ["@echo off",
                  'if "%1"=="--version" (echo rtk 0.45.0& exit /b 0)',
                  'echo called >> "%~dp0called.log"',
                  "echo " + rewrite.replace("&", "^&"),
                  "exit /b 0"]
         (stub_dir / "rtk.cmd").write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")
+
+        posix_twin = ["#!/usr/bin/env bash",
+                      'if [ "$1" = "--version" ]; then echo "rtk 0.45.0"; exit 0; fi',
+                      'echo called >> "$(dirname "$0")/called.log"',
+                      "cat >/dev/null",
+                      "echo '" + rewrite + "'",
+                      "exit 0"]
+        twin = stub_dir / "rtk"
+        twin.write_text("\n".join(posix_twin) + "\n", encoding="utf-8", newline="\n")
+        twin.chmod(0o755)
     else:
         lines = ["#!/usr/bin/env bash",
                  'if [ "$1" = "--version" ]; then echo "rtk 0.45.0"; exit 0; fi',
