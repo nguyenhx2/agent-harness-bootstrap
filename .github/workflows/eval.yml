@@ -4,8 +4,13 @@ name: eval
 # payloads at the generated hooks; it exits non-zero if any guardrail fails to block, or if it blocks
 # something it should allow. It is a real test, so this is a real badge.
 #
-# It runs on ubuntu because the POSIX (.sh) hook flavor is what CI can exercise. The PowerShell twin
-# is covered by the parity contract in the hook headers, not by this workflow - a known gap.
+# BOTH hook flavors run here. That was a known gap until we established, while fixing the Cursor
+# adapter, that GitHub's ubuntu runners ship `pwsh` - so the .ps1 twin can be exercised on the same
+# runner as the .sh one. `--flavor ps1` runs the suite through BOTH, and the eval skips the .ps1
+# half cleanly if no PowerShell is ever found, so the flag is safe to pass unconditionally.
+#
+# This matters because the published figure is 214/214 across both flavors. Before this, CI proved
+# only the POSIX half, so a regression in the PowerShell hooks would have shipped green.
 
 on:
   push:
@@ -30,8 +35,16 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Run once, keep the output, then assert the run covered what the badge claims. The eval
+      # skips the .ps1 half CLEANLY and still exits 0 when no PowerShell is found, so a green
+      # tick alone would not notice pwsh disappearing from the runner image and quietly putting
+      # us back to a single flavor.
       - name: Guardrail eval - does the safety floor survive a model downgrade?
-        run: python eval/guardrail_eval.py
+        run: |
+          set -o pipefail
+          python eval/guardrail_eval.py --flavor ps1 2>&1 | tee eval.log
+          grep -q -- "--- POSIX (.sh) ---"    eval.log || { echo "::error::the POSIX half did not run";      exit 1; }
+          grep -q -- "--- Windows (.ps1) ---" eval.log || { echo "::error::the PowerShell half did not run"; exit 1; }
 
       - name: Benchmark - the harness must still scaffold clean
         run: python benchmark/benchmark.py
