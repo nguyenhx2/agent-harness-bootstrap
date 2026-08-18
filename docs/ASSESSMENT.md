@@ -92,13 +92,36 @@ What would close it: make the tier the thing the agent declares, and generate th
 value from the tier table at scaffold time. The scaffolder already does this kind of substitution. A
 vendor swap would then be a one-file edit plus a re-run. It is not done.
 
-The newest hook sharpens this rather than helping it. `guard-agent-spawn` is a PreToolUse hook keyed
-to Claude Code's `Agent|Task` tool, and neither Cursor nor Codex exposes an equivalent subagent-spawn
-hook point - `port.py` says so directly in its own header comment. On those two tools the roster still
-exists as rules text the model can read, but nothing intercepts an off-roster spawn, a model-escalated
-one, or a write dispatch with no registered task the way it does under Claude Code. The single-vendor
-gap is not just the `model:` field anymore; the harness's most safety-critical control does not travel
-with it.
+The newest hook sharpens this rather than helping it, though less than this document used to claim.
+`guard-agent-spawn` is a PreToolUse hook keyed to Claude Code's `Agent|Task` tool. Until recently
+both this file and `port.py` stated that neither Cursor nor Codex exposed an equivalent
+subagent-spawn hook point. **That is no longer true**: Cursor ships `subagentStart` / `subagentStop`
+with a matcher on subagent type, and Codex ships `SubagentStart` / `SubagentStop` with an
+`agent_type` matcher.
+
+Cursor's documentation says `subagentStart` "can allow or deny subagent creation" and that exit 2
+blocks. Codex's page lists exit-2 blocking for `PreToolUse`, `PostToolUse`, `UserPromptSubmit` and
+`Stop`, and does not state it for `SubagentStart`, so on Codex the event is confirmed to exist and
+its blocking behaviour is **unverified**. That distinction is worth keeping: this section is being
+rewritten precisely because it previously asserted more than had been checked.
+
+What has not changed is that a hook point is not the same as the control. Two things stand between
+them, and both are real work rather than wiring:
+
+- **The payload fields differ.** The hook reads `tool_input.subagent_type`, `tool_input.model` and
+  `tool_input.prompt`. Cursor supplies `subagent_type`, `subagent_model` and `task`; Codex supplies
+  `agent_type` and `agent_id`. An adapter mapping is needed, of the kind the Cursor adapter already
+  performs for shell and read events.
+- **Roster identity may not survive.** The check that carries the weight is "does
+  `.claude/agents/<type>.md` exist". Cursor's documented subagent types are `generalPurpose`,
+  `explore` and `shell`, and whether a named subagent reports its own name there is unverified.
+  Codex takes its agent types from an `[agents.<name>]` TOML table rather than from markdown seats,
+  so membership would only line up if the porter emitted that table too.
+
+So the honest statement is: **reachable on both tools, equivalent on neither yet.** Today the
+boundary still does not travel, and on Cursor and Codex the roster remains rules text a model can
+read rather than a gate. The difference from before is that this is now a porting job with a known
+shape, not a missing capability in the tools.
 
 ## Gap 3 - ROI has no numerator
 
@@ -199,7 +222,7 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
    (214/214 across both hook flavors).
 2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
    Measured: 45% less to read (down from 54% - the skill grew capability faster than compression
-   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 63% of rule content kept out
+   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 64% of rule content kept out
    of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the
@@ -234,8 +257,10 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
 
 1. **Enforce classification with path denies** (closes Gap 1, uses machinery that already works).
 2. **Make seat tier the declared thing and generate `model:` from it** (closes Gap 2's mechanical
-   half; the vendor port itself remains a port, and the spawn boundary specifically does not travel
-   to Cursor or Codex at all - that is a tool limitation, not a backlog item).
+   half; the vendor port itself remains a port). The spawn boundary still does not travel, but it
+   has moved from "tool limitation" to backlog item: both Cursor and Codex now expose subagent-start
+   hooks, so what is missing is a field mapping and a way to make roster identity line up, not a
+   capability in the tools. See Gap 2 for what each one would take.
 3. **Ship a quality eval harness** so the central claim - that a good harness narrows the gap between
    model tiers - can be tested rather than asserted (closes Gap 3).
 4. CI templates and a real `devops` pipeline, so "workflow integration" means something beyond the

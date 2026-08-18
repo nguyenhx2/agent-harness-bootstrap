@@ -1,8 +1,15 @@
 # The harness in Codex
 
-Codex does not run the skills. It runs the harness the skills produce. Codex reads `AGENTS.md` natively
-(root and nested), so no rule conversion is needed. Its hook payload is **identical** to Claude Code's, so
-the porter registers the existing hooks directly in `.codex/hooks.json` - no adapter.
+Codex does not run the skills. It runs the harness the skills produce. Its hook payload is
+**identical** to Claude Code's, so the porter registers the existing hooks directly in
+`.codex/hooks.json` - no adapter.
+
+Codex reads `AGENTS.md` natively, root and nested. That is why no rule conversion runs, but it is
+worth being exact about what that buys: the scaffolded `AGENTS.md` **points at** `.claude/rules/`,
+it does not contain them. Codex has no path-scoped rule mechanism at all - its only scoping is
+directory placement - so on Codex the rule bodies are files the model may choose to open rather
+than context that attaches itself when a matching path is touched. The always-on rules are
+summarised in `AGENTS.md`; the path-scoped ones are, in practice, advice you have to ask for.
 
 ## Setup
 
@@ -48,6 +55,17 @@ Codex routes file edits through `apply_patch` with the path **inside** `tool_inp
 `tool_input.file_path` field. `protect-adr` reads a file path, so on Codex it is best-effort - an edit to
 an Accepted ADR is not reliably blocked. The Bash guards (secrets, commit target, commit message) are
 exact.
+
+**Two prerequisites decide whether any of it runs.** A project-local `.codex/` layer loads only when
+the project is marked trusted (`[projects.<path>] trust_level = "trusted"`), and non-managed hooks
+need an explicit hash-pinned review through `/hooks` in the CLI. Until both are done the ported
+guards are present on disk and inert. Check this before concluding the port failed.
+
+**The spawn boundary does not travel yet.** `guard-agent-spawn` is not ported. This repo used to say
+Codex had no subagent-spawn hook point; that is no longer true, as Codex ships `SubagentStart` and
+`SubagentStop` with an `agent_type` matcher. What blocks equivalence is that its agent types come
+from an `[agents.<name>]` TOML table rather than from markdown seats, so the hook's roster check has
+nothing to match against unless the porter emits that table too. Reachable, not yet equivalent.
 
 ## Verify it works
 

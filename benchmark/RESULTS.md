@@ -108,7 +108,7 @@ xychart-beta
 | Unconditional, always loaded | 7 | 30,643 | ~8,500 |
 | Path-scoped, loaded on demand | 9 | 52,113 | ~14,500 |
 
-63% of rule content stays out of the default session. The seven that cannot be scoped are the ones
+64% of rule content stays out of the default session. The seven that cannot be scoped are the ones
 no glob can match: `00-overview`, `agent-guardrails`, `task-tracking`, `conventional-commits` (it
 governs commit *messages*, not files, which is why it is kept under 25 lines on purpose),
 `output-style` (it governs how the agent writes, which no path predicts), and the two governance

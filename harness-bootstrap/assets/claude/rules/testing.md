@@ -10,6 +10,24 @@ paths:
 How tests are written. How tests are REVIEWED is in code-quality.md, which also owns the severity
 model used to grade a testing gap.
 
+## What a test is for, and where its expected value comes from
+
+A test exists to prove an acceptance criterion from the requirement. That decides the one thing
+that is easy to get wrong when an agent writes the code and the tests in the same session:
+
+- **The criterion is the oracle.** The expected value comes from the requirement. A test that
+  computes what it expects by calling the code under test proves nothing, because it passes for
+  whatever behavior the code has, including the wrong one.
+- **The implementation is not evidence.** "I ran it and this is what it returned" is how a bug
+  becomes a fixture. If the expected value cannot be stated from the criterion alone, the criterion
+  is incomplete: that is a finding for spec-guardian, not a number to obtain by execution.
+- **Name the criterion in the test.** A reviewer can then check the pair, rather than trusting an
+  assertion whose origin is invisible.
+
+This holds whichever order the test and the implementation are written in. Writing the test first
+does not prevent a tautology - the same actor still writes both sides, and a test written first can
+still be adjusted afterwards until it passes. Order is not the control here; the oracle is.
+
 {{#IF_TDD}}
 ## Test-driven, for anything with behavior
 

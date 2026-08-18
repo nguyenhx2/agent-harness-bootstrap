@@ -90,6 +90,7 @@ tests should START. Do not lecture about TDD.
 |-------|-----|---------------------|
 | External providers mocked | Grep test files for real SDK or network imports with no mock layer | Tests hit live services: flaky, slow, may mutate real data, fail offline (Major) |
 | Behavior vs implementation | Do asserts check outputs and state, or mock-call counts and private internals? | Implementation-coupled tests break on every refactor and pass on real bugs (Minor) |
+| Expected values are independent | Does a test compute what it expects by calling the code under test, or restate the implementation's arithmetic inline? | A tautological test passes for any behavior the code has, including the wrong one. Major on a critical path, Minor elsewhere |
 | Critical paths covered | Map test files to the money, auth, and data modules | "Tests exist but none touch <module>" (Major for critical modules) |
 | Tests actually run | Is the test script wired into CI and the repo's task flow? | A suite nobody runs is documentation, not protection (Minor) |
 | Assertions exist | Spot-read for tests that only check "does not throw" | A smoke-only suite gives false confidence (Minor/Info) |

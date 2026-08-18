@@ -19,6 +19,16 @@ implement. Do not guess.
 
 {{ROUTING_TABLE}}
 
+{{^IF_TDD}}
+5. Design before code. Before the first line is written, state in the task file: the modules and
+   types this change introduces or alters, the contract of each new interface, the edge cases the
+   acceptance criteria imply, and the failure modes. One revisable pass, not a document.
+
+   This step is why the order is what it is. A design that emerges from the sum of many locally
+   minimal decisions is rarely revisited, and the result is a feature shaped by whatever was
+   convenient at each step instead of by its domain.
+{{/IF_TDD}}
+
 {{#IF_TESTS}}
 {{#IF_TDD}}
 5. Implement test-first: {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the
@@ -26,7 +36,7 @@ implement. Do not guess.
    implementation exists.
 {{/IF_TDD}}
 {{^IF_TDD}}
-5. Implement against the locked acceptance criteria, and ship the proving tests in the same change:
+6. Implement against the locked acceptance criteria, and ship the proving tests in the same change:
    {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the user-visible flow{{/IF_E2E}}. Each
    test names the criterion it proves.
 {{/IF_TDD}}

@@ -77,7 +77,7 @@ block, whose diagrams do not render, or whose figures contradict the scripts.
 ```bash
 python eval/guardrail_eval.py                       # every case green; the count is derived, never hardcoded
 python benchmark/benchmark.py                       # must exit 0
-python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 18/18
+python harness-bootstrap/scripts/port.py --self-test # Cursor/Codex adapter, must be 32/32
 python scripts/check_numbers.py                     # figures match the scripts
 python scripts/check_mermaid.py                     # every diagram renders (needs node)
 ```
@@ -147,7 +147,7 @@ Then record it in the affected skill's `CHANGELOG.md` under **Removed**, with th
       root `CHANGELOG.md` has its `## vX.Y.Z` section, and `validate_release.py X.Y.Z` passes.
 - [ ] `package.py --version X.Y.Z --check` passes.
 - [ ] `guardrail_eval.py` is fully green (the count is derived, never hardcoded), `benchmark.py`
-      exits 0, `port.py --self-test` is 18/18, `check_numbers.py` and `check_mermaid.py` pass.
+      exits 0, `port.py --self-test` is 32/32, `check_numbers.py` and `check_mermaid.py` pass.
 - [ ] `dist/` contains the per-skill zips, the bundle, `SHA256SUMS`, and the captured
       `eval-results.md` + `benchmark-results.md` for this version.
 - [ ] Each zip carries `VERSION` inside the skill directory (the packager prints this - check it).
