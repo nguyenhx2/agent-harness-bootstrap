@@ -142,6 +142,15 @@ def canonical() -> dict[str, int]:
         # The tailored-roster claim: how few and how many seats a run can install.
         "roster_min": roster_range()[0],
         "roster_max": roster_range()[1],
+        # The published version. Not an artifact count, but the same failure class: a figure
+        # written by hand into a user-facing page that nothing re-reads on the way past. The
+        # install snippets now name the UNVERSIONED archive the release also attaches, which
+        # takes them out of this entirely; the badge cannot avoid naming a number, so it is
+        # checked. validate_release.py already asserts CHANGELOG and SKILL.md agree, which
+        # makes either one safe to read here.
+        "version": re.search(r"^## v(\d+\.\d+\.\d+)",
+                             (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"),
+                             re.M).group(1),
     }
 
 
@@ -261,6 +270,11 @@ BENCH_CHECKS = [
 # deliberately EXCLUDES any pair whose context mentions an adapter or a self-test - which is why
 # "5/5" survived in three places while the suite grew to 18.
 ADAPTER_PAIR = re.compile(r"\b(\d{1,3}) ?/ ?(\d{1,3})\b")
+
+# The version badge on the landing pages. Only the badge uses this markup, so the pattern needs no
+# context words - and matching the markup rather than the label covers the Japanese page too,
+# which carries the same badge with a translated caption.
+VERSION_BADGE = re.compile(r"<b>v(\d+\.\d+\.\d+)</b>")
 
 BYTE_CHECKS = [
     ("read-path after bytes",  r"234,196\s*\|\s*([\d,]{4,})", "read_bytes_after"),
@@ -453,6 +467,14 @@ def main() -> int:
                 line = text[:m.start()].count("\n") + 1
                 print(f"    MISMATCH  {rel}:{line}  eval badge: says {a}/{b}, reality is "
                       f"{c['eval_cases']}/{c['eval_cases']}")
+                bad += 1
+        # The version badge. The install snippets beside it name the unversioned archive on
+        # purpose, so this is the only place on these pages that has to carry a number.
+        for m in VERSION_BADGE.finditer(text):
+            if m.group(1) != c["version"]:
+                line = text[:m.start()].count("\n") + 1
+                print(f"    MISMATCH  {rel}:{line}  version badge: says v{m.group(1)}, "
+                      f"reality is v{c['version']}")
                 bad += 1
         # The adapter's own figure, in the pages as well as the markdown. Same rule, so a page
         # cannot quote a self-test result the markdown would have been failed for.
