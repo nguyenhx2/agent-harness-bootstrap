@@ -97,7 +97,7 @@ paths:
 ```
 
 `benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 25,667 bytes against 9
-path-scoped rules at 51,785 bytes. **63% of the rule content is kept out of the default session.** The
+path-scoped rules at 51,785 bytes. **64% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,

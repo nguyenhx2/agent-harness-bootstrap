@@ -44,17 +44,35 @@ The adapter maps a shell event to the Bash guards (`guard-main-commit`, `check-c
 
 Everything reachable through a shell command or a file read blocks the same as in Claude Code.
 
-## Honest limit
+## Honest limits
 
-Cursor's `afterFileEdit` is observational only. An edit to an Accepted ADR is flagged **after** the fact,
-not blocked before it happens. In Claude Code that edit is blocked pre-hoc.
+**The ADR guard fires late.** The port wires it to Cursor's `afterFileEdit`, which is observational
+only, so an edit to an Accepted ADR is flagged **after** the fact rather than blocked before it
+happens. In Claude Code that edit is blocked pre-hoc.
+
+This one is a limit of the port, not of Cursor. Cursor now exposes `preToolUse`, whose payload
+(`tool_name`, `tool_input`, `cwd`) is close enough to Claude Code's that the adapter's remapping
+would become nearly an identity function. Moving the wiring there would restore pre-hoc blocking.
+It has not been done.
+
+**The spawn boundary does not travel yet.** `guard-agent-spawn` is not ported. Until recently this
+repo said the reason was that Cursor had no subagent-spawn hook point; that is no longer true, as
+Cursor ships `subagentStart` and `subagentStop` with a matcher on subagent type. Its docs describe
+the event as able to allow or deny subagent creation, and exit 2 blocks.
+What still stands in the way is that the payload fields differ from Claude Code's and that the
+hook's central check - does `.claude/agents/<type>.md` exist - depends on Cursor surfacing a named
+seat's own name, which is unverified. Reachable, not yet equivalent.
+
+**Two controls have no Cursor equivalent at all.** Per-seat `tools:` allowlists (Cursor offers only
+`readonly`, which covers the reviewer case and nothing finer) and `maxTurns` (no equivalent found).
+Neither is carried by the port, and neither is recoverable by wiring.
 
 ## Verify it works
 
 Run the adapter self-test, which exercises the translation against documented sample payloads:
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 18/18
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 32/32
 ```
 
 It denies `cat .env`, denies a commit to `main`, allows `npm test`, denies reading `.env`, and allows
