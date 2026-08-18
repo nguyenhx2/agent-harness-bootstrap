@@ -1,0 +1,67 @@
+name: wiki
+
+# Publishes the generated wiki to the repository's wiki, which lives in a SEPARATE git repo that
+# nothing else reads. That separation is exactly why wikis rot: the counts inside them go stale and
+# no check ever notices.
+#
+# The five reference pages are generated from the assets by scripts/build_wiki.py, so an asset
+# change silently invalidates them until someone reruns it by hand. `eval` already BUILDS the wiki
+# on every run, which catches a broken page; this workflow is what stops a correct page from
+# sitting unpublished.
+#
+# No path filter on purpose. The builder reads the assets, the scaffolder's flag set, and figures
+# derived from benchmark.py, so the true input set is most of the repository and a filter would be
+# wrong the first time someone added an input. Instead the job is a no-op unless the BUILT OUTPUT
+# differs, which is self-limiting and cannot be wrong.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write        # the wiki is a git repo under the same token
+
+concurrency:
+  # Never let two publishes race the wiki repo. Do not cancel in flight: a half-pushed wiki is
+  # worse than a late one.
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Builds AND validates. The builder fails on a malformed table, a dead [[link]], or a
+      # template marker that leaked into published text - each of which it caught for real on its
+      # first run, so this step is a gate, not a formality.
+      - name: Build the wiki from the assets
+        run: python scripts/build_wiki.py
+
+      - name: Publish only if the built output differs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki-repo
+          cp dist/wiki/*.md wiki-repo/
+          cd wiki-repo
+          git add -A
+          if git diff --cached --quiet; then
+            echo "wiki already matches the assets; nothing to publish"
+            exit 0
+          fi
+          echo "changed pages:"
+          git diff --cached --name-only | sed 's/^/  /'
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "docs: rebuild the wiki from ${GITHUB_SHA:0:7}"
+          git push -q origin HEAD
+          echo "published"

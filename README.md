@@ -13,17 +13,20 @@
 
 ---
 
-## 🎬 What it does
+## 🤔 Does any of this sound familiar?
 
-Two skills for **Claude Code** that fix four specific, recognizable failure modes of an unmanaged AI
-coding agent:
+If you have put an AI agent on a real repository, you have probably hit at least three of these.
+Each one is answered by something in this repo, not by advice.
 
-| Before | After |
-|---|---|
-| You ask an agent for a feature. It edits 14 files across 3 modules and force-pushes to `main`. | It works inside scoped agents and path-based rules; a blocking **hook** (a script that intercepts a risky action and refuses it) stops the push before it lands. |
-| The session compacts and the agent forgets the plan it was three steps into. | The task board (`docs/tasks/`) and its session log live on disk, not in context - a fresh session resumes exactly where the last one stopped. |
-| The 40th agent-generated doc quietly contradicts what the spec says. | `spec-builder` gives every requirement a stable ID; the traceability graph (`docs/context/specs-graph.html`) flags the doc that drifted. |
-| It reads `.env`, a private key, or `~/.ssh/` while "just fixing a bug." | Those paths are denied at the permission layer before the read happens - it cannot leak what it was never allowed to open. |
+| | What happens | What answers it |
+|---|---|---|
+| 🔥 | *"I asked for one feature. It touched 14 files across 3 modules and force-pushed to `main`."* | Scoped agents, path-based rules, and a **hook** that exits 2 and refuses the push before it lands |
+| 🧠 | *"The session compacted and it forgot the plan it was three steps into."* | The task board and its session log live on disk, so a fresh session resumes where the last one stopped |
+| 🔑 | *"It opened `.env` while 'just fixing a bug'."* | Those paths are denied before the read happens. It cannot leak what it was never allowed to open |
+| 📄 | *"The 40th generated doc quietly contradicts the spec."* | Every requirement gets a stable ID, and the traceability graph names the document that drifted |
+| 🧩 | *"The kit installed 40 agents and a hundred skills my project never needed."* | The roster is derived from your contract and your real modules: [**7 to 15 of 16 seats**](#-tailored-not-comprehensive), never all of them by default |
+| 🧪 | *"It wrote tests that pass no matter what the code does."* | A test's expected value must come from the acceptance criterion, [not from running the code](harness-bootstrap/assets/claude/rules/testing.md) |
+| 🤷 | *"I cannot tell what my `.claude/` actually enforces any more."* | [`harness-view`](#-harness-view---the-optional-native-viewer) reads it off disk, scores it, and names every unwired part |
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
@@ -31,22 +34,21 @@ coding agent:
   </a>
 </p>
 
-<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set in the gallery</a></b> - seven clips, sound-free captions, no download.</p>
+<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set</a></b> - seven clips, captioned, no download.</p>
 
-- **[`spec-builder`](spec-builder/)** creates the thing you and the AI both understand - one shared
-  voice, built from an idea, a transcript, meeting notes, or a pile of legacy docs, into a contract
-  of numbered sections with stable requirement IDs and acceptance criteria - the core six always,
-  the rest selected by what your input actually contains. It never invents a requirement; anything
-  unstated becomes a flagged open issue instead of a guess. What that contract actually looks
-  like: see [below](#-what-spec-builder-produces).
-- **[`harness-bootstrap`](harness-bootstrap/)** creates the frame that lets AI operate autonomously
-  AND safely - the `.claude/` **harness** (a folder of agents, path-based rules, and enforcement
-  scripts that shapes what an AI agent may do) it runs inside, tailored to your repo rather than
-  copied from a template. It reads your code first, so what it generates fits *your* repo. What
-  "tailored" means concretely: see [What you get](#-what-you-get).
-- The guardrails are shell scripts and exit codes, not the model's judgment. Swap every agent from
-  Opus to Haiku and the safety floor is byte-identical - `python eval/guardrail_eval.py` proves it,
-  107/107.
+## 🧰 What it is
+
+Two Claude Code skills and a viewer. You can use any one of them alone.
+
+| | | |
+|---|---|---|
+| 📐 | **[`spec-builder`](spec-builder/)** | Turns an idea, a transcript, a pile of legacy docs, or a bare repo into **one contract** written to international standards, with stable requirement IDs. It never invents a requirement: anything unstated becomes a flagged open issue. [What it produces](#-what-spec-builder-produces) |
+| 🏗️ | **[`harness-bootstrap`](harness-bootstrap/)** | Reads your code first, then builds the `.claude/` harness that **fits it**: agents with a named scope, rules scoped to paths that exist, and hooks that block rather than advise. [What you get](#-what-you-get) |
+| 🔭 | **[`harness-view`](#-harness-view---the-optional-native-viewer)** | Reads the result and renders it. Scores it. Lets you switch any part off. **No model in the loop**, so a browser and a CI run cannot disagree |
+
+**The floor does not depend on the model.** The guardrails are shell scripts and exit codes, so
+swapping every agent from Opus to Haiku leaves the safety result byte-identical.
+`python eval/guardrail_eval.py` proves it: 107/107 per hook flavour, 214/214 across both.
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
