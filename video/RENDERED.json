@@ -1,0 +1,22 @@
+{
+  "comment": "sha256 of the scene source each shipped clip was last rendered from. Written by scripts/check_media.py --update, verified by the same script.",
+  "version": 1,
+  "rendered_from": {
+    "video/gif/04-solution.gif": "07c3db12a6dfcdcf6351e1e3fddc40006153780ec9cc0cee89599d55f90af5cd",
+    "video/gif/ja/04-solution.gif": "25f81afa927af56a91a297f950c23bb83169a5b4521764c60598a25a54b0fd55",
+    "video/mp4/01-overview.mp4": "53d1d8aaf44e32c82a7dbb39763ef4dd47830ad10b4ae848238a317d0aae0d2a",
+    "video/mp4/02-flow.mp4": "31be850f4a6a07a05af913bda5073ab85f0e203bb2499fd44133c54dffa5dc8c",
+    "video/mp4/03-layers.mp4": "18614884953e0f3d38d59fd18e55ca38d39fda060db72b0e88eda985f99186c9",
+    "video/mp4/04-solution.mp4": "07c3db12a6dfcdcf6351e1e3fddc40006153780ec9cc0cee89599d55f90af5cd",
+    "video/mp4/05-spec-builder.mp4": "a0e37ee680687981ec5103214f9ae8c7f24c8d3d0dc4237d0ad8728e25044e04",
+    "video/mp4/06-harness-bootstrap.mp4": "2ba8dabb1c61c400b31a2e12600fcc2ff138e2d9db662bfb797f9a7d26ac76d0",
+    "video/mp4/07-skills-and-view.mp4": "2c1255837b377399ec325cff93bddf0d85c891e9ca012828eaa50c76f77b0551",
+    "video/mp4/ja/01-overview.mp4": "ab60502153aa48ff6d288bdb80af9807b45b8e82ff731b87e2a75f58b7948a31",
+    "video/mp4/ja/02-flow.mp4": "add2bdaeef7ed477eea34928c9ac3bfd26d42bf1793162fc535442d9e640f74d",
+    "video/mp4/ja/03-layers.mp4": "4c66cd7facd064cc60b4b0acc5d25ca974ff2ff3a111bfd742a1f12c00cf01e0",
+    "video/mp4/ja/04-solution.mp4": "25f81afa927af56a91a297f950c23bb83169a5b4521764c60598a25a54b0fd55",
+    "video/mp4/ja/05-spec-builder.mp4": "2cfc09870d8fbfa44a753a15a031fd56acb48ef8fcd6f8a2cec500bc9268a7be",
+    "video/mp4/ja/06-harness-bootstrap.mp4": "dd9fa52435efd14fb61ec4d3d60af58f2678eae88d110b91a65ccbe8f6e46c28",
+    "video/mp4/ja/07-skills-and-view.mp4": "6ef1d5b42182b3b0780e62defe722469379f2788395bc0e3f24068a9a53c1d81"
+  }
+}

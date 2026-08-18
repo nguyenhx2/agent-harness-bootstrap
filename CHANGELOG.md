@@ -5,6 +5,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## Unreleased
+
+Media only. No skill changed, so no skill version moved.
+
+### Fixed
+
+- **The first moving image on the README carried a figure that was wrong by two generations.**
+  `video/gif/04-solution.gif` read "guardrail eval 69/69"; the real number is 107/107, and it had
+  moved 69 to 89 to 107 with the GIF re-rendered for neither. `check_numbers.py` gates every figure
+  in every document and reads `video/src/**.py` too, so the scene source and every text surface were
+  correct the whole time. A figure inside a clip is burned into pixels at render time, and nothing
+  connected a source that was right to an artifact that was stale.
+- Two more clips had drifted the same way: `04-solution` in Japanese carried the same stale badge,
+  and `05-spec-builder` was rendered before the watermark and brand end card existed and still
+  carried the "twelve documents" caption from before selective sections. All three re-rendered and
+  verified by reading the pixels of the shipped file, not by trusting the source.
+- `video/README.md` quoted clip 04 at ~55s; it is ~63s.
+
+### Added
+
+- `scripts/check_media.py` and `video/RENDERED.json`, run by CI. A renderer cannot read a figure out
+  of a video, so the checkable property is provenance: an artifact is stale when its scene source
+  changed after the artifact was last produced from it. It deliberately does not hash `theme.py`,
+  because a palette change would demand a fourteen-clip re-render and cannot make a published number
+  false. That limit is written down rather than left to be discovered.
+
 ## v1.13.0
 
 Static analysis, a generated wiki, a public board, and a testing rule that finally says what a
