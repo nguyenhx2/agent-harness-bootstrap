@@ -200,6 +200,14 @@ def canonical() -> dict[str, int]:
         # The tailored-roster claim: how few and how many seats a run can install.
         "roster_min": roster_range()[0],
         "roster_max": roster_range()[1],
+        # The scanned-PDF threshold spec-builder's router applies (a page under this many
+        # extracted characters routes to vision). Quoted on the README (both languages), the
+        # wiki FAQ and two reference files; derived here from the constant so a retuned
+        # threshold cannot leave four documents quoting the old number.
+        "scan_chars": int(re.search(
+            r"^TEXT_LAYER_MIN_CHARS_PER_PAGE\s*=\s*(\d+)",
+            (ROOT / "spec-builder/scripts/route_sources.py").read_text(encoding="utf-8"),
+            re.M).group(1)),
         # The published version. Not an artifact count, but the same failure class: a figure
         # written by hand into a user-facing page that nothing re-reads on the way past. The
         # install snippets now name the UNVERSIONED archive the release also attaches, which
@@ -233,6 +241,16 @@ CHECKS = [
     ("session tax (ja prose)", r"ルール本文の[^\n]{0,8}?(\d\d)%", "tax_pct"),
     # Both word orders. "6 rules unconditional" sat in the deck outline while the count was 7,
     # because only "N unconditional rules" was ever matched.
+    # The router's scanned-PDF threshold, in every phrasing a document states it: EN prose
+    # ("under 80 characters a/per page"), the reference's "fewer than 80 characters", the
+    # heading form "80-chars-per-page", and the Japanese "80文字未満".
+    # \s+ everywhere a space appears, because the first version demanded single spaces and
+    # both the README and the FAQ wrap this phrase across a line break - the gate was born
+    # dead and only the mutation test noticed.
+    ("scanned-pdf threshold", r"under\s+(\d+)\s+characters\s+(?:a|per)\s+page"
+                              r"|fewer\s+than\s+(\d+)\s+[a-z ]*characters"
+                              r"|(\d+)-chars-per-page"
+                              r"|(\d+)文字未満", "scan_chars"),
     ("unconditional rules",   rf"{NUM} unconditional rules?\b", "unconditional_rules"),
     ("unconditional rules (reversed)", r"\b(\d+) +rules? +unconditional\b", "unconditional_rules"),
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
@@ -257,6 +275,10 @@ REQUIRED_SUBSTR: dict[str, tuple[str, ...]] = {
     "session tax (label)":   ("rule content stays out",),
     "session tax (ja label)": ("ルール本文",),
     "session tax (ja prose)": ("ルール本文",),
+    # "characters" alone, not "characters a page": the phrase wraps across a line break in
+    # the README, and a pre-filter narrower than its regex silently disables the check for
+    # exactly that file - the contract above says SAFE SUPERSET, and this one was not.
+    "scanned-pdf threshold": ("characters", "-chars-per-page", "文字未満"),
     "unconditional rules":   ("unconditional rule",),
     "unconditional rules (reversed)": ("rules unconditional", "rule unconditional"),
     "path-scoped rules":     ("path-scoped",),
@@ -383,6 +405,7 @@ def self_test(c: dict[str, int]) -> list[str]:
         "session tax (ja label)": '<div class="big">{tax_pct}%</div>\n'
                                   '<div class="lab">既定セッションから外れるルール本文の割合。</div>',
         "session tax (ja prose)": "ルール本文の  {tax_pct}%  が既定セッションの外に出る",
+        "scanned-pdf threshold": "a scan (under {scan_chars} characters a page) routes to vision",
         "unconditional rules":   "{unconditional_rules} unconditional rules stay loaded",
         "unconditional rules (reversed)": "  {unconditional_rules}   rules unconditional",
         "path-scoped rules":     "{scoped_rules} path-scoped rules load on demand",

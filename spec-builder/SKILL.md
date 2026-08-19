@@ -45,7 +45,9 @@ to make it: [`reference/elicitation.md`](reference/elicitation.md).
 
 **1. Read the sources.** Before the first question, when the user brought files rather than prose:
 `scripts/route_sources.py <files-folders-urls> -o plan.json` picks a reader per source and prints
-why, then `scripts/ingest.py` executes each plan entry. You cannot elicit against a document you
+why, then `scripts/ingest.py` executes each plan entry. **Show the user the plan first**: one line
+per source (file -> reader, or UNREADABLE -> why and the fix), then read. That table and the final
+summary are the only progress reporting this step gets - never narrate file-by-file progress. You cannot elicit against a document you
 have not read. **A source that cannot be read becomes an `OI-nn` in section 11** naming the file,
 why it is unreadable, and the fix (a `pip install`, or a re-export request) - never a silent gap;
 a scanned PDF extracts successfully and returns almost nothing, which is where invented

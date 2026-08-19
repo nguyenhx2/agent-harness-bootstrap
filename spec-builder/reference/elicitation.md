@@ -73,6 +73,11 @@ python scripts/ingest.py <source> --via <strategy> --out <dir>/<source>.txt   # 
 The router decides which reader owns each source and prints the reason;
 [`source-routing.md`](source-routing.md) carries the table, the overrides, and the limits.
 
+Relay that plan to the user before reading - one line per source, nothing more. It is the
+checkpoint that proves their files were actually read (and names the ones that cannot be),
+and it is the only narration this step gets: no per-file progress commentary, no summaries of
+summaries. The next thing the user sees after the plan is the first question batch.
+
 **A source that cannot be read never becomes a silent gap.** If nothing installed can open it, or
 its PDF text layer turns out to be a scan (under 80 characters per page - the extraction succeeds
 and returns almost nothing, which is precisely how an invented requirement gets written), it

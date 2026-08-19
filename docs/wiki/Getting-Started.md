@@ -9,6 +9,17 @@ and unzip it into your skills directory:
 unzip agent-harness-bootstrap.zip -d ~/.claude/skills/
 ```
 
+Or skip the download entirely - the recommended path is the plugin marketplace, inside any
+Claude Code session:
+
+```text
+/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+/plugin install spec-builder@agent-harness-bootstrap
+```
+
+Updates then arrive with `/plugin update`. The zip remains the offline, pinned route.
+
 Claude Code picks the skills up on the next session. Each archive carries a `VERSION` file inside
 the skill directory, so an installed skill is self-identifying: if you are ever unsure what you have,
 read `~/.claude/skills/harness-bootstrap/VERSION`.

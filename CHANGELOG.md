@@ -5,6 +5,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## Unreleased
+
+Documentation and instruction tuning from a user's-seat audit. No skill logic changed.
+
+### Changed
+
+- The plugin marketplace is now the FIRST install route in the README (both languages), the
+  wiki and `docs/PLUGIN.md` - it is the path with working updates, so it leads. The zip stays
+  fully supported as the offline, pinned route.
+- Source routing became a visible value instead of an internal mechanism: a symptom row in the
+  README's opening table ("it read my scanned PDF and wrote a spec from three words"), a card
+  bullet on both landing pages, a wiki FAQ entry, and a "What you will be asked" paragraph
+  describing the per-source plan the user sees.
+- The source-reading step gained a user-visible checkpoint: the skill now shows the one-line
+  per-source plan (reader chosen, or unreadable and why) BEFORE asking anything, and is
+  explicitly forbidden from narrating file-by-file progress - the plan table and the final
+  summary are its only two progress surfaces.
+
 ## v1.14.0
 
 The spec set grows a module axis, the section questionnaire becomes a gate that refuses, and
