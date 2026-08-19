@@ -1225,8 +1225,25 @@ const S = [
 /* ============================================================ ENGINE */
 const deck=document.getElementById('deck'), ovEl=document.getElementById('ov'),
       thumbsEl=document.getElementById('thumbs'), counterEl=document.getElementById('counter');
-let lang = localStorage.getItem('ahb-lang') || 'en';
+// ?lang= wins over the remembered choice so a page in one language can link straight
+// into this deck in that language. The slide number lives in location.hash, so the
+// language has to travel as a query param or the two would fight over the fragment.
+let lang = (function(){
+  try{
+    const q = new URLSearchParams(location.search).get('lang');
+    if(q === 'en' || q === 'ja' || q === 'vi') return q;
+  }catch(e){}
+  return localStorage.getItem('ahb-lang') || 'en';
+})();
 let cur = 0, vidIdx = 0;
+// Japanese renders of every clip ship under video/mp4/ja/. Without this the deck played
+// the ENGLISH clip to a reader who had chosen Japanese, which is the same defect as the
+// Japanese README embedding the English GIF. There is no Vietnamese render, so vi falls
+// back to English deliberately rather than 404ing.
+const vdir = () => lang === 'ja' ? '../video/mp4/ja/' : '../video/mp4/';
+// The gallery has EN and JA only, so vi links to the English one rather than to a
+// ?lang=vi the gallery would ignore, leaving whatever the reader last chose.
+const vgal = () => lang === 'ja' ? '../video/?lang=ja' : '../video/';
 const icon = (id, cls) => `<svg class="${cls||''}"><use href="#${id}"/></svg>`;
 
 // {{g:key|label}} becomes an annotated term with a hover note
@@ -1283,7 +1300,7 @@ function slideHTML(s){
           <p class="lead">${L(s.lead)}</p>
           <div class="cta">
             <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
-            <a class="ghost" href="../video/" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
+            <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
           </div>
         </div>
         <img class="art" src="img/cover-harness.png" alt="">
@@ -1325,7 +1342,7 @@ function slideHTML(s){
   if(s.kind==='video'){
     body = `<div class="vtabs" id="vtabs">${s.clips.map((c,i)=>
         `<button data-v="${i}" class="${i===vidIdx?'on':''}">${L(c.t)}</button>`).join('')}</div>
-      <div class="vidwrap"><video id="vid" src="../video/mp4/${s.clips[vidIdx].f}.mp4"
+      <div class="vidwrap"><video id="vid" src="${vdir()}${s.clips[vidIdx].f}.mp4"
         controls autoplay muted loop playsinline preload="auto"></video></div>`;
   }
   if(s.kind==='ctxlayers'){
@@ -1359,7 +1376,7 @@ function slideHTML(s){
     body = `<pre class="cmd"><span class="c"># ${c1}</span>\n/spec-builder\n\n<span class="c"># ${c2}</span>\n/harness-bootstrap</pre>
       <div class="cta">
         <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
-        <a class="ghost" href="../video/" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
+        <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
       </div>`;
   }
   return `<div class="wrap stag"><div class="head">${step}${title}${sub}</div><div class="body">${body}${note}</div></div>`;
@@ -1397,7 +1414,7 @@ function render(dir){
     vidIdx = +b.dataset.v;
     vt.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
     const v = el.querySelector('#vid');
-    v.src = '../video/mp4/' + S[cur].clips[vidIdx].f + '.mp4';
+    v.src = vdir() + S[cur].clips[vidIdx].f + '.mp4';
     v.load(); v.play().catch(()=>{});
   });
 

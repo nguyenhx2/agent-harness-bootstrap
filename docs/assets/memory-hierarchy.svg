@@ -35,7 +35,7 @@
   <text x="216" y="265" font-size="13" fill="#F8F9FA">code-quality, testing, security-privacy, performance, data-model,</text>
   <text x="216" y="285" font-size="13" fill="#F8F9FA">ddd, frontend, docs-workflow, ip-compliance</text>
   <text x="216" y="307" font-size="13" fill="#E9ECEF">4 of the 9 above are flag-gated (testing, data-model, ddd, frontend); output-style makes 16 rules in all.</text>
-  <text x="216" y="333" font-size="13" font-weight="700" fill="#F8F9FA">63% of the rule content. Enters context only when Claude touches a matching file.</text>
+  <text x="216" y="333" font-size="13" font-weight="700" fill="#F8F9FA">64% of the rule content. Enters context only when Claude touches a matching file.</text>
 
   <!-- the loss boundary -->
   <line x1="28" y1="372" x2="852" y2="372" stroke="#9D0208" stroke-width="3" stroke-dasharray="8 4"/>

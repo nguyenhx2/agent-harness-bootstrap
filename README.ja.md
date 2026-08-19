@@ -9,7 +9,7 @@
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
-📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
+📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
 ---
 
@@ -29,12 +29,12 @@
 | 🤷 | *「自分の `.claude/` が結局何を強制しているのか分からなくなった」* | [`harness-view`](#-harness-view---任意のネイティブビューア) がディスクから読み取り、採点し、配線されていない部分を名指しする |
 
 <p align="center">
-  <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
-    <img src="video/gif/04-solution.gif" alt="プロダクト全体を1本のクリップで: 4つの課題、spec-builderが契約書を書き、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回り、成果に至るまで" width="860">
+  <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">
+    <img src="video/gif/ja/04-solution.gif" alt="プロダクト全体を1本のクリップで: 4つの課題、spec-builderが契約書を書き、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回り、成果に至るまで" width="860">
   </a>
 </p>
 
-<p align="center"><i>プロダクト全体を1本のクリップで。</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">全編を見る</a></b> - クリップ7本、字幕付き、ダウンロード不要。</p>
+<p align="center"><i>プロダクト全体を1本のクリップで。</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">全編を見る</a></b> - クリップ7本、字幕付き、ダウンロード不要。</p>
 
 ## 🧰 構成
 
@@ -93,7 +93,7 @@
 | 実在するモジュール | それぞれに開発エージェント1名、実在するパスにスコープ。モジュールがなければ席もない。 |
 | 契約とあなたの回答 | 16席のうちどれを埋めるか。1回の構築で入るのは **7〜15席** であり、既定で16席全部ということはない。 |
 | リポジトリ内のマニフェスト | そもそもどのスキルが提案されるか。あなたはその絞り込み候補から選び、`/skill-wire` が各スキルを使うエージェントへつなぐ。 |
-| 実在するパス | どのルールがパススコープになるか。これによりルール本文の **63%** が既定セッションの外に出る。 |
+| 実在するパス | どのルールがパススコープになるか。これによりルール本文の **64%** が既定セッションの外に出る。 |
 
 上の数値は主張ではなく実測です。最小限の回答で構築すれば7席、データベース・テスト・長期プロジェクト
 に「はい」と答えれば15席になります。何ひとつ勝手にはインストールされず、`harness-view assess` は
@@ -444,7 +444,7 @@ agent-harness-bootstrap
 ```
 
 公開物: [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)
-(EN / VI / JP) と [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
+(EN / VI / JP) と [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja)
 (6本、字幕付き、ダウンロード不要)。
 
 **数値**は、本プロジェクトが置き換える旧スキルとの比較で計測 - `python benchmark/benchmark.py` で再現可能:
@@ -453,7 +453,7 @@ agent-harness-bootstrap
 |---|---:|---:|---:|
 | リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 152,141 | **-35%** |
 | モデルが出力として書くバイト数 | 95,064 | 14,787 | **-85%** |
-| デフォルトのセッションから除外されるルール内容 | - | 52,131 of 79,936 B | **65%** |
+| デフォルトのセッションから除外されるルール内容 | - | 55,062 of 85,705 B | **64%** |
 | ガードレール評価 | - | **107/107** | - |
 
 ---

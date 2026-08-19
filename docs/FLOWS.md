@@ -498,8 +498,8 @@ flowchart TD
     class TOUCH hum
 ```
 
-7 unconditional rules, nine path-scoped ones (the seventh, `output-style.md`, only with the `terse` flag). On the shipped asset set that is 27,805 bytes always
-loaded against 52,131 bytes loaded on demand: **64% of the rule content is kept out of the default
+7 unconditional rules, nine path-scoped ones (the seventh, `output-style.md`, only with the `terse` flag). On the shipped asset set that is 30,643 bytes always
+loaded against 55,062 bytes loaded on demand: **64% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 

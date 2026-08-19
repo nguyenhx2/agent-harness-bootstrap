@@ -7,9 +7,42 @@ Every release ships installable `.zip` artifacts with a `VERSION` file inside ea
 
 ## Unreleased
 
-Media only. No skill changed, so no skill version moved.
+Media and documentation only. No skill changed, so no skill version moved.
 
 ### Fixed
+
+- **The Japanese surfaces served English video.** `README.ja.md` embedded the English
+  `04-solution.gif` although the Japanese render ships beside it, and the deck played the English
+  MP4 to a reader who had chosen Japanese. Every link out of a Japanese page also landed on the
+  English gallery, because the gallery and the deck kept the language only in `localStorage` and
+  neither accepted it from the URL. Both now read `?lang=`, and the Japanese pages link with it.
+  Vietnamese falls back to the English clip deliberately, since no Vietnamese render exists.
+- **The session-tax figure was stale in nine files at once**, and the check that exists to catch
+  exactly that was dead where it mattered. `check_numbers.py` blanks inline code spans but not
+  markdown emphasis, and the main README writes the number as `**63%**` - the `**` sits between
+  the figure and the phrase that identifies the claim, so the pattern found ZERO matches in that
+  file. The real figure is 64%. A bolded number is the normal way to write a headline figure here,
+  so the check was blind to every headline figure in the repository. Emphasis is now blanked the
+  same way code spans are, offset-preserving so line numbers stay correct.
+- Along with it: the session-tax byte figures (27,805 / 52,131 / 51,785 against a real 30,643 and
+  55,062), the unconditional-rule count stated in the reverse word order, and the read and write
+  path "after" bytes in the deck outline. Nine files, twelve figures, all now derived and gated.
+- `video/index.html` still described clip 04 as ~55s in both languages; it is ~63s.
+
+### Added
+
+- `check_numbers.py` gained checks for the forms it could not see: the figure as a big number over
+  a label (both landing pages), both Japanese phrasings, and the reversed "N rules unconditional"
+  word order. `docs/PRESENTATION-OUTLINE.md` joined the set whose asset counts are checked. Every
+  new pattern carries a probe in the script's own self-test, which caught one of them dead on the
+  first run, and each was mutation-tested against the real file it was written for.
+- `scripts/check_media.py` and `video/RENDERED.json`, run by CI. A renderer cannot read a figure out
+  of a video, so the checkable property is provenance: an artifact is stale when its scene source
+  changed after the artifact was last produced from it. It deliberately does not hash `theme.py`,
+  because a palette change would demand a fourteen-clip re-render and cannot make a published number
+  false. That limit is written down rather than left to be discovered.
+
+### Fixed (media)
 
 - **The first moving image on the README carried a figure that was wrong by two generations.**
   `video/gif/04-solution.gif` read "guardrail eval 69/69"; the real number is 107/107, and it had
@@ -22,14 +55,6 @@ Media only. No skill changed, so no skill version moved.
   carried the "twelve documents" caption from before selective sections. All three re-rendered and
   verified by reading the pixels of the shipped file, not by trusting the source.
 - `video/README.md` quoted clip 04 at ~55s; it is ~63s.
-
-### Added
-
-- `scripts/check_media.py` and `video/RENDERED.json`, run by CI. A renderer cannot read a figure out
-  of a video, so the checkable property is provenance: an artifact is stale when its scene source
-  changed after the artifact was last produced from it. It deliberately does not hash `theme.py`,
-  because a palette change would demand a fourteen-clip re-render and cannot make a published number
-  false. That limit is written down rather than left to be discovered.
 
 ## v1.13.0
 

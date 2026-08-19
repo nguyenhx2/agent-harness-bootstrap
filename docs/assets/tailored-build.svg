@@ -124,7 +124,7 @@
   <line x1="686" y1="582" x2="1238" y2="582" stroke="#1E3A36" stroke-width="1"/>
   <text x="686" y="606" font-size="11" font-weight="700" fill="#3FA9A0">So you get</text>
   <g font-size="11" fill="#93A4C0">
-    <text x="686" y="628">63% of rule content out of the default session</text>
+    <text x="686" y="628">64% of rule content out of the default session</text>
     <text x="686" y="648">one named owner per module, and no orphan seats</text>
     <text x="686" y="668">guidance that names your stack, because it read it</text>
     <text x="686" y="688">a score that says which parts are wired and which are not</text>
