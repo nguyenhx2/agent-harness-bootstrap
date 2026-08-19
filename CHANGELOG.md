@@ -7,7 +7,20 @@ Every release ships installable `.zip` artifacts with a `VERSION` file inside ea
 
 ## Unreleased
 
-Documentation and instruction tuning from a user's-seat audit. No skill logic changed.
+Documentation and instruction tuning from a user's-seat audit, and a rebuilt landing page.
+No skill logic changed.
+
+### Changed
+
+- **The landing page is a Vite build now** (`site/`), replacing the hand-written root pages
+  that broke on phones three measured ways: a content gutter that collapsed to 0px at 390px,
+  two `pre` blocks overflowing the viewport, and an eight-link nav wrapping into a pile. The
+  new pages were designed and verified through the vendored `impeccable` skill (its browser
+  detector reports zero findings at 1280x800 and 390x844, both languages) and carry full SEO:
+  canonicals, en/ja/x-default hreflang, Open Graph and Twitter cards, JSON-LD, robots.txt and
+  a sitemap. Zero external requests, both palettes AA. Every published URL keeps working:
+  `pages.yml` builds `site/` and overlays `dist/` onto the served root, and the figure gates
+  follow the sources (`site/index.html`, `site/index.ja.html`), re-proven by mutation.
 
 ### Changed
 
