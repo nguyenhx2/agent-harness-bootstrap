@@ -43,13 +43,22 @@ to make it: [`reference/elicitation.md`](reference/elicitation.md).
 
 ## Procedure
 
-**1. Elicit.** [`reference/elicitation.md`](reference/elicitation.md) - the ask/infer table, the
+**1. Read the sources.** Before the first question, when the user brought files rather than prose:
+`scripts/route_sources.py <files-folders-urls> -o plan.json` picks a reader per source and prints
+why, then `scripts/ingest.py` executes each plan entry. You cannot elicit against a document you
+have not read. **A source that cannot be read becomes an `OI-nn` in section 11** naming the file,
+why it is unreadable, and the fix (a `pip install`, or a re-export request) - never a silent gap;
+a scanned PDF extracts successfully and returns almost nothing, which is where invented
+requirements come from. The routing table, the overrides, and the limits:
+[`reference/source-routing.md`](reference/source-routing.md).
+
+**2. Elicit.** [`reference/elicitation.md`](reference/elicitation.md) - the ask/infer table, the
 routing by input type, the batches. Establish the system name and purpose, the problem, the
 candidate feature list, the roles, the constraints, and the output language from whatever the user
 brought. Infer *structure*, ask for *decisions*: priorities, permission scope, NFR targets, volumes,
 and security posture are always asked.
 
-**2. Select the sections and confirm the FR list** - one gate, before writing anything else:
+**3. Select the sections and confirm the FR list** - one gate, before writing anything else:
 
 - The FR list with *proposed* MoSCoW priorities, the roles, and the open issues so far.
 - The section selection: core always; recommend each optional section only when the material shows
@@ -67,7 +76,7 @@ are in the scaffolder itself.
 
 Everything from 02 onward derives from this gate; a wrong FR list costs every downstream document.
 
-**3. Scaffold.** Write `vars.json` (`.sections.json` from step 2 must already exist and agree with
+**4. Scaffold.** Write `vars.json` (`.sections.json` from step 3 must already exist and agree with
 its flags, or the run refuses and writes nothing), then:
 
 ```bash
@@ -89,7 +98,7 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 
 Two kinds of flags, all lowercase in `vars.json` (markers inside templates are UPPERCASE):
 
-- **Section flags** (from step 2): `stakeholders`, `flows`, `access`, `db` (08), `integration`,
+- **Section flags** (from step 3): `stakeholders`, `flows`, `access`, `db` (08), `integration`,
   `ui` (10), `feasibility`, `design` (14). An unset flag skips the file. Section 11 is core, not
   flagged - it is where every `AS-nn`/`OI-nn` lives, and the never-invent rule needs that registry
   in every render.
@@ -103,7 +112,7 @@ never delete what the user wrote. It exits non-zero on an unresolved `{{VAR}}`. 
 frontmatter-wide variable (`PROJECT_NAME`) floods every file with CONFLICT at once; take the new
 render only for files nobody hand-edited, reconcile the rest.
 
-**4. Fill.** Section by section, in order - each depends on the last (or in parallel per Tool
+**5. Fill.** Section by section, in order - each depends on the last (or in parallel per Tool
 discipline above). Follow the inline `<!-- -->` notes; conventions are in
 [`reference/writing-rules.md`](reference/writing-rules.md) - read it before writing, including the
 folder split rule for sections that outgrow one file (~400 lines / ~25 KB).
@@ -121,7 +130,7 @@ Three sections carry the load, and they are the three most often thinned out:
 - **12** (when selected) - every FR appears with Yes / Partial / No and a reason. "Partial" and
   "No" are the most valuable output of this skill: cheap now, expensive in month four.
 
-**5. Verify.** The quality gate below. Then surface the open issues to the user - they cannot
+**6. Verify.** The quality gate below. Then surface the open issues to the user - they cannot
 correct an assumption you did not tell them you made. Once the set is complete, offer to invoke
 `harness-bootstrap` via the **`Skill`** tool with `FR_LIST` (section 05's FR IDs, verbatim, in
 order) and `GLOSSARY_SEED` (section 03's terms) prefilled; state the handoff in words if the tool
@@ -215,6 +224,9 @@ unresolved `{{VAR}}`s, and `{{FR_LIST}}` is one of them - build it from 05 verba
       be named, it belongs in 11, not 05 or 07.
 - [ ] Every assumption has its impact-if-false; every open issue has a named owner. Verify: the
       empty-cell grep scoped to 11's tables.
+- [ ] Every source that could not be read has an `OI-nn` naming it. Verify: compare the routing
+      plan's `unreadable` and `vision` entries against 11 - each file name appears there, with the
+      fix (a `pip install` or a re-export request) stated.
 - [ ] The final summary lists every OI, every AS, every Partial/No, and every NFR target you
       proposed rather than received. Verify: count the IDs in 11 and the Partial/No rows in 12;
       the summary names the same counts.
