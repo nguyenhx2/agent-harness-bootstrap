@@ -59,9 +59,16 @@ and security posture are always asked.
   question batch. Section 11 is auto-added the moment the first `AS-nn`/`OI-nn` exists - the
   never-invent rule needs somewhere to put them.
 
+**Record the selection before you scaffold.** Write `<target>/docs/specs/.sections.json`: every
+optional section in `selected` or `excluded` exactly once, each with a one-line reason, core
+sections in neither. `scaffold.py` refuses to write anything without it, and refuses on an empty
+reason or a selection that contradicts `vars.json`'s flags - the schema and the refusal message
+are in the scaffolder itself.
+
 Everything from 02 onward derives from this gate; a wrong FR list costs every downstream document.
 
-**3. Scaffold.** Write `vars.json`, then:
+**3. Scaffold.** Write `vars.json` (`.sections.json` from step 2 must already exist and agree with
+its flags, or the run refuses and writes nothing), then:
 
 ```bash
 python scripts/scaffold.py --target <repo> --vars vars.json --dry-run   # review first
@@ -125,8 +132,9 @@ is unavailable.
 New input against existing specs is `/spec-ingest`'s procedure (installed with the sections) -
 statement-by-statement diff, conflicts surfaced never overwritten, IDs appended never renumbered,
 one revision row per ingest. Follow it even when the command file is not installed. Run
-`scaffold.py` again only to add sections not selected the first time; it reports `KEPT`/`CONFLICT`
-for the rest - the byte-level form of the same rule.
+`scaffold.py` again only to add sections not selected the first time - move each one from
+`excluded` to `selected` in `.sections.json` with the reason that changed, and set its flag; it
+reports `KEPT`/`CONFLICT` for the rest - the byte-level form of the same rule.
 
 ## What standard this follows
 
@@ -177,7 +185,7 @@ unresolved `{{VAR}}`s, and `{{FR_LIST}}` is one of them - build it from 05 verba
 **Completeness**
 - [ ] Every SELECTED section exists with frontmatter and at least one filled block; the core is
       always present (`README`, 01, 03, 05, 07, 11, 13). Verify: list `docs/specs/`, compare against
-      the recorded selection from step 2; count includes any section that became a folder.
+      `docs/specs/.sections.json`'s `selected`; count includes any section that became a folder.
 - [ ] Any `AS-`/`OI-`/`CO-` ID anywhere implies section 11 exists and defines it. Verify:
       `grep -o` the three prefixes across `docs/specs/`; if found and 11 is absent, the gate fails.
 - [ ] No table cell is blank, and none reads a bare "TBD". Verify: grep every file for an empty

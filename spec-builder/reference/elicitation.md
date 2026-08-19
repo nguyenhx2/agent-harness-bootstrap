@@ -172,7 +172,15 @@ One `AskUserQuestion` call, before scaffolding (skip any part the request alread
   / lightweight (core sections, gate limited to completeness + grounding; traceability checks run
   only over what exists). Lightweight changes the gate's breadth, never the never-invent rule.
 
-The selection is recorded in the step 2 confirmation gate and is what the quality gate verifies
+**The batch's output is a file, not a memory.** Write the decision to
+`<target>/docs/specs/.sections.json` before scaffolding: every optional section in `selected` or
+`excluded`, exactly once, each with a one-line reason naming what in the source material decided it
+(or that the user chose it outright); core sections in neither, because they are not decisions.
+`scaffold.py` refuses to write a single section without that file, and refuses again if the reasons
+are empty or if `selected` disagrees with `vars.json`'s flags. The schema and the refusal messages
+live with the code, in `scripts/scaffold.py`.
+
+The selection is echoed back in the step 2 confirmation gate and is what the quality gate verifies
 against.
 
 If the user cannot answer a batch, that is a result: each unanswered question becomes an OI with an
