@@ -38,6 +38,7 @@
   .chip.blue{background:var(--blue);border:2px solid var(--blue-hi);color:#fff}
   .chip.red{background:var(--red);border:2px solid var(--amber);color:#fff}
   .chip.ghost{background:rgba(90,24,154,.22);border:2px solid var(--purple-hi);color:#fff}
+  .chip.outline{background:rgba(73,80,87,.12);border:2px solid var(--dim);color:var(--dim)}
   .row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
   .col{display:flex;flex-direction:column;align-items:center;gap:8px}
   .arrow{color:var(--dim);font-size:clamp(14px,2vw,26px)}
@@ -198,23 +199,28 @@
       <span class="arrow">&#8594;</span>
       <span class="chip green" id="scaffold">scripts/scaffold.py</span>
       <span class="tag g">まず --dry-run</span>
-      <span class="sub">docs/specs/ - 14ファイル</span>
+      <span class="sub">docs/specs/ - 最大15ファイル</span>
+    </div>
+    <div class="legend" style="margin-top:2px">
+      <span class="tag" style="color:var(--dim);border-color:var(--dim)">&#9632; 常に</span>
+      <span class="tag" style="color:var(--dim);border-color:var(--dim);opacity:.6">&#9633; 選択時のみ</span>
     </div>
     <div class="grid5 staged" id="files5">
       <span class="chip neutral">README</span>
       <span class="chip neutral">01 概要</span>
-      <span class="chip neutral">02 ステークホルダー</span>
+      <span class="chip outline">02 ステークホルダー</span>
       <span class="chip neutral">03 用語集</span>
-      <span class="chip neutral">04 業務フロー</span>
+      <span class="chip outline">04 業務フロー</span>
       <span class="chip neutral">05 機能要件</span>
-      <span class="chip neutral">06 アクセス制御</span>
+      <span class="chip outline">06 アクセス制御</span>
       <span class="chip neutral">07 非機能要件</span>
-      <span class="chip neutral">08 データモデル</span>
-      <span class="chip neutral">09 連携</span>
-      <span class="chip neutral">10 UI / UX</span>
+      <span class="chip outline">08 データモデル</span>
+      <span class="chip outline">09 連携</span>
+      <span class="chip outline">10 UI / UX</span>
       <span class="chip neutral">11 前提条件</span>
-      <span class="chip neutral">12 フィージビリティ</span>
+      <span class="chip outline">12 フィージビリティ</span>
       <span class="chip neutral">13 改訂履歴</span>
+      <span class="chip outline">14 デザインシステム</span>
     </div>
     <div class="legend">
       <span class="tag g">追加</span>
@@ -241,6 +247,7 @@
       <span class="chip purple">11 前提条件</span>
       <span class="chip purple">12 フィージビリティ</span>
       <span class="chip purple">13 改訂履歴</span>
+      <span class="chip purple">14 デザインシステム</span>
     </div>
     <div class="grid3" style="margin-top:10px">
       <div class="load"><span class="num">05</span><span class="txt">観測可能なFR、アンカー付き、<br>BR-nn + 否定ケース1つ</span></div>
@@ -334,7 +341,7 @@
     {s:5,d:9000,run:function(){
       at(300,function(){say('次にスクリプトが形を敷く。まずドライラン。')});
       stage('files5',1200,190);
-      at(4600,function(){say('14ファイル: 見出し、表、Mermaidの下書き、執筆メモ。')});
+      at(4600,function(){say('コア6セクションは常に作成。残りは資料が求めるときだけ。')});
       at(6600,function(){q('scaffold').classList.add('pulse-g');
         say('決定的で無料。「競合」は既存仕様があるリポジトリのための突き合わせキュー。');});
       at(7600,function(){q('scaffold').classList.remove('pulse-g')});
