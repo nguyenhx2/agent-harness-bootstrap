@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nguyenhx2.github.io/agent-harness-bootstrap/sitemap.xml
