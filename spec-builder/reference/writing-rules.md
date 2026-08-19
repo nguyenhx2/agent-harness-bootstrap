@@ -107,7 +107,10 @@ docs/specs/
       ...
 ```
 
-- **Module-owned**: 05, 07, 08, 09, 10 - one copy per module, under `modules/<folder>/`.
+- **Module-owned**: 05, 07, 08, 09, 10 - one copy per module, under `modules/<folder>/`. A module
+  scaffold arrives pre-seeded: the sample IDs already carry the module's code and the links to
+  root sections already point two levels up, so an unfilled module never reproduces the bare-ID
+  merge.
 - **Cross-cutting, one copy at the root**: the README index, 01, 03, 11, 13. A glossary per module
   is how two modules end up with two meanings for one word.
 - **12-feasibility follows the risk**: at the root when the buildability question is the platform's

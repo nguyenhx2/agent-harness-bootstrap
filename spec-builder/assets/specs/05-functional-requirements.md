@@ -20,7 +20,8 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 <!-- IDs: `FR-01` in a single-product spec set. If this file sits under `docs/specs/modules/<module>/`,
      every ID in it carries that module's code instead - `FR-BLG-01`, and `#fr-blg-01` in its
      anchor - because the traceability graph is flat and two modules' bare `FR-01`s merge into one
-     node. Renumber the examples below accordingly; see reference/writing-rules.md. -->
+     node. A module scaffold arrives with these samples already seeded with the code; keep the
+     discipline for every ID you add. See reference/writing-rules.md. -->
 
 ## Summary
 

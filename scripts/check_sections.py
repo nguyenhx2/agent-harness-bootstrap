@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -241,6 +242,43 @@ def main() -> int:
           f"empty ({', '.join(sorted(flat_module)) or 'empty'}) - the assertion can fail")
     bad += not control_fired
 
+    # ---- case 7: module copies arrive pre-seeded -------------------------------------
+    # A module copy of 05 that still carries the template's bare FR-01 reproduces the exact
+    # collision the module segment exists to prevent, in every unfilled module at once. And
+    # the template's relative links point at ROOT sections, which from modules/<folder>/ is
+    # two directories up. scaffold.modularize() closes both; this proves it stays closed.
+    # The flat control right after is what makes each assertion falsifiable: seeded IDs and
+    # re-rooted links must appear ONLY in the module copy, never in the flat one.
+    def read_05(t: pathlib.Path, sub: str = "") -> str:
+        p = t / "docs" / "specs" / sub / "05-functional-requirements.md"
+        return p.read_text(encoding="utf-8") if p.is_file() else ""
+
+    def strip_comments(s: str) -> str:
+        return re.sub(r"<!--.*?-->", "", s, flags=re.S)
+
+    _rc, _o, _w, mod05 = case("module-seeded", good, good_flags,
+                              extra=["--module", "BLG:billing"],
+                              inspect=lambda t: read_05(t, "modules/billing"))
+    _rc, _o, _w, flat05 = case("flat-control-seeded", good, good_flags,
+                               inspect=lambda t: read_05(t))
+    body = strip_comments(mod05)
+    seeded_fired = ("FR-BLG-01" in body and "{#fr-blg-01}" in body
+                    and not re.search(r"\bFR-\d", body))
+    rerooted_fired = "](../../" in body
+    # Comments are stripped on this side too: the template's own guidance note quotes
+    # `FR-BLG-01` as an example of the module form, which is not a seeded ID.
+    flat_body = strip_comments(flat05)
+    flat_control_fired = ("FR-BLG" not in flat_body and "](../../" not in flat_body
+                          and "FR-01" in flat_body)
+    print("\n  7. module copies are pre-seeded (ids carry the code, root links re-rooted)")
+    print(f"    {'ok  ' if seeded_fired else 'FAIL'} modules/billing/05 samples read FR-BLG-01, "
+          f"no bare FR-nn outside comments")
+    print(f"    {'ok  ' if rerooted_fired else 'FAIL'} links to root sections leave the module "
+          f"folder (../../)")
+    print(f"    {'ok  ' if flat_control_fired else 'FAIL'} the flat copy keeps bare FR-01 and "
+          f"sibling links - the assertions can fail")
+    bad += (not seeded_fired) + (not rerooted_fired) + (not flat_control_fired)
+
     # ---- self-test -------------------------------------------------------------------
     # Each refusal branch has to fire for its own reason, and the accept path has to
     # accept. A branch that stays silent is a gate the model can walk straight past, and it
@@ -253,6 +291,9 @@ def main() -> int:
         ("accepts a valid selection", accept_fired),
         ("places module-owned sections under modules/<folder>/", module_fired),
         ("the module placement assertion is falsifiable (flat control)", control_fired),
+        ("seeds module copies with the module code", seeded_fired),
+        ("re-roots module links to root sections", rerooted_fired),
+        ("the seeding assertions are falsifiable (flat control)", flat_control_fired),
     ) if not fired]
     if dead:
         print("\n  DEAD CHECK - the gate did not exercise these branches:")

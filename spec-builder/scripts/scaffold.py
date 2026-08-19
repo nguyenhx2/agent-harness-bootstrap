@@ -331,6 +331,52 @@ def dest_plan(dest_rel: str, modules: list[tuple[str, str]]) -> list[tuple[str, 
             for code, folder in modules]
 
 
+def modularize(text: str, code: str) -> str:
+    """Seed a module copy's sample IDs with the module's code, and re-root its links.
+
+    A freshly scaffolded module set otherwise reproduces the exact hazard the module segment
+    exists to prevent: every module's copy of 05 carries the template's bare `FR-01`, so two
+    unfilled modules collide in the docs graph until an author renumbers by hand. And the
+    templates' relative links (`04-business-flows.md`, `12-technical-feasibility.md`) point at
+    ROOT sections, which from `modules/<folder>/` is two directories up - left as-is they are
+    dead links in every module copy.
+
+    Only the prefixes DEFINED in module-owned sections are seeded (FR, UC, US, INT, SCR, and
+    NFR's category form). BF, DS, DT, SH, OI, AS, CO, DP and R are defined in root sections and
+    stay bare - prefixing them would invent IDs that nothing defines. HTML comments are left
+    untouched: they are template guidance that describes both forms, and injecting the code
+    there would garble the explanation of the flat form.
+    """
+    stashed: list[str] = []
+
+    def stash(m: "re.Match[str]") -> str:
+        stashed.append(m.group(0))
+        return f"\x00C{len(stashed) - 1}\x00"
+
+    text = re.sub(r"<!--.*?-->", stash, text, flags=re.S)
+    # Bare numeric form only, so the transform cannot double-inject an already-seeded ID.
+    text = re.sub(r"\b(FR|UC|US|INT|SCR)-(\d{1,5})\b", rf"\1-{code}-\2", text)
+    text = re.sub(r"\b(NFR)-([A-Z]{2,4})-(\d{1,5})\b", rf"\1-{code}-\2-\3", text)
+    # Anchors are the lowercase twin of the same IDs ({#fr-01}, (#fr-01), ...md#fr-01).
+    text = re.sub(r"#(fr|uc|us|int|scr)-(\d{1,5})\b", rf"#\1-{code.lower()}-\2", text)
+
+    def reroot(m: "re.Match[str]") -> str:
+        target = m.group(2)
+        stem = target.split("#", 1)[0]
+        stem = stem[:-3] if stem.endswith(".md") else stem
+        if stem not in MODULE_SECTIONS:
+            return m.group(1) + "../../" + target
+        return m.group(0)
+
+    # Markdown links to sibling section files: module-owned targets stay siblings (the module
+    # folder holds its own copy), cross-cutting targets live at the spec root, two levels up.
+    text = re.sub(r"(\]\()((?:README|\d\d-)[A-Za-z0-9-]*\.md(?:#[A-Za-z0-9-]+)?)(?=\))",
+                  reroot, text)
+    for i, c in enumerate(stashed):
+        text = text.replace(f"\x00C{i}\x00", c)
+    return text
+
+
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
@@ -463,6 +509,8 @@ def main() -> int:
                 body, missing = substitute(body, {**variables, **module_vars}, src_rel)
                 if missing:
                     all_missing.setdefault(src_rel, set()).update(missing)
+                if module_vars:
+                    body = modularize(body, module_vars["MODULE_CODE"])
                 payload = body.encode("utf-8")
             else:
                 payload = src.read_bytes()
