@@ -1,9 +1,10 @@
 # Installing as a plugin
 
-Both skills, `harness-bootstrap` and `spec-builder`, are also distributed as a Claude Code
-plugin marketplace hosted in this repo. The zip download path (see the README) still works
-and is unaffected - the plugin route is an additional way to get the same skills, not a
-replacement.
+Both skills, `harness-bootstrap` and `spec-builder`, are distributed as a Claude Code
+plugin marketplace hosted in this repo. This is the recommended install path: updates arrive
+through `/plugin update` instead of a manual re-download, and the installed version is always
+identifiable. The zip download path (see the README) remains fully supported as the offline,
+pinned alternative.
 
 ## Add the marketplace and install
 

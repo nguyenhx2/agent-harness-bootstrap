@@ -10,6 +10,16 @@ translates the payload and the answer.
 The port carries **enforcement**, not just advice. The adapter is self-tested in CI on both hook
 flavours.
 
+## Can spec-builder read my PDF, Word and Excel files?
+
+Yes, and more importantly it knows when it CANNOT. Every source you hand over is routed to a
+reader that can actually read it (`route_sources.py` decides per file and prints why). The
+dangerous case is handled explicitly: a scanned PDF "extracts" successfully and returns almost
+nothing, which is exactly how a model ends up inventing a spec - so anything under 80
+characters a page routes to a vision pass instead. A file nothing installed can open becomes a
+named open issue (`OI-nn`) telling you which file, why, and what would fix it. It never becomes
+a silent gap, and never a guess.
+
 ## Does the safety depend on which model I use?
 
 No, and that is the central claim. The guardrails are shell scripts and exit codes. Swap every agent

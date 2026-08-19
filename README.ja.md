@@ -26,6 +26,7 @@
 | 📄 | *「40 個目の生成ドキュメントが、こっそり仕様と食い違っている」* | すべての要件に安定 ID が付き、トレーサビリティグラフがずれた文書を名指しする |
 | 🧩 | *「キットが、このプロジェクトに必要のないエージェント 40 個とスキル 100 個を入れてきた」* | ロースターは契約と実在するモジュールから導かれる。[**16 席のうち 7〜15 席**](#-網羅ではなく適合)であり、既定で全部ということはない |
 | 🧪 | *「コードが何をしていても通るテストを書いた」* | テストの期待値は受け入れ基準から来なければならない。[コードを実行して得るものではない](harness-bootstrap/assets/claude/rules/testing.md) |
+| 📎 | *「スキャン PDF を『読んだ』ことにして、拾えた三語から仕様を書き出した」* | すべてのソースは実際に読めるリーダーへルーティングされる - スキャン PDF はビジョン読取へ、読めないファイルは[名前付きの未解決課題になる。推測にはならない](spec-builder/reference/source-routing.md) |
 | 🤷 | *「自分の `.claude/` が結局何を強制しているのか分からなくなった」* | [`harness-view`](#-harness-view---任意のネイティブビューア) がディスクから読み取り、採点し、配線されていない部分を名指しする |
 
 <p align="center">
@@ -178,7 +179,18 @@ ID を持ちます。
 
 ## 🚀 クイックスタート
 
-**Python 3** が必要です。両方のスキルを1行でインストール:
+**プラグインとしてインストール**(推奨)- Claude Code のセッション内で:
+
+```text
+/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+/plugin install spec-builder@agent-harness-bootstrap
+```
+
+リリースがバージョンを上げると `/plugin update` で更新が届く - 再ダウンロードも古いコピーもなし。
+詳細・更新の仕組み・名前空間付きの呼び出しは [`docs/PLUGIN.md`](docs/PLUGIN.md)(英語)を参照。
+
+**または リリース zip からインストール** - オフライン・バージョン固定の経路。**Python 3** が必要。
 
 **macOS / Linux**(bash):
 
@@ -220,19 +232,6 @@ agent-harness-bootstrap.zip をダウンロードし、同じリリースの SHA
 代わりに Cursor や Codex でハーネスを動かす方法:** [`docs/tools/`](docs/tools/) を参照 -
 [Claude Code](docs/tools/claude-code.md) · [Cursor](docs/tools/cursor.md) · [Codex](docs/tools/codex.md)。
 
-### プラグインとしてインストール
-
-両方のスキルは、このリポジトリでホストするマーケットプレイスから Claude Code プラグインとしても
-配布されている - 上記の zip ダウンロードに代わるものではなく、もう1つの選択肢。
-
-```bash
-/plugin marketplace add nguyenhx2/agent-harness-bootstrap
-/plugin install harness-bootstrap@agent-harness-bootstrap
-```
-
-`spec-builder` のインストール方法、アップデートの仕組み、両方の経路がどう共存するかは
-[`docs/PLUGIN.md`](docs/PLUGIN.md)(英語)を参照。
-
 ---
 
 ## 💬 何を聞かれるか
@@ -263,7 +262,11 @@ agent-harness-bootstrap.zip をダウンロードし、同じリリースの SHA
 (プロジェクト識別、デプロイ権限、バッチH全体)だけを聞き、残りは既定値を適用したうえで
 1つの表として提示し確認を取る。監査モードはエクスプレス対象外 - スコープは推測できない。
 
-**`spec-builder` - 4バッチ + セットアップ質問。** セットアップで出力言語、作成するセクション
+**`spec-builder` - 4バッチ + セットアップ質問。** 散文ではなくファイル(PDF、Word、Excel、
+PowerPoint、画像、URL)を渡した場合は、質問より先にまずそれを読む。ソースごとに1行の計画
+(どのリーダーで読むか、あるいは読めない理由と対処)を提示してから読み込む。スキャン PDF は
+検出され(1ページあたり80文字未満)、ほぼ空の抽出結果から「要約」される代わりにビジョン読取へ
+回される。その後、セットアップで出力言語、作成するセクション
 (コアは固定、それ以外は素材から裏付けの取れたものを事前選択した状態で提示)、準拠する標準の
 プロファイルを決める。その後、スコープ / 関係者 / データと外部システム / 制約の順に進む。
 要件を捏造することはない - 述べられていないことは推測ではなく、IDの付いた未解決事項になる。

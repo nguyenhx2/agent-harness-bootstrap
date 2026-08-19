@@ -26,6 +26,7 @@ Each one is answered by something in this repo, not by advice.
 | 📄 | *"The 40th generated doc quietly contradicts the spec."* | Every requirement gets a stable ID, and the traceability graph names the document that drifted |
 | 🧩 | *"The kit installed 40 agents and a hundred skills my project never needed."* | The roster is derived from your contract and your real modules: [**7 to 15 of 16 seats**](#-tailored-not-comprehensive), never all of them by default |
 | 🧪 | *"It wrote tests that pass no matter what the code does."* | A test's expected value must come from the acceptance criterion, [not from running the code](harness-bootstrap/assets/claude/rules/testing.md) |
+| 📎 | *"It 'read' my scanned PDF and wrote a spec from the three words it got."* | Every source routes to a reader that can actually read it - a scanned PDF goes to a vision pass, and an unreadable file becomes a [named open issue, never a guess](spec-builder/reference/source-routing.md) |
 | 🤷 | *"I cannot tell what my `.claude/` actually enforces any more."* | [`harness-view`](#-harness-view---the-optional-native-viewer) reads it off disk, scores it, and names every unwired part |
 
 <p align="center">
@@ -183,7 +184,19 @@ Full depth, including which section draws on which standard and the honest limit
 
 ## 🚀 Quickstart
 
-Requires **Python 3**. Install both skills in one line.
+**Install as a plugin** (recommended) - inside any Claude Code session:
+
+```text
+/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+/plugin install spec-builder@agent-harness-bootstrap
+```
+
+Updates arrive with `/plugin update` when a release bumps the version - no re-download, no
+stale copy. Details, update mechanics and namespaced invocation:
+[`docs/PLUGIN.md`](docs/PLUGIN.md).
+
+**Or install from the release zip** - the offline, pinned path. Requires **Python 3**.
 
 **macOS / Linux** (bash):
 
@@ -227,19 +240,6 @@ that conflicts is reported and left for you to merge. Nothing is written until y
 Codex instead of Claude Code:** see [`docs/tools/`](docs/tools/) -
 [Claude Code](docs/tools/claude-code.md) · [Cursor](docs/tools/cursor.md) · [Codex](docs/tools/codex.md).
 
-### Install as a plugin
-
-Both skills are also published as Claude Code plugins from a marketplace hosted in this repo -
-an alternative to the zip download above, not a replacement for it.
-
-```bash
-/plugin marketplace add nguyenhx2/agent-harness-bootstrap
-/plugin install harness-bootstrap@agent-harness-bootstrap
-```
-
-See [`docs/PLUGIN.md`](docs/PLUGIN.md) for installing `spec-builder`, updating, and how the two
-routes coexist.
-
 ---
 
 ## 💬 What you will be asked
@@ -272,7 +272,12 @@ answer and becomes a registered task.
 (project identity, deployment rights, and all of batch H), with every other answer defaulted and
 shown to you as one table to confirm. Audit mode is never express - scope cannot be guessed.
 
-**`spec-builder` - four batches plus a setup question.** Setup picks the output language, which
+**`spec-builder` - four batches plus a setup question.** If you hand it files instead of
+prose (PDF, Word, Excel, PowerPoint, images, URLs), it reads them FIRST and shows you a
+one-line plan per source - which reader it chose and why, or that a file is unreadable and
+what would fix it - before asking anything. A scanned PDF is detected (under 80 characters a
+page) and routed to a vision pass instead of being "summarized" from almost nothing.
+Setup then picks the output language, which
 sections to build (the core set is fixed, the rest are offered with the ones your material supports
 pre-ticked), and how strict a standards profile to follow. Then: scope, people, data and systems,
 constraints. It never invents a requirement - anything unstated becomes a flagged open issue with an
