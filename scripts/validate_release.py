@@ -20,6 +20,7 @@ Exit 0 = clean (prints one summary line). Exit 1 = problems (printed one per lin
 """
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
@@ -165,6 +166,28 @@ def main() -> int:
                 f"tools/harness-view/CHANGELOG.md has no '## [{required}] - YYYY-MM-DD' entry - "
                 "the release attaches its binaries, so it must say what changed in them"
             )
+
+    # The plugin marketplace is the THIRD place the version lives, and the one a /plugin
+    # update actually reads: the skills ship without a plugin.json, so the marketplace
+    # entry's version field alone decides whether installed plugins see a new release. A
+    # release that bumps the SKILL.md files but not marketplace.json ships an update that
+    # plugin users never receive - silently, which is how the version badge went stale for
+    # five releases before it was gated.
+    mkt = ROOT / ".claude-plugin" / "marketplace.json"
+    if mkt.is_file():
+        try:
+            entries = json.loads(mkt.read_text(encoding="utf-8")).get("plugins", [])
+        except ValueError as e:
+            entries = []
+            errs.append(f".claude-plugin/marketplace.json does not parse: {e}")
+        for entry in entries:
+            name, mv = entry.get("name", "?"), entry.get("version")
+            if not mv:
+                errs.append(f".claude-plugin/marketplace.json: plugin `{name}` has no version - "
+                            "plugin users would never receive an update")
+            elif required and mv != required:
+                errs.append(f".claude-plugin/marketplace.json: plugin `{name}` is {mv}, the "
+                            f"release is {required} - plugin users stay on the old build")
 
     # Both skills are released together under one repo version - a version present in one
     # SKILL.md and not the other means the release is half-bumped.

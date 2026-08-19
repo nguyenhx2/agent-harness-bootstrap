@@ -6,6 +6,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.14.0] - 2026-08-20
+
+### Added
+
+- **Section selection is a recorded decision.** `scaffold.py` refuses to write any section
+  without `docs/specs/.sections.json` naming what was selected, what was excluded, and a
+  reason per decision. The questionnaire existed since v1.8.0 as prose; a real run skipped it.
+- **Source routing, distilled from the docs-to-knowledge skill.** `route_sources.py` decides
+  per source how it is read (native / anydoc / markitdown / vision / read / unreadable), with
+  a reason per decision; `ingest.py` executes the plan for pdf, docx, xlsx, pptx, text and
+  images. A scanned PDF (under 80 chars/page) routes to vision instead of silently reading as
+  almost nothing. A source nothing installed can read becomes an `OI-nn` in section 11 - the
+  never-invent rule extended down to the file-reading layer.
+- **The module axis.** `--module CODE:folder` (repeatable) places module-owned sections (05,
+  07, 08, 09, 10) under `docs/specs/modules/<folder>/`, cross-cutting ones at the root.
+  Module copies arrive pre-seeded: sample IDs carry the module code, links to root sections
+  point two levels up. `/spec-ingest` and `/spec-retract` handle both shapes and refuse a new
+  requirement that names no module in a module-form repo. The flat form stays valid forever.
+
+### Changed
+
+- `writing-rules.md` documents the module segment (2-4 uppercase, first a letter) and forbids
+  bare IDs inside a module folder, because the flat traceability graph silently merges bare
+  collisions across modules.
+
 ## [1.13.0] - 2026-08-19
 
 ### Fixed

@@ -6,6 +6,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.14.0] - 2026-08-20
+
+### Changed
+
+- `docs-graph.py`'s ID regex accepts one optional module segment on every prefix
+  (`FR-BLG-01`); NFR takes module then category (`NFR-BLG-SEC-01`). Before this, two modules
+  each defining a bare `FR-01` merged silently into one graph node, and a prefixed ID matched
+  nothing at all.
+- Dev agents own their module's spec folder when `docs/specs/modules/<module>/` exists:
+  roster derivation, the dev-agent template's scope guidance and the Inventory Report's
+  module mapping table all connect code modules to spec modules.
+
 ## [1.13.0] - 2026-08-19
 
 ### Changed
