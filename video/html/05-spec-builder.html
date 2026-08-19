@@ -38,6 +38,7 @@
   .chip.blue{background:var(--blue);border:2px solid var(--blue-hi);color:#fff}
   .chip.red{background:var(--red);border:2px solid var(--amber);color:#fff}
   .chip.ghost{background:rgba(90,24,154,.22);border:2px solid var(--purple-hi);color:#fff}
+  .chip.outline{background:rgba(73,80,87,.12);border:2px solid var(--dim);color:var(--dim)}
   .row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
   .col{display:flex;flex-direction:column;align-items:center;gap:8px}
   .arrow{color:var(--dim);font-size:clamp(14px,2vw,26px)}
@@ -198,23 +199,28 @@
       <span class="arrow">&#8594;</span>
       <span class="chip green" id="scaffold">scripts/scaffold.py</span>
       <span class="tag g">--dry-run first</span>
-      <span class="sub">docs/specs/ - 14 files</span>
+      <span class="sub">docs/specs/ - up to 15 files</span>
+    </div>
+    <div class="legend" style="margin-top:2px">
+      <span class="tag" style="color:var(--dim);border-color:var(--dim)">&#9632; always</span>
+      <span class="tag" style="color:var(--dim);border-color:var(--dim);opacity:.6">&#9633; when selected</span>
     </div>
     <div class="grid5 staged" id="files5">
       <span class="chip neutral">README</span>
       <span class="chip neutral">01 overview</span>
-      <span class="chip neutral">02 stakeholders</span>
+      <span class="chip outline">02 stakeholders</span>
       <span class="chip neutral">03 glossary</span>
-      <span class="chip neutral">04 business flows</span>
+      <span class="chip outline">04 business flows</span>
       <span class="chip neutral">05 functional reqs</span>
-      <span class="chip neutral">06 access control</span>
+      <span class="chip outline">06 access control</span>
       <span class="chip neutral">07 non-functional</span>
-      <span class="chip neutral">08 data model</span>
-      <span class="chip neutral">09 integration</span>
-      <span class="chip neutral">10 UI / UX</span>
+      <span class="chip outline">08 data model</span>
+      <span class="chip outline">09 integration</span>
+      <span class="chip outline">10 UI / UX</span>
       <span class="chip neutral">11 assumptions</span>
-      <span class="chip neutral">12 feasibility</span>
+      <span class="chip outline">12 feasibility</span>
       <span class="chip neutral">13 revisions</span>
+      <span class="chip outline">14 design system</span>
     </div>
     <div class="legend">
       <span class="tag g">ADDED</span>
@@ -241,6 +247,7 @@
       <span class="chip purple">11 assumptions</span>
       <span class="chip purple">12 feasibility</span>
       <span class="chip purple">13 revisions</span>
+      <span class="chip purple">14 design system</span>
     </div>
     <div class="grid3" style="margin-top:10px">
       <div class="load"><span class="num">05</span><span class="txt">observable FRs, anchored,<br>BR-nn + a NEGATIVE case</span></div>
@@ -334,7 +341,7 @@
     {s:5,d:9000,run:function(){
       at(300,function(){say('Then a script lays down the shape. Dry-run first.')});
       stage('files5',1200,190);
-      at(4600,function(){say('14 files: headings, tables, Mermaid scaffolds, inline authoring notes.')});
+      at(4600,function(){say('The core six are always created. The rest only when the material calls for it.')});
       at(6600,function(){q('scaffold').classList.add('pulse-g');
         say('Deterministic and free. CONFLICT is the reconciliation queue for a repo with specs.');});
       at(7600,function(){q('scaffold').classList.remove('pulse-g')});

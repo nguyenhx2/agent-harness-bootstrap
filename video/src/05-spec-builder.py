@@ -47,6 +47,30 @@ from theme import (
 AMBER = "#FFBA08"
 
 
+def _optional_chip(label, fs=17, h=0.55, w=2.55):
+    """A section chip drawn outline-only - the 'when selected' half of the grid's legend.
+
+    Reuses the existing NEUTRAL/DIM tokens rather than a new colour: only opacity changes."""
+    t = Text(label, font=FONT, font_size=fs, color=DIM)
+    box = RoundedRectangle(
+        width=w, height=h, corner_radius=0.14,
+        fill_color=NEUTRAL, fill_opacity=0.12,
+        stroke_color=DIM, stroke_width=1.5,
+    )
+    t.move_to(box.get_center())
+    return VGroup(box, t)
+
+
+def _legend_swatch(label, fill_opacity, fs=15):
+    box = RoundedRectangle(
+        width=0.36, height=0.26, corner_radius=0.05,
+        fill_color=NEUTRAL, fill_opacity=fill_opacity,
+        stroke_color=DIM, stroke_width=1.5,
+    )
+    t = Text(label, font=FONT, font_size=fs, color=DIM)
+    return VGroup(box, t).arrange(RIGHT, buff=0.12)
+
+
 class SpecBuilder(Scene):
     def construct(self):
         self.camera.background_color = BG
@@ -170,19 +194,26 @@ class SpecBuilder(Scene):
         caption(self, "Then a script lays down the shape. Dry-run first.", hold=0.7, y=-3.5, size=24)
 
         names = [
-            "README", "01 overview", "02 stakeholders", "03 glossary", "04 business flows",
-            "05 functional reqs", "06 access control", "07 non-functional", "08 data model",
-            "09 integration", "10 UI / UX", "11 assumptions", "12 feasibility", "13 revisions",
+            ("README", True), ("01 overview", True), ("02 stakeholders", False),
+            ("03 glossary", True), ("04 business flows", False), ("05 functional reqs", True),
+            ("06 access control", False), ("07 non-functional", True), ("08 data model", False),
+            ("09 integration", False), ("10 UI / UX", False), ("11 assumptions", True),
+            ("12 feasibility", False), ("13 revisions", True), ("14 design system", False),
         ]
         files = VGroup()
-        for n in names:
-            files.add(chip(n, NEUTRAL, DIM, fs=17, h=0.55, w=2.55))
+        for n, always in names:
+            files.add(chip(n, NEUTRAL, DIM, fs=17, h=0.55, w=2.55) if always
+                      else _optional_chip(n, fs=17, h=0.55, w=2.55))
         files.arrange_in_grid(rows=3, cols=5, buff=(0.22, 0.2)).move_to([0, -0.25, 0])
-        specs_lbl = Text("docs/specs/  -  14 files", font=FONT, font_size=22, color=DIM).move_to([3.2, 1.95, 0])
-        self.play(FadeIn(specs_lbl), run_time=0.3)
+        specs_lbl = Text("docs/specs/  -  up to 15 files", font=FONT, font_size=22, color=DIM).move_to([3.2, 1.95, 0])
+        legend = VGroup(
+            _legend_swatch("always", 1.0),
+            _legend_swatch("when selected", 0.12),
+        ).arrange(RIGHT, buff=0.4).move_to([3.2, 1.55, 0])
+        self.play(FadeIn(specs_lbl), FadeIn(legend), run_time=0.3)
         self.play(FadeIn(files, lag_ratio=0.12), run_time=1.1)
-        caption(self, "14 files: headings, tables, Mermaid scaffolds, inline authoring notes.",
-                hold=0.8, y=-3.5, size=24)
+        caption(self, "The core six are always created. The rest only when the material calls for it.",
+                hold=1.1, y=-3.5, size=23)
 
         report = VGroup(
             tag("ADDED", GREEN_HI, fs=20),
@@ -193,14 +224,14 @@ class SpecBuilder(Scene):
         self.play(Indicate(scaffold, color=GREEN_HI, scale_factor=1.08), run_time=0.6)
         caption(self, "Deterministic and free. CONFLICT is the reconciliation queue for a repo with specs.",
                 hold=1.2, y=-3.5, size=23)
-        self.play(FadeOut(VGroup(scaffold, dry, a3, report, specs_lbl, sb)), run_time=0.5)
+        self.play(FadeOut(VGroup(scaffold, dry, a3, report, specs_lbl, legend, sb)), run_time=0.5)
 
         # ---- Beat 6: fill in order ------------------------------------
         self.play(files.animate.move_to([0, 1.45, 0]).scale(0.9), run_time=0.6)
         head6 = Text("Fill in order - each section depends on the last",
                      font=FONT, font_size=26, color=WHITE).move_to([0, 2.85, 0])
         self.play(FadeIn(head6), run_time=0.4)
-        for i in range(14):
+        for i in range(15):
             files[i][0].set_fill(PURPLE, opacity=1.0)
             files[i][0].set_stroke(PURPLE_HI)
         self.play(FadeIn(files, lag_ratio=0.25, run_time=1.5))

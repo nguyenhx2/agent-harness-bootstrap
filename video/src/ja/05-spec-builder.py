@@ -48,6 +48,30 @@ from jatheme import (
 AMBER = "#FFBA08"
 
 
+def _optional_chip(label, fs=17, h=0.55, w=2.55):
+    """A section chip drawn outline-only - the '選択時のみ' half of the grid's legend.
+
+    Reuses the existing NEUTRAL/DIM tokens rather than a new colour: only opacity changes."""
+    t = Text(label, font=JFONT, font_size=fs, color=DIM)
+    box = RoundedRectangle(
+        width=w, height=h, corner_radius=0.14,
+        fill_color=NEUTRAL, fill_opacity=0.12,
+        stroke_color=DIM, stroke_width=1.5,
+    )
+    t.move_to(box.get_center())
+    return VGroup(box, t)
+
+
+def _legend_swatch(label, fill_opacity, fs=15):
+    box = RoundedRectangle(
+        width=0.36, height=0.26, corner_radius=0.05,
+        fill_color=NEUTRAL, fill_opacity=fill_opacity,
+        stroke_color=DIM, stroke_width=1.5,
+    )
+    t = Text(label, font=JFONT, font_size=fs, color=DIM)
+    return VGroup(box, t).arrange(RIGHT, buff=0.12)
+
+
 class SpecBuilder(Scene):
     def construct(self):
         self.camera.background_color = BG
@@ -171,19 +195,26 @@ class SpecBuilder(Scene):
         caption(self, "次にスクリプトが形を敷く。まずドライラン。", hold=0.7, y=-3.5, size=24)
 
         names = [
-            "README", "01 概要", "02 ステークホルダー", "03 用語集", "04 業務フロー",
-            "05 機能要件", "06 アクセス制御", "07 非機能要件", "08 データモデル",
-            "09 連携", "10 UI / UX", "11 前提条件", "12 フィージビリティ", "13 改訂履歴",
+            ("README", True), ("01 概要", True), ("02 ステークホルダー", False),
+            ("03 用語集", True), ("04 業務フロー", False), ("05 機能要件", True),
+            ("06 アクセス制御", False), ("07 非機能要件", True), ("08 データモデル", False),
+            ("09 連携", False), ("10 UI / UX", False), ("11 前提条件", True),
+            ("12 フィージビリティ", False), ("13 改訂履歴", True), ("14 デザインシステム", False),
         ]
         files = VGroup()
-        for n in names:
-            files.add(chip(n, NEUTRAL, DIM, fs=15, h=0.55, w=2.55))
+        for n, always in names:
+            files.add(chip(n, NEUTRAL, DIM, fs=15, h=0.55, w=2.55) if always
+                      else _optional_chip(n, fs=15, h=0.55, w=2.55))
         files.arrange_in_grid(rows=3, cols=5, buff=(0.22, 0.2)).move_to([0, -0.25, 0])
-        specs_lbl = Text("docs/specs/  -  14ファイル", font=JFONT, font_size=22, color=DIM).move_to([3.2, 1.95, 0])
-        self.play(FadeIn(specs_lbl), run_time=0.3)
+        specs_lbl = Text("docs/specs/  -  最大15ファイル", font=JFONT, font_size=22, color=DIM).move_to([3.2, 1.95, 0])
+        legend = VGroup(
+            _legend_swatch("常に", 1.0),
+            _legend_swatch("選択時のみ", 0.12),
+        ).arrange(RIGHT, buff=0.4).move_to([3.2, 1.55, 0])
+        self.play(FadeIn(specs_lbl), FadeIn(legend), run_time=0.3)
         self.play(FadeIn(files, lag_ratio=0.12), run_time=1.1)
-        caption(self, "14ファイル: 見出し、表、Mermaidの下書き、執筆メモ。",
-                hold=0.8, y=-3.5, size=24)
+        caption(self, "コア6セクションは常に作成。残りは資料が求めるときだけ。",
+                hold=1.1, y=-3.5, size=23)
 
         report = VGroup(
             tag("追加", GREEN_HI, fs=20),
@@ -194,14 +225,14 @@ class SpecBuilder(Scene):
         self.play(Indicate(scaffold, color=GREEN_HI, scale_factor=1.08), run_time=0.6)
         caption(self, "決定的で無料。「競合」は既存仕様があるリポジトリのための突き合わせキュー。",
                 hold=1.2, y=-3.5, size=21)
-        self.play(FadeOut(VGroup(scaffold, dry, a3, report, specs_lbl, sb)), run_time=0.5)
+        self.play(FadeOut(VGroup(scaffold, dry, a3, report, specs_lbl, legend, sb)), run_time=0.5)
 
         # ---- Beat 6: fill in order ------------------------------------
         self.play(files.animate.move_to([0, 1.45, 0]).scale(0.9), run_time=0.6)
         head6 = Text("順番に埋める - 各セクションは前のセクションに依存する",
                      font=JFONT, font_size=22, color=WHITE).move_to([0, 2.85, 0])
         self.play(FadeIn(head6), run_time=0.4)
-        for i in range(14):
+        for i in range(15):
             files[i][0].set_fill(PURPLE, opacity=1.0)
             files[i][0].set_stroke(PURPLE_HI)
         self.play(FadeIn(files, lag_ratio=0.25, run_time=1.5))
