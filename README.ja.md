@@ -220,6 +220,19 @@ agent-harness-bootstrap.zip をダウンロードし、同じリリースの SHA
 代わりに Cursor や Codex でハーネスを動かす方法:** [`docs/tools/`](docs/tools/) を参照 -
 [Claude Code](docs/tools/claude-code.md) · [Cursor](docs/tools/cursor.md) · [Codex](docs/tools/codex.md)。
 
+### プラグインとしてインストール
+
+両方のスキルは、このリポジトリでホストするマーケットプレイスから Claude Code プラグインとしても
+配布されている - 上記の zip ダウンロードに代わるものではなく、もう1つの選択肢。
+
+```bash
+/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+```
+
+`spec-builder` のインストール方法、アップデートの仕組み、両方の経路がどう共存するかは
+[`docs/PLUGIN.md`](docs/PLUGIN.md)(英語)を参照。
+
 ---
 
 ## 💬 何を聞かれるか

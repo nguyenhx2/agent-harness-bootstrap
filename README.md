@@ -227,6 +227,19 @@ that conflicts is reported and left for you to merge. Nothing is written until y
 Codex instead of Claude Code:** see [`docs/tools/`](docs/tools/) -
 [Claude Code](docs/tools/claude-code.md) · [Cursor](docs/tools/cursor.md) · [Codex](docs/tools/codex.md).
 
+### Install as a plugin
+
+Both skills are also published as Claude Code plugins from a marketplace hosted in this repo -
+an alternative to the zip download above, not a replacement for it.
+
+```bash
+/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+```
+
+See [`docs/PLUGIN.md`](docs/PLUGIN.md) for installing `spec-builder`, updating, and how the two
+routes coexist.
+
 ---
 
 ## 💬 What you will be asked

@@ -1,0 +1,21 @@
+{
+  "name": "agent-harness-bootstrap",
+  "owner": {
+    "name": "nguyenhx2"
+  },
+  "description": "Claude Code plugins for the harness-bootstrap and spec-builder skills.",
+  "plugins": [
+    {
+      "name": "harness-bootstrap",
+      "source": "./harness-bootstrap",
+      "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
+      "version": "1.13.0"
+    },
+    {
+      "name": "spec-builder",
+      "source": "./spec-builder",
+      "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
+      "version": "1.13.0"
+    }
+  ]
+}
