@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Harness Bootstrap - 遮断するガードレール</title>
+<meta name="description" content="二つの Claude Code スキルとビューア。あなたと AI が共有できる仕様、リポジトリに合わせたエージェント編成、そして助言ではなく遮断するガードレール。">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f1f1ef" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://nguyenhx2.github.io/agent-harness-bootstrap/index.ja.html">
+<link rel="alternate" hreflang="en" href="https://nguyenhx2.github.io/agent-harness-bootstrap/">
+<link rel="alternate" hreflang="ja" href="https://nguyenhx2.github.io/agent-harness-bootstrap/index.ja.html">
+<link rel="alternate" hreflang="x-default" href="https://nguyenhx2.github.io/agent-harness-bootstrap/">
+<link rel="icon" href="docs/assets/logo-mark.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Agent Harness Bootstrap">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:url" content="https://nguyenhx2.github.io/agent-harness-bootstrap/index.ja.html">
+<meta property="og:title" content="Agent Harness Bootstrap - 遮断するガードレール">
+<meta property="og:description" content="二つの Claude Code スキルとビューア。あなたと AI が共有できる仕様、リポジトリに合わせたエージェント編成、そして助言ではなく遮断するガードレール。">
+<meta property="og:image" content="https://nguyenhx2.github.io/agent-harness-bootstrap/docs/assets/readme-banner.ja.png">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="400">
+<meta property="og:image:alt" content="Agent Harness Bootstrap - AI エージェントを自律的に、そして安全に動かすための枠">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Agent Harness Bootstrap - 遮断するガードレール">
+<meta name="twitter:description" content="二つの Claude Code スキルとビューア。あなたと AI が共有できる仕様、リポジトリに合わせたエージェント編成、そして助言ではなく遮断するガードレール。">
+<meta name="twitter:image" content="https://nguyenhx2.github.io/agent-harness-bootstrap/docs/assets/readme-banner.ja.png">
+<link rel="preload" href="./src/fonts/andadapro-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./src/style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Agent Harness Bootstrap",
+  "description": "二つの Claude Code スキルとビューア。あなたと AI が共有できる仕様、リポジトリに合わせたエージェント編成、そして助言ではなく遮断するガードレール。",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "url": "https://nguyenhx2.github.io/agent-harness-bootstrap/index.ja.html",
+  "image": "https://nguyenhx2.github.io/agent-harness-bootstrap/docs/assets/readme-banner.ja.png",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "inLanguage": ["ja", "en"],
+  "codeRepository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
+  "author": { "@type": "Person", "name": "nguyenhx2", "url": "https://github.com/nguyenhx2" }
+}
+</script>
+</head>
+<body>
+<!--
+  THESIS: this page is the product's own artifact, a normative specification sheet:
+  numbered clauses, ruled provisions, every figure carrying the script that derives it.
+  It refuses the dev-tool arrangement of gradient hero plus three identical feature cards.
+  OWN-WORLD: a two-ink press run on black stock. Paper ink, one vermilion spot ink,
+  hairline rules, Andada Pro over a mincho stack, set against a mono data face. No third
+  colour, no gradient, no glow, no glass, no card. Light is the same run on paper stock.
+  STORY: three pieces, a floor that is shell scripts and exit codes, numbers you can
+  re-run yourself; then install it or open the deck.
+  FIRST VIEWPORT: title block, the claim at display scale with the blocking verb in spot
+  ink, the lede, a ruled document-control strip of four verified fields, then four actions
+  with the guide filled in spot ink.
+  FORM: standards-body specification typesetting; candidate 5 of 7; seed key 3f083877.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+  review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
+<a class="skip" href="#main">本文へスキップ</a>
+
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10v10"/><path d="M19 5L6 18"/></symbol>
+  <symbol id="i-contents" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h1M4 12h1M4 18h1"/><path d="M9 6h11M9 12h11M9 18h7"/></symbol>
+  <symbol id="i-lang" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.4 2.4 2.4 13.6 0 16M12 4c-2.4 2.4-2.4 13.6 0 16"/></symbol>
+</svg>
+
+<header class="masthead">
+  <div class="sheet titleblock">
+    <p class="mark"><img src="docs/assets/logo-mark.svg" alt="" width="26" height="26" decoding="async"><span>Agent Harness Bootstrap</span></p>
+    <p class="docno">DOC. AHB &#183; 全 7 条</p>
+    <div class="titleblock__tools">
+      <details class="idx" id="contents">
+        <summary class="tool"><svg class="tool__icon" aria-hidden="true"><use href="#i-contents"/></svg><span class="tool__text">目次</span><svg class="tool__chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+        <div class="idx__panel">
+          <div class="sheet">
+            <ol>
+              <li><a href="#what"><span class="idx__no">&#167;1</span><span>概要</span><span class="idx__what">三つの構成要素と、それぞれの役割</span></a></li>
+              <li><a href="#how"><span class="idx__no">&#167;2</span><span>全体像</span><span class="idx__what">織機の図と、契約からコードまでの流れ</span></a></li>
+              <li><a href="#skills"><span class="idx__no">&#167;3</span><span>スキル探索とスキル配線</span><span class="idx__what">スキルを見つけ、必要な席につなぐ</span></a></li>
+              <li><a href="#viewer"><span class="idx__no">&#167;4</span><span>見る、採点する、無効にする</span><span class="idx__what">モデルを介さない harness-view</span></a></li>
+              <li><a href="#proof"><span class="idx__no">&#167;5</span><span>形容詞ではなく、検証結果</span><span class="idx__what">すべての数値と、その出どころ</span></a></li>
+              <li><a href="#install"><span class="idx__no">&#167;6</span><span>導入</span><span class="idx__what">プラグイン、またはリリース zip</span></a></li>
+              <li><a href="#docs"><span class="idx__no">&#167;7</span><span>次に読むもの</span><span class="idx__what">動画、スライド、ガイド、移植</span></a></li>
+            </ol>
+            <p class="idx__meta">
+              <a href="index.html" hreflang="en" lang="en">English</a>
+              <a href="https://github.com/nguyenhx2/agent-harness-bootstrap">GitHub</a>
+            </p>
+          </div>
+        </div>
+      </details>
+      <a class="tool" href="index.html" hreflang="en" lang="en" aria-label="Read this page in English"><svg aria-hidden="true"><use href="#i-lang"/></svg>English</a>
+      <a class="tool" href="https://github.com/nguyenhx2/agent-harness-bootstrap">GitHub <svg aria-hidden="true"><use href="#i-out"/></svg></a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="sheet">
+
+    <div class="hero">
+      <h1>助言ではなく、<span class="hero__block">遮断する</span>ガードレール。</h1>
+      <p class="lede prose">二つの Claude Code スキルと一つのビューア。一つはあなたと AI が共有できる仕様を書き、
+        一つはリポジトリに合わせたエージェント編成を組み立て、もう一つはその全体を可視化して任意の部分を
+        無効化できるようにします。</p>
+      <p class="sub prose">新規開発でも、既存コードベースでも、監査専用でも。安全性の下限はシェルスクリプトと
+        終了コードで担保されるため、モデルを入れ替えても動きません。</p>
+
+      <dl class="record">
+        <div><dt>ガードレール評価</dt><dd><b>107/107</b> <span class="u-quiet">フック形式ごと</span></dd></div>
+        <div><dt>移植アダプタ</dt><dd><b>32/32</b> <span class="u-quiet">Cursor と Codex</span></dd></div>
+        <div><dt>ライセンス</dt><dd><b>MIT</b> <span class="u-quiet">用途を問わず利用可</span></dd></div>
+        <div><dt>最新版</dt><dd><b>v1.14.0</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
+      </dl>
+
+      <div class="actions">
+        <a class="action action--primary" href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/README.ja.md">ガイドを読む</a>
+        <a class="action" href="video/?lang=ja">紹介動画を見る</a>
+        <a class="action" href="presentation/?lang=ja">スライドを開く</a>
+        <a class="action" href="https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest">ダウンロード <svg aria-hidden="true"><use href="#i-out"/></svg></a>
+      </div>
+    </div>
+
+    <nav class="toc" aria-label="目次">
+      <ol>
+        <li><a href="#what"><span class="idx__no">&#167;1</span><span>概要</span><span class="idx__what">三つの構成要素と、それぞれの役割</span></a></li>
+        <li><a href="#how"><span class="idx__no">&#167;2</span><span>全体像</span><span class="idx__what">織機の図と、契約からコードまでの流れ</span></a></li>
+        <li><a href="#skills"><span class="idx__no">&#167;3</span><span>スキル探索とスキル配線</span><span class="idx__what">スキルを見つけ、必要な席につなぐ</span></a></li>
+        <li><a href="#viewer"><span class="idx__no">&#167;4</span><span>見る、採点する、無効にする</span><span class="idx__what">モデルを介さない harness-view</span></a></li>
+        <li><a href="#proof"><span class="idx__no">&#167;5</span><span>形容詞ではなく、検証結果</span><span class="idx__what">すべての数値と、その出どころ</span></a></li>
+        <li><a href="#install"><span class="idx__no">&#167;6</span><span>導入</span><span class="idx__what">プラグイン、またはリリース zip</span></a></li>
+        <li><a href="#docs"><span class="idx__no">&#167;7</span><span>次に読むもの</span><span class="idx__what">動画、スライド、ガイド、移植</span></a></li>
+      </ol>
+    </nav>
+
+    <section class="clause" id="what">
+      <p class="clause__no">&#167;1</p>
+      <h2>三つの構成要素</h2>
+      <p class="clause__intro">互いに引き継ぎ合う三つの部品です。一つ目は単独でも使えます。価値の中心は二つ目にあり、
+        三つ目は二つ目が宣言どおりに動いたかを確認する手段です。</p>
+
+      <ul class="provisions">
+        <li class="provision">
+          <div class="provision__id">
+            <h3>/spec-builder</h3>
+            <p class="provision__role">スキル</p>
+          </div>
+          <div class="provision__body">
+            <p>持ち込まれたものを、あなたと AI の双方が読む一つの契約に変換します。記述は国際標準に沿います。</p>
+            <ul>
+              <li>アイデア、議事録、既存ドキュメント、空のリポジトリ</li>
+              <li>PDF / Office ソースはルーターが読み方を判定 - 読めないファイルが推測になることはない</li>
+              <li>ISO/IEC/IEEE 29148、ISO 25010、BABOK v3、C4、arc42</li>
+              <li>安定 ID により、後の変更がすべて遡れる</li>
+            </ul>
+          </div>
+        </li>
+        <li class="provision">
+          <div class="provision__id">
+            <h3>/harness-bootstrap</h3>
+            <p class="provision__role">スキル</p>
+          </div>
+          <div class="provision__body">
+            <p>リポジトリに運用ハーネスを構築します。誰が何を、どれだけのコストで、何をしてはならないかを定めます。</p>
+            <ul>
+              <li>16 のエージェント、それぞれにモデルと推論強度を明示</li>
+              <li>16 のルール、うち 9 は対象パスでのみ読み込み</li>
+              <li>10 の遮断フック、22 のコマンド、コンパクションを越えるタスクボード</li>
+            </ul>
+          </div>
+        </li>
+        <li class="provision">
+          <div class="provision__id">
+            <h3>harness-view</h3>
+            <p class="provision__role">ツール</p>
+          </div>
+          <div class="provision__body">
+            <p>ディスク上の実際のハーネスを読み取って描画します。モデルは介在しないため、ブラウザと CI の
+              結果が食い違うことはありません。</p>
+            <ul>
+              <li>すべての配線を示すフロー表示とグラフ表示</li>
+              <li>決定的な採点と、名指しされた検出結果</li>
+              <li>任意のルール・コマンド・フックの有効と無効の切り替え</li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="clause" id="how">
+      <p class="clause__no">&#167;2</p>
+      <h2>全体像</h2>
+      <p class="clause__intro">織機はこの仕組みの正直な比喩です。糸はもつれたまま入り、布になって出てきます。
+        魔法ではなく、枠があるからそうなります。</p>
+
+      <figure class="plate">
+        <img src="docs/assets/harness-loom.ja.svg" width="1400" height="940" loading="lazy" decoding="async" alt="ハーネスを織機として描いた図。左では入力が実際に持ち込まれる形で並ぶ: 一行のアイデア、会議の議事録、既存のドキュメント、既存のリポジトリ、空のリポジトリ、書きかけの仕様書。もつれた糸がそれらを spec-builder へ運び、あらゆる形式が一つの契約に変換される。harness-bootstrap の枠の内側ではルールとフックがエージェントに降り、右のスキルレールがプロジェクトの技術スタックに合うスキルを見つけて必要なエージェントに配線する。下へ秩序立った三つの成果物が出ていき、枠の足元の状態がプロンプト・実行履歴・タスクボードを保持し、その下のハーネスビューアが状態を読んで制御面全体を表示・採点・切り替え・監視する。">
+        <figcaption>
+          <span class="plate__no">図 1 &#183; 織機</span>
+          <span>入る側では糸の色はばらばらで、平行なものは一本もありません。出る側では一色になり、
+            同じ方向を向いています。これはモデルではなく、枠についての主張です。</span>
+        </figcaption>
+      </figure>
+
+      <figure class="plate plate--tall">
+        <img src="docs/assets/ai-dlc-flow.ja.svg" width="880" height="1160" loading="lazy" decoding="async" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る">
+        <figcaption>
+          <span class="plate__no">図 2 &#183; 流れ</span>
+          <span>比喩を外した同じ受け渡しです。まず契約があり、その周りにハーネスが組まれ、
+            ハーネスが許す範囲でデリバリーループが回ります。</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="clause" id="skills">
+      <p class="clause__no">&#167;3</p>
+      <h2>スキル探索とスキル配線</h2>
+      <p class="clause__intro">Claude Code のスキルは、適切なものが存在し、かつ適切なエージェントが到達できて初めて
+        役に立ちます。この二つは別々の問題であり、ハーネスも別々に扱います。</p>
+
+      <ul class="provisions">
+        <li class="provision provision--named">
+          <div class="provision__id">
+            <h3>スキル探索</h3>
+            <p class="provision__role">解決する課題</p>
+          </div>
+          <div class="provision__body">
+            <p>どんなスキルが存在するかを利用者が知っている必要はありません。探索はこのプロジェクトの
+              マニフェストを読み、技術スタックを判定し、それに合うスキルを見つけます。</p>
+            <ul>
+              <li>Python、Ruby、.NET、Java と Kotlin、JavaScript、モノレポの目印</li>
+              <li>マーケットプレイスのカタログは情報源であり、決定権は持たない</li>
+              <li>あなたが選ばない限り何もインストールされない</li>
+            </ul>
+          </div>
+        </li>
+        <li class="provision provision--named">
+          <div class="provision__id">
+            <h3>スキル配線</h3>
+            <p class="provision__role">解決する課題</p>
+          </div>
+          <div class="provision__body">
+            <p>どのエージェントからも使われないスキルは、コンテキスト代だけ払う死荷重です。配線は選ばれた
+              スキルを必要とするエージェントの席に接続し、その接続を記録します。</p>
+            <ul>
+              <li>配線は慣習ではなく、グラフ上のノード</li>
+              <li>harness-view が、配線済みか単にインストール済みかを表示</li>
+              <li>未配線のスキルは謎ではなく、検出結果として名指しされる</li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="clause" id="viewer">
+      <p class="clause__no">&#167;4</p>
+      <h2>見る、採点する、無効にする</h2>
+      <p class="clause__intro">検査できないハーネスは、信用するしかないハーネスです。<code>harness-view</code> は
+        実行が書いた状態から実物を描画し、どのノードも開けるファイルです。</p>
+
+      <figure class="plate">
+        <img src="docs/assets/harness-view-flow.png" width="1456" height="790" loading="lazy" decoding="async" alt="実プロジェクトの harness-view フロービュー: 左のルールがフックを経てエージェントの席に流れ込み、マージゲートに収束する">
+        <figcaption>
+          <span class="plate__no">図 3 &#183; フロー表示</span>
+          <span>実プロジェクトのフロー表示。誰かが描いた図ではなく、ディスク上の実体の走査結果です。</span>
+        </figcaption>
+      </figure>
+
+      <figure class="plate">
+        <img src="docs/assets/harness-view-assess.png" width="1456" height="750" loading="lazy" decoding="async" alt="harness-view の Assess タブ: 実際のハーネスを 100 点満点中 64 点と採点し、カテゴリ別バーと問題を名指しする検出結果一覧を表示">
+        <figcaption>
+          <span class="plate__no">図 4 &#183; Assess タブ</span>
+          <span>Assess タブが実際のハーネスを 64/100 と採点し、何が問題かを名指ししています。
+            エンジンは純粋なロジックなので、この数字は再現可能です。</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="clause" id="proof">
+      <p class="clause__no">&#167;5</p>
+      <h2>形容詞ではなく、検証結果</h2>
+      <p class="clause__intro">ここにある数値はすべて、リポジトリ内のスクリプトから得られ、あなた自身が再実行できます。
+        モデルの所感は一つもありません。</p>
+
+      <ul class="data">
+        <li class="data__head" aria-hidden="true">
+          <span class="u-label">数値</span>
+          <span class="u-label">何を測ったか</span>
+          <span class="u-label">出どころ</span>
+        </li>
+        <li>
+          <p class="data__val">107/107</p>
+          <p class="data__claim">ガードレール評価（フック形式ごと）。両形式で 214/214。</p>
+          <p class="data__src">遮断必須 40、許可必須 67</p>
+        </li>
+        <li>
+          <p class="data__val">0/22</p>
+          <p class="data__claim">素のリポジトリが遮断できたペイロード数。ハーネス導入後は 22/22。</p>
+          <p class="data__src">benchmark/benchmark.py</p>
+        </li>
+        <li>
+          <p class="data__val">32/32</p>
+          <p class="data__claim">Cursor と Codex への移植アダプタの自己テスト（両フック形式）。</p>
+          <p class="data__src">port.py --self-test</p>
+        </li>
+        <li>
+          <p class="data__val">64%</p>
+          <p class="data__claim">ルールはパスでスコープされるため、既定セッションから外れるルール本文の割合。</p>
+          <p class="data__src">16 ルール中 9 がパススコープ</p>
+        </li>
+        <li>
+          <p class="data__val">7〜15</p>
+          <p class="data__claim">16 席のうち、一回の実行で埋まる席数。契約と実在するモジュールから導かれ、既定ですべてが埋まることはありません。</p>
+          <p class="data__src">最小構成の回答なら 7 席</p>
+        </li>
+      </ul>
+
+      <figure class="plate">
+        <img src="docs/assets/tailored-build.ja.svg" width="1300" height="830" loading="lazy" decoding="async" alt="二つの半分からなる図。上半分は spec-builder と harness-bootstrap をつなぐ工程を示す。FR・NFR・BR の ID を持つ契約と、モジュール・検出された技術スタック・危険な操作からなるコードベース分析が、いずれも「テーラー」と名づけられた工程に入る。その仕事はカタログではなく証拠からチームを決めることである。そこからロースター（16席のうち7〜15席と、実在するモジュールごとの開発エージェント1名）、スキル（マニフェストが正当化するものだけ、選んだ場合に限る）、ルール（実在するパスにスコープ）が出て、ハーネスになる。下半分は、コードベースを読む前にすべてを入れてしまい全部にコンテキスト代を払い孤立した席と一般論の助言を抱えるキット方式と、契約と実在モジュールからロースターを導き導入物すべてに名前のついた担当がいるテーラーメイド構築とを比較する。">
+        <figcaption>
+          <span class="plate__no">図 5 &#183; テーラーメイド</span>
+          <span>ロースターはカタログではなく、契約と実在するモジュールから決まります。
+            誰も持ち主のいない席は、能力ではなくコストです。</span>
+        </figcaption>
+      </figure>
+
+      <p class="note">Opus を Haiku に入れ替えても、評価結果はバイト単位で同一です。
+        それがこの設計の要点で、下限はシェルスクリプトと終了コードによって強制されるため、どのモデルが
+        動かしているかに依存しません。安いモデルで変わるのは、書かれるコードの質とレビューの深さ、
+        すなわち上限であり、この評価はそれを測っていません。</p>
+    </section>
+
+    <section class="clause" id="install">
+      <p class="clause__no">&#167;6</p>
+      <h2>導入</h2>
+      <p class="clause__intro">経路は二つ。プラグインは自動で最新に追従し、zip はバージョンを固定して
+        オフラインでも動きます。どちらでも、次のセッションから Claude Code がスキルを認識します。</p>
+
+      <div class="step">
+        <div class="step__head">
+          <h3>プラグインとしてインストール</h3>
+          <p class="step__tag">推奨</p>
+        </div>
+        <p>Claude Code のセッション内で:</p>
+        <div class="scroller" tabindex="0" role="region" aria-label="プラグイン導入コマンド"><pre><code>/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+/plugin install spec-builder@agent-harness-bootstrap</code></pre></div>
+        <p>リリースがバージョンを上げると <code>/plugin update</code> で更新が届きます -
+          再ダウンロードも古いコピーもなし。</p>
+      </div>
+
+      <div class="step">
+        <div class="step__head">
+          <h3>または リリース zip からインストール</h3>
+          <p class="step__tag">オフライン・固定</p>
+        </div>
+        <p>スキルディレクトリに展開するだけです:</p>
+        <div class="scroller" tabindex="0" role="region" aria-label="zip 導入コマンド"><pre><code><span class="cmt"># 両方のスキル</span>
+unzip agent-harness-bootstrap.zip -d ~/.claude/skills/
+
+<span class="cmt"># そのうえで、対象リポジトリ内で</span>
+/harness-bootstrap     <span class="cmt"># ハーネスを構築する</span>
+/spec-builder          <span class="cmt"># あるいは契約から始める</span></code></pre></div>
+      </div>
+
+      <div class="step">
+        <div class="step__head">
+          <h3>ビューアを動かす</h3>
+          <p class="step__tag">任意</p>
+        </div>
+        <p>ビューアは Windows・macOS・Linux 向けの単体バイナリとして配布され、
+          ローカルの Web UI としても動作します。</p>
+        <div class="scroller" tabindex="0" role="region" aria-label="harness-view コマンド"><pre><code>harness-view serve .    <span class="cmt"># localhost でハーネスを閲覧</span>
+harness-view assess .   <span class="cmt"># 採点し、基準を満たさなければ非ゼロ終了</span></code></pre></div>
+        <p class="note">いずれも
+          <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest">各リリース</a>
+          に添付されます。チェックサムと、そのバージョンで実際に取得した評価およびベンチマーク結果も同梱されます。</p>
+      </div>
+    </section>
+
+    <section class="clause" id="docs">
+      <p class="clause__no">&#167;7</p>
+      <h2>次に読むもの</h2>
+      <div class="scroller" tabindex="0" role="region" aria-label="次に読むもの">
+        <table class="routes">
+          <thead><tr><th scope="col">目的</th><th scope="col">参照先</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">5 分で全体を通して理解する</th><td><a href="video/?lang=ja">紹介動画</a>（日本語と英語）</td></tr>
+            <tr><th scope="row">チームに説明する</th><td><a href="presentation/?lang=ja">スライド</a></td></tr>
+            <tr><th scope="row">詳細なガイドを読む</th><td><a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/README.ja.md">README.ja.md</a></td></tr>
+            <tr><th scope="row">何が強制され、何が助言に留まるかを知る</th><td><a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/docs/ASSESSMENT.md">ASSESSMENT.md</a></td></tr>
+            <tr><th scope="row">安全性の主張を自分で確かめる</th><td><code>python eval/guardrail_eval.py</code></td></tr>
+            <tr><th scope="row">Cursor や Codex で使う</th><td><a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/docs/tools/cursor.md">docs/tools/</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="sheet">
+    <div class="colophon__rule" aria-hidden="true"><i></i><i></i><i></i></div>
+    <p>MIT ライセンス。<a href="https://claude.com/claude-code">Claude Code</a> 向けに作られ、
+      Cursor と Codex にも移植できます。</p>
+    <nav aria-label="関連リンク">
+      <a href="index.html" hreflang="en" lang="en">English</a>
+      <a href="https://github.com/nguyenhx2/agent-harness-bootstrap">GitHub のソース</a>
+      <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/CHANGELOG.md">変更履歴</a>
+      <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest">リリース</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
