@@ -38,6 +38,19 @@ the rest were selected against the input material when this set was created. A n
 the table above was deliberately not selected - it can be added later by re-running the scaffolder.
 A section that outgrew one file is a folder of the same name with a `README.md` index inside.
 
+## Modules
+
+<!-- Only for a spec set that covers more than one product module. Single-product set: delete this
+     section - the sections all live at this level and IDs stay flat. -->
+
+| Code | Folder | What it owns |
+|------|--------|--------------|
+| `BLG` | [modules/billing/](modules/billing/) | <one line> |
+
+Each module folder holds that module's own 05, 07, 08, 09, and 10; the sections listed above stay
+here and are shared. Every ID defined inside a module folder carries that module's code
+(`FR-BLG-01`), and the code is declared here and nowhere else.
+
 ## Reading guide
 
 - **New to the project**: 01, then 03, then 04. Twenty minutes gets you the shape of the domain.

@@ -17,6 +17,11 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
         ID. A plausible invented requirement is the most expensive error available, because every
         downstream document treats it as settled. -->
 
+<!-- IDs: `FR-01` in a single-product spec set. If this file sits under `docs/specs/modules/<module>/`,
+     every ID in it carries that module's code instead - `FR-BLG-01`, and `#fr-blg-01` in its
+     anchor - because the traceability graph is flat and two modules' bare `FR-01`s merge into one
+     node. Renumber the examples below accordingly; see reference/writing-rules.md. -->
+
 ## Summary
 
 | ID | Requirement | Priority (MoSCoW) | Actor |{{#IF_FLOWS}} Flow |{{/IF_FLOWS}}{{#IF_FEASIBILITY}} Feasibility |{{/IF_FEASIBILITY}}
