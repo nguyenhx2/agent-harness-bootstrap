@@ -29,6 +29,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      # The landing page (index.html + index.ja.html) is a Vite build from site/ - the
+      # built files are NOT committed. Overlaying dist/ onto the checkout root puts them
+      # exactly where the old hand-written pages used to live, so every published URL
+      # (/, /index.ja.html, /video/, /presentation/, docs/assets/...) stays valid and the
+      # pages keep referencing the repo's own docs/assets images relatively.
+      - name: Build the landing page
+        run: |
+          cd site
+          npm ci
+          npm run build
+          cp -r dist/. ..
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
