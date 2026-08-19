@@ -9,6 +9,9 @@ resolving conditional blocks. Never overwrites an existing file unless --force:
 existing files are reported as KEPT (identical) or CONFLICT (differs), which is
 what reconciliation on an existing spec set needs.
 
+Sections are SELECTIVE, and the selection has to be a recorded decision before
+anything is written: see the section-selection gate below.
+
 Stdlib only. No dependencies.
 
 Usage:
@@ -108,6 +111,153 @@ def validate_flags(flags: set[str]) -> list[str]:
             f"Valid flags: {', '.join(sorted(KNOWN_FLAGS))}"]
 
 
+# ---------------------------------------------------------------- section-selection gate
+# Sections are selective. Which optional ones a project gets is a JUDGEMENT, and this
+# scaffolder refuses to act on an unrecorded one. The decision lives in the target repo at
+# docs/specs/.sections.json, written during elicitation, before any section is scaffolded:
+#
+#     {
+#       "version": 1,
+#       "selected": {"02-stakeholders": "the transcript names five stakeholder groups"},
+#       "excluded": {"10-ui-ux-wireframes": "batch service, the source shows no screens"},
+#       "decided_by": "elicitation"          // or "user-explicit"
+#     }
+#
+# The rules, all enforced below:
+#   - core sections (README, 01, 03, 05, 07, 11, 13) appear in NEITHER map: they are not
+#     decisions, so a reason for them would be theatre;
+#   - every OPTIONAL section the manifest knows appears in EXACTLY ONE map - no silent
+#     omissions, because an omission is exactly the unrecorded decision this gate exists
+#     to catch;
+#   - every reason is non-empty and grounded in the source material or in a choice the
+#     user made outright;
+#   - "selected" and vars.json's flags say the same thing, since the flags are what
+#     actually decide the files on disk.
+#
+# Why a file and not a paragraph: reference/elicitation.md has specified the setup batch
+# (one AskUserQuestion, multi-select, core fixed and not offered) since v1.8.0, and a real
+# run skipped it and scaffolded all fourteen sections flat. Every empty section shipped
+# that way erodes trust in the filled ones, and the user never got asked. A rule that
+# lives only in instructions is skippable; the repo's answer is a mechanism that refuses.
+SECTIONS_DIR = "docs/specs"
+SECTIONS_STATE = f"{SECTIONS_DIR}/.sections.json"
+DECIDED_BY = {"elicitation", "user-explicit"}
+
+
+def section_map(manifest: list[dict]) -> tuple[dict[str, set[str]], list[str]]:
+    """Split the manifest's docs/specs/ entries into optional and core.
+
+    -> ({section key: the flags that gate it}, [core section keys]). A section's key is
+    its filename stem, which is the name .sections.json uses: derived from the manifest,
+    never a second hand-maintained list that could disagree with it.
+    """
+    optional: dict[str, set[str]] = {}
+    core: list[str] = []
+    for entry in manifest:
+        dest = str(entry["dest"]).replace("\\", "/")
+        if not dest.startswith(SECTIONS_DIR + "/"):
+            continue
+        key = Path(dest).stem
+        gates = set(entry.get("when") or []) | set(entry.get("when_any") or [])
+        if gates:
+            optional[key] = gates
+        else:
+            core.append(key)
+    return optional, sorted(core)
+
+
+def check_selection(target: Path, optional: dict[str, set[str]], core: list[str],
+                    flags: set[str]) -> list[str]:
+    """-> list of human-readable problems; empty means the selection may be scaffolded."""
+    state = target / SECTIONS_STATE
+    if not state.is_file():
+        return [f"{SECTIONS_STATE} is missing: the section selection was never recorded."]
+    try:
+        doc = json.loads(state.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        return [f"{SECTIONS_STATE} is not readable JSON: {e}"]
+    if not isinstance(doc, dict):
+        return [f"{SECTIONS_STATE} must be a JSON object, not {type(doc).__name__}."]
+
+    problems: list[str] = []
+    selected = doc.get("selected")
+    excluded = doc.get("excluded")
+    for name, m in (("selected", selected), ("excluded", excluded)):
+        if not isinstance(m, dict):
+            problems.append(f'{SECTIONS_STATE}: "{name}" must be an object mapping '
+                            f"section -> reason.")
+    if problems:
+        return problems
+    decided = doc.get("decided_by")
+    if decided not in DECIDED_BY:
+        problems.append(f'{SECTIONS_STATE}: "decided_by" is {decided!r}; it must be one '
+                        f"of {', '.join(sorted(DECIDED_BY))}.")
+
+    known = set(optional)
+    for name, m in (("selected", selected), ("excluded", excluded)):
+        for key, reason in sorted(m.items()):
+            if key in core:
+                problems.append(f'{SECTIONS_STATE}: "{name}" lists the core section '
+                                f"`{key}`. Core sections are installed always and are "
+                                f"not decisions - remove it.")
+            elif key not in known:
+                problems.append(f'{SECTIONS_STATE}: "{name}" lists `{key}`, which is not '
+                                f"an optional section in this manifest. Known: "
+                                f"{', '.join(sorted(known))}.")
+            if not isinstance(reason, str) or not reason.strip():
+                problems.append(f'{SECTIONS_STATE}: `{key}` in "{name}" has no reason. '
+                                f"Every decision carries a one-line reason grounded in "
+                                f"the source material or in the user's explicit choice.")
+
+    for key in sorted(known):
+        in_sel, in_exc = key in selected, key in excluded
+        if in_sel and in_exc:
+            problems.append(f"{SECTIONS_STATE}: `{key}` is in both selected and excluded. "
+                            f"Each optional section belongs to exactly one.")
+        elif not in_sel and not in_exc:
+            problems.append(f"{SECTIONS_STATE}: `{key}` is in neither selected nor "
+                            f"excluded. A section nobody decided about is the failure this "
+                            f"gate exists to catch - decide it, with a reason.")
+
+    # The flags are what actually put files on disk, so a disagreement between them and the
+    # recorded decision means one of the two is a lie, and there is no safe way to guess which.
+    for key in sorted(known):
+        gate = optional[key]
+        have = gate & flags
+        if key in selected and not have:
+            problems.append(f"vars.json disagrees with the selection: `{key}` is selected "
+                            f"but none of its flag(s) {', '.join(sorted(gate))} is set, so "
+                            f"the scaffolder would skip it.")
+        if key in excluded and have:
+            problems.append(f"vars.json disagrees with the selection: `{key}` is excluded "
+                            f"but flag(s) {', '.join(sorted(have))} are set, so the "
+                            f"scaffolder would write it anyway.")
+    return problems
+
+
+def refuse_selection(target: Path, problems: list[str],
+                     optional: dict[str, set[str]]) -> None:
+    print("FAIL: the section selection is not recorded, so nothing was written.",
+          file=sys.stderr)
+    for p in problems:
+        print(f"  {p}", file=sys.stderr)
+    print(
+        f"\nWhat to produce, before re-running:\n"
+        f"  {(target / SECTIONS_STATE).as_posix()}\n"
+        f'  {{"version": 1,\n'
+        f'   "selected": {{"<section>": "<one-line reason from the source material>"}},\n'
+        f'   "excluded": {{"<section>": "<one-line reason>"}},\n'
+        f'   "decided_by": "elicitation"}}   // or "user-explicit"\n'
+        f"\nEvery one of these optional sections goes in exactly one map, with a reason:\n"
+        f"  {', '.join(sorted(optional))}\n"
+        f"Core sections go in neither. `selected` must match vars.json's flags "
+        f"({'; '.join(f'{k} -> {", ".join(sorted(v))}' for k, v in sorted(optional.items()))}).\n"
+        f"\nHow the decision is reached: reference/elicitation.md, the setup batch - one\n"
+        f"AskUserQuestion, multi-select, core fixed and not offered, each optional section\n"
+        f"pre-selected only where the source material shows it is real.",
+        file=sys.stderr)
+
+
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
@@ -144,6 +294,23 @@ def main() -> int:
     manifest: list[dict] = json.loads(manifest_path.read_text(encoding="utf-8"))["files"]
 
     target = args.target.resolve()
+
+    # The gate runs before target.mkdir and before a single byte is written, and it covers
+    # --dry-run too: a dry run reports what a real run would install, so it has to be
+    # answering for the same recorded decision. Non-section assets (the slash commands) are
+    # not section decisions - a run scoped away from docs/specs/ passes through untouched.
+    optional_sections, core_sections = section_map(manifest)
+    sections_in_scope = any(
+        (not args.only or str(e["src"]).startswith(args.only))
+        and str(e["dest"]).replace("\\", "/").startswith(SECTIONS_DIR + "/")
+        for e in manifest
+    )
+    if sections_in_scope:
+        problems = check_selection(target, optional_sections, core_sections, flags)
+        if problems:
+            refuse_selection(target, problems, optional_sections)
+            return 1
+
     target.mkdir(parents=True, exist_ok=True)
 
     added: list[str] = []
