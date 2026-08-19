@@ -59,10 +59,33 @@ at the same gate: the confirmed FR list plus the section selection.
 | Existing codebase | Read schema and route layer as evidence, ask intent | Code shows behaviour, never intent |
 | Existing partial specs | Reconcile mode - diff, never overwrite | `/spec-ingest`'s discipline applies from the first read |
 
-For a heavy multi-document pile (scanned decks, mixed formats, diagram-dense sources): if a
-document-digestion skill of the docs-to-knowledge class is installed, delegating the digestion to
-it first and ingesting its output is cheaper and more auditable than reading raw sources inline.
-Optional - never required.
+## Read the sources first
+
+Whenever the user hands over files rather than prose, route and read them **before** the first
+question. You cannot elicit against a document you have not actually read, and a question whose
+answer sat in paragraph two of a PDF you skimmed costs the user's trust.
+
+```bash
+python scripts/route_sources.py <files-folders-urls> --out-dir <dir> -o <dir>/plan.json
+python scripts/ingest.py <source> --via <strategy> --out <dir>/<source>.txt   # per plan entry
+```
+
+The router decides which reader owns each source and prints the reason;
+[`source-routing.md`](source-routing.md) carries the table, the overrides, and the limits.
+
+**A source that cannot be read never becomes a silent gap.** If nothing installed can open it, or
+its PDF text layer turns out to be a scan (under 80 characters per page - the extraction succeeds
+and returns almost nothing, which is precisely how an invented requirement gets written), it
+becomes an `OI-nn` in section 11 naming the file, why it is unreadable, and what would make it
+readable: a specific `pip install`, or a re-export request to the user. Then say so in the final
+summary. The same discipline this file applies to an unstated requirement, applied one layer down:
+the failure has to be visible, because a document nobody could read is indistinguishable from a
+document nobody thought to mention.
+
+For a genuinely large, diagram-dense, cross-checking pile, a document-digestion skill of the
+docs-to-knowledge class (if installed) still does more than this routing layer does - it renders
+pages, reconstructs diagrams, and audits its own extraction. Delegating to it and ingesting its
+output is legitimate. Reading nothing is not.
 
 ## By input type
 
@@ -180,7 +203,7 @@ One `AskUserQuestion` call, before scaffolding (skip any part the request alread
 are empty or if `selected` disagrees with `vars.json`'s flags. The schema and the refusal messages
 live with the code, in `scripts/scaffold.py`.
 
-The selection is echoed back in the step 2 confirmation gate and is what the quality gate verifies
+The selection is echoed back in the confirmation gate and is what the quality gate verifies
 against.
 
 If the user cannot answer a batch, that is a result: each unanswered question becomes an OI with an
