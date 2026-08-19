@@ -5,56 +5,68 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
-## Unreleased
+## v1.14.0
 
-Media and documentation only. No skill changed, so no skill version moved.
+The spec set grows a module axis, the section questionnaire becomes a gate that refuses, and
+spec-builder finally reads the documents it always claimed to. Plus a second distribution
+channel: both skills install and update as Claude Code plugins.
 
-### Fixed
+### Specs know what a module is
 
-- **The Japanese surfaces served English video.** `README.ja.md` embedded the English
-  `04-solution.gif` although the Japanese render ships beside it, and the deck played the English
-  MP4 to a reader who had chosen Japanese. Every link out of a Japanese page also landed on the
-  English gallery, because the gallery and the deck kept the language only in `localStorage` and
-  neither accepted it from the URL. Both now read `?lang=`, and the Japanese pages link with it.
-  Vietnamese falls back to the English clip deliberately, since no Vietnamese render exists.
-- **The session-tax figure was stale in nine files at once**, and the check that exists to catch
-  exactly that was dead where it mattered. `check_numbers.py` blanks inline code spans but not
-  markdown emphasis, and the main README writes the number as `**63%**` - the `**` sits between
-  the figure and the phrase that identifies the claim, so the pattern found ZERO matches in that
-  file. The real figure is 64%. A bolded number is the normal way to write a headline figure here,
-  so the check was blind to every headline figure in the repository. Emphasis is now blanked the
-  same way code spans are, offset-preserving so line numbers stay correct.
-- Along with it: the session-tax byte figures (27,805 / 52,131 / 51,785 against a real 30,643 and
-  55,062), the unconditional-rule count stated in the reverse word order, and the read and write
-  path "after" bytes in the deck outline. Nine files, twelve figures, all now derived and gated.
-- `video/index.html` still described clip 04 as ~55s in both languages; it is ~63s.
+Asking for one module's spec used to produce a flat, undifferentiated tree, because the system
+had no concept of a module.
 
-### Added
+- **Folders**: `docs/specs/modules/<folder>/` holds a module's own sections (05, 07, 08, 09,
+  10); the cross-cutting ones stay at the root. `scaffold.py --module BLG:billing` does the
+  placement. The flat form stays valid forever - no forced migration.
+- **IDs carry the module**: `FR-BLG-01`, on the exact pattern `NFR-SEC-01` already used. This is
+  not a style choice: the docs graph is flat, and two modules that each defined a bare `FR-01`
+  were silently MERGED into one node - one module's requirement demoted to a mention of the
+  other's, no error, no warning. The graph regex now recognises the segment on every prefix.
+- **Module scaffolds arrive pre-seeded**: sample IDs already carry the code, links to root
+  sections already point two levels up. An unfilled module cannot reproduce the merge.
+- **The ID table and the graph regex are now held together by a gate** (`check_id_table.py`),
+  landed BEFORE the regex change it exists to police. The constraint used to be a sentence.
+- Dev agents own their module's spec folder: roster derivation, the dev-agent template and the
+  Inventory Report's module mapping now connect code modules to spec modules.
 
-- `check_numbers.py` gained checks for the forms it could not see: the figure as a big number over
-  a label (both landing pages), both Japanese phrasings, and the reversed "N rules unconditional"
-  word order. `docs/PRESENTATION-OUTLINE.md` joined the set whose asset counts are checked. Every
-  new pattern carries a probe in the script's own self-test, which caught one of them dead on the
-  first run, and each was mutation-tested against the real file it was written for.
-- `scripts/check_media.py` and `video/RENDERED.json`, run by CI. A renderer cannot read a figure out
-  of a video, so the checkable property is provenance: an artifact is stale when its scene source
-  changed after the artifact was last produced from it. It deliberately does not hash `theme.py`,
-  because a palette change would demand a fourteen-clip re-render and cannot make a published number
-  false. That limit is written down rather than left to be discovered.
+### The section questionnaire became a mechanism
 
-### Fixed (media)
+The selective-sections questionnaire has existed since v1.8.0 - as prose, which a real run
+skipped, scaffolding everything flat. `scaffold.py` now REFUSES to write a section without
+`docs/specs/.sections.json` recording what was selected, what was excluded, and a reason per
+decision. `check_sections.py` proves every refusal branch still fires, fixture-style, in CI.
 
-- **The first moving image on the README carried a figure that was wrong by two generations.**
-  `video/gif/04-solution.gif` read "guardrail eval 69/69"; the real number is 107/107, and it had
-  moved 69 to 89 to 107 with the GIF re-rendered for neither. `check_numbers.py` gates every figure
-  in every document and reads `video/src/**.py` too, so the scene source and every text surface were
-  correct the whole time. A figure inside a clip is burned into pixels at render time, and nothing
-  connected a source that was right to an artifact that was stale.
-- Two more clips had drifted the same way: `04-solution` in Japanese carried the same stale badge,
-  and `05-spec-builder` was rendered before the watermark and brand end card existed and still
-  carried the "twelve documents" caption from before selective sections. All three re-rendered and
-  verified by reading the pixels of the shipped file, not by trusting the source.
-- `video/README.md` quoted clip 04 at ~55s; it is ~63s.
+### spec-builder reads real documents
+
+The skill promised it worked from "a PRD, legacy docs" while containing zero code that reads
+pdf, docx, xlsx or pptx. The routing mechanism is distilled from the docs-to-knowledge skill
+(701 lines against its 2,348): per-source strategy with a reason string, capability detection
+that degrades honestly, and the branch that matters most - a scanned PDF under 80 chars/page
+routes to vision instead of silently returning almost nothing for a model to fill with
+invention. A source nothing can read becomes an `OI-nn` in section 11, never a silent gap.
+
+### Distribution: plugins, in parallel with the zips
+
+`/plugin marketplace add nguyenhx2/agent-harness-bootstrap` then
+`/plugin install harness-bootstrap@agent-harness-bootstrap`. Both skills auto-load as
+single-skill plugins pointing at the existing directories - verified by installing, not by
+reading the docs. Updates arrive when the marketplace version bumps, and `validate_release.py`
+now fails a release that bumps the skills but not the marketplace. The zips remain the
+offline, pinned path; nothing about them changed.
+
+### Fixed since v1.13.0 (shipped on main before this tag)
+
+- The Japanese README embedded the ENGLISH flagship GIF, and the deck played English MP4s to a
+  reader who had chosen Japanese; no URL could link into the gallery or deck in a given
+  language. Both now honour `?lang=`, and every Japanese page links with it.
+- The figure gate was blind to every bolded number: `**63%**` put the emphasis marks between
+  the figure and the phrase identifying the claim, so the pattern matched nothing in the two
+  READMEs. Twelve stale figures across nine files, all found by the repaired gate itself.
+- Clip 05 claimed spec-builder scaffolds "the 13 sections"; sections have been selective since
+  v1.8.0. Re-rendered in both languages, verified by reading the shipped pixels.
+- `check_media.py` had no self-test - the exact "green and useless" mode it polices. It now
+  proves all three of its branches fire, on every invocation.
 
 ## v1.13.0
 
