@@ -75,6 +75,9 @@ SOURCE_GLOBS = [
 JS_SOURCES = [
     ("tools/harness-view/src/ui.js", 50_000),
     ("tools/harness-view/src/ui-steps.js", 3_000),
+    # The landing page's only script (nav disclosure + progressive touches). Small on
+    # purpose; the floor says "the menu logic still exists", not "the file is big".
+    ("site/src/main.js", 400),
 ]
 
 # CodeQL flags this as py/bad-tag-filter, and it is right that a regex cannot parse

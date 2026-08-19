@@ -315,7 +315,11 @@ COUNT_CHECKS = [
 # index.html is the GitHub Pages landing page. It bakes the same artifact counts as the deck and
 # is the first thing a visitor reads, so it is policed the same way. Its Japanese twin is a
 # translation of the checked English source, exactly as the video files are.
-MEDIA_FILES = ["presentation/index.html", "index.html", "index.ja.html"]
+# The landing pages moved into site/ when the page became a Vite build (the served
+# index.html is produced by CI from these sources). The gate follows the SOURCES,
+# because the built output is never committed and a gate on an uncommitted file is
+# a gate on nothing.
+MEDIA_FILES = ["presentation/index.html", "site/index.html", "site/index.ja.html"]
 # The figures bake the same numbers as the prose and nothing was reading them: the roster
 # range and the session-tax percentage both appear inside docs/assets/*.svg.
 MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html",
