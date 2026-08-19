@@ -71,6 +71,11 @@ A section that outgrew one file is a folder of the same name with a `README.md` 
 IDs are stable. A requirement that is dropped keeps its ID and is marked withdrawn; it is never
 reused, because a task, a commit, and a test somewhere still name it.
 
+Every prefix above also accepts a module segment, and one is **required** for any ID defined under
+`modules/<module>/`: `FR-BLG-01`, `UC-PAY-03`, `NFR-BLG-SEC-01` (module first, then the NFR
+category). Two modules that each define a bare `FR-01` collapse into one node in the traceability
+graph, silently - the segment is what keeps them apart. A single-product spec set stays flat.
+
 ## Traceability
 
 Every functional requirement is reachable from five directions, and each link is a relative path,

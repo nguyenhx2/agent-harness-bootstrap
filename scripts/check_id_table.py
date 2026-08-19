@@ -15,7 +15,12 @@ The failure this lets through is silent both ways:
   - a prefix added to the regex without a table row: docs-graph.py starts scanning for an ID
     scheme spec-builder never documented, which either matches noise or nothing.
 
-Both directions are checked here, against the SAME table rows and the SAME regex text the two
+A third direction covers the MODULE segment (`FR-BLG-01`, `NFR-BLG-SEC-01`), which is documented
+by a subsection rather than by a row of its own because it applies to every row: the subsection
+and the regex must be in the same state, or module IDs are invisible to the graph (documented,
+not scanned for) or the graph scans for a scheme nobody documented (the reverse).
+
+All three directions are checked here, against the SAME table rows and the SAME regex text the two
 source files actually contain - parsed out of them, never retyped by hand.
 
     python scripts/check_id_table.py
@@ -95,6 +100,33 @@ def parse_table(text: str) -> list[tuple[str, str, str]]:
             )
         entries.append((raw, bare, sample))
     return entries
+
+
+# The module-segment form (FR-BLG-01, NFR-BLG-SEC-01) is documented by a subsection of the same
+# '## IDs and anchors' section, not by a table row of its own - it applies to EVERY row. So the
+# check reads that heading as the flag for "the module form is documented" and builds a
+# module-form sample per prefix. BLG is a stand-in code, exactly as SEC stands in for a category.
+MODULE_HEADING = "### Module segment"
+MODULE_CODE = "BLG"
+
+
+def module_documented(text: str) -> bool:
+    """True when writing-rules.md's ID section documents the module segment."""
+    m = re.search(r"## IDs and anchors\n(.*?)\n##[ \t]", text, re.S)
+    return bool(m) and MODULE_HEADING in m.group(1)
+
+
+def module_samples(entries: list[tuple[str, str, str]]) -> list[tuple[str, str]]:
+    """-> [(raw_pattern, module-form sample)] - the same rows, with a module segment inserted.
+
+    The module segment goes FIRST, before NFR's category segment, which is the order
+    writing-rules.md states: NFR-BLG-SEC-01, never NFR-SEC-BLG-01.
+    """
+    out = []
+    for raw, bare, sample in entries:
+        rest = sample[len(bare):]          # "-01", or "-SEC-01" for NFR
+        out.append((raw, f"{bare}-{MODULE_CODE}{rest}"))
+    return out
 
 
 def extract_id_core(text: str) -> str:
@@ -195,6 +227,32 @@ def check_direction_b(
     return problems
 
 
+def check_direction_c(entries: list[tuple[str, str, str]], id_core: str,
+                      documented: bool) -> list[str]:
+    """The module segment must be documented and scanned for, or neither.
+
+    Both halves of the drift are silent otherwise: a module form the regex rejects makes every
+    FR-BLG-nn invisible to the graph, and a module form nobody documented makes the graph scan
+    for a scheme spec-builder never taught.
+    """
+    problems = []
+    for raw, sample in module_samples(entries):
+        matched = re.fullmatch(id_core, sample) is not None
+        if documented and not matched:
+            problems.append(
+                f"writing-rules.md documents the module segment ({MODULE_HEADING}), but "
+                f"docs-graph.py's _ID_CORE does NOT match the module form of `{raw}` "
+                f"(sample `{sample}`)"
+            )
+        elif not documented and matched:
+            problems.append(
+                f"docs-graph.py's _ID_CORE matches the module form `{sample}`, but "
+                f"writing-rules.md's IDs section has no '{MODULE_HEADING}' subsection "
+                f"documenting it"
+            )
+    return problems
+
+
 # ---------------------------------------------------------------------------------------------
 # Self-test fixtures: synthetic table text + synthetic docs-graph.py text, run through the exact
 # same parse_table / extract_id_core / alternation_members / check_direction_* functions used on
@@ -229,6 +287,18 @@ _ID_CORE = r"(?:YY(?:-[A-Z]{2,4})?|ZZ)-\d{1,5}"
 
 _SYNTH_DOCS_GRAPH_MISSING_ZZ = r'''
 _ID_CORE = r"(?:YY(?:-[A-Z]{2,4})?)-\d{1,5}"
+'''
+
+# Same synthetic pair, with the module segment: the table grows the documenting subsection, the
+# regex grows the shared optional segment. Crossing them either way is the drift direction C
+# exists to catch.
+_SYNTH_TABLE_BOTH_MODULE = _SYNTH_TABLE_BOTH.replace(
+    "\n## Next section",
+    "\n### Module segment\n\nSynthetic module rule.\n\n## Next section",
+)
+
+_SYNTH_DOCS_GRAPH_BOTH_MODULE = r'''
+_ID_CORE = r"(?:YY(?:-[A-Z][A-Z0-9]{1,3})?|ZZ)(?:-[A-Z][A-Z0-9]{1,3})?-\d{1,5}"
 '''
 
 
@@ -271,6 +341,36 @@ def self_test() -> list[str]:
             "table row produced NO problem, so this branch can never fail"
         )
 
+    # (d) module form documented and scanned for: clean, both directions silent.
+    entries_module = parse_table(_SYNTH_TABLE_BOTH_MODULE)
+    id_core_module = extract_id_core(_SYNTH_DOCS_GRAPH_BOTH_MODULE)
+    probs_c_clean = check_direction_c(entries_module, id_core_module,
+                                      module_documented(_SYNTH_TABLE_BOTH_MODULE))
+    if probs_c_clean:
+        dead.append(
+            "self-test (d) clean module pass: a documented module segment matched by the regex "
+            f"produced problem(s) {probs_c_clean!r} - a matched pair must report nothing"
+        )
+
+    # (e) documented but not scanned for: table has the subsection, regex has no module segment.
+    probs_c_unscanned = check_direction_c(entries_module, id_core_both,
+                                          module_documented(_SYNTH_TABLE_BOTH_MODULE))
+    if not probs_c_unscanned:
+        dead.append(
+            "DEAD CHECK - direction C (documented module form the regex rejects): a module-form "
+            "sample the regex cannot match produced NO problem, so this branch can never fail"
+        )
+
+    # (f) scanned for but not documented: regex has the module segment, table has no subsection.
+    probs_c_undocumented = check_direction_c(entries_both, id_core_module,
+                                             module_documented(_SYNTH_TABLE_BOTH))
+    if not probs_c_undocumented:
+        dead.append(
+            "DEAD CHECK - direction C (undocumented module form the regex accepts): a module "
+            "form with no subsection documenting it produced NO problem, so this branch can "
+            "never fail"
+        )
+
     return dead
 
 
@@ -282,7 +382,8 @@ def main() -> int:
         for d in dead:
             print(f"    {d}")
         return 1
-    print("    ok    clean pass, missing-from-regex, and missing-from-table all fire correctly")
+    print("    ok    clean pass, missing-from-regex, missing-from-table, and both module-segment "
+          "directions all fire correctly")
 
     if not WRITING_RULES.is_file():
         sys.exit(f"FAIL  {WRITING_RULES} does not exist")
@@ -319,7 +420,18 @@ def main() -> int:
     for p in probs_b:
         print(f"    FAIL  {dg_rel}: {p}")
 
-    problems = probs_a + probs_b
+    documented = module_documented(table_text)
+    print(f"\n  direction C - the module segment is documented in {wr_rel} "
+          f"({'yes' if documented else 'no'}) and scanned for by {dg_rel} in the same state:")
+    probs_c = check_direction_c(entries, id_core, documented)
+    for raw, sample in module_samples(entries):
+        if not any(sample in p for p in probs_c):
+            print(f"    ok    `{raw}` module form (sample `{sample}`) "
+                  f"{'matched' if documented else 'correctly not matched'}")
+    for p in probs_c:
+        print(f"    FAIL  {p}")
+
+    problems = probs_a + probs_b + probs_c
     if problems:
         print(f"\n  {len(problems)} mismatch(es) between the ID table and the docs-graph regex.")
         print("  Fix whichever side is behind: add the missing table row, or widen/narrow "

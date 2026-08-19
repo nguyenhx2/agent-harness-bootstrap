@@ -33,9 +33,19 @@ SKIP_PARTS = {"node_modules", ".git"}
 # graph attributed each BR to whichever other doc happened to mention it and the real definer
 # never appeared at all.
 SKIP_FILES = {"code-graph.md", "docs-graph.md"}
-# NFR may carry a category segment (NFR-SEC-01); AS covers assumptions. Keep in
-# sync with spec-builder/reference/writing-rules.md's ID table.
-_ID_CORE = r"(?:NFR(?:-[A-Z]{2,4})?|FR|BR|US|UC|OI|AS|ADR|TASK|DP|CO|INT|SCR|BF|SH|DS|DT|R)-\d{1,5}"
+# The ID shape, left to right:
+#   PREFIX            the alternation below; NFR carries its own optional CATEGORY segment
+#                     inside its alternative (NFR-SEC-01), which is why NFR is written first
+#   (?:-MODULE)?      one optional module segment, 2-4 chars [A-Z0-9] with a letter first, open
+#                     to EVERY prefix: FR-BLG-01, UC-PAY-03, NFR-BLG-SEC-01 (module, then
+#                     category - that order, per writing-rules.md)
+#   -\d{1,5}          the number, which is what anchors the whole match: it is why a plain
+#                     capitalised phrase like FR-THE-BEST matches nothing, and why the module
+#                     segment cannot swallow the number (a segment must start with a letter)
+# A repo that never adopted modules is unaffected - the flat form FR-01 stays valid forever.
+# Keep in sync with spec-builder/reference/writing-rules.md's ID table; scripts/check_id_table.py
+# gates the two against each other, module segment included.
+_ID_CORE = r"(?:NFR(?:-[A-Z][A-Z0-9]{1,3})?|FR|BR|US|UC|OI|AS|ADR|TASK|DP|CO|INT|SCR|BF|SH|DS|DT|R)(?:-[A-Z][A-Z0-9]{1,3})?-\d{1,5}"
 ID_RE = re.compile(r"\b" + _ID_CORE + r"\b")
 DEFINING_HINT = re.compile(r"^\s*(?:#{1,6}\s.*|\|\s*)?\b(?P<id>" + _ID_CORE + r")\b")
 
