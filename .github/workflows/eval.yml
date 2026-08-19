@@ -96,6 +96,26 @@ jobs:
       - name: Figures must be self-contained and fully connected
         run: python scripts/check_svg.py
 
+      # The section-selection questionnaire existed as prose since v1.8.0 and a real run skipped
+      # it, scaffolding every section flat. The gate is now mechanical: scaffold.py refuses to
+      # write anything without a recorded docs/specs/.sections.json carrying a reason per
+      # decision. This proves the refusal branches still fire, fixture-style.
+      - name: spec-builder section selection must be a recorded decision
+        run: python scripts/check_sections.py
+
+      # writing-rules.md's ID table and docs-graph.py's _ID_CORE regex must agree, or IDs of a
+      # whole prefix silently vanish from the traceability graph. The constraint was a sentence;
+      # now it is a gate, landed BEFORE the change that widens the regex.
+      - name: The requirement-ID table and the docs-graph regex must agree
+        run: python scripts/check_id_table.py
+
+      # The source router decides which tool reads which document, and its most important branch
+      # is knowing when a source CANNOT be read (a scanned PDF under 80 chars/page). Its policy
+      # table is proven alive here with injected capability flags, independent of what the
+      # runner has installed.
+      - name: spec-builder source routing policy must still route
+        run: python spec-builder/scripts/route_sources.py --self-test
+
       # check_numbers.py reads text, and every figure in a clip is burned into pixels at render
       # time, so it could never see them. The README's first moving image read "guardrail eval
       # 69/69" for three releases while its own scene source said 107/107 - the number moved
