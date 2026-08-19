@@ -23,6 +23,14 @@ What this does NOT catch, stated plainly rather than implied:
     not make a published number false, which is the failure this gate exists to stop. Re-render
     deliberately after a theme change; `video/README.md` says so.
 
+This script had no self-test: its ability to fail was proven once by hand, then never again -
+the "green and useless" failure mode `check_numbers.py` and `check_svg.py` both guard against,
+and `check_numbers.py`'s self-test caught a dead pattern the first time it ran. `self_test()`
+below builds disposable fixtures in a temp directory - never the real `video/` tree - and proves
+all three branches this script can report still fire: a matching hash reads current, a source
+edited after the recording reads stale, and an artifact with no recorded provenance is flagged.
+It runs at the start of every verification invocation, before any real artifact is checked.
+
 Usage:
     python scripts/check_media.py            # verify (CI)
     python scripts/check_media.py --update <artifact> [<artifact> ...]
@@ -58,8 +66,8 @@ def pairs() -> dict[str, str]:
     return out
 
 
-def digest(rel: str) -> str:
-    return hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
+def digest(rel: str, root: pathlib.Path = ROOT) -> str:
+    return hashlib.sha256((root / rel).read_bytes()).hexdigest()
 
 
 def load() -> dict[str, str]:
@@ -93,6 +101,91 @@ def update(targets: list[str]) -> int:
     return 0
 
 
+def verify(known: dict[str, str], recorded: dict[str, str],
+           root: pathlib.Path) -> tuple[list[tuple[str, str]], list[str], int]:
+    """The three-branch detector: current, stale, or missing provenance.
+
+    Parameterised on `root` (rather than reading the ROOT global) so `self_test()` below can
+    run it against disposable fixtures instead of the real `video/` tree.
+    """
+    stale: list[tuple[str, str]] = []
+    missing: list[str] = []
+    ok = 0
+    for artifact, source in sorted(known.items()):
+        if not (root / artifact).is_file():
+            missing.append(f"{artifact} (shipped artifact is absent)")
+            continue
+        if not (root / source).is_file():
+            missing.append(f"{source} (scene source is absent)")
+            continue
+        if artifact not in recorded:
+            missing.append(f"{artifact} (no provenance recorded)")
+            continue
+        if recorded[artifact] != digest(source, root):
+            stale.append((artifact, source))
+        else:
+            ok += 1
+    return stale, missing, ok
+
+
+def self_test() -> list[str]:
+    """Prove the three branches `verify()` can report still fire.
+
+    Builds three tiny artifact/source pairs in a temp directory - never the real `video/`
+    tree - and drives them through `verify()` exactly as the real check does:
+
+      (a) artifact a: recorded hash matches the source's current hash -> must read current.
+      (b) artifact b: source is edited AFTER its hash was recorded -> must read stale.
+      (c) artifact c: artifact exists, source exists, but nothing was ever recorded for it ->
+          must be flagged for missing provenance.
+
+    A pattern or comparison that stops matching anything still prints and exits 0 - exactly the
+    failure this repo keeps finding - so each branch is checked individually rather than trusting
+    an aggregate pass/fail.
+    """
+    import tempfile
+
+    problems: list[str] = []
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "video/mp4").mkdir(parents=True)
+        (root / "video/src").mkdir(parents=True)
+
+        art_a, src_a = "video/mp4/a.mp4", "video/src/a.py"
+        art_b, src_b = "video/mp4/b.mp4", "video/src/b.py"
+        art_c, src_c = "video/mp4/c.mp4", "video/src/c.py"
+
+        (root / src_a).write_text("scene a", encoding="utf-8", newline="\n")
+        (root / art_a).write_bytes(b"fixture a")
+        (root / src_b).write_text("scene b, before the recording", encoding="utf-8", newline="\n")
+        (root / art_b).write_bytes(b"fixture b")
+        (root / src_c).write_text("scene c", encoding="utf-8", newline="\n")
+        (root / art_c).write_bytes(b"fixture c")
+
+        recorded_b = digest(src_b, root)
+        # Edit the source AFTER its hash was captured, exactly as a real re-write of a scene
+        # would happen after the clip was last rendered from it.
+        (root / src_b).write_text("scene b, edited after the recording",
+                                  encoding="utf-8", newline="\n")
+
+        known = {art_a: src_a, art_b: src_b, art_c: src_c}
+        # art_c is deliberately absent from `recorded`: nothing was ever run with --update for it.
+        recorded = {art_a: digest(src_a, root), art_b: recorded_b}
+
+        stale, missing, ok = verify(known, recorded, root)
+
+        if ok != 1:
+            problems.append("DEAD CHECK: branch (a) matching hash -> current never fires "
+                            f"(got {ok} current, expected 1)")
+        if not any(a == art_b for a, s in stale):
+            problems.append("DEAD CHECK: branch (b) source edited after recording -> stale "
+                            "never fires")
+        if not any(m.startswith(art_c) and "no provenance recorded" in m for m in missing):
+            problems.append("DEAD CHECK: branch (c) artifact with no recorded provenance -> "
+                            "flagged never fires")
+    return problems
+
+
 def main(argv: list[str]) -> int:
     if argv and argv[0] == "--update":
         if len(argv) < 2:
@@ -100,24 +193,17 @@ def main(argv: list[str]) -> int:
             return 1
         return update(argv[1:])
 
+    dead = self_test()
+    if dead:
+        print("  DEAD CHECK - a detector branch cannot fire, so a real stale clip could pass "
+              "silently:")
+        for d in dead:
+            print(f"    {d}")
+        return 1
+
     known = pairs()
     recorded = load()
-    stale, missing, ok = [], [], 0
-
-    for artifact, source in sorted(known.items()):
-        if not (ROOT / artifact).is_file():
-            missing.append(f"{artifact} (shipped artifact is absent)")
-            continue
-        if not (ROOT / source).is_file():
-            missing.append(f"{source} (scene source is absent)")
-            continue
-        if artifact not in recorded:
-            missing.append(f"{artifact} (no provenance recorded)")
-            continue
-        if recorded[artifact] != digest(source):
-            stale.append((artifact, source))
-        else:
-            ok += 1
+    stale, missing, ok = verify(known, recorded, ROOT)
 
     for artifact, source in stale:
         print(f"  FAIL  {artifact}")
