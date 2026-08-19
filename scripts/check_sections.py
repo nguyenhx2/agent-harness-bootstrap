@@ -18,6 +18,9 @@ that demand is real, because a gate nobody exercises is indistinguishable from n
   3. a selected section with no reason -> refuses
   4. flags contradicting "selected"    -> refuses
   5. a section in neither map          -> refuses
+  6. --module BLG:billing, valid       -> scaffolds, and the module-owned sections land under
+                                          modules/billing/ while the cross-cutting ones stay at
+                                          the root, each written exactly once
 
 Every case runs the shipped scaffold.py in a throwaway directory, so what is checked is the
 behaviour a user gets, not a re-implementation of it. Each refusal must fire for ITS OWN
@@ -52,15 +55,20 @@ VARS = {
 }
 
 
-def manifest_sections() -> tuple[dict[str, set[str]], list[str]]:
-    """(optional section -> gating flags, core sections), read with the scaffolder's own
-    splitter so this check cannot drift from what a real run installs."""
+def load_scaffold():
+    """The shipped scaffolder as a module - its own constants, never a second copy of them."""
     sys.path.insert(0, str(SKILL / "scripts"))
     import scaffold  # noqa: E402
 
+    return scaffold
+
+
+def manifest_sections() -> tuple[dict[str, set[str]], list[str]]:
+    """(optional section -> gating flags, core sections), read with the scaffolder's own
+    splitter so this check cannot drift from what a real run installs."""
     manifest = json.loads((SKILL / "assets" / "manifest.json")
                           .read_text(encoding="utf-8"))["files"]
-    return scaffold.section_map(manifest)
+    return load_scaffold().section_map(manifest)
 
 
 def write_json(path: pathlib.Path, doc: dict) -> None:
@@ -69,11 +77,13 @@ def write_json(path: pathlib.Path, doc: dict) -> None:
                     encoding="utf-8", newline="\n")
 
 
-def run_scaffold(target: pathlib.Path, flags: list[str]) -> subprocess.CompletedProcess:
+def run_scaffold(target: pathlib.Path, flags: list[str],
+                 extra: list[str] | None = None) -> subprocess.CompletedProcess:
     vars_path = target.parent / "vars.json"
     write_json(vars_path, {"vars": VARS, "flags": flags})
     return subprocess.run(
-        [sys.executable, str(SCAFFOLD), "--target", str(target), "--vars", str(vars_path)],
+        [sys.executable, str(SCAFFOLD), "--target", str(target), "--vars", str(vars_path),
+         *(extra or [])],
         capture_output=True, text=True, cwd=ROOT)
 
 
@@ -81,19 +91,30 @@ def sections_on_disk(target: pathlib.Path) -> set[str]:
     d = target / "docs" / "specs"
     if not d.is_dir():
         return set()
+    return {p.stem for p in d.iterdir()
+            if (p.suffix == ".md" or p.is_dir()) and p.name != "modules"}
+
+
+def module_sections_on_disk(target: pathlib.Path, folder: str) -> set[str]:
+    d = target / "docs" / "specs" / "modules" / folder
+    if not d.is_dir():
+        return set()
     return {p.stem for p in d.iterdir() if p.suffix == ".md" or p.is_dir()}
 
 
-def case(name: str, selection: dict | None, flags: list[str]) -> tuple[int, str, set[str]]:
-    """Run one fixture end to end -> (returncode, stderr+stdout, sections written)."""
+def case(name: str, selection: dict | None, flags: list[str],
+         extra: list[str] | None = None,
+         inspect=None) -> tuple[int, str, set[str], object]:
+    """Run one fixture end to end -> (returncode, stderr+stdout, root sections, inspect(target))."""
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="check_sections_"))
     try:
         target = tmp / "repo"
         target.mkdir()
         if selection is not None:
             write_json(target / "docs" / "specs" / ".sections.json", selection)
-        r = run_scaffold(target, flags)
-        return r.returncode, (r.stderr or "") + (r.stdout or ""), sections_on_disk(target)
+        r = run_scaffold(target, flags, extra)
+        return (r.returncode, (r.stderr or "") + (r.stdout or ""),
+                sections_on_disk(target), inspect(target) if inspect else None)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -133,7 +154,7 @@ def main() -> int:
     bad = 0
 
     # ---- case 1: no artifact at all -------------------------------------------------
-    rc, out, wrote = case("absent", None, good_flags)
+    rc, out, wrote, _ = case("absent", None, good_flags)
     absent_fired = rc != 0 and ".sections.json is missing" in out
     print("\n  1. no .sections.json")
     print(f"    {'ok  ' if absent_fired else 'FAIL'} refused (exit {rc}) naming the "
@@ -143,7 +164,7 @@ def main() -> int:
     bad += (not absent_fired) + bool(wrote)
 
     # ---- case 2: the accept path ----------------------------------------------------
-    rc, out, wrote = case("good", good, good_flags)
+    rc, out, wrote, _ = case("good", good, good_flags)
     want = set(core) | set(chosen)
     print("\n  2. complete and consistent")
     print(f"    {'ok  ' if rc == 0 else 'FAIL'} scaffolded (exit {rc})")
@@ -155,7 +176,7 @@ def main() -> int:
     bad += not accept_fired
 
     # ---- case 3: a selected section with an empty reason ----------------------------
-    rc, out, wrote = case("empty-reason", empty_reason, good_flags)
+    rc, out, wrote, _ = case("empty-reason", empty_reason, good_flags)
     reason_fired = rc != 0 and "has no reason" in out
     print("\n  3. a selected section with an empty reason")
     print(f"    {'ok  ' if reason_fired else 'FAIL'} refused (exit {rc}) naming the "
@@ -167,7 +188,7 @@ def main() -> int:
     # Selection unchanged, one selected section's flag removed: the scaffolder would have
     # skipped a section the record says was chosen.
     starved = [f for f in good_flags if f not in optional[chosen[0]]]
-    rc, out, wrote = case("flag-mismatch", good, starved)
+    rc, out, wrote, _ = case("flag-mismatch", good, starved)
     flag_fired = rc != 0 and "vars.json disagrees with the selection" in out
     print("\n  4. vars.json flags contradicting \"selected\"")
     print(f"    {'ok  ' if flag_fired else 'FAIL'} refused (exit {rc}) naming the "
@@ -176,12 +197,49 @@ def main() -> int:
     bad += (not flag_fired) + bool(wrote)
 
     # ---- case 5: an optional section in neither map ---------------------------------
-    rc, out, wrote = case("omitted", omitted, good_flags)
+    rc, out, wrote, _ = case("omitted", omitted, good_flags)
     omit_fired = rc != 0 and f"`{dropped}` is in neither" in out
     print("\n  5. an optional section in neither map")
     print(f"    {'ok  ' if omit_fired else 'FAIL'} refused (exit {rc}) naming `{dropped}`")
     print(f"    {'ok  ' if not wrote else 'FAIL'} wrote nothing")
     bad += (not omit_fired) + bool(wrote)
+
+    # ---- case 6: module form ---------------------------------------------------------
+    # Same recorded selection, same flags: the module axis is orthogonal to it. Selection is
+    # still per SECTION - a selected section is scaffolded for EVERY named module - so what
+    # has to be proved here is placement, not a second decision: module-owned sections under
+    # modules/billing/, cross-cutting ones at the root, and neither set appearing twice.
+    scaffold = load_scaffold()
+    module_owned = scaffold.MODULE_SECTIONS
+    want_module = (set(core) | set(chosen)) & module_owned
+    want_root = (set(core) | set(chosen)) - module_owned
+    rc, out, wrote, in_module = case("module", good, good_flags,
+                                     extra=["--module", "BLG:billing"],
+                                     inspect=lambda t: module_sections_on_disk(t, "billing"))
+    placed = in_module == want_module and wrote == want_root
+    print("\n  6. module form (--module BLG:billing)")
+    print(f"    {'ok  ' if rc == 0 else 'FAIL'} scaffolded (exit {rc})")
+    print(f"    {'ok  ' if in_module == want_module else 'FAIL'} modules/billing/ holds the "
+          f"module-owned selected sections")
+    print(f"    {'ok  ' if wrote == want_root else 'FAIL'} the root holds the cross-cutting "
+          f"ones, and none of the module-owned ones")
+    if not placed:
+        print(f"      wanted in modules/billing/  {', '.join(sorted(want_module))}")
+        print(f"      got                         {', '.join(sorted(in_module)) or '(none)'}")
+        print(f"      wanted at the root          {', '.join(sorted(want_root))}")
+        print(f"      got                         {', '.join(sorted(wrote)) or '(none)'}")
+    module_fired = rc == 0 and placed
+    bad += not module_fired
+
+    # The same placement predicate, on a flat run: modules/billing/ must be EMPTY there. This
+    # is what makes case 6 falsifiable - an assertion that holds with and without --module
+    # would prove nothing about --module, and would pass a scaffolder that ignored the flag.
+    _rc, _out, _wrote, flat_module = case("module-control", good, good_flags,
+                                          inspect=lambda t: module_sections_on_disk(t, "billing"))
+    control_fired = not flat_module
+    print(f"    {'ok  ' if control_fired else 'FAIL'} without --module the same folder is "
+          f"empty ({', '.join(sorted(flat_module)) or 'empty'}) - the assertion can fail")
+    bad += not control_fired
 
     # ---- self-test -------------------------------------------------------------------
     # Each refusal branch has to fire for its own reason, and the accept path has to
@@ -193,6 +251,8 @@ def main() -> int:
         ("flag/selection disagreement", flag_fired),
         ("undecided section", omit_fired),
         ("accepts a valid selection", accept_fired),
+        ("places module-owned sections under modules/<folder>/", module_fired),
+        ("the module placement assertion is falsifiable (flat control)", control_fired),
     ) if not fired]
     if dead:
         print("\n  DEAD CHECK - the gate did not exercise these branches:")

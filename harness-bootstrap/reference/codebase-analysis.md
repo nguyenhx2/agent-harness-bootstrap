@@ -133,8 +133,8 @@ Present ONE report, about two screens:
 | Test | ... | vitest.config.ts |
 
 ## Modules
-| Module | Path | Purpose | Size | Proposed owner agent |
-|--------|------|---------|------|----------------------|
+| Module | Path | Spec module | Purpose | Size | Proposed owner agent |
+|--------|------|-------------|---------|------|----------------------|
 
 ## Integrations
 | Provider | Wrapped in | Called from |
@@ -204,6 +204,12 @@ related modules; split a grab-bag `lib/` by domain. A cross-cutting layer everyt
 client, an integrations dir) gets its own owner. UI gets ONE frontend agent regardless of page
 count. Feeds `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, and the roster ([`roster.md`](roster.md)) -
 the routing table must cover every agent and every module: no orphans either way.
+
+The report's **Spec module** column carries the code from `docs/specs/modules/<module>/` whose IDs
+this code module implements (`BLG`, for `FR-BLG-nn`), or `-` when the spec set is flat and there is
+nothing to map. It is what ties a code module to the section that specifies it: the owning dev
+agent's scope then names both the code paths and that spec folder, and a spec module with no code
+module (or the reverse) is a gap worth reporting rather than papering over.
 
 **Conventions → rules.** Write `coding-standards`, `frontend`, `data-model`, `testing` from the OBSERVED
 conventions. Where observation contradicts good practice (no strict mode, hardcoded colors), do NOT

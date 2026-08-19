@@ -113,6 +113,13 @@ registered P1 task "split `app-dev` by domain once modules emerge". Do **not** i
 domain agents for code that does not exist - a scope matching nothing real is noise in the routing
 table and tokens in every dispatch.
 
+**When the specs carry a module axis** (`docs/specs/modules/<module>/` exists), the module's dev
+agent owns that folder as well as its code paths: its `scope` lists both, and the orchestrator
+routes every spec question about that module to it rather than to `ba-analyst` generically. The
+spec module code is also what its FR IDs carry (`FR-BLG-01`), so the agent's `description:` FR
+list, the routing table, and the folder name all say the same thing. A module folder with no owning
+dev agent is the same defect as a code module with none.
+
 Rule of thumb: a dev agent owns something describable in one sentence ("the scoring engine"). More
 than ~5 dev agents at bootstrap is speculative splitting; fewer than one per 2-3 FRs on a large
 product produces a future grab-bag.

@@ -18,6 +18,13 @@ Procedure:
    form, an FR statement lands in its FR's own file and the index tables update in the same change.
    A statement mapping to a section that was not selected at creation is a finding: surface it and
    offer to add the section (re-run the scaffolder for that file), never force it elsewhere.
+   **In module form** (`docs/specs/modules/<module>/` exists), map the statement to a MODULE too:
+   the module's code is the ID segment, so `FR-BLG-02` belongs to the module whose code is `BLG`
+   in the root `README.md` table, and its home is that module's folder. A statement that names no
+   module and matches none of their scopes is an ambiguity, not a default: **refuse to place it**,
+   name the candidate modules, and ask which owns it - a requirement filed into the wrong module
+   gets the wrong owner, the wrong ID, and the wrong dev agent. Cross-cutting statements (glossary,
+   assumptions, revision history) go to the root sections as always.
 2. **Diff before writing.** For each mapped statement, compare against what the section already
    says:
    - New fact, no conflict: add it, with a source note.
@@ -27,7 +34,10 @@ Procedure:
    - Restates what exists: skip, note the corroboration in the row's source list.
 3. **New IDs are appended, never renumbered.** A new requirement takes the next free `FR-nn`;
    retired meaning is handled by `/spec-retract`, not by reusing numbers. In folder form, a new FR
-   is a new `FR-nn-<slug>.md` plus its row in the folder's `README.md` summary table.
+   is a new `FR-nn-<slug>.md` plus its row in the folder's `README.md` summary table. In module
+   form the next free number is counted **within the module** (`FR-BLG-07` after `FR-BLG-06`,
+   whatever `FR-CAT-` is up to), and the segment is never omitted - a bare ID inside a module
+   folder collides silently with the other modules' in the traceability graph.
 4. **Version it**: one row in `13-revision-history.md` per ingest - date, source name, sections
    touched, IDs added/changed, who approved the conflicts. This row is the undo map.
 5. **Ripple to the harness** (only where the target repo has one):
@@ -35,7 +45,8 @@ Procedure:
      stays true; a renamed term is a conflict, not a merge.
    - FR added/changed -> the owning dev agent's `description:` FR list and the orchestrator's
      routing awareness; a new FR with no owning module goes to the board as a Pending task, not
-     silently into a seat.
+     silently into a seat. In module form the owner is the dev agent that owns
+     `docs/specs/modules/<module>/`.
    - Business rules -> `docs/context/business-rules.md` and note for `spec-guardian`.
    - Then rebuild traceability: `python .claude/scripts/docs-graph.py` and
      `python .claude/scripts/graph-html.py`. New orphan IDs are the ingest's loose ends - list

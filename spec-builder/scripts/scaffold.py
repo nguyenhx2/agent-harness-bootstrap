@@ -17,6 +17,7 @@ Stdlib only. No dependencies.
 Usage:
     python scaffold.py --target <repo> --vars vars.json [--dry-run] [--force]
     python scaffold.py --target <repo> --vars vars.json --only specs/
+    python scaffold.py --target <repo> --vars vars.json --module BLG:billing --module CAT:catalog
 
 vars.json shape:
     {
@@ -258,6 +259,78 @@ def refuse_selection(target: Path, problems: list[str],
         file=sys.stderr)
 
 
+# ---------------------------------------------------------------------------- module folders
+# A spec set that covers more than one product module puts each module's OWN sections under
+# docs/specs/modules/<folder>/ and leaves the cross-cutting ones at the root. Which sections are
+# module-owned is a property of what they describe, not of the manifest, so it is stated here:
+# 05/07/08/09/10 describe one module's behaviour, data, interfaces and screens; the README index,
+# 01, 03, 11 and 13 describe the product. 12 ships at the root by default and is moved by hand
+# when the buildability risk belongs to one module alone (writing-rules.md, "Module folders").
+#
+# The IDs inside a module folder carry the module's code (FR-BLG-01), because the docs graph is
+# flat: two modules that each define a bare FR-01 collapse into one node. The scaffolder exposes
+# {{MODULE_CODE}} and {{MODULE_NAME}} so a template can say so in the module's own terms.
+MODULE_SECTIONS = {
+    "05-functional-requirements",
+    "07-non-functional-requirements",
+    "08-data-model",
+    "09-integration-interface",
+    "10-ui-ux-wireframes",
+}
+MODULES_DIR = f"{SECTIONS_DIR}/modules"
+MODULE_CODE_RE = re.compile(r"^[A-Z][A-Z0-9]{1,3}$")     # 2-4 chars, first a letter
+MODULE_FOLDER_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def parse_modules(specs: list[str]) -> tuple[list[tuple[str, str]], list[str]]:
+    """`CODE:folder` strings -> ([(code, folder)], problems). Order is preserved."""
+    modules: list[tuple[str, str]] = []
+    problems: list[str] = []
+    for spec in specs:
+        code, sep, folder = spec.partition(":")
+        if not sep or not folder:
+            problems.append(f"--module {spec!r}: expected CODE:folder-name, e.g. BLG:billing.")
+            continue
+        if not MODULE_CODE_RE.match(code):
+            problems.append(f"--module {spec!r}: `{code}` is not a module code. Codes are 2-4 "
+                            f"uppercase [A-Z0-9] with a letter first (BLG, CAT, PAY2) - the "
+                            f"same shape the ID segment and the docs-graph regex accept.")
+            continue
+        if not MODULE_FOLDER_RE.match(folder):
+            problems.append(f"--module {spec!r}: `{folder}` is not a folder name. Use lowercase "
+                            f"letters, digits, and hyphens.")
+            continue
+        for seen_code, seen_folder in modules:
+            if seen_code == code:
+                problems.append(f"--module {spec!r}: code `{code}` was already given for "
+                                f"`{seen_folder}`. One code, one module - a shared code makes "
+                                f"two modules' IDs collide, which is what the code prevents.")
+            if seen_folder == folder:
+                problems.append(f"--module {spec!r}: folder `{folder}` was already given for "
+                                f"code `{seen_code}`.")
+        modules.append((code, folder))
+    return modules, problems
+
+
+def dest_plan(dest_rel: str, modules: list[tuple[str, str]]) -> list[tuple[str, dict[str, str]]]:
+    """One manifest dest -> the paths to write, each with its extra template variables.
+
+    Without --module, and for every cross-cutting section, that is the dest unchanged and no
+    extra variables. A module-owned section becomes one copy per module under modules/<folder>/.
+    """
+    if not modules:
+        return [(dest_rel, {})]
+    prefix = SECTIONS_DIR + "/"
+    if not dest_rel.startswith(prefix) or "/" in dest_rel[len(prefix):]:
+        return [(dest_rel, {})]                       # not a top-level docs/specs/ section
+    if Path(dest_rel).stem not in MODULE_SECTIONS:
+        return [(dest_rel, {})]
+    name = Path(dest_rel).name
+    return [(f"{MODULES_DIR}/{folder}/{name}",
+             {"MODULE_CODE": code, "MODULE_NAME": folder})
+            for code, folder in modules]
+
+
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
@@ -274,6 +347,10 @@ def main() -> int:
     ap.add_argument("--vars", required=True, type=Path, help="path to vars.json")
     ap.add_argument("--assets", type=Path, default=None, help="assets dir (default: ../assets)")
     ap.add_argument("--only", default=None, help="only process entries whose src starts with this")
+    ap.add_argument("--module", action="append", default=[], metavar="CODE:folder",
+                    help="repeatable: scaffold the module-owned sections (05, 07, 08, 09, 10) "
+                         "into docs/specs/modules/<folder>/, once per module. CODE is the ID "
+                         "segment those sections' IDs carry (BLG -> FR-BLG-01)")
     ap.add_argument("--dry-run", action="store_true", help="report actions, write nothing")
     ap.add_argument("--force", action="store_true", help="overwrite CONFLICT files")
     args = ap.parse_args()
@@ -289,6 +366,12 @@ def main() -> int:
     flag_problems = validate_flags(flags)
     if flag_problems:
         for problem in flag_problems:
+            print(f"FAIL: {problem}", file=sys.stderr)
+        return 1
+
+    modules, module_problems = parse_modules(args.module)
+    if module_problems:
+        for problem in module_problems:
             print(f"FAIL: {problem}", file=sys.stderr)
         return 1
     manifest: list[dict] = json.loads(manifest_path.read_text(encoding="utf-8"))["files"]
@@ -367,35 +450,38 @@ def main() -> int:
 
         dest_rel = entry["dest"]
         dest_rel, _ = substitute(dest_rel, variables, src_rel)  # dest may be parameterised
-        dest = target / dest_rel
-
         do_subst = entry.get("subst", True)
 
-        if do_subst:
-            raw = src.read_text(encoding="utf-8")
-            body = resolve_blocks(raw, flags)
-            body, missing = substitute(body, variables, src_rel)
-            if missing:
-                all_missing[src_rel] = missing
-            payload = body.encode("utf-8")
-        else:
-            payload = src.read_bytes()
+        # One manifest entry can land in several places: a module-owned section is written once
+        # per --module. Without --module this is the single unchanged dest it always was.
+        for dest_rel, module_vars in dest_plan(dest_rel.replace("\\", "/"), modules):
+            dest = target / dest_rel
 
-        if dest.exists():
-            existing = dest.read_bytes()
-            if existing == payload:
-                kept.append(dest_rel)
-                continue
-            conflicts.append(dest_rel)
-            if not args.force:
-                continue
+            if do_subst:
+                raw = src.read_text(encoding="utf-8")
+                body = resolve_blocks(raw, flags)
+                body, missing = substitute(body, {**variables, **module_vars}, src_rel)
+                if missing:
+                    all_missing.setdefault(src_rel, set()).update(missing)
+                payload = body.encode("utf-8")
+            else:
+                payload = src.read_bytes()
 
-        if not args.dry_run:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(payload)
-            if entry.get("exec"):
-                dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        added.append(dest_rel)
+            if dest.exists():
+                existing = dest.read_bytes()
+                if existing == payload:
+                    kept.append(dest_rel)
+                    continue
+                conflicts.append(dest_rel)
+                if not args.force:
+                    continue
+
+            if not args.dry_run:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(payload)
+                if entry.get("exec"):
+                    dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            added.append(dest_rel)
 
     # ---- report -------------------------------------------------------------
     def show(label: str, items: list[str]) -> None:
@@ -411,6 +497,12 @@ def main() -> int:
     show("DISABLED (respected - listed in .claude/disabled.json, not re-added)", disabled_skips)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
+    if modules:
+        print("\nMODULE FORM - the module-owned sections were written once per module:")
+        for code, folder in modules:
+            print(f"  {code} -> {MODULES_DIR}/{folder}/   (its IDs carry -{code}-: FR-{code}-01)")
+        print(f"  cross-cutting sections stayed at {SECTIONS_DIR}/. Declare the code -> folder "
+              f"map in {SECTIONS_DIR}/README.md.")
     if skipped:
         print(f"\nSKIPPED by flags ({len(skipped)}): {', '.join(sorted(skipped)[:8])}"
               f"{' ...' if len(skipped) > 8 else ''}")

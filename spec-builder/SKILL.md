@@ -112,6 +112,22 @@ never delete what the user wrote. It exits non-zero on an unresolved `{{VAR}}`. 
 frontmatter-wide variable (`PROJECT_NAME`) floods every file with CONFLICT at once; take the new
 render only for files nobody hand-edited, reconcile the rest.
 
+**Flat or module form.** Flat is the default and stays valid forever: one set of sections at
+`docs/specs/`, IDs like `FR-01`. Use the module form when the product has real module boundaries
+(separate owners, separate FR sets) or when the user asks for one module's spec - "build the spec
+for billing" means module form, code `BLG`, and every ID that module defines carries it
+(`FR-BLG-01`, `NFR-BLG-SEC-01`). Module-owned sections (05, 07, 08, 09, 10) go to
+`docs/specs/modules/<folder>/`, the rest stay shared at the root, and the section selection is
+still decided once per section, not per module.
+
+```bash
+python scripts/scaffold.py --target <repo> --vars vars.json --module BLG:billing --module CAT:catalog
+```
+
+Bare IDs inside a module folder are forbidden, and the reason is mechanical: the traceability graph
+is flat, so two modules that each define `FR-01` merge into one node and one of them silently
+becomes a mention of the other. Details: [`reference/writing-rules.md`](reference/writing-rules.md).
+
 **5. Fill.** Section by section, in order - each depends on the last (or in parallel per Tool
 discipline above). Follow the inline `<!-- -->` notes; conventions are in
 [`reference/writing-rules.md`](reference/writing-rules.md) - read it before writing, including the
