@@ -222,9 +222,19 @@ CHECKS = [
     ("read-path reduction",   r"[Rr]ead path \(bytes[^\n]*?[-−](\d\d)%|[Bb]ytes the model must read[^\n]*?[-−](\d\d)%", "read_pct"),
     ("write-path reduction",  r"[Ww]rite path \(bytes[^\n]*?[-−](\d\d)%|[Bb]ytes the model must write[^\n]*?[-−](\d\d)%", "write_pct"),
     ("read-path files",       r"[Rr]ead path \(files[^\n]*?[-−](\d\d)%", "read_files_pct"),
-    ("session tax",           rf"{NUM}% of (?:the )?rule content", "tax_pct"),
-    ("rule content kept out", r"[Rr]ule content kept out[^\n]*?\*\*(\d\d)%\*\*", "tax_pct"),
+    # The emphasis blanking above turns '**63%**' into '  63%  ', so every one of these
+    # tolerates the run of spaces it leaves behind rather than demanding a tight phrase.
+    ("session tax",           rf"{NUM}% *of (?:the )?rule content", "tax_pct"),
+    ("rule content kept out", r"[Rr]ule content kept out[^\n]*?\b(\d\d)%", "tax_pct"),
+    # Same figure, stated as a label under a big number instead of in a sentence. The landing
+    # pages and the Japanese README both write it this way and neither was ever checked.
+    ("session tax (label)",   r"\b(\d\d)%[\s\S]{0,140}?of rule content stays out", "tax_pct"),
+    ("session tax (ja label)", r"\b(\d\d)%[\s\S]{0,160}?既定セッションから外れるルール本文", "tax_pct"),
+    ("session tax (ja prose)", r"ルール本文の[^\n]{0,8}?(\d\d)%", "tax_pct"),
+    # Both word orders. "6 rules unconditional" sat in the deck outline while the count was 7,
+    # because only "N unconditional rules" was ever matched.
     ("unconditional rules",   rf"{NUM} unconditional rules?\b", "unconditional_rules"),
+    ("unconditional rules (reversed)", r"\b(\d+) +rules? +unconditional\b", "unconditional_rules"),
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
     # The roster range behind "tailored, not comprehensive". Both ends are checked, because a
     # claim that the build is smaller than the catalogue is only worth making if it is true.
@@ -244,14 +254,20 @@ REQUIRED_SUBSTR: dict[str, tuple[str, ...]] = {
     "read-path files":       ("read path (files",),
     "session tax":           ("rule content",),
     "rule content kept out": ("rule content kept out",),
+    "session tax (label)":   ("rule content stays out",),
+    "session tax (ja label)": ("ルール本文",),
+    "session tax (ja prose)": ("ルール本文",),
     "unconditional rules":   ("unconditional rule",),
+    "unconditional rules (reversed)": ("rules unconditional", "rule unconditional"),
     "path-scoped rules":     ("path-scoped",),
 }
 
 # Counts of the shipped artifact set, checked only in the two files that describe it. Elsewhere the
 # same words carry different claims - "5-6 agents" is a preset size, "the two rules that matter" is a
 # heading - and a checker that flags those is a checker people learn to ignore.
-COUNT_FILES = {"README.md", "CHANGELOG.md"}
+# PRESENTATION-OUTLINE.md is the deck's script and restates every asset count. It was outside
+# this set, so it still said "15 rules" and "6 rules unconditional" after both had moved.
+COUNT_FILES = {"README.md", "CHANGELOG.md", "docs/PRESENTATION-OUTLINE.md"}
 COUNT_CHECKS = [
     ("agent count",   rf"{NUM} agents,", "agents"),
     ("rule count",    rf"{NUM} rules(?:,| -)", "rules"),
@@ -290,6 +306,12 @@ MEDIA_CHECKS = [
     # the markdown walk covers the READMEs, this covers the deck and docs/assets/*.svg.
     ("media roster low",    r"\b(\d+) to \d+ of (?:the |them|its )?\d* ?seats?\b", "roster_min"),
     ("media roster high",   r"\b\d+ to (\d+) of (?:the |them|its )?\d* ?seats?\b", "roster_max"),
+    # The landing pages state the session tax as a big number over a label, and nothing read
+    # it: both index.html and index.ja.html said 63% against a real 64% for several releases.
+    ("media session tax",    r"\b(\d\d)%[\s\S]{0,140}?of rule content stays out", "tax_pct"),
+    ("media session tax ja", r"\b(\d\d)%[\s\S]{0,160}?既定セッションから外れるルール本文", "tax_pct"),
+    ("media session tax en", r"\b(\d\d)% *of (?:the )?rule content", "tax_pct"),
+    ("media session tax ja prose", r"ルール本文の[^\n]{0,8}?(\d\d)%", "tax_pct"),
 ]
 # "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
 # far from the canonical count (a video timestamp, a score in an example) is not either.
@@ -354,7 +376,15 @@ def self_test(c: dict[str, int]) -> list[str]:
         "read-path files":       "| Read path (files read) | 24 | 7 | -{read_files_pct}% |",
         "session tax":           "keeping {tax_pct}% of rule content out of the default session",
         "rule content kept out": "| Rule content kept out of the default session | - | 49,394 of 74,697 B | **{tax_pct}%** |",
+        # The bolded form is the one that mattered: this probe carries the '  ' the emphasis
+        # blanking leaves behind, so it proves the pattern survives a headline number.
+        "session tax (label)":   '<div class="big">{tax_pct}%</div>\n'
+                                 '<div class="lab">of rule content stays out of the session</div>',
+        "session tax (ja label)": '<div class="big">{tax_pct}%</div>\n'
+                                  '<div class="lab">既定セッションから外れるルール本文の割合。</div>',
+        "session tax (ja prose)": "ルール本文の  {tax_pct}%  が既定セッションの外に出る",
         "unconditional rules":   "{unconditional_rules} unconditional rules stay loaded",
+        "unconditional rules (reversed)": "  {unconditional_rules}   rules unconditional",
         "path-scoped rules":     "{scoped_rules} path-scoped rules load on demand",
         "agent count":           "{agents} agents, each with a model",
         "rule count":            "{rules} rules - 6 always loaded",
@@ -376,6 +406,12 @@ def self_test(c: dict[str, int]) -> list[str]:
         "roster range high":     "installs {roster_min} to {roster_max} of the 16 seats",
         "media roster low":      "{roster_min} to {roster_max} of the 16 seats",
         "media roster high":     "{roster_min} to {roster_max} of the 16 seats",
+        "media session tax":     '<div class="big">{tax_pct}%</div>\n'
+                                 '<div class="lab">of rule content stays out of the session</div>',
+        "media session tax ja":  '<div class="big">{tax_pct}%</div>\n'
+                                 '<div class="lab">既定セッションから外れるルール本文の割合。</div>',
+        "media session tax en":  "keeping {tax_pct}% of rule content out of the session",
+        "media session tax ja prose": "ルール本文の{tax_pct}%が既定セッションの外に出る",
     }
     dead = []
     for name, pat, key in (CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS
@@ -433,6 +469,16 @@ def main() -> int:
         raw = text
         if "`" in text:
             text = re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
+        # Markdown emphasis around a figure defeated EVERY pattern here, silently. The main
+        # README said "keeps **63%** of rule content out of the default session" while the real
+        # figure was 64%, and the session-tax check found ZERO matches in that file: the '**'
+        # sits between "63%" and " of rule content", so the regex never reached the phrase that
+        # identifies the claim. A bolded figure is the NORMAL way to write a headline number in
+        # this repo, so the check was dead exactly where it mattered most. One asterisk becomes
+        # one space, which keeps every offset and therefore every reported line number correct.
+        # `raw` keeps the markup, for the context reads above.
+        if "*" in text:
+            text = text.replace("*", " ")
         rel = p.relative_to(ROOT).as_posix()
         text_lower = text.lower()
         # The shields badge states the suite result outright, so both halves must be the

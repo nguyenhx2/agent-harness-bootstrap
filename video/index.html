@@ -76,7 +76,7 @@
 
   <div class="clip flagship">
     <span class="badge">Start here</span>
-    <h3>The complete solution <span class="dur">~55s</span></h3>
+    <h3>The complete solution <span class="dur">~63s</span></h3>
     <p>The whole product in one clip: the four pain points, then spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff. Each pain visibly flips from red to green as its fix lands. Closes with harness-view answering the question it exists for: how do you know it is actually wired right.</p>
     <video src="mp4/04-solution.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -155,7 +155,7 @@
 
   <div class="clip flagship">
     <span class="badge">まずここから</span>
-    <h3>完全なソリューション <span class="dur">~55秒</span></h3>
+    <h3>完全なソリューション <span class="dur">~63秒</span></h3>
     <p>プロダクト全体を1本のクリップで: 4つの課題、そしてspec-builderが契約書を書き、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回り、成果に至るまで。各課題は解決するたびに赤から緑へと目に見えて切り替わります。最後はharness-viewが存在意義そのものの問い - 実際に正しく配線されているとどう分かるか - に答えて締めくくります。</p>
     <video src="mp4/ja/04-solution.mp4" controls preload="metadata" playsinline></video>
     <div class="links">
@@ -244,6 +244,12 @@
     try{ localStorage.setItem('ahb-video-lang', lang); }catch(e){}
   }
   (function(){
+    // ?lang= wins over the remembered choice, so a page in one language can link
+    // straight into this gallery in that same language. Without it every link out
+    // of README.ja.md landed here in English, whatever the reader had chosen.
+    var q = null;
+    try{ q = new URLSearchParams(location.search).get('lang'); }catch(e){}
+    if(q === 'ja' || q === 'en'){ setLang(q); return; }
     var saved = null;
     try{ saved = localStorage.getItem('ahb-video-lang'); }catch(e){}
     if(saved === 'ja') setLang('ja');

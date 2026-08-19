@@ -14,7 +14,7 @@ python benchmark/benchmark.py
 |---|---:|---:|
 | Known-bad actions blocked (15 hook payloads) | **0** | **15** |
 | Bytes of harness you author yourself | **326,087** | **0** |
-| Rule bytes loaded into every agent session | **0** | **27,805** |
+| Rule bytes loaded into every agent session | **0** | **30,643** |
 | Time to stand it up | - | ~0.2s |
 
 The third row is not a typo and it is not in our favour. A bare agent carries no rules because
