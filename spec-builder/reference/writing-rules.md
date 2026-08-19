@@ -67,6 +67,59 @@ ID it does not scan for.
 withdrawn, and is recorded in `13-revision-history.md`. Somewhere there is a task, a commit, or a
 test that still names it; a recycled ID makes that reference lie.
 
+### Module segment
+
+A repo that specs more than one product module inserts the module's code into every ID it owns:
+`FR-BLG-01`, `UC-PAY-03`, `NFR-BLG-SEC-01`. The segment is optional and every prefix in the table
+accepts one - the flat form (`FR-01`) stays valid forever and is the default for a single-product
+repo. There is no migration: a flat spec set that never grows a second module never changes.
+
+- **Module codes** are 2-4 uppercase `[A-Z0-9]`, first character a letter, declared once in the
+  root `README.md` index table alongside the folder each one owns (`BLG` -> `modules/billing/`).
+- **NFR takes the module first, then the category**: `NFR-BLG-SEC-01`, never `NFR-SEC-BLG-01`.
+  One module segment and one category segment, in that order, and no more.
+- **Inside `docs/specs/modules/<module>/`, a bare ID is forbidden.** Every ID defined there carries
+  that module's segment. The reason is mechanical, not stylistic: the docs graph is flat and keys
+  every ID by its text alone, so two modules that each define a bare `FR-01` collapse into ONE
+  graph node - one file wins `defined_in`, the other module's requirement is downgraded to a
+  mention of it, and nothing reports the collision. The segment is what keeps them two.
+- Cross-module references use the full ID and a relative path, exactly as within a module:
+  `[FR-BLG-01](../billing/05-functional-requirements.md#fr-blg-01)`.
+
+## Module folders
+
+When the module form is in use, each module owns a folder and the sections that describe only it:
+
+```
+docs/specs/
+  README.md                       # the index, and the module code -> folder table
+  01-overview.md                  # cross-cutting, shared
+  03-glossary.md
+  11-assumptions-constraints.md
+  13-revision-history.md
+  modules/
+    billing/                      # BLG
+      05-functional-requirements.md
+      07-non-functional-requirements.md
+      08-data-model.md
+    catalog/                      # CAT
+      05-functional-requirements.md
+      ...
+```
+
+- **Module-owned**: 05, 07, 08, 09, 10 - one copy per module, under `modules/<folder>/`.
+- **Cross-cutting, one copy at the root**: the README index, 01, 03, 11, 13. A glossary per module
+  is how two modules end up with two meanings for one word.
+- **12-feasibility follows the risk**: at the root when the buildability question is the platform's
+  (one table covering every module's FRs), inside a module when the risk is that module's alone.
+- The folder name is the module's lowercase name (`billing`); the ID segment is its code (`BLG`).
+  The mapping between the two is declared once, in the root `README.md` index table.
+- Sections split by size (the rule below) split *within* their module folder.
+
+`scripts/scaffold.py --module BLG:billing --module CAT:catalog` writes exactly this layout. The
+section selection in `.sections.json` stays per SECTION, not per module: a selected section is
+scaffolded for every named module.
+
 ## Cross-references
 
 Relative path, plus an anchor whenever the target ID has one (see the anchor-form column above); a
