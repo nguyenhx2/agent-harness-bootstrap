@@ -25,8 +25,16 @@ const COLORS = {
   agent: "#2563eb", rule: "#ea580c", command: "#16a34a", hook: "#ca8a04",
   settings: "#e11d48", state: "#64748b", script: "#7c3aed", module: "#0891b2",
   task: "#475569", doc: "#0d9488", gate: "#c2410c", human: "#0f766e",
-  skill: "#9333ea"
+  skill: "#9333ea",
+  // Deep indigo, and deliberately the darkest thing on the canvas: an
+  // instruction file is the contract everything else is a consequence of, and
+  // it reads as the base of the picture rather than as one more colour in it.
+  instruction: "#312e81"
 };
+// Tier -> colour, for the routing table v1.18.0 put into AGENTS.md. Weight
+// climbs with process: green for the change that just gets made, amber for the
+// one that gets written down, red for the one that goes through the orchestrator.
+const TIER_COLOR = { Direct: "#15803d", Standard: "#a16207", Guarded: "#b91c1c" };
 // Left-to-right story of the Flow view: what constrains -> what enforces -> what a seat can reach
 // for -> the seats -> the gate -> the human -> what they invoke.
 //
@@ -36,7 +44,12 @@ const COLORS = {
 // yellow hooks, and the enforcement layer - the part of the picture that says what can say no -
 // became impossible to pick out. They also are not enforcement: a skill is a capability a seat can
 // use, so it belongs between the hooks and the agents that reach for it.
-const FLOW_COL = { rule: 0, hook: 1, settings: 1, skill: 2, agent: 3, gate: 4, human: 5, command: 6, script: 7, module: 7, task: 8 };
+//
+// Instruction files take column 0, ahead of the rules, because that is the order
+// the harness itself asserts: AGENTS.md is the contract, and `.claude/rules/`
+// is where it says the enforceable detail lives. Bolting them on the right-hand
+// end would have drawn the contract as an output of the machinery it governs.
+const FLOW_COL = { instruction: 0, rule: 1, hook: 2, settings: 2, skill: 3, agent: 4, gate: 5, human: 6, command: 7, script: 8, module: 8, task: 9 };
 const HIDE_DEFAULT = new Set(["module", "task", "script"]);
 // Hook event -> short badge. The scan carries the full event name; the node is
 // too small for "PostToolUse", and Pre/Post is the distinction that matters.
@@ -716,7 +729,7 @@ function layout() {
   const vis = graph.nodes.filter(visible);
   if (view === "flow") {
     const cols = {};
-    for (const n of vis) { const c = FLOW_COL[n.type] ?? 8; (cols[c] = cols[c] || []).push(n); }
+    for (const n of vis) { const c = FLOW_COL[n.type] ?? 9; (cols[c] = cols[c] || []).push(n); }
     // Columns are placed left to right using the width each one actually needs,
     // so a column of wide boxes cannot be laid on top of its neighbour. The old
     // code spaced columns by a single average and spaced wrapped sub-lanes by
@@ -907,7 +920,7 @@ function face(p, hw, right) { return { x: p.x + (right ? hw : -hw), y: p.y }; }
 // thick line, which is worse than the curves it replaced.
 function channelIndex(vis) {
   const byCol = {};
-  for (const n of vis) { const c = FLOW_COL[n.type] ?? 8; (byCol[c] = byCol[c] || []).push(n); }
+  for (const n of vis) { const c = FLOW_COL[n.type] ?? 9; (byCol[c] = byCol[c] || []).push(n); }
   const idx = {};
   for (const c of Object.keys(byCol)) {
     const ns = byCol[c].slice().sort((p, q) => pos[p.id].y - pos[q.id].y);
@@ -1129,6 +1142,22 @@ function nodeBadge(n) {
     if (!st) return null;
     const c = STATUS_COLOR[st];
     return c ? { text: st.toUpperCase().slice(0, 7), bg: c, fg: "#fff" } : null;
+  }
+  // A seat the routing table names, badged with the tier it names it in. This
+  // is the whole point of reading the table into the graph: the answer to "does
+  // this change go straight to the agent or through the orchestrator" used to be
+  // a paragraph in a file the viewer never opened.
+  if (n.type === "agent") {
+    const t = meta(n, "tier");
+    if (!t) return null;
+    const c = TIER_COLOR[t];
+    return c ? { text: t.toUpperCase().slice(0, 8), bg: c, fg: "#fff" } : null;
+  }
+  // The file the tiers were read out of says so, so a reader knows where to
+  // click. An instruction file with no table carries no badge rather than an
+  // empty one.
+  if (n.type === "instruction" && n.tiers && n.tiers.length) {
+    return { text: "TIERS", bg: "#e0e7ff", fg: "#312e81" };
   }
   return null;
 }
@@ -1497,6 +1526,210 @@ function buildSaveBar() {
   return bar;
 }
 
+// --- routing tiers ----------------------------------------------------------
+// The Direct / Standard / Guarded table v1.18.0 put into the generated
+// AGENTS.md, rendered from what the scanner read out of the file rather than
+// from a copy kept here. A table restated in the viewer would be a second
+// source of truth, and the first thing to go stale when someone edits the file
+// this panel sits next to.
+function buildTierPanel(tiers) {
+  const box = document.createElement("div");
+  box.className = "tierbox";
+  const lbl = document.createElement("div");
+  lbl.className = "lbl";
+  lbl.textContent = "How much process a change gets, as this file states it";
+  box.append(lbl);
+  for (const t of tiers) {
+    const card = document.createElement("div");
+    card.className = "tiercard";
+    const head = document.createElement("div");
+    head.className = "tierhead";
+    const chip = document.createElement("span");
+    chip.className = "tierchip";
+    chip.textContent = t.tier || "?";
+    const c = TIER_COLOR[t.tier];
+    if (c) { chip.style.background = c + "22"; chip.style.color = c; chip.style.borderColor = c + "55"; }
+    head.append(chip);
+    card.append(head);
+    for (const [k, v] of [["the change", t.change], ["who runs it", t.who], ["what it adds", t.adds]]) {
+      if (!v) continue;
+      const r = document.createElement("div");
+      r.className = "tierrow";
+      const kk = document.createElement("span");
+      kk.className = "tk"; kk.textContent = k;
+      const vv = document.createElement("span");
+      vv.className = "tv"; vv.textContent = v;
+      r.append(kk, vv);
+      card.append(r);
+    }
+    box.append(card);
+  }
+  return box;
+}
+
+// --- the instruction-file editor --------------------------------------------
+// AGENTS.md, CLAUDE.md, the per-tool equivalents, and .claude/settings.json.
+// One textarea over the file exactly as it sits on disk, and a Save that posts
+// a KEY and a bare NAME - never a path - to POST /instruction.
+//
+// Three things keep it honest, and they are the same three the step editor
+// keeps. Nothing is written until Save. What is sent is the whole buffer the
+// reader was looking at, so a save cannot rearrange a part of the file the
+// editor never showed. And the server re-applies the file's own line endings,
+// which is what makes a one-word edit to a CRLF file a one-line diff instead of
+// a whole-file rewrite.
+let fileEdit = null;   // { node, key, name, rel, original, ta }
+// A save reloads the graph, which rebuilds the panel and so closes the editor.
+// This puts the reader back where they were instead of making them find the
+// file and click Edit again after every save.
+let reopenEdit = null;
+
+function fileEditDirty() {
+  return !!fileEdit && fileEdit.ta && fileEdit.ta.value !== fileEdit.original;
+}
+
+function buildFileEditor(node) {
+  const box = document.createElement("div");
+  box.className = "editbox";
+  const bar = document.createElement("div");
+  bar.className = "md-bar";
+  const open = document.createElement("button");
+  open.className = "prev-btn";
+  setBtn(open, "edit", "Edit file");
+  bar.append(open);
+  box.append(bar);
+  const host = document.createElement("div");
+  box.append(host);
+
+  open.onclick = () => withBusy("reading file", open, async () => {
+    if (fileEdit && fileEdit.node === node.id) {
+      // closing: the unsaved-changes question belongs here too, because the
+      // buffer is the only place the edit exists
+      if (fileEditDirty()) {
+        const answer = await ui.modal({
+          title: "Close without saving?",
+          icon: "alert",
+          tone: "warn",
+          body: "There are unsaved changes to `" + fileEdit.rel + "`. Closing the editor loses them.",
+          actions: [
+            { id: "stay", label: "Keep editing", icon: "x", kind: "cancel", default: true },
+            { id: "go", label: "Discard and close", icon: "trash", kind: "danger" },
+          ],
+        });
+        if (!answer) return;
+      }
+      fileEdit = null;
+      host.textContent = "";
+      setBtn(open, "edit", "Edit file");
+      fit();
+      return;
+    }
+    let text = null, err = null;
+    try {
+      const u = "file?path=" + encodeURIComponent(node.file) +
+        (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
+      const r = await fetch(u);
+      const t = await r.text();
+      if (r.ok) text = t; else err = "could not read " + node.file + ": " + t;
+    } catch (e) { err = "could not read " + node.file + ": " + e; }
+    host.textContent = "";
+    if (err !== null) {
+      const p = document.createElement("div");
+      p.className = "lbl"; p.textContent = err; host.append(p);
+      return;
+    }
+    // `original` is kept in the form the TEXTAREA will hold it, which is LF:
+    // assigning to .value normalizes every CRLF away, so keeping the file's own
+    // bytes here would make a CRLF file compare unequal to itself and report
+    // itself unsaved forever, with Save enabled before anyone typed anything.
+    // Losing the line endings costs nothing, because the server re-applies the
+    // file's own on write - that is what match_eol is for.
+    fileEdit = { node: node.id, key: node.edit.key, name: node.edit.name || "",
+                 rel: node.file, original: text.replace(/\r\n/g, "\n"), ta: null };
+    paintFileEditor(host);
+    setBtn(open, "eyeoff", "Close editor");
+    fit();
+  });
+  if (reopenEdit === node.id) { reopenEdit = null; setTimeout(() => open.click(), 0); }
+  return box;
+}
+
+function paintFileEditor(host) {
+  host.textContent = "";
+  const lbl = document.createElement("div");
+  lbl.className = "lbl";
+  lbl.textContent = "Editing " + fileEdit.rel + " - the file as it is on disk";
+  host.append(lbl);
+  const status = document.createElement("div");
+  status.className = "editstatus";
+  const ta = document.createElement("textarea");
+  ta.className = "fileedit";
+  ta.spellcheck = false;
+  // .value, never innerHTML: this is another repository's file, and it reaches
+  // the DOM as the text it is or it does not reach it at all.
+  ta.value = fileEdit.original;
+  fileEdit.ta = ta;
+  const bar = document.createElement("div");
+  bar.className = "stepsave";
+  const txt = document.createElement("div");
+  txt.className = "grow";
+  const save = document.createElement("button");
+  setBtn(save, "save", "Save");
+  save.className = "ui-primary";
+  const revert = document.createElement("button");
+  setBtn(revert, "undo", "Revert");
+  const sync = () => {
+    const dirty = fileEditDirty();
+    txt.textContent = dirty ? "Unsaved changes to " + fileEdit.rel : fileEdit.rel + " matches the file on disk";
+    save.disabled = revert.disabled = !dirty;
+  };
+  ta.addEventListener("input", sync);
+  revert.onclick = () => { ta.value = fileEdit.original; sync(); };
+  save.onclick = async () => {
+    save.disabled = revert.disabled = true;
+    txt.textContent = "saving ...";
+    const body = ta.value;
+    try {
+      const r = await fetch("instruction", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: fileEdit.key, name: fileEdit.name, content: body, root: currentRoot }),
+      });
+      const t = await r.text();
+      if (!r.ok) {
+        ui.toast({ kind: "error", title: "Could not save " + fileEdit.rel, body: t });
+        sync();
+        return;
+      }
+      ui.toast({ kind: "success", title: t });
+      // Re-read from what was actually written: the server re-applies the
+      // file's line endings, so the bytes on disk are not always the bytes that
+      // were posted, and a buffer that disagrees with the file would report
+      // itself dirty forever.
+      try {
+        const u = "file?path=" + encodeURIComponent(fileEdit.rel) +
+          (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
+        const rr = await fetch(u);
+        if (rr.ok) {
+          fileEdit.original = (await rr.text()).replace(/\r\n/g, "\n");
+          ta.value = fileEdit.original;
+        } else fileEdit.original = body;
+      } catch (e) { fileEdit.original = body; }
+      sync();
+      // The graph reads these files: an edited AGENTS.md can add or drop a tier
+      // row, a cited rule, or a briefed seat, so the picture is refreshed.
+      reopenEdit = fileEdit.node;
+      await reloadKeeping(fileEdit.node);
+    } catch (e) {
+      ui.toast({ kind: "error", title: "Save failed", body: String(e) });
+      sync();
+    }
+  };
+  bar.append(txt, save, revert);
+  host.append(status, ta, bar);
+  sync();
+}
+
 // `force` skips the unsaved-changes question. It is for the callers that are
 // re-rendering the node already on screen (reloadKeeping) or acting on an answer
 // the reader has just given, where asking again would be asking twice.
@@ -1521,7 +1754,26 @@ function select(n, force) {
     }).then(answer => { if (answer) { select(n, true); draw(); } });
     return;
   }
+  // The same question for the instruction-file editor, and for the same reason:
+  // its buffer is the only place an unsaved edit exists, and selecting another
+  // node throws the panel away.
+  if (!force && fileEditDirty() && n.id !== sel) {
+    const rel = fileEdit.rel;
+    ui.modal({
+      title: "Leave without saving?",
+      icon: "alert",
+      tone: "warn",
+      body: "There are unsaved changes to `" + rel + "`. Selecting another node " +
+            "rebuilds the panel and those changes are lost.",
+      actions: [
+        { id: "stay", label: "Stay here", icon: "x", kind: "cancel", default: true },
+        { id: "leave", label: "Discard and leave", icon: "trash", kind: "danger" },
+      ],
+    }).then(answer => { if (answer) { select(n, true); draw(); } });
+    return;
+  }
   stepEdit = null;
+  fileEdit = null;
   sel = n.id;
   hi = computeHighlight(n.id);
   startAnim();
@@ -1608,11 +1860,37 @@ function select(n, force) {
       s2.className = "tone " + (val === "true" ? "hot" : "cool");
       s2.textContent = val === "true" ? "true (blocks the call)" : "false (advisory)";
       cell.append(s2);
+    } else if (k === "tier") {
+      const cell = row(table, k, "");
+      const s2 = document.createElement("span");
+      s2.className = "state"; s2.textContent = val;
+      s2.style.background = (TIER_COLOR[val] || "#64748b") + "22";
+      s2.style.color = TIER_COLOR[val] || "#334155";
+      cell.append(s2);
+    } else if (k === "verified") {
+      // The instruction table records where each path came from. A row that
+      // could not be sourced says so here rather than looking like every other
+      // row, which is the same discipline the model and tool reference applies.
+      const cell = row(table, k, "");
+      const s2 = document.createElement("span");
+      s2.className = "tone " + (val === "true" ? "cool" : "hot");
+      s2.textContent = val === "true"
+        ? "true (sourced, see the source row)"
+        : "false (unverified - treat the path as a guess)";
+      cell.append(s2);
     } else {
       row(table, k, val);
     }
   }
   head.append(table);
+
+  // The routing tiers, read out of this file's own table. Every cell arrives
+  // via textContent, so the contract's text can never execute here.
+  //
+  // A sibling of .head rather than part of it, for the same reason the command
+  // steps are: .head is capped at 60% of the panel and scrolls, so a tier table
+  // put inside it sat below the fold on the one node it exists for.
+  if (Array.isArray(n.tiers) && n.tiers.length) d.append(buildTierPanel(n.tiers));
 
   // A command's steps are the thing a reader opened it for, so they go above the
   // preview and get their own scroller. This is a sibling of the preview host,
@@ -1648,6 +1926,12 @@ function select(n, force) {
       renderCommandSteps(box, text, n.id.split(":").slice(1).join(":"));
     })();
   }
+
+  // Editable when the scanner said so, which it says only for the fixed set in
+  // instruction::FILES. The node carries the key and the bare name the write
+  // path takes; the page never composes a path and could not send one if it
+  // tried, because POST /instruction does not read one.
+  if (n.edit && n.edit.key && n.file) d.append(buildFileEditor(n));
 
   if (n.file) {
     const bar = document.createElement("div");
