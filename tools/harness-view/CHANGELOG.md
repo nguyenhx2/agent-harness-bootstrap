@@ -7,6 +7,45 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.18.1] - 2026-08-21
+
+### Added
+
+- **Instruction files are nodes.** `AGENTS.md`, `CLAUDE.md` and the per-tool equivalents appear in
+  the leftmost column - they are the contract every seat reads, so they sit before the rules - and
+  they are editable in place. New edges show which seats a contract briefs, which rules it cites,
+  and that `CLAUDE.md` imports `AGENTS.md`. Paths were researched rather than assumed, and the one
+  that could not be confirmed against a first-party source is **marked unverified** instead of
+  being claimed.
+- **The routing tiers are visible.** The Direct / Standard / Guarded table is parsed out of
+  whichever file states it and rendered as its own panel, and any seat the table names carries a
+  tier badge. Direct and Standard name nobody, so nobody is badged for them.
+- **A step's table is edited in a grid**, not by hand-aligning pipes. A real routing table is 17
+  rows; it used to arrive as a wall of `|` in a box four lines tall. Rows and columns can be added
+  and removed, and a one-cell edit produces a one-line diff, because each row is written back from
+  its original bytes unless its cells actually changed.
+- **`@` opens a picker over everything taggable** - seats, rules, skills, commands and repository
+  paths - with no word typed, and inserts the citation this repo actually uses for whatever is
+  chosen. The three older triggers each required knowing which *kind* of thing you were citing,
+  which is fine once you know the harness and useless before you do.
+
+### Changed
+
+- Skills have their own Flow column. Sharing the hooks column reads fine with two skills and falls
+  apart with twenty: a column of purple ran through the middle of six yellow hooks and the
+  enforcement layer - the part of the picture that says what can say no - could not be picked out.
+- Dialogs are 760px, 1040px for the roster editor, and **resizable**. Footer buttons carry one of
+  six colours so a destructive action is never one careless click from a confirm.
+- The edge animation runs at 0.22 px per frame instead of 0.7. At the old speed the eye tracked the
+  motion instead of the direction it was pointing.
+
+### Fixed
+
+- A CRLF file made the instruction editor report itself unsaved forever: a textarea normalises to
+  LF, so the buffer never equalled the stored original.
+- Two tests passed only on an older checkout. `.gitattributes` marks `*.md` as text, so a **fresh
+  Windows clone gets CRLF fixtures** and both compared them against LF literals.
+
 ## [1.18.0] - 2026-08-21
 
 ### Added
