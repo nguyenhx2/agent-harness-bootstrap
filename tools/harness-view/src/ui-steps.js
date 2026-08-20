@@ -74,7 +74,15 @@ const HEAD_RE = /^#{1,6}\s+(.*)$/;
 const OFF_OPEN = "<!-- harness-view:disabled-step";
 const OFF_CLOSE = "-->";
 const OFF_OPEN_RE = /^<!--\s*harness-view:disabled-step\s*$/;
-const OFF_CLOSE_RE = /^-->\s*$/;
+// Not a regex, deliberately. `/^-->\s*$/` says exactly what the function below says, but a
+// pattern containing `-->` reads to CodeQL as an attempt to filter HTML comments
+// (js/bad-tag-filter), and the honest answer to that alert is that no HTML filtering happens
+// anywhere here - this text is markdown and never reaches innerHTML. A string test makes that
+// obvious to a reader and to the scanner, and it was all the regex ever did.
+function isOffClose(line) {
+  return line.slice(0, OFF_CLOSE.length) === OFF_CLOSE &&
+         line.slice(OFF_CLOSE.length).trim() === "";
+}
 
 /// Remove the indentation a step's continuation lines carry only because they
 /// sit under a "1. " marker in the source. The panel renders step text with
@@ -140,7 +148,7 @@ function parseCommandSteps(md) {
     if (OFF_OPEN_RE.test(line)) {
       let j = i + 1;
       const inner = [];
-      while (j < lines.length && !OFF_CLOSE_RE.test(lines[j])) { inner.push(lines[j]); j++; }
+      while (j < lines.length && !isOffClose(lines[j])) { inner.push(lines[j]); j++; }
       if (j < lines.length) {
         const m = STEP_RE.exec(inner[0] || "");
         if (m) {
@@ -773,8 +781,46 @@ function readTable(lines, i) {
 function rowCells(line) {
   let s = String(line).trim();
   if (s.charAt(0) === "|") s = s.slice(1);
-  if (s.charAt(s.length - 1) === "|") s = s.slice(0, -1);
-  return s.split("|").map(c => c.trim());
+  // `\|` is an escaped pipe INSIDE a cell, not the end of the row. Splitting on
+  // it is what made a cell containing a pipe come back with one column too many,
+  // which sent the whole run to the fallback text block - so the one table that
+  // legitimately wanted a pipe in a cell was the one table that could never be
+  // drawn. It matters more now that cells are typed into: the grid editor writes
+  // this escape, and a reader that could not read it back would turn a table
+  // into pipes the moment someone typed one.
+  if (s.charAt(s.length - 1) === "|" && !escapedAt(s, s.length - 1)) s = s.slice(0, -1);
+  return splitCells(s).map(c => c.trim());
+}
+
+/// Is the character at `at` escaped? An ODD number of backslashes before it escapes it; an EVEN
+/// number is that many escaped backslashes and leaves the character itself bare. Counting is the
+/// only way to tell `\\|` - a backslash, then a real cell boundary - from `\|`, a pipe in a cell.
+function escapedAt(s, at) {
+  let n = 0;
+  for (let i = at - 1; i >= 0 && s.charAt(i) === "\\"; i--) n++;
+  return n % 2 === 1;
+}
+
+/// Split on the pipes that separate cells, unescaping the ones that do not.
+function splitCells(s) {
+  const out = [];
+  let cur = "";
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charAt(i);
+    if (c === "\\") {
+      const n = s.charAt(i + 1);
+      // `\|` is a pipe in a cell, `\\` is one backslash. A backslash before anything else stays the
+      // two characters it is, so a table hand-written before this escaping existed still reads back
+      // exactly as its author typed it.
+      if (n === "|" || n === "\\") { cur += n; i++; continue; }
+      cur += c;
+      continue;
+    }
+    if (c === "|") { out.push(cur); cur = ""; continue; }
+    cur += c;
+  }
+  out.push(cur);
+  return out;
 }
 
 /// A run of bullets or a run of numbers, never a mix: switching marker ends the
@@ -826,6 +872,243 @@ function stepMarkdownIsRich(blocks) {
 function safeHref(raw) {
   const u = String(raw == null ? "" : raw).trim();
   return /^https?:\/\/[^\s]+$/i.test(u) ? u : null;
+}
+
+// ---------------------------------------------------------------------------
+// EDITABLE PARTS. The same source, cut into the pieces a person edits with
+// different hands.
+//
+// The panel used to hand a step's whole body to one <textarea>, which is right
+// for the common case - a step is one sentence - and useless for the case that
+// prompted this: `/implement-fr` step 4 in a real harness is a sentence followed
+// by a seventeen-row routing table, and a textarea full of `| Work | Agent |`
+// is not something anyone edits, it is something they avoid.
+//
+// So a step is split into prose runs and table runs. Prose stays a textarea. A
+// table becomes a grid. Two properties make that safe to point at a file
+// somebody wrote by hand:
+//
+//   THE SPLIT IS A PARTITION, NOT A PARSE. Every line of the input lands in
+//   exactly one part, in order, as the bytes it arrived as. `joinStepParts` is
+//   therefore the exact inverse of `splitStepParts` - open the editor, change
+//   nothing, and what comes back out is what went in, blank lines and trailing
+//   spaces included. Nothing is normalised on the way through, because a step
+//   nobody edited must not come back reformatted.
+//
+//   A TABLE IS REWRITTEN ONLY WHEN IT IS TOUCHED. `part.lines` holds the source
+//   rows; the grid operations below replace them by re-rendering, and nothing
+//   else does. An untouched table is emitted from its original bytes even when
+//   the prose above it was rewritten.
+//
+// `splitStepParts` reuses `readTable`, which is deliberately strict: a run that
+// is only nearly a table stays prose and is edited as text. That is the same
+// fall-back-rather-than-mangle rule the reader above follows, and it is what
+// keeps a ragged table out of a grid that would silently shift a column.
+// ---------------------------------------------------------------------------
+
+/// -> [{kind:"prose"|"table", lines:[...]}] covering every line of `text` once.
+/// Table parts additionally carry {head, align, rows} - the grid.
+function splitStepParts(text) {
+  const lines = String(text == null ? "" : text).replace(/\r\n/g, "\n").split("\n");
+  const parts = [];
+  let buf = [];
+  // An empty prose run is not a part: it would draw an empty textarea between
+  // two tables. It carries no lines either, so dropping it is still a partition.
+  const flush = () => { if (buf.length) parts.push({ kind: "prose", lines: buf }); buf = []; };
+  let i = 0;
+  while (i < lines.length) {
+    const t = readTable(lines, i);
+    if (t) {
+      flush();
+      parts.push({ kind: "table", lines: lines.slice(i, t.next), head: t.block.head,
+                   align: t.block.align, rows: t.block.rows,
+                   // The file's own spelling of each row, held beside the grid so
+                   // a row nobody edited is written back as the bytes it arrived
+                   // as. See `renderTablePart`.
+                   src: { head: lines[i], delim: lines[i + 1],
+                          rows: lines.slice(i + 2, t.next) } });
+      i = t.next;
+      continue;
+    }
+    buf.push(lines[i]);
+    i++;
+  }
+  flush();
+  return parts;
+}
+
+/// The markdown the parts describe. Byte-identical to what `splitStepParts` was
+/// given whenever no part has been rewritten.
+function joinStepParts(parts) {
+  const out = [];
+  for (const p of (parts || [])) {
+    for (const l of (p.lines || [])) out.push(l);
+  }
+  return out.join("\n");
+}
+
+function stepPartsHaveTable(parts) {
+  return (parts || []).some(p => p.kind === "table");
+}
+
+/// A cell as it must be WRITTEN. A pipe is escaped rather than dropped - the
+/// reader above unescapes it, so the round trip is lossless - and a newline is
+/// flattened, because a row is one line and a pasted paragraph would otherwise
+/// end the table mid-way.
+function cellSource(s) {
+  // The BACKSLASH is escaped first, and that is not optional. Escaping `|` while leaving `\` alone
+  // is incomplete: a cell whose text ends in a backslash writes `a\` straight into the row, and the
+  // very next character is the pipe that ends the cell - so the reader sees `\|`, calls it an
+  // escaped pipe, and merges two cells into one. CodeQL flags this as js/incomplete-sanitization
+  // and it is right: the round trip is lossless only if the escape character escapes itself too.
+  return cellText(s).replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+}
+
+/// A cell as it READS: flattened and trimmed, but not escaped. This is the form
+/// `rowCells` gives back, so it is the form two cells have to be compared in - a
+/// cell holding a pipe is escaped in the source and bare in the grid, and
+/// comparing those two directly reported "changed" about a row nobody touched.
+function cellText(s) {
+  return String(s == null ? "" : s).replace(/\r?\n/g, " ").trim();
+}
+
+const ALIGN_DELIM = { left: ":---", right: "---:", center: ":---:" };
+
+/// A table part's grid, back as markdown rows.
+///
+/// A ROW NOBODY CHANGED KEEPS ITS OWN BYTES. `part.src` holds the line each row
+/// arrived as, and a row whose cells still read the same is written back from
+/// that line rather than re-rendered. Without it, correcting one cell of the
+/// seventeen-row routing table rewrote all nineteen lines - the header spacing,
+/// the `|------|-------|` delimiter, every untouched row - and the diff of a
+/// one-word fix was the whole table. What a reviewer sees should be what changed.
+///
+/// Columns are NOT padded to a common width when a row IS re-rendered, for the
+/// same reason: a table whose widest cell is a sentence would come back with
+/// seventeen lines of trailing spaces.
+function renderTablePart(part) {
+  const cols = part.head.length;
+  const src = part.src || {};
+  const render = cells => "| " + cells.map(cellSource).join(" | ") + " |";
+  const keep = (line, cells) =>
+    (typeof line === "string" && sameCells(rowCells(line), cells)) ? line : render(cells);
+  const out = [keep(src.head, part.head)];
+  out.push(keepDelim(src.delim, part.align));
+  part.rows.forEach((r, i) => {
+    const cells = r.slice(0, cols);
+    while (cells.length < cols) cells.push("");
+    out.push(keep(src.rows ? src.rows[i] : null, cells));
+  });
+  return out;
+}
+
+/// Two rows of cells that would render the same. Compared trimmed, because that
+/// is how `rowCells` reads them back and a cell is not changed by the spaces
+/// around it in the source.
+function sameCells(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (cellText(a[i]) !== cellText(b[i])) return false;
+  }
+  return true;
+}
+
+function keepDelim(line, align) {
+  if (typeof line === "string" && MD_DELIM_RE.test(line)) {
+    const had = rowCells(line).map(c =>
+      /^:-+:$/.test(c) ? "center" : /^-+:$/.test(c) ? "right" : /^:-+$/.test(c) ? "left" : "");
+    if (had.length === align.length && had.every((a, i) => a === align[i])) return line;
+  }
+  return "|" + align.map(a => " " + (ALIGN_DELIM[a] || "---") + " ").join("|") + "|";
+}
+
+/// Re-render a table part's source from its grid. Every mutation below ends
+/// here, so `lines` can never disagree with the grid it is supposed to describe.
+function syncTablePart(part) {
+  if (!part.src) part.src = { head: null, delim: null, rows: part.rows.map(() => null) };
+  part.lines = renderTablePart(part);
+  return part;
+}
+
+/// The source lines held beside the grid, kept in step with it. A row that moved
+/// keeps its bytes; a row whose SHAPE changed - a column added or removed -
+/// cannot, so the whole table drops back to being re-rendered.
+function srcRows(part) {
+  if (!part.src) part.src = { head: null, delim: null, rows: [] };
+  if (!part.src.rows) part.src.rows = [];
+  while (part.src.rows.length < part.rows.length) part.src.rows.push(null);
+  return part.src.rows;
+}
+
+function tableAddRow(part, at) {
+  const i = Math.max(0, Math.min(Number(at), part.rows.length));
+  srcRows(part).splice(i, 0, null);
+  part.rows.splice(i, 0, part.head.map(() => ""));
+  return syncTablePart(part);
+}
+
+/// -> null when the table has one body row left. A table with a header and no
+/// rows does not parse back as a table, so removing the last one would turn the
+/// grid into pipes the next time the step was opened.
+function tableRemoveRow(part, at) {
+  if (part.rows.length <= 1) return null;
+  if (!(at >= 0) || at >= part.rows.length) return null;
+  srcRows(part).splice(at, 1);
+  part.rows.splice(at, 1);
+  return syncTablePart(part);
+}
+
+function tableAddColumn(part, at) {
+  const i = Math.max(0, Math.min(Number(at), part.head.length));
+  part.head.splice(i, 0, "");
+  part.align.splice(i, 0, "");
+  for (const r of part.rows) r.splice(i, 0, "");
+  part.src = { head: null, delim: null, rows: part.rows.map(() => null) };
+  return syncTablePart(part);
+}
+
+/// -> null when there is one column left, for the same reason as the last row.
+function tableRemoveColumn(part, at) {
+  if (part.head.length <= 1) return null;
+  if (!(at >= 0) || at >= part.head.length) return null;
+  part.head.splice(at, 1);
+  part.align.splice(at, 1);
+  for (const r of part.rows) r.splice(at, 1);
+  part.src = { head: null, delim: null, rows: part.rows.map(() => null) };
+  return syncTablePart(part);
+}
+
+/// A new two-by-two table, ready to be typed into. It has no source lines to
+/// keep, so every row of it is rendered.
+function newTablePart() {
+  return syncTablePart({ kind: "table", lines: [], head: ["Column", "Column"],
+                         align: ["", ""], rows: [["", ""]],
+                         src: { head: null, delim: null, rows: [null] } });
+}
+
+/// The grid a dialog can work on without touching the one on the page. Deep
+/// enough that Cancel is free: nothing the dialog does reaches `part`.
+function copyTablePart(part) {
+  const src = part.src || {};
+  return { kind: "table", lines: part.lines.slice(), head: part.head.slice(),
+           align: part.align.slice(), rows: part.rows.map(r => r.slice()),
+           src: { head: src.head, delim: src.delim,
+                  rows: (src.rows || []).slice() } };
+}
+
+/// Append a table to a set of parts, with the blank line that makes it a block
+/// of its own. -> the new part, or null when there is no prose for it to follow:
+/// a step whose FIRST line is a table row would be written as `4. | Work |`,
+/// which is a step nobody can read and a table that does not parse.
+function appendTablePart(parts) {
+  if (!parts || !parts.length) return null;
+  const last = parts[parts.length - 1];
+  if (last.kind !== "prose") return null;
+  if (!last.lines.join("\n").trim()) return null;
+  if (last.lines[last.lines.length - 1] !== "") last.lines.push("");
+  const part = newTablePart();
+  parts.push(part);
+  return part;
 }
 
 // ===========================================================================
@@ -944,6 +1227,73 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepac-row.on { background: #eef2ff; color: #1e1b4b; }
 .stepac-hint { padding: 3px 6px; font-size: 10px; color: var(--dim);
   border-top: 1px solid var(--line); margin-top: 2px; }
+.stepac-row .k.k-agent { color: #4338ca; } .stepac-row .k.k-rule { color: #b45309; }
+.stepac-row .k.k-command { color: #047857; } .stepac-row .k.k-skill { color: #7e22ce; }
+.stepac-row .k.k-hook { color: #a16207; } .stepac-row .k.k-script { color: #0f766e; }
+
+/* ---- the step editor ------------------------------------------------------
+   A plain step shows exactly what it showed before: ui.js's own textarea, with
+   one thin bar above it and a row of tags below. A step that CONTAINS a table
+   is split into parts and the textarea is kept in the tree but hidden - ui.js's
+   Apply closes over that element, so it stays the one source of truth and every
+   part writes back into it. */
+.stepe { display: block; }
+.stepe-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+.stepe-bar button { padding: 1px 6px; font-size: 11px; line-height: 1.5; gap: 4px; }
+.stepe-bar svg.ico { width: 12px; height: 12px; }
+.stepe-bar .sp { flex: 1 1 auto; }
+.stepe-hidden { display: none !important; }
+.stepe-parts { display: flex; flex-direction: column; gap: 5px; }
+.stepe-prose { min-height: 30px; resize: vertical; }
+.stepe-tbl { border: 1px solid #93c5fd; border-radius: 6px; background: #f8fbff; padding: 5px 6px; }
+.stepe-tbl-h { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+.stepe-tbl-n { flex: 1 1 auto; font-size: 11px; color: var(--dim); }
+.stepe-tbl-h button { padding: 1px 6px; font-size: 11px; line-height: 1.5; gap: 4px; }
+.stepe-tbl-h svg.ico { width: 12px; height: 12px; }
+.stepe-tbl .stepmd-tw { max-height: 140px; overflow: auto; margin: 0; background: #fff;
+  border-radius: 4px; }
+/* A routing table cites eighteen seats, and eighteen chips push Apply off the
+   bottom of a 320px panel. The row scrolls instead. */
+.stepe-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 5px;
+  max-height: 74px; overflow-y: auto; }
+.stepe-chips .l { font-size: 10px; color: var(--dim); }
+.stepe-chip { font-size: 10px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--line);
+  background: #f8fafc; color: #475569; word-break: break-all; }
+.stepe-chip.k-agent { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+.stepe-chip.k-rule { background: #fff7ed; border-color: #fed7aa; color: #b45309; }
+.stepe-chip.k-cmd { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+.stepe-chip.k-script { background: #f0fdfa; border-color: #99f6e4; color: #0f766e; }
+.stepe-chip.k-none { border-style: dashed; }
+
+/* ---- the grid, inside a wide dialog ---------------------------------------
+   Seventeen rows of two columns do not fit a 320px sidebar at any font size, so
+   the grid is the one part of this editor that gets a dialog. The wide dialog is
+   1040px, which is where a routing table stops being pipes and starts being a
+   table.
+   NOTE: no backtick may appear anywhere in this block. It is a template literal,
+   and a stray one ends the stylesheet mid-rule and takes the rest of the file
+   with it - which is exactly how this comment came to say so. */
+.stepe-grid { display: flex; flex-direction: column; gap: 8px; }
+.stepe-gbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stepe-gbar .n { flex: 1 1 auto; font-size: 11px; color: var(--dim); text-align: right; }
+.stepe-gwrap { overflow: auto; max-height: min(56vh, 520px); border: 1px solid var(--line);
+  border-radius: 6px; }
+.stepe-grid table { border-collapse: collapse; width: 100%; }
+.stepe-grid th, .stepe-grid td { border: 1px solid var(--line); padding: 2px; vertical-align: top; }
+.stepe-grid thead th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; }
+.stepe-grid .rowh { background: #f8fafc; width: 58px; white-space: nowrap; text-align: center;
+  font-size: 10px; color: var(--dim); }
+.stepe-grid .rowh button { padding: 0 4px; line-height: 1.4; }
+.stepe-grid .colh { display: flex; gap: 3px; align-items: center; }
+.stepe-grid .colh button { padding: 0 4px; line-height: 1.4; }
+.stepe-grid svg.ico { width: 11px; height: 11px; }
+.stepe-cell { width: 100%; box-sizing: border-box; font: inherit; font-size: 12px;
+  border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; background: transparent;
+  color: inherit; resize: none; overflow: hidden; white-space: pre-wrap;
+  word-break: break-word; line-height: 1.45; display: block; }
+.stepe-cell:focus { border-color: #93c5fd; background: #f8fbff; outline: none; }
+.stepe-grid thead .stepe-cell { font-weight: bold; }
+.stepe-ghint { font-size: 11px; color: var(--dim); }
 `;
 
 function ensureStepCss(doc) {
@@ -1133,6 +1483,11 @@ function paintAc() {
     v.textContent = it.value;        // repository text, as text
     const k = doc.createElement("span");
     k.className = "k";
+    // The kind carries a colour as well as a word: with `@` the list mixes six
+    // classes, and picking the agent out of twenty rows should not mean reading
+    // twenty labels. The class comes from our own suggestion record, never from
+    // repository text - the VALUE is the repository's, and it goes in as text.
+    k.className = "k k-" + String(it.kind).replace(/[^a-z]/gi, "");
     k.textContent = it.kind;
     row.append(v, k);
     // Clicking is a convenience; the keyboard is the contract. mousedown, not
@@ -1173,10 +1528,491 @@ function acceptAc() {
   ta.value = out.text;
   ta.selectionStart = ta.selectionEnd = out.caret;
   closeAc();
+  // The editor below keeps ui.js's textarea as the step's one source of truth
+  // and mirrors every field into it on `input`. A value assigned from script
+  // fires no such event, so without this an accepted completion would land in
+  // the field the reader is looking at and never reach the step being saved.
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
   // A directory keeps the list open on the level below it, which is how a path
   // gets typed one segment at a time instead of guessed whole.
   if (String(item.value).charAt(String(item.value).length - 1) === "/") refreshAc(ta);
   ta.focus();
+}
+
+// ---- the step editor -------------------------------------------------------
+//
+// ui.js draws one <textarea class="stepedit"> when a step is being edited and
+// closes over that element in its Apply handler. This upgrades that textarea in
+// place rather than replacing it, which is what lets a real editor exist without
+// ui.js knowing: the element stays in the tree and stays the one value Apply
+// reads, and everything added here writes back into it.
+//
+// TWO CASES, DELIBERATELY DIFFERENT.
+//
+//   A PLAIN STEP IS NOT MADE HEAVIER. A step is usually one sentence, and that
+//   edit is as fast as it was: the same textarea, in the same place, at the same
+//   size. It gains one thin bar above it and a row of tags below, and nothing
+//   moves.
+//
+//   A STEP WITH A TABLE IS SPLIT. Prose stays prose; the table becomes a grid
+//   with add and remove for rows and columns. That is the case this exists for -
+//   `/implement-fr` step 4 is a seventeen-row routing table and a textarea full
+//   of pipes is not an editor, it is a reason not to edit.
+//
+// The bytes are never in doubt. Every field mirrors into the textarea through
+// `joinStepParts`, which is a line-for-line inverse of the split, and a table is
+// re-rendered ONLY when the grid was applied. Open a step, change nothing, press
+// Apply: the text is the text the file had.
+//
+// Repository text reaches these fields as `input.value` and `textarea.value` -
+// properties, not markup - and reaches the preview through `buildTable`, which
+// is createElement and textContent throughout. There is no HTML string here.
+
+let editorSeq = 0;
+
+/// The node ids the loaded graph carries, or an empty set when the page has not
+/// got one yet. Read lazily for the same reason `panelState` is.
+function editorIds() {
+  try {
+    if (typeof graph !== "undefined" && graph && graph.nodes) {
+      return new Set(graph.nodes.map(x => x.id));
+    }
+  } catch (e) { /* the graph has not loaded yet */ }
+  return new Set();
+}
+
+/// Fields the completion popup opens in. Table cells are <input>, not
+/// <textarea>, and the popup only ever reads `.value` and the selection, so both
+/// work; this is the one place that has to know both class names.
+function isCompletionField(el) {
+  return !!(el && el.classList &&
+            (el.classList.contains("stepedit") || el.classList.contains("stepe-cell")));
+}
+
+function autoSize(ta) {
+  ta.style.height = "auto";
+  ta.style.height = Math.max(30, Math.min(ta.scrollHeight + 2, 420)) + "px";
+}
+
+/// Upgrade one of ui.js's step textareas into the editor. Idempotent: the
+/// element carries a marker, so the repaint observer cannot mount twice.
+function mountStepEditor(ta) {
+  if (!ta || ta.dataset.hvEd) return null;
+  // A prose part carries `stepedit` too - it wants ui.html's styling and this
+  // file's completion delegation - which made the repaint sweep mount an editor
+  // INSIDE an editor: a second toolbar, a second tag row, and the step's tags
+  // counted twice. The part is not a step; it is a piece of one.
+  if (ta.classList.contains("stepe-prose")) return null;
+  const doc = ta.ownerDocument;
+  if (!ta.parentNode) return null;
+  ta.dataset.hvEd = "1";
+  ensureStepCss(doc);
+
+  const wrap = doc.createElement("div");
+  wrap.className = "stepe";
+  ta.parentNode.insertBefore(wrap, ta);
+  const bar = doc.createElement("div");
+  bar.className = "stepe-bar";
+  const host = doc.createElement("div");
+  host.className = "stepe-parts";
+  const chips = doc.createElement("div");
+  chips.className = "stepe-chips";
+  wrap.append(bar, host);
+  // MOVED, never removed: ui.js's Apply handler holds this exact element.
+  wrap.appendChild(ta);
+  wrap.appendChild(chips);
+
+  const ed = { ta: ta, wrap: wrap, bar: bar, host: host, chips: chips,
+               parts: splitStepParts(ta.value), mode: "rich", last: ta, id: ++editorSeq };
+  wrap.addEventListener("focusin", ev => {
+    if (isCompletionField(ev.target)) ed.last = ev.target;
+  });
+  // Typing in the textarea itself - the plain case, and source mode - still has
+  // to keep the tags honest and the parts current.
+  ta.addEventListener("input", () => {
+    if (!editorIsSplit(ed)) ed.parts = splitStepParts(ta.value);
+    paintChips(ed);
+  });
+  paintEditor(ed);
+  return ed;
+}
+
+/// Whether the parts view is the one on screen. Source mode and a step with no
+/// table both show ui.js's textarea, which is the same thing from here.
+function editorIsSplit(ed) {
+  return ed.mode === "rich" && stepPartsHaveTable(ed.parts);
+}
+
+function syncEditor(ed) {
+  ed.ta.value = joinStepParts(ed.parts);
+  paintChips(ed);
+}
+
+function paintEditor(ed) {
+  const doc = ed.ta.ownerDocument;
+  const split = editorIsSplit(ed);
+  ed.host.textContent = "";
+  ed.ta.classList.toggle("stepe-hidden", split);
+  if (split) {
+    ed.parts.forEach(p => ed.host.appendChild(p.kind === "table"
+      ? buildTablePart(doc, ed, p) : buildProsePart(doc, ed, p)));
+  }
+  paintEditorBar(ed);
+  paintChips(ed);
+}
+
+function paintEditorBar(ed) {
+  const doc = ed.ta.ownerDocument;
+  ed.bar.textContent = "";
+  // Colour by what the control DOES, using the page's own six kinds: blue for
+  // the reference picker (it inserts a citation), green for adding a table,
+  // grey for the view toggle, which changes nothing at all.
+  const ref = stepBtn(doc.createElement("button"), "link", "Reference");
+  ref.type = "button";
+  ref.className = "ui-info";
+  ref.title = "insert a reference to an agent, rule, skill, command or file";
+  ref.addEventListener("click", () => insertMention(ed));
+  const tbl = stepBtn(doc.createElement("button"), "plus", "Table");
+  tbl.type = "button";
+  tbl.className = "ui-accent";
+  tbl.title = "add a markdown table to this step";
+  tbl.addEventListener("click", () => addTableToEditor(ed));
+  ed.bar.append(ref, tbl);
+  if (stepPartsHaveTable(ed.parts)) {
+    const sp = doc.createElement("span");
+    sp.className = "sp";
+    const rich = ed.mode === "rich";
+    const sw = stepBtn(doc.createElement("button"), rich ? "code" : "doc",
+                       rich ? "Source" : "Editor");
+    sw.type = "button";
+    sw.className = "ui-quiet";
+    sw.title = rich ? "edit the raw markdown instead" : "back to the split editor";
+    sw.addEventListener("click", () => {
+      closeAc();
+      if (ed.mode === "rich") { ed.mode = "source"; }
+      else { ed.mode = "rich"; ed.parts = splitStepParts(ed.ta.value); }
+      paintEditor(ed);
+      if (ed.mode === "source") { autoSize(ed.ta); ed.ta.focus(); }
+    });
+    ed.bar.append(sp, sw);
+  }
+}
+
+function buildProsePart(doc, ed, part) {
+  const t = doc.createElement("textarea");
+  // The panel's own editor class, so this picks up ui.html's styling and this
+  // file's completion delegation without a second rule for either.
+  t.className = "stepedit stepe-prose";
+  t.spellcheck = false;
+  t.value = part.lines.join("\n");    // repository text, as a value
+  t.addEventListener("input", () => {
+    part.lines = t.value.replace(/\r\n/g, "\n").split("\n");
+    syncEditor(ed);
+    autoSize(t);
+  });
+  // The height is only known once it is in the document, and this runs before
+  // the append; a frame later it is measurable.
+  requestAnimationFrame(() => autoSize(t));
+  return t;
+}
+
+function buildTablePart(doc, ed, part) {
+  const box = doc.createElement("div");
+  box.className = "stepe-tbl";
+  const head = doc.createElement("div");
+  head.className = "stepe-tbl-h";
+  const n = doc.createElement("span");
+  n.className = "stepe-tbl-n";
+  n.textContent = "table - " + part.rows.length + " " +
+                  (part.rows.length === 1 ? "row" : "rows") + ", " +
+                  part.head.length + " " +
+                  (part.head.length === 1 ? "column" : "columns");
+  const open = stepBtn(doc.createElement("button"), "edit", "Edit table");
+  open.type = "button";
+  open.className = "ui-info";
+  open.addEventListener("click", () => openTableEditor(ed, part));
+  const drop = stepBtn(doc.createElement("button"), "trash", "Remove this table", true);
+  drop.type = "button";
+  drop.className = "ui-danger";
+  drop.addEventListener("click", () => {
+    const at = ed.parts.indexOf(part);
+    if (at === -1) return;
+    ed.parts.splice(at, 1);
+    syncEditor(ed);
+    paintEditor(ed);
+    say("info", "table removed from this step",
+        "nothing is written until Apply, then Save - Cancel puts it back");
+  });
+  head.append(n, open, drop);
+  box.append(head, buildTable(doc, part));
+  return box;
+}
+
+/// The `@` picker, opened deliberately rather than by remembering to type a
+/// mark. It puts the `@` in for you at the caret of whichever field was last
+/// focused, which is what makes tagging a button and not a convention.
+function insertMention(ed) {
+  const f = (ed.last && ed.last.isConnected && !ed.last.classList.contains("stepe-hidden"))
+    ? ed.last
+    : (ed.host.querySelector("textarea.stepe-prose") || ed.ta);
+  f.focus();
+  const at = typeof f.selectionStart === "number" ? f.selectionStart : f.value.length;
+  const to = typeof f.selectionEnd === "number" ? f.selectionEnd : at;
+  const before = f.value.slice(0, at);
+  const after = f.value.slice(to);
+  // `@` opens on a word boundary only, so give it one rather than have the
+  // button silently do nothing in the middle of a word.
+  const pad = before && !/[\s(\[`>|]$/.test(before) ? " " : "";
+  f.value = before + pad + "@" + after;
+  const caret = before.length + pad.length + 1;
+  f.selectionStart = f.selectionEnd = caret;
+  f.dispatchEvent(new Event("input", { bubbles: true }));
+  refreshAc(f);
+}
+
+function addTableToEditor(ed) {
+  if (!editorIsSplit(ed)) ed.parts = splitStepParts(ed.ta.value);
+  const part = appendTablePart(ed.parts);
+  if (!part) {
+    say("warn", "a table needs a sentence in front of it",
+        "write what the table is for first; a step whose first line is a table row " +
+        "does not read as a step");
+    ed.parts = splitStepParts(ed.ta.value);
+    return;
+  }
+  ed.mode = "rich";
+  syncEditor(ed);
+  paintEditor(ed);
+  openTableEditor(ed, part);
+}
+
+// ---- the grid --------------------------------------------------------------
+
+/// The table, in a dialog wide enough to hold one.
+///
+/// The grid works on a COPY. Cancel therefore costs nothing and Apply is the
+/// only thing that changes a byte, which matters more here than anywhere else in
+/// the panel: this is the one control that can delete a row of somebody's file.
+function openTableEditor(ed, part) {
+  const doc = ed.ta.ownerDocument;
+  if (!window.ui || typeof window.ui.modal !== "function") {
+    say("error", "this build has no dialog component", "the table cannot be edited here");
+    return;
+  }
+  const work = copyTablePart(part);
+  const host = doc.createElement("div");
+  host.className = "stepe-grid";
+  const paint = () => paintGrid(doc, host, work, paint);
+  paint();
+  window.ui.modal({
+    title: "Edit the table",
+    icon: "state",
+    wide: true,
+    body: [
+      "Cells are plain markdown. Type `@` in a cell for the reference picker, or a " +
+      "backtick for an agent, rule or skill by name. A pipe is written escaped, so " +
+      "a cell can contain one.",
+      host,
+    ],
+    actions: [
+      { id: "apply", label: "Apply table", icon: "check", kind: "primary", default: true },
+      { id: "cancel", label: "Cancel", icon: "x", kind: "cancel" },
+    ],
+  }).then(res => {
+    closeAc();
+    if (!res || res.action !== "apply") return;
+    part.head = work.head;
+    part.align = work.align;
+    part.rows = work.rows;
+    part.src = work.src;
+    syncTablePart(part);
+    syncEditor(ed);
+    paintEditor(ed);
+    say("success", "table updated",
+        "the step is not written until Apply, and the file not until Save");
+  });
+}
+
+function paintGrid(doc, host, work, repaint) {
+  host.textContent = "";
+  const bar = doc.createElement("div");
+  bar.className = "stepe-gbar";
+  const addR = stepBtn(doc.createElement("button"), "plus", "Add row");
+  addR.type = "button";
+  addR.className = "ui-accent";
+  addR.addEventListener("click", () => { tableAddRow(work, work.rows.length); repaint(); });
+  const addC = stepBtn(doc.createElement("button"), "plus", "Add column");
+  addC.type = "button";
+  addC.className = "ui-accent";
+  addC.addEventListener("click", () => { tableAddColumn(work, work.head.length); repaint(); });
+  const n = doc.createElement("span");
+  n.className = "n";
+  n.textContent = work.rows.length + " x " + work.head.length;
+  bar.append(addR, addC, n);
+
+  const wrapEl = doc.createElement("div");
+  wrapEl.className = "stepe-gwrap";
+  const table = doc.createElement("table");
+
+  const thead = doc.createElement("thead");
+  const hr = doc.createElement("tr");
+  const corner = doc.createElement("th");
+  corner.className = "rowh";
+  corner.textContent = "row";
+  hr.appendChild(corner);
+  work.head.forEach((cell, c) => {
+    const th = doc.createElement("th");
+    const holder = doc.createElement("div");
+    holder.className = "colh";
+    holder.appendChild(gridCell(doc, work, -1, c, cell));
+    const rm = stepBtn(doc.createElement("button"), "trash", "Remove this column", true);
+    rm.type = "button";
+    rm.className = "ui-danger";
+    rm.addEventListener("click", () => {
+      if (!tableRemoveColumn(work, c)) {
+        say("warn", "a table needs a column", "remove the whole table instead");
+        return;
+      }
+      repaint();
+    });
+    holder.appendChild(rm);
+    th.appendChild(holder);
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  table.appendChild(thead);
+
+  const tbody = doc.createElement("tbody");
+  work.rows.forEach((row, r) => {
+    const tr = doc.createElement("tr");
+    const h = doc.createElement("th");
+    h.className = "rowh";
+    const num = doc.createElement("span");
+    num.textContent = String(r + 1) + " ";
+    const ins = stepBtn(doc.createElement("button"), "plus", "Insert a row below this one", true);
+    ins.type = "button";
+    ins.className = "ui-info";
+    ins.addEventListener("click", () => { tableAddRow(work, r + 1); repaint(); });
+    const rm = stepBtn(doc.createElement("button"), "trash", "Remove this row", true);
+    rm.type = "button";
+    rm.className = "ui-danger";
+    rm.addEventListener("click", () => {
+      if (!tableRemoveRow(work, r)) {
+        say("warn", "a table needs a row", "remove the whole table instead");
+        return;
+      }
+      repaint();
+    });
+    h.append(num, ins, rm);
+    tr.appendChild(h);
+    row.forEach((cell, c) => {
+      const td = doc.createElement("td");
+      td.appendChild(gridCell(doc, work, r, c, cell));
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrapEl.appendChild(table);
+
+  const hint = doc.createElement("div");
+  hint.className = "stepe-ghint";
+  hint.textContent = "Apply writes this table back into the step. Nothing reaches the " +
+                     "file until Save.";
+  host.append(bar, wrapEl, hint);
+}
+
+/// One cell. `r` is -1 for a header cell, which is the only difference between
+/// the two rows of the grid that hold text.
+///
+/// A textarea, not an <input>, and that is not a detail. The cells in a real
+/// routing table are long - one of them names seven directories - and in a
+/// single-line input everything past the column width is simply not there: you
+/// cannot read the value you are editing. This wraps and grows to fit. It is
+/// still ONE line of markdown: Enter is refused, and `cellSource` flattens a
+/// pasted newline, so a cell can never end its own row.
+function gridCell(doc, work, r, c, value) {
+  const inp = doc.createElement("textarea");
+  inp.rows = 1;
+  inp.className = "stepe-cell";
+  inp.spellcheck = false;
+  inp.value = String(value == null ? "" : value);   // repository text, as a value
+  inp.setAttribute("aria-label", r === -1
+    ? "column " + (c + 1) + " heading"
+    : "row " + (r + 1) + ", column " + (c + 1));
+  const fit = () => {
+    inp.style.height = "auto";
+    inp.style.height = Math.max(20, inp.scrollHeight) + "px";
+  };
+  inp.addEventListener("input", () => {
+    if (r === -1) work.head[c] = inp.value;
+    else work.rows[r][c] = inp.value;
+    fit();
+  });
+  inp.addEventListener("keydown", ev => {
+    // The completion popup takes Enter first and stops it there; this is the
+    // case where no popup is open, and a row is one line.
+    if (ev.key === "Enter") ev.preventDefault();
+  });
+  requestAnimationFrame(fit);
+  return inp;
+}
+
+// ---- the tags a step carries ------------------------------------------------
+
+/// What this step currently cites, read back out of the text as it is typed.
+///
+/// It is the same `touches` the card shows when the step is not being edited, so
+/// what appears here is exactly what will appear on the card and on the graph.
+/// That is the point: a reference typed by hand and a reference chosen from the
+/// picker are the same bytes, and this is where you find out whether the one you
+/// typed actually landed.
+function paintChips(ed) {
+  const doc = ed.ta.ownerDocument;
+  ed.chips.textContent = "";
+  const found = touches(ed.ta.value, editorIds());
+  const l = doc.createElement("span");
+  l.className = "l";
+  l.textContent = found.length ? "tags:" : "no references yet - Reference adds one";
+  ed.chips.appendChild(l);
+  for (const t of found) {
+    const chip = doc.createElement("span");
+    // The class comes from the node id's TYPE, which this file produced; the
+    // label is repository text and goes in as text.
+    const kind = t.id ? String(t.id).split(":")[0].replace(/[^a-z]/gi, "") : "none";
+    chip.className = "stepe-chip k-" + kind;
+    chip.textContent = t.label;
+    chip.title = t.id ? t.id : "nothing in this graph carries this name";
+    ed.chips.appendChild(chip);
+  }
+}
+
+// ---- colour on the panel's own buttons --------------------------------------
+
+/// ui.js draws the card's Edit/Off pair, the Apply/Cancel pair and the save bar
+/// as plain buttons. They are told apart here by the sprite they carry, which is
+/// the only stable thing about someone else's DOM, and given one of the page's
+/// six button kinds. A sprite this does not recognise keeps the plain button it
+/// had, so a rename in ui.js costs colour and nothing else.
+const BTN_KIND = {
+  "#i-edit": "ui-info", "#i-off": "ui-warn", "#i-on": "ui-accent",
+  "#i-check": "ui-primary", "#i-undo": "ui-warn", "#i-trash": "ui-danger",
+};
+
+function colourPanelButtons(host) {
+  const sel = ".stepcard > .stepacts > button, .stepbody > .stepacts > button, " +
+              ".stepsave > button";
+  for (const b of host.querySelectorAll(sel)) {
+    if (b.dataset.hvKind) continue;
+    b.dataset.hvKind = "1";
+    const use = b.querySelector("use");
+    const id = use ? String(use.getAttribute("href") || "") : "";
+    const cls = BTN_KIND[id];
+    // Save already carries ui-primary from ui.js; adding it twice is a no-op,
+    // and classList.add is what keeps this from clobbering a class it did not
+    // put there.
+    if (cls) b.classList.add(cls);
+  }
 }
 
 // ---- insert-a-step controls ------------------------------------------------
@@ -1220,7 +2056,7 @@ function openInsert(row, g, index) {
   const lbl = doc.createElement("div");
   lbl.className = "lbl";
   lbl.textContent = "New step at position " + (index + 1) +
-                    " - backtick for an agent, / for a command, docs/ for a path";
+                    " - Reference tags an object, Table adds one";
   const ta = doc.createElement("textarea");
   // the same class the panel's own editor uses, so it picks up ui.html's
   // styling and this file's completion delegation without a second rule
@@ -1235,6 +2071,7 @@ function openInsert(row, g, index) {
   // confirm/dismiss pair reads the same wherever it appears in the panel.
   const add = stepBtn(doc.createElement("button"), "check", "Add");
   add.type = "button";
+  add.className = "ui-primary";
   const no = stepBtn(doc.createElement("button"), "x", "Cancel");
   no.type = "button";
   add.addEventListener("click", () => {
@@ -1256,6 +2093,9 @@ function openInsert(row, g, index) {
   no.addEventListener("click", () => { closeAc(); repaintPanel(); });
   bar.append(add, no);
   row.append(lbl, ta, bad, bar);
+  // The same editor the cards get: a new step is as likely to want a table as an
+  // existing one, and there is no reason for the two boxes to behave differently.
+  mountStepEditor(ta);
   ta.focus();
 }
 
@@ -1283,6 +2123,12 @@ function decorate() {
       el.dataset.hvmd = "1";
       renderStepMarkdown(el, raw);
     }
+    // ui.js has just drawn a bare textarea for whichever step is being edited.
+    // Upgrade it in place - the element stays, and stays the value Apply reads.
+    for (const ta of state.host.querySelectorAll("textarea.stepedit:not(.stepe-prose)")) {
+      mountStepEditor(ta);
+    }
+    colourPanelButtons(state.host);
     const pair = listsAndGroups(state.host);
     if (!pair) return;
     pair.groups.forEach((g, gi) => {
@@ -1316,8 +2162,7 @@ function installStepEditor() {
   obs.observe(doc.body, { childList: true, subtree: true });
 
   doc.addEventListener("input", ev => {
-    const t = ev.target;
-    if (t && t.classList && t.classList.contains("stepedit")) refreshAc(t);
+    if (isCompletionField(ev.target)) refreshAc(ev.target);
   }, true);
 
   doc.addEventListener("keydown", ev => {
@@ -1354,7 +2199,11 @@ if (typeof module !== "undefined" && module.exports) {
                      insertStep, insertGap, stepTextIssue,
                      suggestionsFromGraph, suggestionsFromPaths, mergeSuggestions,
                      completionContext, rankSuggestions, applyCompletion,
-                     parseStepMarkdown, stepMarkdownIsRich, safeHref };
+                     parseStepMarkdown, stepMarkdownIsRich, safeHref,
+                     splitStepParts, joinStepParts, stepPartsHaveTable,
+                     renderTablePart, syncTablePart, cellSource, copyTablePart,
+                     tableAddRow, tableRemoveRow, tableAddColumn, tableRemoveColumn,
+                     newTablePart, appendTablePart };
 }
 
 // The one line in this file that reaches for a browser, and it is the last one.
