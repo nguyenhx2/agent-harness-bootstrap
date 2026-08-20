@@ -165,7 +165,10 @@
   }
   .card.g .bgart{color:var(--green)} .card.p .bgart{color:var(--purple)}
   .card.r .bgart{color:var(--red)} .card.a .bgart{color:var(--amber)}
-  .card .ic{width:2.5em;height:2.5em;padding:.5em;border-radius:14px;background:#fff;
+  /* flex:0 0 auto, because the card is a flex column: when the text is a line too long
+     for the box the icon is what silently absorbs it, and a 2.5em square renders as a
+     30px pill. Let the text be the thing that shows the problem, not the artwork. */
+  .card .ic{width:2.5em;height:2.5em;flex:0 0 auto;padding:.5em;border-radius:14px;background:#fff;
     color:var(--brand);margin-bottom:.55em}
   .card h3{margin:0 0 .22em;font-size:1.06em;color:var(--ink)}
   .card p{margin:0;color:var(--dim);font-size:.89em}
@@ -410,6 +413,21 @@
     .coverwrap,.quote2col,.quotesplit{grid-template-columns:1fr;text-align:left}
     .coverwrap .art,.quote2col .qmain img{max-height:none;width:100%}
     .rings{min-height:15em;margin:.5em 0}
+
+    /* A cell holding an unbreakable path (.cursor/rules/*.mdc, .claude/disabled.json)
+       set the table's min-content width, and at 390px that is wider than the card: the
+       portability table hung off the right edge of the page. overflow-wrap:anywhere is
+       the one wrapping value that shrinks min-content, so auto table layout can then
+       fit - table-layout:fixed would have squared up the narrow first column instead. */
+    th,td{padding:.5em .6em}
+    th,td,td code,td strong{overflow-wrap:anywhere}
+
+    /* Same cause on the memory-tier rows: tag, description and meta cannot share one
+       line at this width, and the meta carried a min-width and a right edge, so it was
+       pushed past the card. Let the row wrap and the meta sit under what it annotates. */
+    .lay .row{flex-wrap:wrap}
+    .lay .row .desc{flex:1 1 100%}
+    .lay .row .meta{min-width:0;text-align:left;flex:0 0 auto}
 
     .arrow{position:fixed;top:auto;bottom:14px;transform:none;z-index:40;
       width:44px;height:44px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -771,60 +789,6 @@ const S = [
        ja:"最初に選ぶ3モード: Greenfield · {{g:brownfield|Brownfield}} · Audit。既存ファイルは上書きせず突き合わせます。"},
  nav:{en:"Two skills", vi:"Hai skill", ja:"2つのスキル"}},
 
-/* 7b - the named components, and what this repo puts in each */
-{icon:"i-flow", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"What a harness has to cover", vi:"Harness phải bao phủ những gì", ja:"ハーネスが担うべき範囲"},
- sub:{en:"Six components, and what this repository generates for each one.",
-      vi:"Sáu thành phần, và những gì repository này sinh ra cho từng thành phần.",
-      ja:"6つの構成要素と、このリポジトリがそれぞれに生成するもの。"},
- cards:[
-  {ic:"i-plug2", cls:"r", t:{en:"Tool integration", vi:"Tích hợp công cụ", ja:"ツール統合"},
-   d:{en:"An explicit <code>tools:</code> grant per agent, so a reviewer cannot write and a seeder cannot deploy.",
-      vi:"Cấp <code>tools:</code> tường minh cho từng agent, nên reviewer không ghi được và seeder không deploy được.",
-      ja:"エージェントごとに明示的な <code>tools:</code> 付与。レビュアーは書けず、シーダーはデプロイできません。"}},
-  {ic:"i-brain", cls:"g", t:{en:"Memory and state", vi:"Bộ nhớ và trạng thái", ja:"メモリと状態"},
-   d:{en:"A task board and session log on disk, so state outlives the context window.",
-      vi:"Bảng task và session log trên đĩa, nên trạng thái sống lâu hơn cửa sổ context.",
-      ja:"ディスク上のタスクボードとセッションログ。状態はコンテキストウィンドウより長生きします。"}},
-  {ic:"i-box", cls:"p", t:{en:"Context engineering", vi:"Kỹ thuật context", ja:"コンテキスト設計"},
-   d:{en:"Path-scoped rules: a rule enters the window only when a matching file is touched. Two graphs answer \"what depends on this\" without a full-tree read.",
-      vi:"Rule theo path: rule chỉ vào cửa sổ khi chạm đúng file khớp. Hai graph trả lời \"cái gì phụ thuộc vào thứ này\" mà không cần đọc cả cây thư mục.",
-      ja:"パススコープのルール。一致するファイルに触れた時だけ読み込まれます。2つのグラフが「何がこれに依存しているか」にツリー全読みなしで答えます。"}},
-  {ic:"i-flow", cls:"a", t:{en:"Planning and decomposition", vi:"Lập kế hoạch và phân rã", ja:"計画と分解"},
-   d:{en:"An orchestrator that registers tasks on a board before any work starts.",
-      vi:"Orchestrator đăng ký task lên bảng trước khi bắt đầu bất cứ việc gì.",
-      ja:"作業開始前にタスクをボードへ登録するオーケストレーター。"}},
-  {ic:"i-shield", cls:"r", t:{en:"Verification and guardrails", vi:"Kiểm chứng và guardrails", ja:"検証とガードレール"},
-   d:{en:"Hooks that exit 2, a deny list, and gates that must record that they ran. Tests ship with the code by default; test-first is opt-in.",
-      vi:"Hook thoát mã 2, deny list, và các cổng buộc phải ghi lại rằng đã chạy. Mặc định test đi cùng code; viết test trước là tuỳ chọn.",
-      ja:"終了コード2のフック、拒否リスト、実行を記録せねばならないゲート。既定でテストは実装と同時に届き、テスト先行はオプトインです。"}},
-  {ic:"i-puzzle", cls:"p", t:{en:"Modularity", vi:"Tính mô-đun", ja:"モジュール性"},
-   d:{en:"Every piece is a file you can delete. Remove <code>.claude/</code> and the repo is as it was.",
-      vi:"Mọi thành phần là một file bạn có thể xoá. Xoá <code>.claude/</code> là repo trở lại như cũ.",
-      ja:"すべてが削除可能なファイル。<code>.claude/</code> を消せば元通りです。"}}],
- nav:{en:"Six components", vi:"Sáu thành phần", ja:"6つの構成要素"}},
-
-/* 7c - skill discovery and wiring, as a user benefit */
-{icon:"i-puzzle", kind:"bullets", cls:"purple", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"Skills that match your stack, not a grab bag", vi:"Skill khớp với stack của bạn, không phải một mớ hổ lốn", ja:"あなたのスタックに合うスキルを、寄せ集めではなく"},
- sub:{en:"harness-bootstrap does not hand you a pile of skills to sort through. It does the sorting first.",
-      vi:"harness-bootstrap không đưa cho bạn một đống skill để tự lọc. Nó lọc trước giúp bạn.",
-      ja:"harness-bootstrap は選別すべき山のようなスキルを渡してくるわけではありません。先に選別を済ませます。"},
- items:[
-  {t:{en:"Matched to what your repo actually is", vi:"Khớp với bản chất thật của repo bạn", ja:"あなたのリポジトリの実態に合わせて"},
-   d:{en:"The detected tech stack decides what gets looked for, so the candidates are relevant before anyone reviews them.",
-      vi:"Stack công nghệ được phát hiện quyết định thứ gì được tìm kiếm, nên các ứng viên đã liên quan từ trước khi ai đó review chúng.",
-      ja:"検出された技術スタックが何を探すかを決めるため、レビューされる前から候補は的を射ています。"}},
-  {t:{en:"Reviewed before it is ever suggested", vi:"Được review trước khi nó được đề xuất", ja:"提案される前に必ずレビュー済み"},
-   d:{en:"Every candidate is read in full before it reaches you. A big install count or a well-known publisher is a signal, never the pass.",
-      vi:"Mọi ứng viên đều được đọc toàn bộ trước khi tới tay bạn. Số lượt cài lớn hay nhà phát hành nổi tiếng chỉ là tín hiệu, không phải giấy thông hành.",
-      ja:"どの候補も、あなたに届く前に全文が読まれます。インストール数の多さや著名な発行元は判断材料であって、通過条件ではありません。"}},
-  {t:{en:"You choose, then it is wired in", vi:"Bạn chọn, rồi nó được nối vào", ja:"あなたが選び、それから配線される"},
-   d:{en:"Nothing installs itself. You tick the ones you want, and <code>/skill-wire</code> connects each one to the agent or command that will actually use it - not just left sitting on disk.",
-      vi:"Không có gì tự cài. Bạn tick chọn cái mình muốn, rồi <code>/skill-wire</code> nối từng cái vào agent hoặc command sẽ thực sự dùng nó, chứ không phải nằm im trên đĩa.",
-      ja:"何も自動ではインストールされません。欲しいものにチェックを入れると、<code>/skill-wire</code> がそれぞれを実際に使うエージェントやコマンドへつなぎます。ディスクに置かれたままにはしません。"}}],
- nav:{en:"Skills that fit", vi:"Skill vừa vặn", ja:"合うスキル"}},
-
 /* 7a - the step between the contract and the harness, and the answer to problem 01 */
 {icon:"i-ruler", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
  title:{en:"Tailored, not comprehensive", vi:"Vừa vặn, không phải đầy đủ", ja:"網羅ではなく、適合"},
@@ -887,9 +851,9 @@ const S = [
       ja:"4つのメモリ階層。状態はディスク上にあり、{{g:compaction|圧縮}}もクラッシュも設計上生き延びます。"}},
   {ic:"i-flow", cls:"p", n:"B",
    t:{en:"Orchestration", vi:"Điều phối", ja:"オーケストレーション"},
-   d:{en:"Registered tasks with one owner, scoped specialists and gates that must record that they ran.",
-      vi:"Task được đăng ký với một chủ sở hữu, chuyên gia có phạm vi và các cổng buộc phải ghi lại rằng đã chạy.",
-      ja:"担当が1人の登録済みタスク、スコープを持つ専門家、実行を記録せねばならないゲート。"}},
+   d:{en:"A tier decides how much process a change earns. Scoped specialists, and one gate on the branch that must record that it ran.",
+      vi:"Một bậc quyết định thay đổi đó xứng đáng bao nhiêu quy trình. Chuyên gia có phạm vi, và một cổng duy nhất trên nhánh buộc phải ghi lại rằng đã chạy.",
+      ja:"変更がどれだけの手続きに値するかをティアが決めます。スコープを持つ専門家と、実行を記録せねばならないブランチ上の一つのゲート。"}},
   {ic:"i-shield", cls:"r", n:"C",
    t:{en:"Security", vi:"Bảo mật", ja:"セキュリティ"},
    d:{en:"Four enforced layers the model does not get a vote on, checked before the action happens.",
@@ -905,11 +869,11 @@ const S = [
       ja:"{{g:compaction|圧縮}}が各階層に何をするかをご覧ください。課題03・05・08への答えです。"},
  rows:[
   {cls:"ram", ic:"i-clock", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
-   d:{en:"CLAUDE.md, 6 unconditional rules, the agent body, tool schemas", vi:"CLAUDE.md, 6 rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件の6ルール、エージェント本体、ツールスキーマ"},
-   m:{en:"~25,700 B every turn", vi:"~25.700 B mỗi lượt", ja:"毎ターン約25,700B"}},
+   d:{en:"CLAUDE.md, 7 unconditional rules, the agent body, tool schemas", vi:"CLAUDE.md, 7 rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件の7ルール、エージェント本体、ツールスキーマ"},
+   m:{en:"~30,600 B every turn", vi:"~30.600 B mỗi lượt", ja:"毎ターン約30,600B"}},
   {cls:"ram", ic:"i-box", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
    d:{en:"The 9 {{g:pathscoped|path-scoped}} rules, loaded only on a matching file", vi:"9 rule {{g:pathscoped|theo path}}, chỉ nạp khi chạm file khớp", ja:"{{g:pathscoped|パススコープ}}の9ルール、一致ファイル時のみ読込"},
-   m:{en:"~51,800 B on demand", vi:"~51.800 B theo yêu cầu", ja:"必要時に約51,800B"}},
+   m:{en:"~55,000 B on demand", vi:"~55.000 B theo yêu cầu", ja:"必要時に約55,000B"}},
   {cls:"disk", ic:"i-doc", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
    d:{en:"The task board and one file per task, with the session log written as it works", vi:"Bảng task và mỗi task một file, kèm session log ghi ngay trong lúc làm", ja:"タスクボードとタスクごとのファイル、作業しながら書くセッションログ"},
    m:{en:"committed to git", vi:"đã commit vào git", ja:"gitにコミット済み"}},
@@ -936,48 +900,45 @@ const S = [
       ja:"終了時に MISSION COMPLETE マーカーを書くため、完了か異常終了かは推測ではなくファイル確認です。無言の停止はクラッシュ扱い。"}}],
  nav:{en:"Context rules", vi:"Nguyên tắc context", ja:"コンテキスト原則"}},
 
-/* 11 */
+/* 11 - how much process a change gets, decided before anything is dispatched */
+{icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
+ title:{en:"Process proportional to the change", vi:"Quy trình tương xứng với thay đổi", ja:"変更の大きさに見合ったプロセス"},
+ sub:{en:"The tier is decided before anything is dispatched, and <mark>most changes are Direct</mark>. Choosing a heavier tier than the change needs is a defect, not caution.",
+      vi:"Bậc được chọn trước khi điều phối bất cứ thứ gì, và <mark>phần lớn thay đổi là Direct</mark>. Chọn bậc nặng hơn mức thay đổi cần là một lỗi, không phải sự thận trọng.",
+      ja:"ティアはディスパッチの前に決まり、<mark>大半の変更は Direct</mark> です。必要より重いティアを選ぶのは慎重さではなく欠陥です。"},
+ cols:{en:["Tier","The change","Who runs it"], vi:["Bậc","Thay đổi","Ai chạy"], ja:["ティア","対象の変更","誰が実行するか"]},
+ rows:[
+  {en:["<strong><mark class='m2'>Direct</mark></strong>","One module, reversible, touching no contract, schema, auth, payment or infrastructure","The owning agent, called straight. <strong>No orchestrator, no task file</strong>"],
+   vi:["<strong><mark class='m2'>Direct</mark></strong>","Một module, có thể hoàn tác, không chạm hợp đồng, schema, auth, thanh toán hay hạ tầng","Gọi thẳng agent sở hữu. <strong>Không orchestrator, không task file</strong>"],
+   ja:["<strong><mark class='m2'>Direct</mark></strong>","単一モジュール、可逆、契約・スキーマ・認証・決済・インフラに触れない","担当エージェントを直接呼ぶ。<strong>オーケストレーターもタスクファイルも無し</strong>"]},
+  {en:["<strong>Standard</strong>","One domain, several files, or a numbered requirement behind it","The owning agent too. A task file only when the work must survive a {{g:compaction|compaction}}"],
+   vi:["<strong>Standard</strong>","Một miền, vài file, hoặc có một yêu cầu đánh số đằng sau","Vẫn là agent sở hữu. Chỉ lập task file khi công việc phải sống qua một lần {{g:compaction|compaction}}"],
+   ja:["<strong>Standard</strong>","単一領域、複数ファイル、または番号のついた要件がある","こちらも担当エージェント。{{g:compaction|圧縮}}を越えて残す必要があるときだけタスクファイルを作る"]},
+  {en:["<strong><mark class='m3'>Guarded</mark></strong>","Two or more domains, <em>or</em> schema, auth, money, a public contract, a migration, a deploy or personal data","The {{g:orchestrator|orchestrator}}, and the full flow on the next page"],
+   vi:["<strong><mark class='m3'>Guarded</mark></strong>","Từ hai miền trở lên, <em>hoặc</em> chạm schema, auth, tiền, hợp đồng công khai, migration, deploy hay dữ liệu cá nhân","{{g:orchestrator|Orchestrator}}, và trọn luồng ở trang sau"],
+   ja:["<strong><mark class='m3'>Guarded</mark></strong>","2領域以上、<em>または</em>スキーマ・認証・金銭・公開契約・マイグレーション・デプロイ・個人データ","{{g:orchestrator|オーケストレーター}}と、次のページの完全な流れ"]}],
+ note:{en:"And the gate runs once, on the branch, at the pull-request boundary - never after each agent. A reviewer dispatched per agent re-reads the same files once per agent and reports the same findings each time.",
+       vi:"Và cổng chỉ chạy một lần, trên nhánh, tại ranh giới pull request - không phải sau mỗi agent. Reviewer được điều phối sau từng agent sẽ đọc lại đúng những file đó mỗi lần và báo cáo đúng những phát hiện đó mỗi lần.",
+       ja:"そしてゲートはブランチ上で、プルリクエストの境界で一度だけ走ります。エージェントごとではありません。毎回レビュアーを割り当てれば、同じファイルを何度も読み直し、同じ所見を何度も報告するだけです。"},
+ nav:{en:"How much process", vi:"Bao nhiêu quy trình", ja:"どれだけの手続き"}},
+
+/* 12 - the Guarded flow, and the single gate at the end of it */
 {icon:"i-flow", kind:"pipe", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"Process proportional to blast radius", vi:"Quy trình tương xứng với mức độ ảnh hưởng", ja:"影響範囲に見合ったプロセス"},
- sub:{en:"This answers problems 06 and 07: the shape holds whichever model runs inside it.",
-      vi:"Đây là câu trả lời cho vấn đề 06 và 07: hình dạng quy trình giữ nguyên bất kể model nào chạy bên trong.",
-      ja:"課題06と07への答え: 内側でどのモデルが動いても、形は保たれます。"},
+ title:{en:"The Guarded flow, and the one gate at the end", vi:"Luồng Guarded, và một cổng duy nhất ở cuối", ja:"Guarded の流れと、最後にある一つのゲート"},
+ sub:{en:"Only Guarded work runs the whole shape. This answers problems 06 and 07: the shape holds whichever model runs inside it.",
+      vi:"Chỉ việc thuộc bậc Guarded mới chạy trọn hình dạng này. Đây là câu trả lời cho vấn đề 06 và 07: hình dạng giữ nguyên bất kể model nào chạy bên trong.",
+      ja:"全体を走らせるのは Guarded の作業だけです。課題06と07への答え: 内側でどのモデルが動いても、形は保たれます。"},
  levels:[
   {cls:"orch", items:[{en:"orchestrator", vi:"orchestrator", ja:"orchestrator"}],
-   cap:{en:"Analyze → Decompose → Register on the board", vi:"Phân tích → Phân rã → Đăng ký lên bảng", ja:"分析 → 分解 → ボードに登録"}},
+   cap:{en:"Guarded only: analyze → decompose → register on the board", vi:"Chỉ với Guarded: phân tích → phân rã → đăng ký lên bảng", ja:"Guarded のみ: 分析 → 分解 → ボードに登録"}},
   {cls:"dev", items:[{en:"app-dev", vi:"app-dev", ja:"app-dev"},{en:"data-modeler", vi:"data-modeler", ja:"data-modeler"},{en:"frontend-ui-dev", vi:"frontend-ui-dev", ja:"frontend-ui-dev"}],
-   cap:{en:"Dispatched, each scoped to real module paths", vi:"Được điều phối, mỗi agent gắn với đường dẫn module thật", ja:"割り当て、各自が実在のモジュールパスに紐づく"}},
+   cap:{en:"Each scoped to real module paths. Direct and Standard work starts here instead", vi:"Mỗi agent gắn với đường dẫn module thật. Việc Direct và Standard bắt đầu ngay tại đây", ja:"各自が実在のモジュールパスに紐づく。Direct と Standard はここから始まる"}},
   {cls:"gate", items:[{en:"qa-test", vi:"qa-test", ja:"qa-test"},{en:"code-reviewer", vi:"code-reviewer", ja:"code-reviewer"},{en:"security-reviewer", vi:"security-reviewer", ja:"security-reviewer"},{en:"/secret-scan", vi:"/secret-scan", ja:"/secret-scan"}],
-   cap:{en:"Gates. Reviewers hold no Edit or Write", vi:"Các cổng. Reviewer không có quyền Edit hay Write", ja:"ゲート。レビュアーは Edit も Write も持たない"}}],
- note:{en:"A gate counts as passed only when the session log records the run. An agent saying “done” is a claim to verify.",
-       vi:"Một cổng chỉ được tính là đã qua khi session log ghi lại lần chạy. Agent nói “xong” là tuyên bố cần kiểm chứng.",
-       ja:"ゲートはセッションログに実行が記録されて初めて通過です。エージェントの「完了」は検証すべき主張です。"},
- nav:{en:"Dispatch & gates", vi:"Điều phối & cổng", ja:"割り当てとゲート"}},
-
-/* 12 */
-{icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"Work is registered, not improvised", vi:"Công việc được đăng ký, không phải ứng biến", ja:"作業は登録される、即興ではない"},
- sub:{en:"Five states, defined exactly once. <mark class='m2'>Blocked</mark> wants to move and cannot. <mark class='m2'>Pending</mark> could move and has been told not to.",
-      vi:"Năm trạng thái, định nghĩa đúng một lần. <mark class='m2'>Blocked</mark> là muốn đi mà không đi được. <mark class='m2'>Pending</mark> là có thể đi nhưng đã được yêu cầu dừng.",
-      ja:"5つの状態を一度だけ定義。<mark class='m2'>Blocked</mark> は進みたいが進めない。<mark class='m2'>Pending</mark> は進めるが止めると決めたもの。"},
- cols:{en:["State","Meaning","Lives in"], vi:["Trạng thái","Ý nghĩa","Nằm ở"], ja:["状態","意味","置き場所"]},
- rows:[
-  {en:["<strong>Planned</strong>","Registered and scoped, not started","<code>tasks/active/</code>"],
-   vi:["<strong>Planned</strong>","Đã đăng ký và định phạm vi, chưa bắt đầu","<code>tasks/active/</code>"],
-   ja:["<strong>Planned</strong>","登録・スコープ済み、未着手","<code>tasks/active/</code>"]},
-  {en:["<strong>Active</strong>","In progress. Exactly one owner","<code>tasks/active/</code>"],
-   vi:["<strong>Active</strong>","Đang làm. Đúng một chủ sở hữu","<code>tasks/active/</code>"],
-   ja:["<strong>Active</strong>","進行中。担当はちょうど1名","<code>tasks/active/</code>"]},
-  {en:["<strong>Blocked</strong>","Started, cannot proceed. Reason recorded","<code>tasks/active/</code>"],
-   vi:["<strong>Blocked</strong>","Đã bắt đầu, không đi tiếp được. Ghi rõ lý do","<code>tasks/active/</code>"],
-   ja:["<strong>Blocked</strong>","着手済みだが進行不可。理由を記録","<code>tasks/active/</code>"]},
-  {en:["<strong>Pending</strong>","Deliberately parked","<code>tasks/pending/</code>"],
-   vi:["<strong>Pending</strong>","Cố ý gác lại","<code>tasks/pending/</code>"],
-   ja:["<strong>Pending</strong>","意図的に保留","<code>tasks/pending/</code>"]},
-  {en:["<strong>Done</strong>","Complete, results recorded","<code>tasks/done/</code>"],
-   vi:["<strong>Done</strong>","Hoàn tất, kết quả đã ghi","<code>tasks/done/</code>"],
-   ja:["<strong>Done</strong>","完了、結果を記録","<code>tasks/done/</code>"]}],
- nav:{en:"Task states", vi:"Trạng thái task", ja:"タスク状態"}},
+   cap:{en:"One gate, over the whole branch diff, before the pull request is opened", vi:"Một cổng duy nhất, trên toàn bộ diff của nhánh, trước khi mở pull request", ja:"ブランチ全体の差分に対して、プルリクエストを開く前に一度だけ"}}],
+ note:{en:"Reviewers hold no Edit or Write, so the separation of duty is structural. And a gate counts as passed only when the session log records the run - an agent saying “done” is a claim to verify.",
+       vi:"Reviewer không có quyền Edit hay Write, nên việc tách trách nhiệm là cấu trúc chứ không phải mong muốn. Và một cổng chỉ được tính là đã qua khi session log ghi lại lần chạy - agent nói “xong” là tuyên bố cần kiểm chứng.",
+       ja:"レビュアーは Edit も Write も持たないため、職務分離は構造です。そしてゲートはセッションログに実行が記録されて初めて通過です。エージェントの「完了」は検証すべき主張です。"},
+ nav:{en:"The Guarded flow", vi:"Luồng Guarded", ja:"Guarded の流れ"}},
 
 /* 13 */
 {icon:"i-shield", kind:"rings", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
@@ -1003,100 +964,30 @@ const S = [
    d:{en:"Stops a loop before it runs away", vi:"Chặn vòng lặp trước khi mất kiểm soát", ja:"暴走前にループを止める"}}],
  nav:{en:"Defence in depth", vi:"Phòng thủ chiều sâu", ja:"多層防御"}},
 
-/* 14b - the deny list */
-{icon:"i-shield", kind:"bullets", cls:"red", step:{en:"Mechanism C \u00b7 Security", vi:"C\u01a1 ch\u1ebf C \u00b7 B\u1ea3o m\u1eadt", ja:"\u4ed5\u7d44\u307fC \u00b7 \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3"},
- title:{en:"Layer 1: the deny list decides what it cannot see", vi:"L\u1edbp 1: deny list quy\u1ebft \u0111\u1ecbnh c\u00e1i n\u00f3 kh\u00f4ng \u0111\u01b0\u1ee3c th\u1ea5y", ja:"\u7b2c1\u5c64: \u62d2\u5426\u30ea\u30b9\u30c8\u304c\u300c\u898b\u3089\u308c\u306a\u3044\u3082\u306e\u300d\u3092\u6c7a\u3081\u308b"},
- sub:{en:"A list in <code>settings.json</code>, checked before the action reaches a tool call. What the agent cannot read, it cannot send to any model.",
-      vi:"M\u1ed9t danh s\u00e1ch trong <code>settings.json</code>, ki\u1ec3m tra tr\u01b0\u1edbc khi h\u00e0nh \u0111\u1ed9ng t\u1edbi \u0111\u01b0\u1ee3c l\u1eddi g\u1ecdi tool. C\u00e1i agent kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c th\u00ec kh\u00f4ng g\u1eedi \u0111i \u0111\u00e2u \u0111\u01b0\u1ee3c.",
-      ja:"<code>settings.json</code> \u5185\u306e\u4e00\u89a7\u3002\u30a2\u30af\u30b7\u30e7\u30f3\u304c\u30c4\u30fc\u30eb\u547c\u3073\u51fa\u3057\u306b\u5c4a\u304f\u524d\u306b\u5224\u5b9a\u3057\u307e\u3059\u3002\u8aad\u3081\u306a\u3044\u3082\u306e\u306f\u3001\u3069\u306e\u30e2\u30c7\u30eb\u306b\u3082\u9001\u308c\u307e\u305b\u3093\u3002"},
- items:[
-  {t:{en:"Secrets it can never read", vi:"Secret n\u00f3 kh\u00f4ng bao gi\u1edd \u0111\u1ecdc \u0111\u01b0\u1ee3c", ja:"\u6c7a\u3057\u3066\u8aad\u3081\u306a\u3044\u30b7\u30fc\u30af\u30ec\u30c3\u30c8"},
-   d:{en:"<code>.env</code> files, <code>*.pem</code> / <code>*.key</code> / <code>*.p12</code>, <code>id_rsa</code>, <code>credentials.json</code>, anything under <code>secrets/</code>.",
-      vi:"File <code>.env</code>, <code>*.pem</code> / <code>*.key</code> / <code>*.p12</code>, <code>id_rsa</code>, <code>credentials.json</code>, m\u1ecdi th\u1ee9 trong <code>secrets/</code>.",
-      ja:"<code>.env</code>\u3001<code>*.pem</code> / <code>*.key</code> / <code>*.p12</code>\u3001<code>id_rsa</code>\u3001<code>credentials.json</code>\u3001<code>secrets/</code> \u914d\u4e0b\u306e\u3059\u3079\u3066\u3002"}},
-  {t:{en:"Destructive commands it can never run", vi:"L\u1ec7nh ph\u00e1 hu\u1ef7 n\u00f3 kh\u00f4ng bao gi\u1edd ch\u1ea1y", ja:"\u6c7a\u3057\u3066\u5b9f\u884c\u3067\u304d\u306a\u3044\u7834\u58ca\u7684\u30b3\u30de\u30f3\u30c9"},
-   d:{en:"<code>git push --force</code>, <code>git reset --hard</code>, <code>rm -rf</code>, and the project's real DB-reset command.",
-      vi:"<code>git push --force</code>, <code>git reset --hard</code>, <code>rm -rf</code>, v\u00e0 l\u1ec7nh reset DB th\u1eadt c\u1ee7a d\u1ef1 \u00e1n.",
-      ja:"<code>git push --force</code>\u3001<code>git reset --hard</code>\u3001<code>rm -rf</code>\u3001\u305d\u3057\u3066\u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u5b9f\u969b\u306eDB\u30ea\u30bb\u30c3\u30c8\u30b3\u30de\u30f3\u30c9\u3002"}},
-  {t:{en:"Your Restricted paths", vi:"C\u00e1c \u0111\u01b0\u1eddng d\u1eabn Restricted c\u1ee7a b\u1ea1n", ja:"\u3042\u306a\u305f\u306e Restricted \u30d1\u30b9"},
-   d:{en:"A slot at the head of the list, filled from the data-classification answers, so the deny list adapts to each repo.",
-      vi:"M\u1ed9t \u00f4 \u1edf \u0111\u1ea7u danh s\u00e1ch, \u0111i\u1ec1n t\u1eeb c\u00e2u tr\u1ea3 l\u1eddi ph\u00e2n lo\u1ea1i d\u1eef li\u1ec7u, n\u00ean deny list th\u00edch \u1ee9ng theo t\u1eebng repo.",
-      ja:"\u30ea\u30b9\u30c8\u5148\u982d\u306e\u30b9\u30ed\u30c3\u30c8\u3002\u30c7\u30fc\u30bf\u5206\u985e\u306e\u56de\u7b54\u304b\u3089\u57cb\u3081\u3089\u308c\u3001\u30ea\u30dd\u30b8\u30c8\u30ea\u3054\u3068\u306b\u9069\u5fdc\u3057\u307e\u3059\u3002"}}],
- note:{en:"Honest limit: these are prefix matches, defeatable by re-ordering. They are a speed bump. The hooks are the gate.",
-       vi:"Gi\u1edbi h\u1ea1n trung th\u1ef1c: \u0111\u00e2y l\u00e0 kh\u1edbp ti\u1ec1n t\u1ed1, c\u00f3 th\u1ec3 l\u00e1ch b\u1eb1ng \u0111\u1ea3o th\u1ee9 t\u1ef1. N\u00f3 l\u00e0 g\u1edd gi\u1ea3m t\u1ed1c. Hooks m\u1edbi l\u00e0 c\u00e1nh c\u1ed5ng.",
-       ja:"\u6b63\u76f4\u306a\u9650\u754c: \u3053\u308c\u306f\u524d\u65b9\u4e00\u81f4\u3067\u3001\u9806\u5e8f\u3092\u5165\u308c\u66ff\u3048\u308b\u3068\u7834\u308c\u307e\u3059\u3002\u6e1b\u901f\u5e2f\u3067\u3042\u308a\u3001\u30b2\u30fc\u30c8\u306f\u30d5\u30c3\u30af\u3067\u3059\u3002"},
- nav:{en:"Deny list", vi:"Deny list", ja:"\u62d2\u5426\u30ea\u30b9\u30c8"}},
-
-/* 15b - layer 2: hooks, exit code 2 */
+/* 14 - the four enforced layers, and what each one actually stops */
 {icon:"i-shield", kind:"table", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
- title:{en:"Layer 2: a hook that exits 2 decides what it cannot do", vi:"Lớp 2: một hook thoát mã 2 quyết định cái nó không được làm", ja:"第2層: exit 2 のフックが「できないこと」を決める"},
- sub:{en:"A {{g:hook|hook}} is a shell script that runs <mark>before</mark> a tool call. When it finishes, its exit status decides what happens next.",
-      vi:"{{g:hook|Hook}} là một shell script chạy <mark>trước</mark> lời gọi tool. Khi nó kết thúc, mã thoát quyết định điều gì xảy ra tiếp theo.",
-      ja:"{{g:hook|フック}}はツール呼び出しの<mark>前</mark>に走るシェルスクリプトです。終了時、その終了コードが次に何が起きるかを決めます。"},
- cols:{en:["Exit status","Meaning"], vi:["Mã thoát","Ý nghĩa"], ja:["終了コード","意味"]},
+ title:{en:"What each layer actually stops", vi:"Mỗi lớp thực sự chặn được gì", ja:"各層が実際に止めるもの"},
+ sub:{en:"Four layers, one line each. Not one of them asks the model for consent, which is why the guarantee does not vary with the model.",
+      vi:"Bốn lớp, mỗi lớp một dòng. Không lớp nào hỏi ý kiến model, nên đảm bảo này không đổi theo model.",
+      ja:"4つの層を各1行で。どれもモデルの同意を求めないため、この保証はモデルによって変わりません。"},
+ cols:{en:["Layer","The mechanism","What it stops"], vi:["Lớp","Cơ chế","Nó chặn gì"], ja:["層","仕組み","止めるもの"]},
  rows:[
-  {en:["<strong><code>0</code></strong>","<mark class='m2'>Allow.</mark> The tool call proceeds"],
-   vi:["<strong><code>0</code></strong>","<mark class='m2'>Cho phép.</mark> Lời gọi tool được tiếp tục"],
-   ja:["<strong><code>0</code></strong>","<mark class='m2'>許可。</mark> ツール呼び出しは実行されます"]},
-  {en:["<strong><code>2</code></strong>","<mark class='m3'>Block.</mark> The tool call is abandoned and never runs. stderr is sent back to the model as the reason"],
-   vi:["<strong><code>2</code></strong>","<mark class='m3'>Chặn.</mark> Lời gọi tool bị huỷ và không bao giờ chạy. stderr được trả về cho model làm lý do"],
-   ja:["<strong><code>2</code></strong>","<mark class='m3'>遮断。</mark> ツール呼び出しは破棄され実行されません。stderr が理由としてモデルに返ります"]},
-  {en:["<strong>other</strong>","Error, non-blocking"],
-   vi:["<strong>khác</strong>","Lỗi, không chặn"],
-   ja:["<strong>その他</strong>","エラー、遮断はしない"]}],
- note:{en:"The model is never asked for consent, so the guarantee does not vary with the model.",
-       vi:"Model không bao giờ được hỏi ý kiến, nên đảm bảo này không đổi theo model.",
-       ja:"モデルの同意は求められないため、この保証はモデルによって変わりません。"},
- nav:{en:"Exit code 2", vi:"Exit code 2", ja:"exit code 2"}},
-
-/* 15c - tool allowlist */
-{icon:"i-shield", kind:"table", step:{en:"Mechanism C \u00b7 Security", vi:"C\u01a1 ch\u1ebf C \u00b7 B\u1ea3o m\u1eadt", ja:"\u4ed5\u7d44\u307fC \u00b7 \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3"},
- title:{en:"Layer 3: the tool allowlist decides what it cannot reach", vi:"L\u1edbp 3: tool allowlist quy\u1ebft \u0111\u1ecbnh c\u00e1i n\u00f3 kh\u00f4ng v\u1edbi t\u1edbi", ja:"\u7b2c3\u5c64: \u30c4\u30fc\u30eb\u8a31\u53ef\u30ea\u30b9\u30c8\u304c\u300c\u5230\u9054\u3067\u304d\u306a\u3044\u3082\u306e\u300d\u3092\u6c7a\u3081\u308b"},
- sub:{en:"Every agent declares an explicit <code>tools:</code> list in its frontmatter. Least privilege per seat, so a role cannot do a job that is not its own.",
-      vi:"M\u1ed7i agent khai b\u00e1o <code>tools:</code> t\u01b0\u1eddng minh trong frontmatter. \u0110\u1eb7c quy\u1ec1n t\u1ed1i thi\u1ec3u cho t\u1eebng vai tr\u00f2, n\u00ean m\u1ed9t vai kh\u00f4ng l\u00e0m \u0111\u01b0\u1ee3c vi\u1ec7c kh\u00f4ng ph\u1ea3i c\u1ee7a n\u00f3.",
-      ja:"\u5404\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306f frontmatter \u3067\u660e\u793a\u7684\u306a <code>tools:</code> \u3092\u5ba3\u8a00\u3057\u307e\u3059\u3002\u5e2d\u3054\u3068\u306e\u6700\u5c0f\u6a29\u9650\u3067\u3001\u5f79\u5272\u306f\u81ea\u5206\u306e\u4ed5\u4e8b\u4ee5\u5916\u3092\u3067\u304d\u307e\u305b\u3093\u3002"},
- cols:{en:["Seat","Granted tools","What it therefore cannot do"], vi:["Vai tr\u00f2","Tool \u0111\u01b0\u1ee3c c\u1ea5p","Do \u0111\u00f3 kh\u00f4ng l\u00e0m \u0111\u01b0\u1ee3c g\u00ec"], ja:["\u5e2d","\u4ed8\u4e0e\u3055\u308c\u308b\u30c4\u30fc\u30eb","\u3086\u3048\u306b\u3067\u304d\u306a\u3044\u3053\u3068"]},
- rows:[
-  {en:["<strong>orchestrator</strong>","<code>Agent</code> - the only seat that holds it","<mark class='m3'>Off-roster spawns.</mark> guard-agent-spawn blocks a subagent_type outside the roster and a model override at dispatch"],
-   vi:["<strong>orchestrator</strong>","<code>Agent</code> - vai duy nh\u1ea5t c\u00f3 quy\u1ec1n n\u00e0y","<mark class='m3'>Spawn ngo\u00e0i roster.</mark> guard-agent-spawn ch\u1eb7n subagent_type ngo\u00e0i roster v\u00e0 vi\u1ec7c \u0111\u1ed5i model l\u00fac dispatch"],
-   ja:["<strong>orchestrator</strong>","<code>Agent</code> \u3092\u4fdd\u6301\u3059\u308b\u552f\u4e00\u306e\u5e2d","<mark class='m3'>\u30ed\u30b9\u30bf\u30fc\u5916\u306e\u30b9\u30dd\u30fc\u30f3\u3002</mark> guard-agent-spawn \u304c\u30ed\u30b9\u30bf\u30fc\u5916\u306e subagent_type \u3068\u30c7\u30a3\u30b9\u30d1\u30c3\u30c1\u6642\u306e\u30e2\u30c7\u30eb\u4e0a\u66f8\u304d\u3092\u906e\u65ad"]},
-  {en:["<strong>code-reviewer</strong><br>security-reviewer","<code>Read, Grep, Glob, Bash</code>","<mark class='m3'>No Edit, no Write.</mark> A reviewer that edits code has lost its independence"],
-   vi:["<strong>code-reviewer</strong><br>security-reviewer","<code>Read, Grep, Glob, Bash</code>","<mark class='m3'>Kh\u00f4ng Edit, kh\u00f4ng Write.</mark> Reviewer m\u00e0 s\u1eeda code th\u00ec m\u1ea5t t\u00ednh \u0111\u1ed9c l\u1eadp"],
-   ja:["<strong>code-reviewer</strong><br>security-reviewer","<code>Read, Grep, Glob, Bash</code>","<mark class='m3'>Edit \u3082 Write \u3082\u7121\u3057\u3002</mark> \u7de8\u96c6\u3059\u308b\u30ec\u30d3\u30e5\u30a2\u30fc\u306f\u72ec\u7acb\u6027\u3092\u5931\u3046"]},
-  {en:["<strong>spec-guardian</strong>","<code>Read, Grep, Glob</code>","No <code>Bash</code>. It checks a diff against written criteria, so it has nothing to run"],
-   vi:["<strong>spec-guardian</strong>","<code>Read, Grep, Glob</code>","Kh\u00f4ng <code>Bash</code>. N\u00f3 \u0111\u1ed1i chi\u1ebfu diff v\u1edbi ti\u00eau ch\u00ed \u0111\u00e3 vi\u1ebft, n\u00ean kh\u00f4ng c\u00f3 g\u00ec \u0111\u1ec3 ch\u1ea1y"],
-   ja:["<strong>spec-guardian</strong>","<code>Read, Grep, Glob</code>","<code>Bash</code> \u7121\u3057\u3002\u66f8\u304b\u308c\u305f\u57fa\u6e96\u3068\u5dee\u5206\u3092\u7167\u5408\u3059\u308b\u3060\u3051\u3067\u3001\u5b9f\u884c\u3059\u308b\u3082\u306e\u304c\u7121\u3044"]},
-  {en:["<strong>db-seeder</strong>","<code>Read, Write, Edit, Grep, Glob, Bash</code>","Runs a deterministic script, but only against local and dev targets, never production"],
-   vi:["<strong>db-seeder</strong>","<code>Read, Write, Edit, Grep, Glob, Bash</code>","Ch\u1ea1y script t\u1ea5t \u0111\u1ecbnh, nh\u01b0ng ch\u1ec9 tr\u00ean local v\u00e0 dev, kh\u00f4ng bao gi\u1edd production"],
-   ja:["<strong>db-seeder</strong>","<code>Read, Write, Edit, Grep, Glob, Bash</code>","\u6c7a\u5b9a\u7684\u30b9\u30af\u30ea\u30d7\u30c8\u3092\u5b9f\u884c\u3059\u308b\u304c\u3001\u5bfe\u8c61\u306f\u30ed\u30fc\u30ab\u30eb\u3068dev\u306e\u307f\u3001\u672c\u756a\u306f\u6c7a\u3057\u3066\u4e0d\u53ef"]}],
- note:{en:"Omitting the list inherits every tool, including every MCP server on the machine, at full schema cost on every request. The quality gate treats that as a bug.",
-       vi:"B\u1ecf tr\u1ed1ng danh s\u00e1ch s\u1ebd k\u1ebf th\u1eeba m\u1ecdi tool, k\u1ec3 c\u1ea3 m\u1ecdi MCP server tr\u00ean m\u00e1y, v\u1edbi chi ph\u00ed schema \u0111\u1ea7y \u0111\u1ee7 m\u1ed7i request. C\u1ed5ng ch\u1ea5t l\u01b0\u1ee3ng coi \u0111\u00f3 l\u00e0 m\u1ed9t l\u1ed7i.",
-       ja:"\u30ea\u30b9\u30c8\u3092\u7701\u7565\u3059\u308b\u3068\u3001\u30de\u30b7\u30f3\u4e0a\u306e\u5168MCP\u30b5\u30fc\u30d0\u30fc\u3092\u542b\u3080\u5168\u30c4\u30fc\u30eb\u3092\u3001\u6bce\u30ea\u30af\u30a8\u30b9\u30c8\u5168\u30b9\u30ad\u30fc\u30de\u5206\u306e\u30b3\u30b9\u30c8\u3067\u7d99\u627f\u3057\u307e\u3059\u3002\u54c1\u8cea\u30b2\u30fc\u30c8\u306f\u3053\u308c\u3092\u30d0\u30b0\u6271\u3044\u3057\u307e\u3059\u3002"},
- nav:{en:"Tool allowlist", vi:"Tool allowlist", ja:"\u30c4\u30fc\u30eb\u8a31\u53ef\u30ea\u30b9\u30c8"}},
-
-/* 15d - maxTurns */
-{icon:"i-shield", kind:"bullets", cls:"green", step:{en:"Mechanism C \u00b7 Security", vi:"C\u01a1 ch\u1ebf C \u00b7 B\u1ea3o m\u1eadt", ja:"\u4ed5\u7d44\u307fC \u00b7 \u30bb\u30ad\u30e5\u30ea\u30c6\u30a3"},
- title:{en:"Layer 4: maxTurns stops a loop before it runs away", vi:"L\u1edbp 4: maxTurns ch\u1eb7n v\u00f2ng l\u1eb7p tr\u01b0\u1edbc khi m\u1ea5t ki\u1ec3m so\u00e1t", ja:"\u7b2c4\u5c64: maxTurns \u304c\u66b4\u8d70\u524d\u306b\u30eb\u30fc\u30d7\u3092\u6b62\u3081\u308b"},
- sub:{en:"A cap on how many turns one agent may take before it is stopped. The circuit breaker, because the cost of a stuck agent is unbounded.",
-      vi:"Gi\u1edbi h\u1ea1n s\u1ed1 l\u01b0\u1ee3t m\u1ed9t agent \u0111\u01b0\u1ee3c ph\u00e9p tr\u01b0\u1edbc khi b\u1ecb d\u1eebng. C\u1ea7u dao ng\u1eaft, v\u00ec chi ph\u00ed c\u1ee7a m\u1ed9t agent b\u1ecb k\u1eb9t l\u00e0 v\u00f4 h\u1ea1n.",
-      ja:"1\u4f53\u306e\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u304c\u505c\u6b62\u3055\u308c\u308b\u307e\u3067\u306e\u30bf\u30fc\u30f3\u6570\u306e\u4e0a\u9650\u3002\u8a70\u307e\u3063\u305f\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u30b3\u30b9\u30c8\u306f\u9752\u5929\u4e95\u306a\u306e\u3067\u3001\u3053\u308c\u306f\u30b5\u30fc\u30ad\u30c3\u30c8\u30d6\u30ec\u30fc\u30ab\u30fc\u3067\u3059\u3002"},
- items:[
-  {t:{en:"Low for mechanical seats", vi:"Th\u1ea5p cho c\u00e1c vai c\u01a1 h\u1ecdc", ja:"\u6a5f\u68b0\u7684\u306a\u5e2d\u306f\u4f4e\u304f"},
-   d:{en:"<code>history-tracker: 10</code>. It summarises an append-only archive, so more turns can only mean it is stuck.",
-      vi:"<code>history-tracker: 10</code>. N\u00f3 t\u00f3m t\u1eaft m\u1ed9t kho ch\u1ec9-ghi-th\u00eam, n\u00ean nhi\u1ec1u l\u01b0\u1ee3t h\u01a1n ch\u1ec9 c\u00f3 ngh\u0129a l\u00e0 b\u1ecb k\u1eb9t.",
-      ja:"<code>history-tracker: 10</code>\u3002\u8ffd\u8a18\u5c02\u7528\u30a2\u30fc\u30ab\u30a4\u30d6\u3092\u8981\u7d04\u3059\u308b\u3060\u3051\u306a\u306e\u3067\u3001\u30bf\u30fc\u30f3\u304c\u5897\u3048\u308b\u306e\u306f\u8a70\u307e\u308a\u306e\u8a3c\u62e0\u3002"}},
-  {t:{en:"Higher for judgement seats", vi:"Cao h\u01a1n cho c\u00e1c vai ph\u00e1n \u0111o\u00e1n", ja:"\u5224\u65ad\u3092\u8981\u3059\u308b\u5e2d\u306f\u9ad8\u3081"},
-   d:{en:"The debugger gets <code>30</code>: root-cause under incomplete information is the hardest single-agent task on the roster.",
-      vi:"Debugger \u0111\u01b0\u1ee3c <code>30</code>: t\u00ecm nguy\u00ean nh\u00e2n g\u1ed1c d\u01b0\u1edbi th\u00f4ng tin kh\u00f4ng \u0111\u1ea7y \u0111\u1ee7 l\u00e0 vi\u1ec7c kh\u00f3 nh\u1ea5t cho m\u1ed9t agent.",
-      ja:"\u30c7\u30d0\u30c3\u30ac\u30fc\u306f <code>30</code>\u3002\u4e0d\u5b8c\u5168\u306a\u60c5\u5831\u3067\u306e\u539f\u56e0\u7a76\u660e\u306f\u3001\u5358\u4e00\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u6700\u96e3\u306e\u30bf\u30b9\u30af\u3002"}},
-  {t:{en:"None for the open-ended dev seats", vi:"Kh\u00f4ng gi\u1edbi h\u1ea1n cho c\u00e1c vai dev m\u1edf", ja:"\u958b\u653e\u7684\u306adev\u5e2d\u306b\u306f\u4e0a\u9650\u306a\u3057"},
-   d:{en:"A feature can legitimately take many turns, so the dev agents are capped by the task, not a turn count.",
-      vi:"M\u1ed9t t\u00ednh n\u0103ng c\u00f3 th\u1ec3 c\u1ea7n nhi\u1ec1u l\u01b0\u1ee3t m\u1ed9t c\u00e1ch ch\u00ednh \u0111\u00e1ng, n\u00ean dev agent b\u1ecb gi\u1edbi h\u1ea1n b\u1edfi task, kh\u00f4ng ph\u1ea3i s\u1ed1 l\u01b0\u1ee3t.",
-      ja:"\u6a5f\u80fd\u958b\u767a\u306f\u6b63\u5f53\u306b\u591a\u304f\u306e\u30bf\u30fc\u30f3\u3092\u8981\u3057\u5f97\u308b\u305f\u3081\u3001dev \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306f\u30bf\u30fc\u30f3\u6570\u3067\u306f\u306a\u304f\u30bf\u30b9\u30af\u3067\u533a\u5207\u3089\u308c\u307e\u3059\u3002"}}],
- note:{en:"Together with a narrow tool grant, maxTurns bounds the blast radius and the bill of any single agent, whichever model is behind it.",
-       vi:"C\u00f9ng v\u1edbi vi\u1ec7c c\u1ea5p tool h\u1eb9p, maxTurns gi\u1edbi h\u1ea1n b\u00e1n k\u00ednh thi\u1ec7t h\u1ea1i v\u00e0 ho\u00e1 \u0111\u01a1n c\u1ee7a b\u1ea5t k\u1ef3 agent n\u00e0o, b\u1ea5t k\u1ec3 model n\u00e0o \u0111\u1ee9ng sau.",
-       ja:"\u72ed\u3044\u30c4\u30fc\u30eb\u4ed8\u4e0e\u3068\u4f75\u305b\u3001maxTurns \u306f\u3069\u306e\u30e2\u30c7\u30eb\u3067\u3042\u308c\u3001\u5358\u4e00\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u306e\u5f71\u97ff\u7bc4\u56f2\u3068\u8acb\u6c42\u984d\u3092\u4e0a\u9650\u3067\u6291\u3048\u307e\u3059\u3002"},
- nav:{en:"maxTurns", vi:"maxTurns", ja:"maxTurns"}},
+  {en:["<strong>1 · Deny list</strong>","A {{g:denylist|list}} in <code>settings.json</code>, read before the action reaches a tool call","What it cannot <strong>see</strong>: <code>.env</code>, <code>*.pem</code>, <code>id_rsa</code>, anything under <code>secrets/</code>, plus <code>git push --force</code> and <code>rm -rf</code>"],
+   vi:["<strong>1 · Deny list</strong>","Một {{g:denylist|danh sách}} trong <code>settings.json</code>, đọc trước khi hành động tới được lời gọi tool","Cái nó không được <strong>thấy</strong>: <code>.env</code>, <code>*.pem</code>, <code>id_rsa</code>, mọi thứ trong <code>secrets/</code>, cộng <code>git push --force</code> và <code>rm -rf</code>"],
+   ja:["<strong>1 · 拒否リスト</strong>","<code>settings.json</code> 内の{{g:denylist|一覧}}。アクションがツール呼び出しに届く前に読まれる","<strong>見られない</strong>もの: <code>.env</code>、<code>*.pem</code>、<code>id_rsa</code>、<code>secrets/</code> 配下のすべて、そして <code>git push --force</code> と <code>rm -rf</code>"]},
+  {en:["<strong>2 · Hooks, {{g:exit2|exit 2}}</strong>","A {{g:hook|shell script}} runs first. <code>0</code> allows, <code>2</code> blocks and hands stderr back as the reason","What it cannot <strong>do</strong>: read a secret, commit to <code>main</code>, ship a bad commit message, edit an Accepted {{g:adr|ADR}}"],
+   vi:["<strong>2 · Hooks, {{g:exit2|exit 2}}</strong>","Một {{g:hook|shell script}} chạy trước. <code>0</code> cho phép, <code>2</code> chặn và trả stderr về làm lý do","Cái nó không được <strong>làm</strong>: đọc secret, commit vào <code>main</code>, đẩy một commit message xấu, sửa một {{g:adr|ADR}} đã Accepted"],
+   ja:["<strong>2 · フック、{{g:exit2|exit 2}}</strong>","先に{{g:hook|シェルスクリプト}}が走る。<code>0</code> は許可、<code>2</code> は遮断し stderr を理由として返す","<strong>できない</strong>こと: シークレットの読取、<code>main</code> へのコミット、不正なコミットメッセージ、Accepted な {{g:adr|ADR}} の編集"]},
+  {en:["<strong>3 · Tool allowlist</strong>","An explicit <code>tools:</code> line in every agent's frontmatter, granted per seat","What it cannot <strong>reach</strong>: reviewers hold no Edit or Write, spec-guardian holds no Bash, and only the orchestrator holds <code>Agent</code>"],
+   vi:["<strong>3 · Tool allowlist</strong>","Một dòng <code>tools:</code> tường minh trong frontmatter của mọi agent, cấp theo từng vai","Cái nó không <strong>với tới</strong>: reviewer không có Edit hay Write, spec-guardian không có Bash, và chỉ orchestrator có <code>Agent</code>"],
+   ja:["<strong>3 · ツール許可リスト</strong>","全エージェントの frontmatter に明示的な <code>tools:</code> 行。席ごとに付与される","<strong>到達できない</strong>もの: レビュアーは Edit も Write も持たず、spec-guardian は Bash を持たず、<code>Agent</code> を持つのはオーケストレーターだけ"]},
+  {en:["<strong>4 · {{g:maxturns|maxTurns}}</strong>","A turn cap per seat: <code>10</code> for history-tracker, <code>30</code> for the debugger, none for open-ended dev work","The runaway loop, because the cost of a stuck agent is unbounded"],
+   vi:["<strong>4 · {{g:maxturns|maxTurns}}</strong>","Giới hạn lượt theo từng vai: <code>10</code> cho history-tracker, <code>30</code> cho debugger, không giới hạn cho vai dev mở","Vòng lặp mất kiểm soát, vì chi phí của một agent bị kẹt là vô hạn"],
+   ja:["<strong>4 · {{g:maxturns|maxTurns}}</strong>","席ごとのターン上限: history-tracker は <code>10</code>、デバッガーは <code>30</code>、開放的な開発席は無制限","暴走するループ。詰まったエージェントのコストは青天井だから"]}],
+ note:{en:"Two honest limits. The deny list is prefix matching and is defeated by re-ordering, so it is a speed bump and the hooks are the gate. And omitting <code>tools:</code> inherits every tool on the machine at full schema cost on every request, which the quality gate treats as a bug.",
+       vi:"Hai giới hạn trung thực. Deny list là khớp tiền tố và có thể lách bằng đảo thứ tự, nên nó là gờ giảm tốc còn hooks mới là cánh cổng. Và bỏ trống <code>tools:</code> sẽ kế thừa mọi tool trên máy với chi phí schema đầy đủ mỗi request, điều mà cổng chất lượng coi là một lỗi.",
+       ja:"正直な限界が2点。拒否リストは前方一致で、順序を入れ替えると破れます。つまり減速帯であり、ゲートはフックです。また <code>tools:</code> を省略すると、マシン上の全ツールを毎リクエスト全スキーマ分のコストで継承し、品質ゲートはそれをバグと見なします。"},
+ nav:{en:"The four layers", vi:"Bốn lớp", ja:"4つの層"}},
 
 /* 15 */
 {icon:"i-target", kind:"stats", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
@@ -1105,10 +996,10 @@ const S = [
       vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
       ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"107/107", cls:"g", l:{en:"<b>Does the floor hold?</b> 26 forbidden actions blocked, 81 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 26 hành động bị cấm đều chặn, 81 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止26件を遮断、許可と配線検査81件を維持"}},
+  {v:"107/107", cls:"g", l:{en:"<b>Does the floor hold?</b> 40 forbidden actions blocked, 67 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 40 hành động bị cấm đều chặn, 67 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止40件を遮断、許可と配線検査67件を維持"}},
   {v:"Opus = Haiku", cls:"g", l:{en:"<b>Does it depend on the model?</b> Re-run on the cheapest tier, the result is byte-identical", vi:"<b>Có phụ thuộc model không?</b> Chạy lại trên tier rẻ nhất, kết quả giống hệt từng byte", ja:"<b>モデルに依存するか</b> 最安ティアで再実行しても結果はバイト単位で同一"}},
   {v:"107/107", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
-  {v:"5/5", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断"}}],
+  {v:"32/32", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions, both hook flavors", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó, cả hai flavor hook", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断、両方のフック形式で"}}],
  note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
        vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
        ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
@@ -1122,12 +1013,12 @@ const S = [
       ja:"各エージェントが明示的なモデルとeffort予算を持つため、コストは既定値ではなく判断になります。"},
  cols:{en:["Profile","USD / feature","vs default","Per 100"], vi:["Cấu hình","USD / tính năng","so mặc định","Cho 100"], ja:["プロファイル","USD / 機能","既定比","100機能"]},
  rows:[
-  {en:["all-opus, no effort tuning","3.614","1.48x","361"], vi:["all-opus, không chỉnh effort","3,614","1,48x","361"], ja:["all-opus、effort調整なし","3.614","1.48倍","361"]},
-  {en:["<strong>DEFAULT roster</strong>","<strong><mark class='m2'>2.442</mark></strong>","<strong>1.00x</strong>","<strong>244</strong>"], vi:["<strong>Roster MẶC ĐỊNH</strong>","<strong><mark class='m2'>2,442</mark></strong>","<strong>1,00x</strong>","<strong>244</strong>"], ja:["<strong>既定ロスター</strong>","<strong><mark class='m2'>2.442</mark></strong>","<strong>1.00倍</strong>","<strong>244</strong>"]},
-  {en:["economy (gates opus, rest haiku)","1.927","0.79x","193"], vi:["economy (cổng opus, còn lại haiku)","1,927","0,79x","193"], ja:["economy（ゲートopus、他haiku）","1.927","0.79倍","193"]}],
- note:{en:"The default roster costs 32% less than putting Opus at xhigh everywhere. Figures are MODELLED, not measured.",
-       vi:"Roster mặc định rẻ hơn 32% so với để Opus ở xhigh khắp nơi. Các con số là MÔ HÌNH HOÁ, không phải đo thực tế.",
-       ja:"既定ロスターは全席Opus xhighより32%安価。数値は実測ではなくモデル計算です。"},
+  {en:["all-opus, xhigh, no effort tuning","4.004","1.46x","400"], vi:["all-opus, xhigh, không chỉnh effort","4,004","1,46x","400"], ja:["all-opus、xhigh、effort調整なし","4.004","1.46倍","400"]},
+  {en:["<strong>DEFAULT roster</strong>","<strong><mark class='m2'>2.746</mark></strong>","<strong>1.00x</strong>","<strong>275</strong>"], vi:["<strong>Roster MẶC ĐỊNH</strong>","<strong><mark class='m2'>2,746</mark></strong>","<strong>1,00x</strong>","<strong>275</strong>"], ja:["<strong>既定ロスター</strong>","<strong><mark class='m2'>2.746</mark></strong>","<strong>1.00倍</strong>","<strong>275</strong>"]},
+  {en:["economy (gates opus, rest haiku)","2.152","0.78x","215"], vi:["economy (cổng opus, còn lại haiku)","2,152","0,78x","215"], ja:["economy（ゲートopus、他haiku）","2.152","0.78倍","215"]}],
+ note:{en:"The default roster costs 31% less than putting Opus at xhigh everywhere. Figures are MODELLED, not measured.",
+       vi:"Roster mặc định rẻ hơn 31% so với để Opus ở xhigh khắp nơi. Các con số là MÔ HÌNH HOÁ, không phải đo thực tế.",
+       ja:"既定ロスターは全席Opus xhighより31%安価。数値は実測ではなくモデル計算です。"},
  nav:{en:"Cost", vi:"Chi phí", ja:"コスト"}},
 
 /* 17 */
@@ -1152,29 +1043,28 @@ const S = [
        ja:"正直な限界が3点: Codexは apply_patch 経由で編集するため{{g:adr|ADR}}ガードはベストエフォート、Cursorの afterFileEdit は観測のみでADR編集は報告止まり、そして guard-agent-spawn はまったく移植できません - どちらのツールも Claude Code の Agent ツールを持たないため、subagent-spawn のフックポイント自体が存在しません。"},
  nav:{en:"Cursor & Codex", vi:"Cursor & Codex", ja:"Cursor と Codex"}},
 
-/* 17c - harness-view: how do you see whether the harness was set up correctly */
+/* 17c - harness-view: seeing the harness, and now changing it from the same page */
 {icon:"i-target", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
  title:{en:"So how do you know it is actually wired right?", vi:"Vậy làm sao biết nó thực sự được nối đúng?", ja:"では実際に正しく配線されているとどう分かるか"},
- sub:{en:"A harness that looks configured and has a hook nobody registered is the failure this answers. It reads what is on disk, so a control that was installed but never wired shows up as a finding instead of a surprise.",
-      vi:"Một harness trông như đã cấu hình xong nhưng có một hook chẳng ai đăng ký, đó chính là kiểu hỏng mà công cụ này trả lời. Nó đọc thứ thực sự nằm trên đĩa, nên một cơ chế được cài mà không được nối sẽ hiện ra như một phát hiện, thay vì một bất ngờ.",
-      ja:"設定済みに見えるのに、誰も登録していないフックが混じっている。これがこの問いの背後にある失敗です。ディスク上の実体を読むため、導入されたのに配線されていない制御は、不意打ちではなく所見として現れます。"},
+ sub:{en:"A harness that looks configured and has a hook nobody registered is the failure this answers. And since v1.18.0 it does not only show the harness, it edits it.",
+      vi:"Một harness trông như đã cấu hình xong nhưng có một hook chẳng ai đăng ký, đó chính là kiểu hỏng mà công cụ này trả lời. Và từ v1.18.0 nó không chỉ hiển thị harness mà còn sửa được.",
+      ja:"設定済みに見えるのに、誰も登録していないフックが混じっている。これがこの問いの背後にある失敗です。そして v1.18.0 からは、表示するだけでなく編集もします。"},
  cards:[
   {ic:"i-flow", cls:"p", t:{en:"Everything, and how it connects", vi:"Mọi thứ, và cách chúng kết nối", ja:"すべてと、その繋がり"},
-   d:{en:"Reads a repo's <code>.claude/</code> and shows the agents, rules, commands, hooks and tasks, and the edges between them.",
-      vi:"Đọc <code>.claude/</code> của repo và hiển thị agents, rules, commands, hooks và tasks, cùng các liên kết giữa chúng.",
-      ja:"リポジトリの <code>.claude/</code> を読み込み、エージェント、ルール、コマンド、フック、タスクと、それらの間のつながりを表示します。"}},
-  {ic:"i-layers", cls:"g", t:{en:"Flow: the chain of control", vi:"Flow: chuỗi kiểm soát", ja:"Flow: 制御の連鎖"},
-   d:{en:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; the merge gate &rarr; the human. One view of how a change is actually kept in check.",
-      vi:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; merge gate &rarr; con người. Một góc nhìn cho thấy một thay đổi thực sự bị kiểm soát ra sao.",
-      ja:"settings &rarr; hooks &rarr; rules &rarr; agents &rarr; マージゲート &rarr; 人間。変更が実際にどう抑えられているかを一望できます。"}},
+   d:{en:"Draws a repo's agents, rules, commands, hooks, skills and tasks with the edges between them, plus a Flow view that ends at the human.",
+      vi:"Vẽ ra agents, rules, commands, hooks, skills và tasks của repo cùng các liên kết giữa chúng, kèm một góc nhìn Flow kết thúc ở con người.",
+      ja:"リポジトリのエージェント、ルール、コマンド、フック、スキル、タスクとその間の辺を描き、人間で終わる Flow ビューも備えます。"}},
   {ic:"i-chart", cls:"a", t:{en:"Assess: a score with a reason", vi:"Assess: một điểm số có lý do", ja:"Assess: 理由のあるスコア"},
-   d:{en:"Scores the harness against the project's own quality gate and lists what is wrong. Each finding links back to the node that caused it.",
-      vi:"Chấm điểm harness theo đúng quality gate của chính dự án và liệt kê những gì sai. Mỗi phát hiện liên kết ngược về node gây ra nó.",
-      ja:"プロジェクト自身の品質ゲートに照らしてハーネスを採点し、何が問題かを列挙します。各所見は原因となったノードへリンクします。"}},
-  {ic:"i-box", cls:"r", t:{en:"Deterministic, and it runs anywhere", vi:"Tất định, và chạy được ở mọi nơi", ja:"決定的で、どこでも動く"},
-   d:{en:"A plain rules engine, no model in the loop. Ships as a standalone binary for Windows, macOS and Linux, and also runs from source.",
-      vi:"Một rules engine thuần tuý, không model nào tham gia. Phát hành dưới dạng binary độc lập cho Windows, macOS và Linux, và cũng chạy được từ source.",
-      ja:"純粋なルールエンジンで、モデルは一切介在しません。Windows・macOS・Linux 向けのスタンドアロンバイナリとして配布され、ソースからも実行できます。"}}],
+   d:{en:"Scores the harness against the project's own quality gate. Every finding links back to the node that caused it, so a seat with no module is named, not implied.",
+      vi:"Chấm điểm harness theo đúng quality gate của chính dự án. Mỗi phát hiện liên kết ngược về node gây ra nó, nên một vai không có module được nêu đích danh.",
+      ja:"プロジェクト自身の品質ゲートに照らして採点します。各所見は原因ノードへリンクするので、モジュールのない席は示唆ではなく名指しされます。"}},
+  {ic:"i-grid", cls:"g", t:{en:"And now you change it here", vi:"Và giờ bạn sửa ngay tại đây", ja:"そして、ここで変えられる"},
+   d:{en:"Park a rule, hook or seat; reorder a command's steps; set a seat's model, effort and tools from an editable four-vendor reference.",
+      vi:"Gác một rule, hook hay vai agent; đổi thứ tự các bước của một command; đặt model, effort và tools của một vai từ bảng tham chiếu bốn nhà cung cấp sửa được.",
+      ja:"ルール・フック・席を停止し、コマンドのステップを並べ替え、席の model・effort・tools を編集可能な4ベンダーのリファレンスから設定します。"}}],
+ note:{en:"Every edit is recorded in the repo - <code>.claude/disabled.json</code> for a parked control - and switching off a reviewer needs a human to type the phrase. A plain rules engine, no model in the loop, shipped as a binary for Windows, macOS and Linux.",
+       vi:"Mọi thay đổi đều được ghi lại trong repo - <code>.claude/disabled.json</code> cho một cơ chế bị gác - và tắt một reviewer đòi con người gõ đúng câu xác nhận. Một rules engine thuần tuý, không model nào tham gia, phát hành dưới dạng binary cho Windows, macOS và Linux.",
+       ja:"すべての編集はリポジトリに記録され、停止した統制は <code>.claude/disabled.json</code> に残ります。レビュアーを切るには人間が合い言葉を打つ必要があります。モデルを介さない純粋なルールエンジンで、Windows・macOS・Linux 向けのバイナリとして配布されます。"},
  nav:{en:"harness-view", vi:"harness-view", ja:"harness-view"}},
 
 /* 17d - harness-view: measured evidence against real harnesses */
@@ -1215,12 +1105,12 @@ const S = [
       vi:"Bạn có thể chạy lại tất cả, và CI sẽ fail nếu bất kỳ con số nào trong tài liệu không còn khớp.",
       ja:"すべて再実行できます。文書中の数値が一致しなくなればCIが失敗します。"},
  stats:[
-  {v:"-45%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
-  {v:"-85%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
-  {v:"63%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
-  {v:"~0.2s", cls:"g", l:{en:"to scaffold 91 paths, idempotent on re-run", vi:"để scaffold 91 đường dẫn, chạy lại vẫn bất biến", ja:"91パスのscaffold、再実行しても冪等"}},
+  {v:"-34%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
+  {v:"-84%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
+  {v:"64%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
+  {v:"~0.2s", cls:"g", l:{en:"to scaffold the harness, and a re-run reports KEPT for every file", vi:"để scaffold harness, và chạy lại thì mọi file đều báo KEPT", ja:"ハーネスのscaffold。再実行では全ファイルが KEPT と報告される"}},
   {v:"16", cls:"a", l:{en:"agents, 16 rules, 22 commands, 10 hooks", vi:"agents, 16 rules, 22 commands, 10 hooks", ja:"エージェント、16ルール、22コマンド、10フック"}},
-  {v:"$2.44", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
+  {v:"$2.75", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
  note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
        vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",
        ja:"バイト数はディスクから数えた正確な値。トークンとコストは3.6文字/トークンでのモデル計算値です。"},

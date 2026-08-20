@@ -32,7 +32,7 @@ Open with the contrast. Put this table on screen and walk it left to right:
 | | **Ad-hoc AI coding (today)** | **Harnessed AI coding** |
 |---|---|---|
 | The instruction | A prompt someone typed, phrased their way | A written contract with stable IDs and acceptance criteria |
-| Who does the work | One generalist agent, doing everything | A roster of scoped specialists, dispatched by an orchestrator |
+| Who does the work | One generalist agent, doing everything | A roster of scoped specialists, and a tier that decides how many of them a change earns |
 | Memory | The context window. Compaction erases it | Committed markdown on disk. Compaction cannot touch it |
 | Safety | "Please do not touch production" | Exit code 2. The tool call never happens |
 | Cost | Whatever the default model charges | An explicit model and effort budget per seat |
@@ -161,8 +161,8 @@ Do not present this as two tiers. The insight is that there are four, and only t
 
 | Tier | What lives there | Cost | What compaction does |
 |---|---|---|---|
-| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | **~25,700 bytes of rules**, re-sent every turn, forever | Survives, because it is re-injected |
-| **Lazy-RAM** | The 9 path-scoped rules (`paths:` frontmatter) | **~51,800 bytes** that most sessions never pay for | Reloads when a matching file is touched |
+| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | **30,643 bytes of rules**, re-sent every turn, forever | Survives, because it is re-injected |
+| **Lazy-RAM** | The 9 path-scoped rules (`paths:` frontmatter) | **55,062 bytes** that most sessions never pay for | Reloads when a matching file is touched |
 | **Disk** | `docs/tasks/master-plan.md` (the board) + `docs/tasks/active/TASK-NNN.md` (goal, criteria, decisions, **session log**) | A few hundred bytes, read once | **Nothing. It is committed markdown in git** |
 | **Archive** | `.claude/state/history/` - one file per finished subagent run, written by a `SubagentStop` hook | Zero until read | Nothing. Written after the fact |
 
@@ -197,9 +197,26 @@ is designed for it."*
 
 ---
 
-## Section 5. Mechanism 2: task-based agent orchestration (5 min)
+## Section 5. Mechanism 2: process proportional to the change (5 min)
 
-**Key message:** Work is decomposed into registered tasks with owners and gates, not improvised in a chat.
+**Key message:** How much process a change gets is decided before anything is dispatched, and most
+changes get almost none.
+
+### Lead with the tier table. It is the first thing an agent reads
+
+| Tier | The change | Who runs it |
+|---|---|---|
+| **Direct** | One module, reversible, touching no contract, schema, auth, payment or infrastructure | The owning agent, called straight. **No orchestrator, no task file** |
+| **Standard** | One domain, several files, or a numbered requirement behind it | The owning agent too. A task file only when the work must survive a compaction |
+| **Guarded** | Two or more domains, *or* schema, auth, money, a public contract, a migration, a deploy or personal data | The `orchestrator`, and the full flow below |
+
+**The line to land:** *"Choosing a heavier tier than the change needs is a defect, not caution. A
+one-line fix that pays for a planning pass, a task file and three reviews spends real time to learn
+nothing - and after a few of those, people stop reaching for the harness on small work. Small work is
+most work."*
+
+The rest of this section describes the **Guarded** flow. Direct and Standard work skips straight to
+the specialist.
 
 ### The state machine - five states, defined exactly once
 
@@ -214,7 +231,7 @@ is designed for it."*
 Point out the distinction most teams blur: *"`Blocked` wants to move and cannot. `Pending` could move
 and has been told not to."*
 
-### The orchestrator's loop - five phases
+### The orchestrator's loop - five phases, on a Guarded change only
 
 1. **Analyze** the requirement against the spec
 2. **Decompose** into tasks with dependencies
@@ -224,19 +241,22 @@ and has been told not to."*
 
 ### Routing: who is dispatched, and why it is not one generalist
 
-- **Process is proportional to blast radius.** A one-module, reversible change goes straight to the
-  agent that owns it. The **orchestrator** is for work that spans domains or touches schema, auth,
-  money, a public contract, a migration or a deploy - there, specialists are dispatched and the
-  history is registered on the board.
 - Each dev agent is scoped to real module paths, so two agents do not collide on the same files.
 - Separation of duty is **structural, not aspirational**: reviewers hold no `Edit` or `Write`. *"A
   reviewer that edits code has become a dev agent and lost its independence."*
+- Sub-tasks that exist to make a plan look thorough are overhead, not rigour: each one is a dispatch,
+  a brief, a board row and a log row.
 
-### The quality gates before `Done`
+### One gate, on the branch, at the pull-request boundary
 
 ```
-qa-test (tests green) → code-reviewer + security-reviewer (parallel) → /secret-scan → PR opened
+/review-changes over the whole branch diff:
+  the suites → code-reviewer + security-reviewer → /secret-scan → PR opened
 ```
+
+**Say the "once" out loud, because the old shape was a reviewer after each agent:** a reviewer
+dispatched per agent re-reads the same files once per agent and reports the same findings each time.
+Security review belongs to this boundary and to any moment the user asks for it - not to every change.
 
 **The most important operational rule in the whole system - land this one hard:**
 
@@ -324,16 +344,16 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 
 | Profile | USD / feature | vs default | Per 100 features |
 |---|---:|---:|---:|
-| all-frontier (xhigh) | 7.228 | 2.96x | 723 |
-| all-opus, no effort tuning | 3.614 | 1.48x | 361 |
-| **DEFAULT roster** | **2.442** | **1.00x** | **244** |
-| economy (gates opus, rest haiku) | 1.927 | 0.79x | 193 |
-| haiku-only (medium) | 0.630 | 0.26x | 63 |
+| all-frontier (fable, xhigh) | 8.007 | 2.92x | 801 |
+| all-opus (xhigh, no effort tuning) | 4.004 | 1.46x | 400 |
+| **DEFAULT roster** | **2.746** | **1.00x** | **275** |
+| economy (gates opus, rest haiku) | 2.152 | 0.78x | 215 |
+| haiku-only (medium) | 0.708 | 0.26x | 71 |
 
-> **The default roster costs 32% less than putting Opus at xhigh everywhere, which is the configuration
+> **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 15 rules are path-scoped, keeping **64% of rule content out of the
+Context is the other lever: 9 of 16 rules are path-scoped, keeping **64% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -348,9 +368,31 @@ default session**. A rule without `paths:` is rent paid on every request of ever
 
 One command: `python scripts/port.py --target . --tool all`. The adapter is unit-tested in CI (32/32, both hook flavours).
 
-**State the two honest limits out loud** - it buys credibility and pre-empts the sharpest question:
+**State the three honest limits out loud** - it buys credibility and pre-empts the sharpest question:
 Codex routes edits through `apply_patch`, so `protect-adr` is best-effort there; Cursor's
-`afterFileEdit` is observational, so an ADR edit is flagged rather than blocked.
+`afterFileEdit` is observational, so an ADR edit is flagged rather than blocked; and
+`guard-agent-spawn` does not port at all, because neither tool has Claude Code's `Agent` tool and so
+neither exposes a subagent-spawn hook point.
+
+---
+
+## Section 8b. Seeing whether it is actually wired (2 min)
+
+**Key message:** A harness that looks configured and has a hook nobody registered is a harness that
+is not there. `tools/harness-view` reads what is on disk, with no model in the loop.
+
+- **The graph.** Agents, rules, commands, hooks, skills and tasks, with the edges between them, plus a
+  Flow view that runs from `settings.json` to the human.
+- **`assess`.** Scores a harness against the project's own quality gate and links every finding back to
+  the node that caused it: a seat with no module, a rule matching no path, a skill no agent was told
+  to use. Run against three real harnesses it scores 99, 79 and 64 out of 100.
+- **And it edits.** Park a rule, hook, command or seat (recorded in `.claude/disabled.json`, and
+  switching off a reviewer needs a human to type the confirmation phrase); reorder, retitle or switch
+  off a command's numbered steps; set a seat's `model`, `effort` and `tools` from pickers backed by a
+  four-vendor reference you can edit per repository.
+
+**The line to land:** *"Everything you have just seen is a file on disk, so a tool with no model in it
+can tell you whether the harness you were promised is the harness you have."*
 
 ---
 
@@ -364,8 +406,9 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 2. **(90s) Run `/harness-bootstrap`.** Let them watch it *read the code first*. Show the Inventory
    Report and the intake. Stop at the setup plan: nothing is written yet, and the plan names every
    agent's model and effort budget.
-3. **(30s) Approve and scaffold.** Call the wall-clock: **~0.2s, 73 paths**. Contrast with a model
-   generating the same content: minutes, real money, and it can hallucinate a hook that never runs.
+3. **(30s) Approve and scaffold.** Call the wall-clock off the run in front of you - it lands in
+   **~0.2s**. Contrast with a model generating the same content: minutes, real money, and it can
+   hallucinate a hook that never runs.
 4. **(60s) Tour what landed.** `.claude/agents/`, `rules/`, `hooks/`, `settings.json`, `docs/tasks/`.
 5. **(2 min) Break it on purpose. This is the moment the talk is built around.**
    - `cat .env` → blocked
@@ -413,24 +456,18 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 ### Cost per feature (modelled)
 
-| Profile | USD / feature | Per 100 features |
-|---|---:|---:|
-| all-opus, no effort tuning | 3.614 | 361 |
-| **DEFAULT roster** | **2.442** | **244** |
-| economy | 1.927 | 193 |
-
-Where the money goes in the default roster, per feature: `app-dev` $0.709, `orchestrator` $0.586,
-`code-reviewer` $0.391, `security-reviewer` $0.373, `qa-test` $0.282, `spec-guardian` $0.079,
-`history-tracker` $0.022.
+The table is in Section 7; do not put it on screen twice. What belongs here is where the money goes in
+the default roster, per feature: `app-dev` $0.778, `orchestrator` $0.716, `code-reviewer` $0.421,
+`security-reviewer` $0.404, `qa-test` $0.314, `spec-guardian` $0.088, `history-tracker` $0.025.
 
 ### Scaffold
 
-**~0.2s**, 73 paths created, exit 0. Re-run is **idempotent**: everything reports `KEPT`, nothing is
-clobbered. An unresolved variable exits non-zero rather than shipping a placeholder into a live rule.
+**~0.2s**, exit 0. Re-run is **idempotent**: everything reports `KEPT`, nothing is clobbered. An
+unresolved variable exits non-zero rather than shipping a placeholder into a live rule.
 
 ### What ships
 
-**15** agents (+1 template), **15** rules, **20** commands, **8** hooks.
+**16** agents (+1 template), **16** rules, **22** commands, **10** hooks.
 
 ### Say this out loud, it is what makes the rest believable
 
@@ -450,8 +487,8 @@ technical audience this is usually the moment they start trusting you.
 ## Section 11. Close and call to action (2 min)
 
 - Recap against the opening contrast: ad-hoc → engineered, on all four axes (contract, roles, memory, control).
-- The three mechanisms, one line each: **context survives**, **work is registered and gated**,
-  **damage is blocked by exit codes**.
+- The three mechanisms, one line each: **context survives**, **process is proportional to the change
+  and gated once on the branch**, **damage is blocked by exit codes**.
 - The ask, on screen:
   ```
   /spec-builder           # write the contract first
@@ -470,10 +507,10 @@ technical audience this is usually the moment they start trusting you.
 | *What if we already have a `.claude/` folder?* | It reconciles, never clobbers. Differences are reported as `CONFLICT` for you to merge |
 | *Can the agent work around a hook?* | The deny list is prefix matching and is defeatable; that is a speed bump. The hooks are the gate: they fire before the tool runs and exit 2 |
 | *Does a cheaper model break safety?* | No, and it is proven: byte-identical eval on Haiku. What degrades is code quality and review depth |
-| *How much does it cost?* | $2.442 per feature modelled on the default roster, 32% below the not-choosing configuration. Three presets: Default / Economy / Thorough |
+| *How much does it cost?* | $2.746 per feature modelled on the default roster, 31% below the not-choosing configuration. Three presets: Default / Economy / Thorough |
 | *Is this just a big CLAUDE.md?* | A CLAUDE.md is advice the model may forget after compaction. This is enforcement plus durable state |
 | *Who owns the policy decisions?* | You do. Governance rules ship as blanks. The skill never invents a licence policy or a classification table |
-| *Does this slow developers down?* | The scaffold is 0.2s. The gates run in parallel. The cost is one-time setup; the return is work that does not have to be redone |
+| *Does this slow developers down?* | Not on small work: a one-module, reversible change is Direct - straight to the owning agent, no orchestrator, no task file. The full flow is reserved for changes that span domains or touch schema, auth, money, a contract, a migration, a deploy or personal data, and the gate runs once on the branch rather than after every agent |
 
 ---
 
@@ -481,12 +518,15 @@ technical audience this is usually the moment they start trusting you.
 
 | Slot | What to do |
 |---|---|
-| **20 min** | Sections 0, 1 (both halves, condensed), 3, 6, short demo (steps 2, 3, 5, 6), 11. Cut 4, 5, 7, 8, 10 |
+| **20 min** | Sections 0, 1 (both halves, condensed), 3, 6, short demo (steps 2, 3, 5, 6), 11. Cut 4, 5, 7, 8, 8b, 10 |
 | **40 min** (default) | As written |
 | **60 min** | Add a `docs/FLOWS.md` walkthrough, a deeper `spec-builder` pass with clip 5, the `ASSESSMENT.md` limits discussion, and a second demo in audit mode |
 
 **If you must cut only one thing:** cut Section 8 (portability). **Never cut Section 1b** - the human
 prompt problem is the part the audience has not heard before.
+
+**The deck is 25 slides** (`presentation/index.html`), trilingual, and follows this outline section by
+section. It is the visual for this script, not a second copy of it: if a claim changes, change both.
 
 ---
 
@@ -506,14 +546,17 @@ prompt problem is the part the audience has not heard before.
 
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
-- **16** agents (+1 dev-agent template), **15** rules, **22** commands, **9** hooks
+- **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
 - **7** rules unconditional, **9** path-scoped → **64%** of rule content stays out of session
 - Always-RAM rules **30,643 bytes**; path-scoped **55,062 bytes**
-- Read path **-35%** (234,196 -> 153,179 bytes), files read **-58%** (24 -> 10)
+- Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
 - Write path **-84%** (95,064 → 14,787 bytes)
 - Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
 - Port adapter self-test **32/32**
-- Default roster **$2.442 per feature** modelled, **32%** below all-opus-xhigh
-- Scaffold **~0.2s**, 73 paths, idempotent on re-run
+- Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh
+- Scaffold **~0.2s**, idempotent on re-run
+- Roster **7 to 15 of the 16 seats**, never all of them by default
+- Three tiers of process: Direct, Standard, Guarded - and the gate runs once, on the branch
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Three modes: Greenfield, Brownfield, Audit
+- `harness-view assess` on three real harnesses: **99**, **79** and **64** out of 100
