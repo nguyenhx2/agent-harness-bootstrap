@@ -24,9 +24,10 @@ A second audience reads the same page in Japanese.
 ## Product Purpose
 
 Give an AI agent a repo it can actually understand, and a harness it cannot escape. The landing
-page has to make three things intelligible fast: what the three pieces are, that the safety floor
-is mechanical rather than advisory, and how to install it. Success is a visitor who installs, opens
-the deck, or watches the intro, in either language, from any device.
+page is an introduction, and it follows the README's argument in the README's order: the symptoms
+first, then what answers them, then how to install it, how to move to a new version, how to run it,
+and only then the mechanism underneath. Success is a visitor who installs, watches the intro, or
+opens the deck, in either language, from any device.
 
 ## Positioning
 
@@ -40,10 +41,11 @@ browser and a CI run cannot disagree about the score.
 ## Operating Context
 
 The product is three parts that hand off to each other: `spec-builder` (a skill), `harness-bootstrap`
-(a skill), and `harness-view` (a native viewer plus local web UI). It is installed either as a Claude
-Code plugin from a marketplace or from a release zip, and it is portable to Cursor and Codex. The
-landing page sits beside a slide deck (`presentation/`), a video gallery (`video/`), and the GitHub
-repository, all served from the same GitHub Pages site.
+(a skill), and `harness-view` (a native viewer plus local web UI). The plugin route is the first
+install path offered and the one with working updates; the release zip is the offline, pinned
+alternative. Both are portable to Cursor and Codex. The landing page sits beside a slide deck
+(`presentation/`) and the GitHub repository, served from the same GitHub Pages site; the seven
+explainer clips are played in the landing page itself rather than only on the `video/` page.
 
 ## Capabilities and Constraints
 
@@ -54,12 +56,14 @@ repository, all served from the same GitHub Pages site.
 - Zero external requests: no CDN, no webfont fetch, no analytics.
 - The page ships in full English/Japanese parity, and the Japanese page keeps language-aware
   outbound links.
-- The page authors its own diagrams as inline SVG. The repository figures under `docs/assets/`
-  are README and deck assets; only `logo-mark.svg` is referenced from the site, as the icon.
+- The page authors its own diagrams as inline SVG, and its icons as an inline symbol sprite: no
+  icon font, no emoji, no external request. Three raster files under `docs/assets/` are referenced
+  from the site - `logo-mark.svg` as the icon, and the two `harness-view-*.png` screenshots, whose
+  captions may quote only the figures pinned in `docs/assets/CAPTURED.json`.
 
 ## Brand Commitments
 
-Name: Agent Harness Bootstrap. Mark: `docs/assets/logo-mark.svg`. Licence: MIT. Voice: plain,
+Name: Agent Harness Bootstrap. Mark: `docs/assets/logo-mark.svg`. Licence: PolyForm Noncommercial 1.0.0. Voice: plain,
 measured, evidence-first, allergic to adjectives; the existing pages say "Proof, not adjectives"
 and mean it. Every claim on the surface is answered by a script in the repository.
 
@@ -73,7 +77,8 @@ Real, derived, and re-runnable by the visitor:
 - a bare repository blocks 0/22 benchmark payloads; the same repository, harnessed, blocks all 22
 - 64% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
 - a run installs 7 to 15 of 16 seats
-- `harness-view` scoring a real harness 64/100 and naming each finding
+- `harness-view` scored 79/100 on a real harness, over 109 nodes and 112 edges, naming each
+  finding (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
 - the delivery pipeline, the tailoring step and the five control layers, each of which the page
   draws itself as a live diagram rather than importing as a picture
 - outbound proof surfaces: `presentation/`, `video/`, the GitHub repository, the releases page

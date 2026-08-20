@@ -6,13 +6,40 @@ The direction contract sits at the top of each page body and survives the produc
 ## The world
 
 A schematic-capture canvas. The product's argument is that a claim must be checkable, so the
-surface makes each claim something you step through rather than something you read about: three
-authored SVG nets on ultramarine plates, each driven by a radio group, each energizing segment by
-segment as the visitor moves along it.
+surface makes each claim something you step through rather than something you read about: five
+authored SVG nets on ultramarine plates, three of them driven by a radio group and energizing
+segment by segment as the visitor moves along one.
 
 What it refuses: the developer-tool arrangement of a gradient hero over three identical feature
 cards; static exported figures dropped in as pictures; and a kicker above any heading. There is no
 card in this system, no gradient, no glass, and no shadow.
+
+## The argument
+
+The page follows the README's argument, in the README's order, because the README already makes it
+and a landing page that makes a different one is a second thing to keep true:
+
+1. **Does any of this sound familiar** - the eight symptoms, each with what answers it.
+2. **What answers it** - the three pieces, then N1, the delivery net.
+3. **See the whole thing in one clip** - the seven explainer clips, played in the page.
+4. **Install it** - plugin route first, zip second, the viewer last.
+5. **Move to a new version** - the plugin update, and the re-scaffold that reconciles.
+6. **Run it** - the first run, what you will be asked, and the day-to-day commands.
+7. **How the orchestrator actually works** - N4, the routing tier.
+8. **The roster is decided, not installed** - N2, the tailor.
+9. **Watch a request get stopped** - N3, the control route.
+10. **harness-view** - N5, the viewer route, the two shipped screenshots, and what is new.
+
+Two sections were cut rather than carried forward. **"Every figure has a script behind it"** was a
+five-row table of numbers already stated elsewhere on the page; the discipline it advertised is
+better shown at the point of each claim, so each figure now names its script inline (`.src`) and
+the colophon states the rule once. **"Where to go from here"** was a six-row link table whose rows
+had all become sections of this page or footer links; it survived as the footer nav.
+
+The video gallery was a separate page at `/video/`. Nobody had a reason to open it, so the clips
+are folded in here: the lead clip plays inline, the other six sit behind a disclosure and preload
+nothing until it is opened. The `/video/` page still exists and still works; it is simply no longer
+the only place the clips are.
 
 ## Ink
 
@@ -88,7 +115,20 @@ above a heading than below it.
 - **`.rd`** - the readout a selection resolves to: which stage, what it is, and a `writes` or
   `result` line naming the artifact or the refusal.
 - **`.seat`** - one of the 16 roster pads, dashed when empty and solid gold-edged when installed.
-- **`.meas`** - the proof list: figure, what it measures, and the script it comes from.
+- **`.symp`** - the opening question. One ruled row per symptom: an icon, the complaint in the
+  reader's own voice, and what answers it. Three columns from 56rem, where two measures fit side by
+  side; below that the icon keeps its column and the two paragraphs stack.
+- **`.pieces`** - the three parts, each under a 2px accent rule. Not cards: a rule and text.
+- **`.clips`** - the folded-in video gallery. The lead clip spans the grid and preloads metadata;
+  the six behind `.more` carry `preload="none"`, so a disclosure nobody opens costs nothing.
+- **`.more`** - a `<details>` with its marker replaced by a rotating chevron.
+- **`.shot`** - a shipped screenshot with its caption. The two `docs/assets/harness-view-*.png`
+  files are referenced relatively, carry their real intrinsic size so nothing shifts on load, and
+  quote only the figures pinned in `docs/assets/CAPTURED.json`.
+- **`.states`** - what a re-scaffold reports per file. This was a two-column table and it had to
+  side-scroll on a phone to say three short things, so it is a `<dl>` that reflows instead.
+- **`.src`** - where a figure came from, said beside the figure rather than in a trophy cabinet at
+  the end of the page.
 - **`.scroller`** - every listing and every table sits inside one, `overflow-x: auto`,
   `tabindex="0"`, `role="region"` with a label.
 - **`.listing` / `.copy`** - the copy control sits above a listing, never over it, because a code
@@ -99,7 +139,7 @@ emoji, no external request of any kind.
 
 ## The nets
 
-Three authored SVG diagrams, inline in the markup so CSS can reach their internals.
+Five authored SVG diagrams, inline in the markup so CSS can reach their internals.
 
 - **N1, the delivery net** - five stages from raw input to `harness-view`, wide above 56rem and
   vertical below. Each node carries a designator, a name, a sub-line and a tap naming what the
@@ -108,9 +148,24 @@ Three authored SVG diagrams, inline in the markup so CSS can reach their interna
   rules, over the 16 seat pads the roster resolves against.
 - **N3, the control route** - a request descending through five layers to a result, with a bar that
   closes across the route at whichever layer refuses it.
+- **N4, the routing tier** - one change fanning into three alternative lanes, Direct, Standard and
+  Guarded, converging on the branch gate and one reviewed MR. Unlike N1 and N3 the picker chooses
+  *between* lanes rather than *along* a run, so exactly one lane lights. The gate and the MR below
+  it stay live under every tier: lighting the result while leaving the gate between it dark read as
+  a change that reached the MR without passing the gate, which is the one thing this drawing must
+  not say.
+- **N5, the viewer route** - `.claude/` on disk into `scan`, out to `serve`, `assess` and `watch`,
+  and back to disk through the one same-origin write-back door. It carries no picker, so it ships
+  energized (`style="--on:1"`) like N2.
 
 Each net is `aria-hidden`; the accessible content is the picker plus the readout, which states in
-words everything the drawing states in colour.
+words everything the drawing states in colour. N5 has no picker, so its figcaption carries the
+whole statement.
+
+Japanese needs its own labels inside a net, not a translation dropped in: a CJK glyph is full-width,
+so "owning agent" at 12 narrow characters became 8 full ones and ran into the box edge. The
+Japanese N4 uses shorter labels and gives the orchestrator its long name back in the readout beside
+the drawing.
 
 ## Where the motion practice came from
 
