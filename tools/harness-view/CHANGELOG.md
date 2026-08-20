@@ -7,6 +7,15 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.14.1] - 2026-08-20
+
+### Fixed
+
+- No change to the binary's behaviour. The published SCREENSHOTS of its web UI carried a
+  stale version in the footer (v1.12.0 on the landing page and README while the release
+  was v1.14.0) - the same burned-into-pixels drift the clips had. Retaken from this
+  release's binary, with a provenance gate so a release can no longer ship them stale.
+
 ## [1.14.0] - 2026-08-20
 
 ### Fixed

@@ -189,6 +189,27 @@ def main() -> int:
                 errs.append(f".claude-plugin/marketplace.json: plugin `{name}` is {mv}, the "
                             f"release is {required} - plugin users stay on the old build")
 
+    # The harness-view UI screenshots burn the running binary's version into their
+    # footer pixels, where no text gate can see it: the shipped assess screenshot read
+    # v1.12.0 for two releases while the release page said v1.14.0. The retake script
+    # records what it captured in docs/assets/CAPTURED.json; a release whose screenshots
+    # were captured by any other version ships a picture of the wrong product.
+    cap = ROOT / "docs" / "assets" / "CAPTURED.json"
+    if cap.is_file():
+        try:
+            cap_v = json.loads(cap.read_text(encoding="utf-8")).get("tool_version")
+        except ValueError as e:
+            cap_v = None
+            errs.append(f"docs/assets/CAPTURED.json does not parse: {e}")
+        if required and cap_v and cap_v != required:
+            errs.append(f"docs/assets/CAPTURED.json: the UI screenshots were captured from "
+                        f"v{cap_v}, the release is {required} - retake them "
+                        "(scripts/capture/capture-screens.mjs) so the footer in the "
+                        "pixels matches the release")
+    elif required:
+        errs.append("docs/assets/CAPTURED.json is missing - the UI screenshots have no "
+                    "recorded provenance")
+
     # Both skills are released together under one repo version - a version present in one
     # SKILL.md and not the other means the release is half-bumped.
     distinct_skill_md = set(skill_md_versions.values())
