@@ -788,8 +788,17 @@ function rowCells(line) {
   // drawn. It matters more now that cells are typed into: the grid editor writes
   // this escape, and a reader that could not read it back would turn a table
   // into pipes the moment someone typed one.
-  if (s.charAt(s.length - 1) === "|" && s.charAt(s.length - 2) !== "\\") s = s.slice(0, -1);
+  if (s.charAt(s.length - 1) === "|" && !escapedAt(s, s.length - 1)) s = s.slice(0, -1);
   return splitCells(s).map(c => c.trim());
+}
+
+/// Is the character at `at` escaped? An ODD number of backslashes before it escapes it; an EVEN
+/// number is that many escaped backslashes and leaves the character itself bare. Counting is the
+/// only way to tell `\\|` - a backslash, then a real cell boundary - from `\|`, a pipe in a cell.
+function escapedAt(s, at) {
+  let n = 0;
+  for (let i = at - 1; i >= 0 && s.charAt(i) === "\\"; i--) n++;
+  return n % 2 === 1;
 }
 
 /// Split on the pipes that separate cells, unescaping the ones that do not.
@@ -798,7 +807,15 @@ function splitCells(s) {
   let cur = "";
   for (let i = 0; i < s.length; i++) {
     const c = s.charAt(i);
-    if (c === "\\" && s.charAt(i + 1) === "|") { cur += "|"; i++; continue; }
+    if (c === "\\") {
+      const n = s.charAt(i + 1);
+      // `\|` is a pipe in a cell, `\\` is one backslash. A backslash before anything else stays the
+      // two characters it is, so a table hand-written before this escaping existed still reads back
+      // exactly as its author typed it.
+      if (n === "|" || n === "\\") { cur += n; i++; continue; }
+      cur += c;
+      continue;
+    }
     if (c === "|") { out.push(cur); cur = ""; continue; }
     cur += c;
   }
@@ -939,7 +956,12 @@ function stepPartsHaveTable(parts) {
 /// flattened, because a row is one line and a pasted paragraph would otherwise
 /// end the table mid-way.
 function cellSource(s) {
-  return cellText(s).replace(/\|/g, "\\|");
+  // The BACKSLASH is escaped first, and that is not optional. Escaping `|` while leaving `\` alone
+  // is incomplete: a cell whose text ends in a backslash writes `a\` straight into the row, and the
+  // very next character is the pipe that ends the cell - so the reader sees `\|`, calls it an
+  // escaped pipe, and merges two cells into one. CodeQL flags this as js/incomplete-sanitization
+  // and it is right: the round trip is lossless only if the escape character escapes itself too.
+  return cellText(s).replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
 }
 
 /// A cell as it READS: flattened and trimmed, but not escaped. This is the form
