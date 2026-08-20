@@ -9,9 +9,10 @@ docs/HARNESS-GRAPH-SCHEMA.md at the skill repo (and summarized here):
     "edges": [ {"from", "to", "type", "refs"?} ] }
 
 Node types (closed set):  agent | rule | command | hook | settings | script |
-                          module | task | gate | human
+                          module | task | gate | human | skill | instruction
 Edge types (closed enum): gates | triggers | enforces | reviews | owns | spawns |
-                          runs | invokes | escalates | references
+                          runs | invokes | escalates | references | uses |
+                          briefs | cites | imports | routes
 
 The file is DETERMINISTIC: nodes and edges are sorted, keys are sorted, and it
 carries no timestamp - two runs over the same tree are byte-identical, so the
@@ -40,9 +41,59 @@ import re
 import sys
 
 NODE_TYPES = ("agent", "rule", "command", "hook", "settings", "script",
-              "module", "task", "gate", "human", "skill")
+              "module", "task", "gate", "human", "skill", "instruction")
 EDGE_TYPES = ("gates", "triggers", "enforces", "reviews", "owns", "spawns",
-              "runs", "invokes", "escalates", "references", "uses")
+              "runs", "invokes", "escalates", "references", "uses",
+              "briefs", "cites", "imports", "routes")
+
+# The instruction files: the contract each AI coding tool reads, and the only
+# nodes that live OUTSIDE .claude/. This table is the twin of
+# `instruction::FILES` in tools/harness-view/src/instruction.rs and has to stay
+# equal to it - scripts/check_graph_parity.py compares the two scanners byte for
+# byte, so a path added on one side only surfaces there as a diff.
+#
+# Every path is sourced, and the source travels into the node so a reader can
+# tell a documented fact from a guess. Nothing here was invented: what could not
+# be confirmed from this repository or from a first-party vendor page is recorded
+# as a note (see the Kiro note on AGENTS.md), never as a path.
+#
+#   (key, path, ext, tools, source, verified, note)
+#   ext == "" means `path` IS the file; otherwise `path` is a directory of them.
+INSTRUCTION_FILES = (
+    ("agents", "AGENTS.md", "",
+     ("Claude Code", "Codex", "Cursor", "Antigravity"),
+     "docs/tools/claude-code.md; docs/tools/codex.md; docs/tools/cursor.md; "
+     "antigravity.google/docs/cli/best-practices", True,
+     "Kiro is deliberately absent from this list: no first-party Kiro page confirms that it "
+     "reads AGENTS.md, so the claim is unverified and is not made here. Kiro's documented "
+     "instruction surface is .kiro/steering/."),
+    ("claude", "CLAUDE.md", "", ("Claude Code",),
+     "docs/tools/claude-code.md; harness-bootstrap/assets/root/CLAUDE.md", True,
+     "A thin @AGENTS.md import plus the Claude-only surface; it is not a second contract."),
+    ("gemini", "GEMINI.md", "", ("Antigravity",),
+     "antigravity.google/docs/cli/best-practices", True,
+     "Antigravity accepts either GEMINI.md or AGENTS.md at the workspace root."),
+    ("cursor-rules", ".cursor/rules", ".mdc", ("Cursor",),
+     "harness-bootstrap/scripts/port.py (port_cursor_rules); docs/tools/cursor.md", True,
+     "Written by the porter, one per .claude/rules/*.md. No `paths:` becomes alwaysApply: "
+     "true; `paths: [glob]` becomes globs:."),
+    ("kiro-steering", ".kiro/steering", ".md", ("Kiro",),
+     "kiro.dev/docs/steering", True,
+     "Workspace steering files. This repository does not port to Kiro, so these are "
+     "hand-written where they exist."),
+    ("antigravity-rules", ".agents/rules", ".md", ("Antigravity",),
+     "antigravity.google/docs/rules-workflows", True,
+     "Workspace rules, at the workspace or git root. Global rules live in ~/.gemini/GEMINI.md, "
+     "outside any repository, so they are not scannable."),
+    ("antigravity-rules-legacy", ".agent/rules", ".md", ("Antigravity",),
+     "antigravity.google/docs/rules-workflows (documented back-compat path)", True,
+     "The superseded location, still read for backward compatibility."),
+)
+
+# A leaf file name inside one of the directory-shaped entries above. The same
+# character class the write path enforces, so a name this scanner turns into a
+# node is a name the editor can address.
+INSTRUCTION_NAME_RE = re.compile(r"^(?!\.)(?!.*\.\.)[A-Za-z0-9_.-]+$")
 
 # A wired skill is recorded in the SEAT's body: /skill-wire adds "a new entry
 # under the seat's Skills available section". A declaration line is therefore the
@@ -230,6 +281,78 @@ def hook_registrations(claude: pathlib.Path) -> dict[str, dict]:
     return reg
 
 
+def _cells(line: str) -> list[str]:
+    t = line.strip()
+    if not t.startswith("|"):
+        return []
+    return [c.strip().strip("*").strip() for c in t.strip("|").split("|")]
+
+
+def _is_separator(line: str) -> bool:
+    c = _cells(line)
+    return bool(c) and all(x and set(x) <= set("-:") for x in c)
+
+
+def tier_rows(text: str) -> list[dict]:
+    """The 'How much process a change gets' table v1.18.0 put into AGENTS.md.
+
+    Matched by what its columns MEAN - a first column called Tier beside one that
+    names who runs the change - and not by the heading above it, which is prose
+    and can be reworded without the table changing at all. Twin of
+    `instruction::tier_rows` in the Rust scanner.
+    """
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        head = _cells(line)
+        if len(head) < 3:
+            continue
+        lower = [c.lower() for c in head]
+        if lower[0] != "tier" or not any("who runs" in c for c in lower):
+            continue
+        who_at = next((j for j, c in enumerate(lower) if "who runs" in c), 2)
+        change_at = next((j for j, c in enumerate(lower) if "change" in c), 1)
+        adds_at = next((j for j, c in enumerate(lower) if "adds" in c), 3)
+        out: list[dict] = []
+        for raw in lines[i + 1:]:
+            if _is_separator(raw):
+                continue
+            c = _cells(raw)
+            if len(c) < 3:
+                break
+            pick = lambda idx: c[idx] if idx < len(c) else ""   # noqa: E731
+            if not pick(0):
+                break
+            out.append({"tier": pick(0), "change": pick(change_at),
+                        "who": pick(who_at), "adds": pick(adds_at)})
+        return out
+    return []
+
+
+def instruction_files(root: pathlib.Path):
+    """-> [(entry, name, repo-relative path)] for every one that exists.
+
+    A path that is absent is simply not a node: the graph reports what a
+    repository HAS, and a node for a file nobody wrote would be a placeholder
+    pretending to be a fact.
+    """
+    found = []
+    for entry in INSTRUCTION_FILES:
+        key, path, ext = entry[0], entry[1], entry[2]
+        if not ext:
+            if (root / path).is_file():
+                found.append((entry, "", path))
+            continue
+        d = root / path
+        if not d.is_dir():
+            continue
+        stems = sorted(p.name[:-len(ext)] for p in d.iterdir()
+                       if p.is_file() and p.name.endswith(ext)
+                       and INSTRUCTION_NAME_RE.match(p.name[:-len(ext)] or "."))
+        for stem in stems:
+            found.append((entry, stem, f"{path}/{stem}{ext}"))
+    return found
+
+
 def build(root: pathlib.Path) -> dict:
     claude = root / ".claude"
     nodes: dict[str, dict] = {}
@@ -237,7 +360,8 @@ def build(root: pathlib.Path) -> dict:
 
     def add_node(id_: str, type_: str, label: str, file: str | None = None,
                  disabled: bool = False, synthetic: bool = False,
-                 meta: dict | None = None) -> None:
+                 meta: dict | None = None, edit: dict | None = None,
+                 tiers: list | None = None) -> None:
         n: dict = {"id": id_, "type": type_, "label": label, "disabled": disabled}
         if file:
             n["file"] = file
@@ -245,6 +369,13 @@ def build(root: pathlib.Path) -> dict:
             n["synthetic"] = True
         if meta:
             n["meta"] = meta
+        # The write path takes a key and a bare name, never a path. A node that
+        # carries these is one the viewer's editor may address; a node without
+        # them is read-only, and that is the whole permission model.
+        if edit is not None:
+            n["edit"] = edit
+        if tiers:
+            n["tiers"] = tiers
         nodes[id_] = n
 
     def add_edge(frm: str, to: str, type_: str, refs: int = 0) -> None:
@@ -255,10 +386,13 @@ def build(root: pathlib.Path) -> dict:
 
     disabled_entries = load_disabled(claude)
 
-    # settings (no meta by contract: id/type/label/file/disabled only)
+    # settings (no meta by contract: id/type/label/file/disabled only). It does
+    # carry `edit`, because the viewer edits it through the same key-and-name
+    # write path the instruction files use.
     if (claude / "settings.json").is_file():
         add_node("settings", "settings", "settings.json",
-                 file=".claude/settings.json")
+                 file=".claude/settings.json",
+                 edit={"key": "settings", "name": ""})
 
     # agents (active + disabled are both nodes; disabled agents are not a
     # supported toggle, but a file parked there still deserves visibility)
@@ -495,6 +629,62 @@ def build(root: pathlib.Path) -> dict:
                     add_edge(f"agent:{one}", f"task:{t.stem}", "owns")
             for m in [m for m, base in mod_names if base and base in body]:
                 add_edge(f"task:{t.stem}", f"mod:{m}", "references")
+
+    # instruction files: AGENTS.md, CLAUDE.md and the per-tool equivalents. The
+    # only nodes outside .claude/, and the point of them: they are the contract
+    # every seat is told to obey, so a graph that stopped at the .claude/
+    # boundary drew every enforcement mechanism and none of the thing enforced.
+    instr_found = instruction_files(root)
+    instr_ids = {e[0]: f"instr:{e[0]}" for e, name, _ in instr_found if not name}
+    rule_labels = [n["label"] for n in nodes.values()
+                   if n["type"] == "rule" and not n["disabled"]]
+    agent_tier: dict[str, str] = {}
+    for entry, name, relpath in instr_found:
+        key, path, ext, tools, source, verified, note = entry
+        nid = f"instr:{key}" if not name else f"instr:{key}/{name}"
+        text = read_text(root / relpath)
+        imeta: dict = {"tools": list(tools), "source": source, "verified": verified}
+        if note:
+            imeta["note"] = note
+        rows = tier_rows(text)
+        for row in rows:
+            # A tier row that NAMES a seat routes to it. The Direct and Standard
+            # rows say "the owning agent" and name nobody, so they route to
+            # nobody: guessing which seats they mean is exactly the invention
+            # the table exists to replace.
+            for tok in SKILL_TOKEN_RE.findall(row["who"]):
+                if tok in agents:
+                    agent_tier[tok] = row["tier"]
+                    add_edge(nid, f"agent:{tok}", "routes")
+        add_node(nid, "instruction", relpath, file=relpath, meta=imeta,
+                 edit={"key": key, "name": name}, tiers=rows or None)
+        # CLAUDE.md says @AGENTS.md, and saying so in the graph is what stops a
+        # reader treating it as a second, competing contract.
+        for other_key, other_id in instr_ids.items():
+            if other_id == nid:
+                continue
+            other_rel = next(r for e, n2, r in instr_found
+                             if e[0] == other_key and not n2)
+            if f"@{other_rel}" in text:
+                add_edge(nid, other_id, "imports")
+        # A rule the contract actually points at, matched by the path it cites
+        # rather than by the bare word: "testing" appears in prose everywhere,
+        # `.claude/rules/testing.md` does not.
+        norm = text.replace("\\", "/")
+        for r in rule_labels:
+            if f"rules/{r}.md" in norm:
+                add_edge(nid, f"rule:{r}", "cites")
+        # A seat the contract briefs. Agent names are slugs, so a token match is
+        # exact; a substring match would brief every seat whose name happens to
+        # sit inside another word.
+        tokens = set(SKILL_TOKEN_RE.findall(text))
+        for a in agents:
+            if a in tokens:
+                add_edge(nid, f"agent:{a}", "briefs")
+    for a, tier in agent_tier.items():
+        n = nodes.get(f"agent:{a}")
+        if n is not None:
+            n.setdefault("meta", {})["tier"] = tier
 
     edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r else {})}
                  for (f, t, ty, r) in edges

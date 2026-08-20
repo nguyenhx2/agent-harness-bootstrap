@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+# agent-guardrails, ported from .claude/rules/agent-guardrails.md by port.py

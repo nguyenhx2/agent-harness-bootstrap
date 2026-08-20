@@ -2,6 +2,12 @@
 //! and .claude/state/code-graph.json when present) and emits the harness graph,
 //! schema version 1. No timestamps, sorted keys, sorted nodes and edges, so two
 //! scans of the same tree are byte-identical.
+//!
+//! It also reads the instruction files that sit OUTSIDE .claude/ - `AGENTS.md`,
+//! `CLAUDE.md` and the per-tool equivalents listed in `instruction::FILES` -
+//! because those are the contract the seats are told to obey, and a graph that
+//! stopped at the .claude/ boundary showed every enforcement mechanism and none
+//! of the thing being enforced.
 
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
@@ -459,7 +465,11 @@ pub fn scan(root: &Path) -> Value {
         nodes.insert(
             "settings".into(),
             json!({"id": "settings", "type": "settings", "label": "settings.json",
-                   "file": rel(root, ".claude/settings.json"), "disabled": false}),
+                   "file": rel(root, ".claude/settings.json"), "disabled": false,
+                   // Editable through the same key-and-name write path the
+                   // instruction files use, which is why settings.json has an
+                   // entry in instruction::FILES despite not being one.
+                   "edit": {"key": "settings", "name": ""}}),
         );
     }
 
@@ -737,6 +747,106 @@ pub fn scan(root: &Path) -> Value {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // --- instruction files: AGENTS.md, CLAUDE.md and the per-tool equivalents.
+    // These are the only nodes that live OUTSIDE .claude/, and that is the
+    // point: they are the contract every seat is told to obey, and a viewer
+    // that stopped at the .claude/ boundary could not show it. The paths come
+    // from instruction::FILES, which carries the evidence for each one.
+    let instr_found = crate::instruction::found(root);
+    // Which tier the routing table names for a seat. Filled from whichever
+    // instruction file actually carries the table (v1.18.0 puts it in
+    // AGENTS.md); a repo whose AGENTS.md predates that release simply has no
+    // tiers, and no tier is invented for a seat the table does not name.
+    let mut agent_tier: BTreeMap<String, String> = BTreeMap::new();
+    let rule_names: Vec<String> = nodes
+        .values()
+        .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("rule"))
+        .filter(|n| n.get("disabled").and_then(|d| d.as_bool()) != Some(true))
+        .filter_map(|n| n.get("label").and_then(|l| l.as_str()).map(|s| s.to_string()))
+        .collect();
+    for (sp, name, relpath) in &instr_found {
+        let id = if name.is_empty() {
+            format!("instr:{}", sp.key)
+        } else {
+            format!("instr:{}/{name}", sp.key)
+        };
+        let text = fs::read_to_string(root.join(relpath)).unwrap_or_default();
+        let mut node = Map::new();
+        node.insert("id".into(), json!(id));
+        node.insert("type".into(), json!("instruction"));
+        node.insert("label".into(), json!(relpath));
+        node.insert("file".into(), json!(relpath));
+        node.insert("disabled".into(), json!(false));
+        node.insert("meta".into(), Value::Object(crate::instruction::meta_for(sp)));
+        // The write path takes a key and a bare name, never this path - see the
+        // containment note in instruction.rs. The node carries both so the page
+        // never has to compose one.
+        node.insert("edit".into(), json!({"key": sp.key, "name": name}));
+        let tiers = crate::instruction::tier_rows(&text);
+        if !tiers.is_empty() {
+            for row in &tiers {
+                let tier = row.get("tier").and_then(|x| x.as_str()).unwrap_or("");
+                let who = row.get("who").and_then(|x| x.as_str()).unwrap_or("");
+                // A tier row that NAMES a seat routes to it. The Direct and
+                // Standard rows say "the owning agent" and name nobody, so they
+                // route to nobody: guessing which seats they mean is exactly
+                // the invention the table exists to replace.
+                for tok in slug_tokens(who) {
+                    if agent_names.iter().any(|a| *a == tok) {
+                        agent_tier.insert(tok.clone(), tier.to_string());
+                        edges.push((id.clone(), format!("agent:{tok}"), "routes".into(), 0));
+                    }
+                }
+            }
+            node.insert("tiers".into(), Value::Array(tiers));
+        }
+        nodes.insert(id.clone(), Value::Object(node));
+
+        // CLAUDE.md is a thin `@AGENTS.md` import, and saying so in the graph is
+        // what stops a reader treating it as a second, competing contract.
+        for (other_sp, other_name, other_rel) in &instr_found {
+            if !other_name.is_empty() || other_rel == relpath {
+                continue;
+            }
+            if text.contains(&format!("@{other_rel}")) {
+                edges.push((
+                    id.clone(),
+                    format!("instr:{}", other_sp.key),
+                    "imports".into(),
+                    0,
+                ));
+            }
+        }
+        // A rule the contract actually points at, matched by the path it cites
+        // rather than by the bare word: "testing" appears in prose everywhere,
+        // `.claude/rules/testing.md` does not.
+        let norm = text.replace('\\', "/");
+        for r in &rule_names {
+            if norm.contains(&format!("rules/{r}.md")) {
+                edges.push((id.clone(), format!("rule:{r}"), "cites".into(), 0));
+            }
+        }
+        // A seat the contract briefs. Agent names are slugs, so a token match is
+        // exact; a substring match would brief every seat whose name happens to
+        // sit inside another word.
+        let tokens: std::collections::BTreeSet<String> = slug_tokens(&text).into_iter().collect();
+        for a in &agent_names {
+            if tokens.contains(a) {
+                edges.push((id.clone(), format!("agent:{a}"), "briefs".into(), 0));
+            }
+        }
+    }
+    for (agent, tier) in &agent_tier {
+        if let Some(Value::Object(n)) = nodes.get_mut(&format!("agent:{agent}")) {
+            let meta = n
+                .entry("meta".to_string())
+                .or_insert_with(|| Value::Object(Map::new()));
+            if let Some(m) = meta.as_object_mut() {
+                m.insert("tier".into(), json!(tier));
             }
         }
     }

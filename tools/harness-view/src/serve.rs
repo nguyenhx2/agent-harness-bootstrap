@@ -26,6 +26,13 @@
 //! what the frontmatter writer guarantees and where a user's corrections are
 //! stored.
 //!
+//! POST /instruction edits the contract itself: `AGENTS.md`, `CLAUDE.md`, the
+//! per-tool equivalents in `instruction::FILES`, and `.claude/settings.json`.
+//! It takes a KEY from that fixed table and, for the directory-shaped entries, a
+//! bare name - never a path - so a traversal fails a character check before a
+//! path exists. It writes only what changed: the original file's line endings
+//! are re-applied, so a one-word edit to a CRLF file is a one-line diff.
+//!
 //! POST /toggle is guarded against cross-origin browser requests: the server
 //! only mutates .claude/ for same-origin calls. Any present Origin header must
 //! name this server's own host:port, any present Sec-Fetch-Site header must be
@@ -214,9 +221,16 @@ fn display_path(p: &Path) -> String {
 /// with a visible marker rather than silently cut.
 const FILE_CAP: usize = 256 * 1024;
 
-/// Subtrees the preview may read. Everything the graph points at lives in one
-/// of these two, and an allow-list is the only containment rule that stays
-/// correct when the graph gains new node types.
+/// Subtrees the preview may read. Almost everything the graph points at lives
+/// in one of these two, and an allow-list is the only containment rule that
+/// stays correct when the graph gains new node types.
+///
+/// The exception is the instruction files, which are the whole reason a
+/// contract is portable between tools: `AGENTS.md` sits at the repository root
+/// and `.cursor/rules/`, `.kiro/steering/` and `.agents/rules/` sit beside
+/// `.claude/`, not inside it. Widening this list to the root would make the
+/// entire repository readable, so those are admitted one at a time through
+/// `instruction::from_rel` - a second allow-list, not a wider one.
 const READABLE: [&str; 2] = [".claude", "docs"];
 
 /// Resolve a repo-relative path for the preview, refusing anything that leaves
@@ -239,13 +253,21 @@ fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
         return Err(format!("refused: absolute paths are not readable ({rel})"));
     }
     let first = cleaned.split('/').next().unwrap_or("");
-    if !READABLE.contains(&first) {
+    // An instruction file is admitted by NAME, not by prefix: `from_rel` has to
+    // recognise the exact path in the table, and what gets joined below is then
+    // rebuilt from that table entry rather than from the string that matched it.
+    let instr = crate::instruction::from_rel(&cleaned);
+    if !READABLE.contains(&first) && instr.is_none() {
         return Err(format!(
-            "refused: only .claude/ and docs/ are readable, not {first}/"
+            "refused: only .claude/, docs/ and the known instruction files are readable, \
+             not {first}/"
         ));
     }
     let root_c = root.canonicalize().map_err(|e| format!("root: {e}"))?;
-    let target = root_c.join(&cleaned);
+    let target = match &instr {
+        Some((sp, name)) => crate::instruction::build(&root_c, sp.key, name)?,
+        None => root_c.join(&cleaned),
+    };
     let target_c = target
         .canonicalize()
         .map_err(|_| format!("no such file: {cleaned}"))?;
@@ -863,6 +885,54 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                     Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
                 }
             }
+            // The instruction-file editor's write path: AGENTS.md, CLAUDE.md,
+            // the per-tool equivalents, and .claude/settings.json. Same gate as
+            // /toggle and /command - same-origin, JSON content type - and the
+            // same plain-text refusals, because the page shows what comes back
+            // verbatim. Containment is instruction::build: a KEY from a fixed
+            // table plus, for the directory-shaped entries, a bare NAME. No
+            // byte of the request ever becomes a path segment on its own.
+            (Method::Post, "/instruction") => {
+                if let Err(msg) = same_origin(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let mut body = String::new();
+                let _ = request.as_reader().read_to_string(&mut body);
+                match serde_json::from_str::<serde_json::Value>(&body) {
+                    Ok(v) => {
+                        let requested = v.get("root").and_then(|x| x.as_str());
+                        match resolve_root(requested, &root) {
+                            Err(e) => Response::from_string(e.msg)
+                                .with_status_code(400)
+                                .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                            Ok(target) => {
+                                let key = v.get("key").and_then(|x| x.as_str()).unwrap_or("");
+                                let name = v.get("name").and_then(|x| x.as_str()).unwrap_or("");
+                                let content =
+                                    v.get("content").and_then(|x| x.as_str()).unwrap_or("");
+                                match crate::instruction::write(&target, key, name, content) {
+                                    Ok(msg) => Response::from_string(msg).with_header(header(
+                                        "Content-Type",
+                                        "text/plain; charset=utf-8",
+                                    )),
+                                    Err(msg) => Response::from_string(msg)
+                                        .with_status_code(400)
+                                        .with_header(header(
+                                            "Content-Type",
+                                            "text/plain; charset=utf-8",
+                                        )),
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
+                }
+            }
             // The model/tool reference the roster pickers are built from: the
             // shipped seed with this repository's own corrections merged over
             // it. Read-only, behind the same cross-origin gate as /paths.
@@ -1022,6 +1092,9 @@ mod tests {
         std::fs::create_dir_all(tmp.join("docs/tasks")).unwrap();
         std::fs::write(tmp.join(".claude/agents/app-dev.md"), "# hi").unwrap();
         std::fs::write(tmp.join("docs/tasks/TASK-01.md"), "# task").unwrap();
+        std::fs::create_dir_all(tmp.join(".cursor/rules")).unwrap();
+        std::fs::write(tmp.join("AGENTS.md"), "# contract").unwrap();
+        std::fs::write(tmp.join(".cursor/rules/testing.mdc"), "# rule").unwrap();
         std::fs::write(tmp.join("SECRET.md"), "do not serve").unwrap();
         // a real file outside the root, the target a traversal would want
         let outside = tmp.parent().unwrap().join("hv-outside-secret.txt");
@@ -1032,6 +1105,15 @@ mod tests {
         assert!(resolve_file(&tmp, "docs/tasks/TASK-01.md").is_ok());
         // backslashes are normalized, not a bypass
         assert!(resolve_file(&tmp, r".claude\agents\app-dev.md").is_ok());
+        // the instruction files, admitted one at a time by name and NOT by
+        // opening the repository root
+        assert!(resolve_file(&tmp, "AGENTS.md").is_ok());
+        assert!(resolve_file(&tmp, ".cursor/rules/testing.mdc").is_ok());
+        // and being an instruction file is not a prefix that carries anything
+        // else with it: a sibling of AGENTS.md is still refused
+        assert!(resolve_file(&tmp, "README.md").is_err());
+        assert!(resolve_file(&tmp, ".cursor/rules/testing.md").is_err());
+        assert!(resolve_file(&tmp, ".cursor/hooks.json").is_err());
 
         // refused, each for its own stated reason
         for bad in [

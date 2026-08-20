@@ -119,6 +119,32 @@
      wrapper around a raw <pre>, so no inner element needs a fixed height. */
   #detail .filehost { flex: 1 1 auto; min-height: 120px; overflow-x: hidden; overflow-y: auto; margin-top: 8px; }
   #detail .filehost > pre.preview { margin-top: 0; }
+  /* ---- routing tiers -----------------------------------------------------
+     The Direct / Standard / Guarded table, read out of the instruction file it
+     is stated in. Cards rather than a table: the "what it adds" cell is a
+     sentence, and three sentences in a 320px column with two other columns
+     beside them wrap to nothing readable. */
+  #detail .tierbox { flex: 0 1 auto; max-height: 46%; overflow-x: hidden; overflow-y: auto; }
+  .tierbox { margin-top: 10px; }
+  .tierbox > .lbl { color: var(--dim); font-size: 11px; margin-bottom: 4px; }
+  .tiercard { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; background: #fff; }
+  .tierhead { margin-bottom: 4px; }
+  .tierchip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px;
+              font-weight: bold; border: 1px solid var(--line); background: #f1f5f9; color: #334155; }
+  .tierrow { display: flex; gap: 6px; font-size: 11px; margin-top: 3px; }
+  .tierrow .tk { flex: 0 0 74px; color: var(--dim); }
+  .tierrow .tv { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+  /* ---- instruction-file editor -------------------------------------------
+     A sibling of .filehost and .stepbox, sharing the space .head leaves. The
+     textarea is the scroller, so the box itself never grows a second one. */
+  #detail .editbox { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 140px; margin-top: 8px; }
+  #detail .editbox > div:last-child { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .editbox .lbl { color: var(--dim); font-size: 11px; margin-bottom: 4px; }
+  .editstatus { font-size: 11px; color: var(--dim); }
+  textarea.fileedit { flex: 1 1 auto; width: 100%; box-sizing: border-box; min-height: 160px;
+                      font: 12px/1.5 ui-monospace, Consolas, monospace; padding: 6px;
+                      border: 1px solid var(--line); border-radius: 6px; resize: vertical;
+                      white-space: pre; overflow: auto; tab-size: 2; }
   /* Command steps. A sibling of .filehost rather than part of .head, because
      .head is capped at 60% of the panel: a ten-step command put inside it
      scrolled in a short box while the empty preview area below sat unused. Both
