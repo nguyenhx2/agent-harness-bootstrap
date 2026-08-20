@@ -224,8 +224,10 @@ and has been told not to."*
 
 ### Routing: who is dispatched, and why it is not one generalist
 
-- The **orchestrator is the only entry point** for multi-step work. Specialists are dispatched, not
-  driven by hand.
+- **Process is proportional to blast radius.** A one-module, reversible change goes straight to the
+  agent that owns it. The **orchestrator** is for work that spans domains or touches schema, auth,
+  money, a public contract, a migration or a deploy - there, specialists are dispatched and the
+  history is registered on the board.
 - Each dev agent is scoped to real module paths, so two agents do not collide on the same files.
 - Separation of duty is **structural, not aspirational**: reviewers hold no `Edit` or `Write`. *"A
   reviewer that edits code has become a dev agent and lost its independence."*
@@ -397,7 +399,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **155,195** | **-34%** |
+| Read path (bytes pulled into context) | 234,196 | **155,597** | **-34%** |
 | Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **14,787** | **-84%** |
 

@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: Reviews a diff for security and privacy - secrets, PII, authn/authz, input validation, injection, dependency risk. Read-only. Use before any {{PR_OR_MR}} is opened or merged.
+description: Reviews a branch diff for security and privacy - secrets, PII, authn/authz, input validation, injection, dependency risk. Read-only. Runs at a boundary, not per change: before a {{PR_OR_MR}} is opened or merged, before a deploy, or whenever the user asks. Do NOT dispatch after each agent or each commit - it re-reads the same files and re-reports the same findings.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

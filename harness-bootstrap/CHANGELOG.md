@@ -6,6 +6,42 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.18.0] - 2026-08-21
+
+### Changed
+
+- **Process is now proportional to the change.** Until now every change ran the same route: through
+  the orchestrator, decomposed into tasks, with a reviewer pass after each agent. For a one-line
+  backend fix that meant a planning pass, a task file, a test agent and two reviewers before
+  anything landed - slow enough that people stop reaching for the harness on small work, which is
+  most work. `AGENTS.md` now carries a tier table, read before anything is dispatched:
+  - **Direct** - one module, reversible, no contract, schema, auth, payment or infrastructure
+    touched. The owning agent is called straight. No orchestrator, no task file.
+  - **Standard** - one domain, several files, or an FR behind it. Still the owning agent; a task
+    file only when the work has to survive a compacted session.
+  - **Guarded** - two or more domains, or schema, auth, money, a public contract, a migration, a
+    deploy, or personal data. The orchestrator, and the full flow.
+
+  Choosing a heavier tier than the change needs is now stated to be a defect, not caution.
+- **The orchestrator hands back work it should not have taken.** Its description and its dispatch
+  section both say so: a single-domain assignment off the Guarded list is named back to the seat
+  that owns it. Decomposing anyway is pure overhead - every sub-task is a dispatch, a brief, a board
+  row and a log entry.
+- **Gates run once, on the branch, not after every agent.** `/review-changes` is that boundary. A
+  reviewer dispatched after each agent re-reads the same files once per agent and reports the same
+  findings each time, which is most of what made a small change feel expensive. Security review
+  belongs to that boundary and to any moment you ask for it; it is no longer a per-task step, and
+  `security-reviewer`, `code-reviewer` and `reviewer` each say so in their own description.
+- **The orchestrator waits instead of checking.** It no longer polls a running agent for progress,
+  and it no longer re-derives a finished agent's conclusion to satisfy itself that the work
+  happened. When the agent reports, the check is on the result and it is one call: `git status` and
+  `git diff --stat` answer "did this land, in the files it said". The full diff is read for a
+  Guarded change, or when the stat disagrees with the report.
+- **The other half of that trust: dev agents report evidence, not status.** Nobody re-runs their
+  work to find out whether it happened, so a bare "done" is no longer a result. The seat names the
+  files it changed, the criterion each change satisfies, the command whose output proves it, and -
+  explicitly - whatever it could not verify.
+
 ## [1.17.0] - 2026-08-20
 
 ### Added

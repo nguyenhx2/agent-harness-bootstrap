@@ -26,7 +26,9 @@ Invariant principles:
    enumerate exactly what will be destroyed and get explicit approval first. See
    `.claude/rules/agent-guardrails.md`.
 5. **Verify, do not trust.** An agent's "done", "passed", or "merged" is a claim, not a fact. Check
-   it against git and the task file before acting on it. This includes your own claims.
+   it against git and the task file before acting on it - once, when the work comes back, not while
+   it is still running. Asking a working agent whether it is finished yet verifies nothing and bills
+   for the asking; it reports when it is done. This includes your own claims.
 6. **Say what is true.** Report what actually happened, including the parts that failed. A gate you
    skipped, a test you did not run, and an assumption you could not check are all reportable.
 7. **Writing style.** No emoji in any output. Use a hyphen, never an em dash. Commits and
@@ -66,27 +68,42 @@ The five task states are defined once, in the frontmatter of `docs/templates/TAS
 
 ## Agents and orchestration
 
-The `orchestrator` is the entry point for multi-step work. It plans, decomposes the mission into
-tasks, dispatches the specialists, checks their results against the acceptance criteria, and records
-the history in the task files. Only one orchestrator drives the project at a time.
-
 {{AGENT_ROSTER_TABLE}}
 
 Routing:
 
 {{ROUTING_TABLE}}
 
-The standard feature flow, and none of it is optional: `spec-guardian` locks the scope, the
-specialist implements against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}), {{#IF_TESTS}}`qa-test` runs the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` runs
-(code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and
-`security-reviewer` run in parallel{{/IF_SOLO_REVIEW}}, `/secret-scan` runs, and only then is the {{PR_OR_MR}} opened.
-Run it with `/implement-fr FR-NN`.
+### How much process a change gets
+
+Decide the tier before dispatching anything. Most changes are Direct.
+
+| Tier | The change | Who runs it | What it adds |
+|------|------------|-------------|--------------|
+| **Direct** | one module, reversible, touches no contract, schema, auth, payment, or infrastructure | the owning agent, called straight - no orchestrator, no task file | the agent proves each criterion itself and reports how |
+| **Standard** | one domain, several files, or an FR behind it | the owning agent; register a task file when the work must survive a compacted session | {{#IF_TESTS}}`{{TEST_CMD}}` over what changed{{/IF_TESTS}}{{^IF_TESTS}}a hand check of every criterion{{/IF_TESTS}} |
+| **Guarded** | two or more domains, OR it touches schema, auth, money, a public contract, a migration, a deploy, or {{PII_OR_DATA}} | `orchestrator` - one at a time, never two on the same board | the full flow below |
+
+Choosing a heavier tier than the change needs is a defect, not caution: a one-line fix that pays for
+a planning pass, a task file, and three reviews spends real time to learn nothing. Choosing a lighter
+tier for a change on the Guarded list is the failure that list exists to prevent. When two look
+equally right, name the one you picked and why, then continue.
+
+The Guarded flow, none of it optional: `spec-guardian` locks the scope, the specialist implements
+against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}), and the branch gate below runs before the
+{{PR_OR_MR}} is opened. Run it with `/implement-fr FR-NN`.
+
+**The gate runs once, on the branch, not after each agent.** `/review-changes` is that boundary:
+{{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, and `/secret-scan`, over the whole
+branch diff. Reviewing after every agent reads the same files again for each one and reports the
+same findings each time. Security review belongs to that boundary and to any moment the user asks
+for it - not to every change.
 
 ## Commands
 
 | Command | Use |
 |---------|-----|
-| `/implement-fr <FR-NN>` | The standard feature flow, end to end |
+| `/implement-fr <FR-NN>` | The Guarded flow, end to end |
 | `/new-task <title>`, `/task-resume <TASK-NNN>` | Task control |
 | `/review-changes` | The review gate on the current diff |
 | `/secret-scan` | Secret and sensitive-data scan; never skipped |

@@ -134,7 +134,7 @@ The harness is not a diagram you take on trust. `harness-view` renders the real 
   <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 79 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and a findings list naming each problem" width="900">
 </p>
 
-Both are a real harness, not a mock-up: 109 nodes, 130 edges, scored 79/100 by the deterministic
+Both are a real harness, not a mock-up: 109 nodes, 112 edges, scored 79/100 by the deterministic
 assess engine. No model is involved in that score, so a browser and a CI run cannot disagree
 about it.
 
@@ -517,7 +517,7 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 155,195 | **-34%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 155,597 | **-34%** |
 | Bytes the model must write as output | 95,064 | 14,787 | **-84%** |
 | Rule content kept out of the default session | - | 55,062 of 85,705 B | **64%** |
 | Guardrail eval | - | **107/107** | - |

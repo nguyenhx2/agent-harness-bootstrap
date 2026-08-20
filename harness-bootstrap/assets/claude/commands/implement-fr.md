@@ -5,6 +5,10 @@ argument-hint: <FR-id> (e.g. FR-03)
 
 Implement functional requirement **$1**.
 
+This is the Guarded flow from `AGENTS.md`: it locks scope, registers a task, and ends at the branch
+gate. That is right for an FR and wrong for a one-module fix - if the work turns out to be Direct,
+say so and hand it to the owning agent instead of running the ceremony around it.
+
 If $1 is empty, list the functional requirements that have no task yet and ask which one to
 implement. Do not guess.
 

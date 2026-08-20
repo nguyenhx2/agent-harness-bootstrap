@@ -10,9 +10,11 @@ adds the Claude Code specific surface. It never restates or contradicts the cont
 
 ### Agents
 
-Subagents are defined in `.claude/agents/` and rostered in `AGENTS.md`. The `orchestrator` is the
-default entry point for any multi-step mission: dispatch it rather than driving the specialists by
-hand, so that the work is decomposed into tasks and the history lands in the task files.
+Subagents are defined in `.claude/agents/` and rostered in `AGENTS.md`. How much process a change
+gets is decided by the tier table there, before anything is dispatched. The `orchestrator` is for
+Guarded work - two or more domains, or a change touching schema, auth, money, a public contract, a
+migration or a deploy - where decomposition into tasks and a durable history are worth their cost.
+Single-domain work goes straight to the seat that owns it.
 
 ### Hooks
 

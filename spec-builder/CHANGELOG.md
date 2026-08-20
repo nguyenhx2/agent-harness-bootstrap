@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.18.0] - 2026-08-21
+
+No functional change in this release. The version moves with `harness-bootstrap`: the two skills
+always share one number.
+
 ## [1.17.0] - 2026-08-20
 
 ### Fixed

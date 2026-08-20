@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.18.0
+
+Process proportional to the change: a tier table decides whether work goes straight to the owning
+agent or through the orchestrator, and the review gate runs once on the branch instead of after
+every agent. harness-view gains a roster editor, an editable Command Steps panel, and custom
+dialogs. See each skill's own CHANGELOG for detail.
+
 ## Unreleased
 
 Documentation and instruction tuning from a user's-seat audit, and a rebuilt landing page.
