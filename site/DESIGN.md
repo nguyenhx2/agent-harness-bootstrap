@@ -112,6 +112,26 @@ Three authored SVG diagrams, inline in the markup so CSS can reach their interna
 Each net is `aria-hidden`; the accessible content is the picker plus the readout, which states in
 words everything the drawing states in colour.
 
+## Where the motion practice came from
+
+Recorded because it is not in this repository and a future change to the nets will want it.
+`impeccable` is vendored at `.claude/skills/impeccable/` and travels with a clone; the motion
+practice does not, and was installed as a plugin:
+
+```bash
+claude plugin marketplace add iart-ai/web-animation-skills
+claude plugin install web-animation-skills@web-animation-skills
+```
+
+Four of its skills shaped what is here: `svg-animation` (the nets are authored inline SVG, drawn
+with the `pathLength="1"` normalisation so one scalar drives a whole route), `60fps-animation`
+(transform and opacity only; the single non-composited property is `stroke-dashoffset`, fired
+once per state change), `micro-interaction` (the 140 to 260 ms band, and the copy control's
+idle-copied-idle cycle), and `accessible-animation` (durations collapse rather than vanish, so
+states land instead of teleporting halfway). `glassmorphism` and `ascii-animation` were read and
+deliberately not used: the first failed contrast over scrolling content, the second fought the
+drawn schematic.
+
 ## Motion
 
 One idiom, everywhere: **a signal travels the net**. Two registered custom properties carry it.
