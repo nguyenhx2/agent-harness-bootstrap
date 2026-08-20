@@ -590,6 +590,25 @@ function completionContext(text, caret) {
   let i = at;
   while (i > 0 && TOKEN_CHAR.test(s.charAt(i - 1))) i--;
   const word = s.slice(i, at);
+
+  // `@` - the mention, and the only opening that fires on its own.
+  //
+  // The three openings below all ask the author to already know which KIND of thing they are
+  // citing: a backtick means a name, a slash means a command, `docs/` means a path. That is fine
+  // once you know the harness and useless before you do - typing `@` and getting nothing is the
+  // report that produced this. `@` opens on everything at once, with no word typed yet, and the
+  // insertion is the markup the file actually uses for whatever gets chosen, so the author never
+  // has to remember whether a rule is cited in backticks and a command with a slash.
+  const atStart = i > 0 && s.charAt(i - 1) === "@" ? i - 1 : (at > 0 && s.charAt(at - 1) === "@" ? at - 1 : -1);
+  if (atStart >= 0) {
+    const pre = atStart > 0 ? s.charAt(atStart - 1) : "";
+    // Not inside an email address or a decorator: `@` opens only at a word boundary.
+    if (pre === "" || /[\s(\[`>|]/.test(pre)) {
+      return { kind: "mention", start: atStart, end: at,
+               word: atStart + 1 <= at ? s.slice(atStart + 1, at) : "", tick: false };
+    }
+  }
+
   if (!word) return null;
   const before = i > 0 ? s.charAt(i - 1) : "";
   const tick = before === "`";
@@ -615,14 +634,20 @@ function rankSuggestions(items, ctx, limit) {
   if (!ctx || !ctx.kind) return [];
   const w = String(ctx.word).toLowerCase();
   const scored = [];
+  // A mention draws from every context at once - that is the whole point of it.
+  const anyCtx = ctx.kind === "mention";
   for (const it of (items || [])) {
-    if (it.ctx !== ctx.kind) continue;
+    if (!anyCtx && it.ctx !== ctx.kind) continue;
     const v = String(it.value).toLowerCase();
     if (v === w) continue;
     let rank;
-    if (v.indexOf(w) === 0) rank = 0;
+    if (w === "") rank = 0;                      // `@` alone offers everything
+    else if (v.indexOf(w) === 0) rank = 0;
     else if (v.indexOf(w) > 0) rank = 1;
     else continue;
+    // With no word typed the list would otherwise be alphabetical by accident. Seats and rules
+    // are what a step usually names, so they come first and paths last.
+    if (anyCtx) rank = rank * 4 + (it.ctx === "name" ? 0 : it.ctx === "cmd" ? 1 : 2);
     scored.push({ it: it, rank: rank, len: it.value.length });
   }
   scored.sort((a, b) => a.rank - b.rank || a.len - b.len ||
@@ -644,6 +669,17 @@ function applyCompletion(text, ctx, item) {
   if (!ctx || !item) return { text: s, caret: ctx ? ctx.end : s.length };
   let ins = String(item.value);
   const after = s.slice(ctx.end);
+  if (ctx.kind === "mention") {
+    // The `@` and whatever was typed after it are replaced by the citation this repository
+    // actually uses for that kind of thing: a command keeps its slash and stands bare, everything
+    // else goes in backticks - which is also what `touches` reads back as a reference, so a step
+    // written this way shows up on the graph.
+    if (item.ctx !== "cmd") {
+      const closed = after.charAt(0) === "`";
+      ins = "`" + ins + (closed ? "" : "`");
+    }
+    return { text: s.slice(0, ctx.start) + ins + after, caret: ctx.start + ins.length };
+  }
   if (ctx.tick && after.charAt(0) !== "`" && ins.charAt(ins.length - 1) !== "/") ins += "`";
   return { text: s.slice(0, ctx.start) + ins + after, caret: ctx.start + ins.length };
 }

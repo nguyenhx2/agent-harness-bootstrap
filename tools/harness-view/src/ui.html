@@ -335,9 +335,18 @@
   .ui-scrim { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 40;
               display: flex; align-items: center; justify-content: center; padding: 24px;
               animation: ui-fade 0.14s ease-out; }
+  /* Resizable, and roomy by default. The roster editor puts a 44-row tool catalogue inside a
+     dialog, and at the old 560px it was a column of chips two words wide scrolling inside a box
+     scrolling inside a page. `resize: both` costs nothing and lets the one person who wants it
+     enormous have it enormous; min-width/height keep a drag from collapsing it to a sliver. */
   .ui-dlg { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-            width: min(560px, 94vw); max-height: 86vh; display: flex; flex-direction: column;
+            width: min(760px, 94vw); height: auto; max-height: 88vh;
+            min-width: 320px; min-height: 220px; max-width: 96vw;
+            resize: both; overflow: hidden;
+            display: flex; flex-direction: column;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: ui-rise 0.16s ease-out; }
+  /* A wide dialog (the roster editor) asks for more room than a confirm does. */
+  .ui-dlg.wide { width: min(1040px, 96vw); min-height: 420px; }
   .ui-dlg-top { display: flex; align-items: flex-start; gap: 8px; padding: 11px 13px;
                 border-bottom: 1px solid var(--line); }
   .ui-dlg-mark { flex: 0 0 auto; line-height: 0; margin-top: 2px; color: var(--dim); }
@@ -367,10 +376,21 @@
                     border: 1px solid var(--line); border-radius: 6px; background: #fff; }
   .ui-field input:focus { border-color: #1d4ed8; outline: 2px solid #bfdbfe; outline-offset: 0; }
   .ui-hint { margin-top: 4px; font-size: 11px; color: var(--dim); }
+  /* Buttons carry their meaning in colour as well as in the word, so a destructive action is
+     never one careless click away from a confirm. Each keeps a border a shade darker than its
+     fill, which is what stops a tinted button reading as disabled. */
   button.ui-danger { border-color: #fca5a5; color: #b91c1c; background: #fff5f5; }
-  button.ui-danger:hover { background: #fee2e2; }
+  button.ui-danger:hover { background: #fee2e2; border-color: #f87171; }
   button.ui-primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
   button.ui-primary:hover { background: #1e40af; }
+  button.ui-accent { background: #ecfdf5; border-color: #6ee7b7; color: #047857; }
+  button.ui-accent:hover { background: #d1fae5; border-color: #34d399; }
+  button.ui-info { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+  button.ui-info:hover { background: #dbeafe; border-color: #60a5fa; }
+  button.ui-warn { background: #fffbeb; border-color: #fcd34d; color: #a16207; }
+  button.ui-warn:hover { background: #fef3c7; border-color: #fbbf24; }
+  button.ui-quiet { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+  button.ui-quiet:hover { background: #f1f5f9; border-color: #cbd5e1; }
   :focus-visible { outline: 2px solid #1d4ed8; outline-offset: 1px; }
 
   .ui-toasts { position: fixed; right: 14px; bottom: 32px; z-index: 50; display: flex;
