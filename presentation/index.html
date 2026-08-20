@@ -365,20 +365,34 @@
     .langs button{padding:5px 10px;font-size:11px}
     .ibtn{width:30px;height:30px}
 
-    .stage{position:static;display:block;padding:10px 10px 26px}
+    /* The gutter is the sum of two paddings: this one, outside the white card, and the
+       slide's own inside it. At 10px + 18px a phone read as text hugging the card edge,
+       so both grew and both now respect the notch inset rather than a flat number. */
+    .stage{position:static;display:block;
+      padding:10px max(12px, env(safe-area-inset-left, 0px)) 26px
+                   max(12px, env(safe-area-inset-right, 0px));}
     .page{width:100%;height:auto;min-height:calc(100vh - var(--bar) - 40px);
       border-radius:16px;background-image:none;overflow:visible}
     .pagemark{display:none}
     .deck{position:static}
 
-    .slide{position:static;display:none;padding:20px 18px 30px;overflow:visible;inset:auto}
+    .slide{position:static;display:none;padding:22px clamp(18px, 6vw, 28px) 32px;
+      overflow:visible;inset:auto}
     .slide.active{display:block}
     /* header and body flow inline, stacked, no absolute pinning */
     .head{position:static;left:auto;right:auto;top:auto;height:auto;
-      font-size:15px;display:block;margin:0 0 16px}
+      font-size:15px;display:block;margin:0 0 16px;
+      /* the eyebrow is one unbroken repo URL - without this it sets the slide's minimum
+         width and pushes every other line against the gutter it was given */
+      overflow-wrap:anywhere}
     .body{position:static;left:auto;right:auto;top:auto;bottom:auto;
       font-size:15px;display:block;overflow:visible;gap:0}
-    .wrap{font-size:15px}
+    /* THE actual cause of "text touches the card edge" on phones. Every slide is wrapped in
+       .wrap, which is position:absolute; inset:0 for the desktop box-fit layout. An absolutely
+       positioned child resolves inset:0 against the containing block's PADDING box, so the wrap
+       covered the slide's padding area and the content sat flush no matter how large that
+       padding was. Widening the padding alone changed nothing; this is what makes it apply. */
+    .wrap{position:static;inset:auto;font-size:15px}
     h1{font-size:2em;line-height:1.14} h2{font-size:1.55em;line-height:1.2}
     .sub{font-size:1em}
 

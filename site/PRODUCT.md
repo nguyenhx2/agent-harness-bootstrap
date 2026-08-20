@@ -54,8 +54,8 @@ repository, all served from the same GitHub Pages site.
 - Zero external requests: no CDN, no webfont fetch, no analytics.
 - The page ships in full English/Japanese parity, and the Japanese page keeps language-aware
   outbound links.
-- Figures live in `docs/assets/` at the repository root and are referenced with relative URLs,
-  because Pages serves the whole repository.
+- The page authors its own diagrams as inline SVG. The repository figures under `docs/assets/`
+  are README and deck assets; only `logo-mark.svg` is referenced from the site, as the icon.
 
 ## Brand Commitments
 
@@ -74,8 +74,8 @@ Real, derived, and re-runnable by the visitor:
 - 64% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
 - a run installs 7 to 15 of 16 seats
 - `harness-view` scoring a real harness 64/100 and naming each finding
-- figures: `docs/assets/harness-loom.svg` (+ `.ja`), `ai-dlc-flow.svg` (+ `.ja`),
-  `tailored-build.svg` (+ `.ja`), `harness-view-flow.png`, `harness-view-assess.png`
+- the delivery pipeline, the tailoring step and the five control layers, each of which the page
+  draws itself as a live diagram rather than importing as a picture
 - outbound proof surfaces: `presentation/`, `video/`, the GitHub repository, the releases page
 
 No customer names, no pricing, no adoption numbers, no testimonials exist. Future work must not
@@ -93,6 +93,7 @@ invent any.
 
 ## Accessibility & Inclusion
 
-WCAG AA contrast on every committed pair; the long descriptive alt texts already written for the
-figures are product content and must survive any redesign; the page must be fully usable at 360px
-wide, with 44px tap targets, visible focus, and `prefers-reduced-motion` honoured.
+WCAG AA contrast on every committed pair. Any diagram that carries meaning must state that meaning
+in text as well, so a reader who cannot see the drawing loses nothing. The page must be fully
+usable at 360px wide, with 44px tap targets, visible focus, and `prefers-reduced-motion` honoured
+as tiering rather than as a kill switch.

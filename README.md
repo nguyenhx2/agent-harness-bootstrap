@@ -4,7 +4,7 @@
 
 <p align="center"><b>Give an AI agent a repo it can actually understand, and a harness it cannot escape.</b></p>
 
-<p align="center">by <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <b>English</b> · <a href="README.ja.md">日本語</a></p>
+<p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
@@ -525,10 +525,18 @@ the figure is drawn from scratch. Reference:
 Cinematic Universe Wiki. Marvel and Disney do not endorse this project.
 
 
-## 👤 Who made this
+## 🤝 Contributing
 
-Built by [**nguyenhx2**](https://github.com/nguyenhx2). Contributions welcome - start with
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+Issues and pull requests are welcome. This repo generates a harness other people's agents run
+inside, so the bar is "does this still hold up" rather than "does it compile" - and the checks
+that answer it are automated, so you do not have to remember them:
+
+```bash
+py -3.13 eval/guardrail_eval.py      # the guardrails must still block
+py -3.13 scripts/check_numbers.py    # every published figure must match its script
+```
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the full gate list and what each one exists to catch.
 
 ## 📄 License
 
