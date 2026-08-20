@@ -279,6 +279,299 @@ assert.strictEqual(steps.canDisableStep({ text: "run `sed -e s/a/b/` --> done" }
 "#);
 }
 
+/// The property insertion has to satisfy to be allowed near a file a human
+/// wrote: write a step, read the file back, get exactly the steps intended in
+/// exactly the order intended. Asserted at three positions, because front, middle
+/// and end are three different splices into the group's line span and its gaps.
+#[test]
+fn an_inserted_step_round_trips_at_any_position() {
+    if !have_node() { eprintln!("SKIP an_inserted_step_round_trips_at_any_position: no node"); return; }
+    run_js(r#"
+const raw = read("review-changes.md");
+const NEW = "Check `docs/architecture/decisions/` for an ADR that already answers this.";
+// Compared on the words, not the leading spaces. A step's DISPLAY text is
+// dedented against its own continuation block, and the last step of a section
+// owns that section's closing prose - so appending a step legitimately changes
+// which step owns the prose and therefore how the one before it dedents. The
+// bytes are what must not move, and they are asserted separately below.
+const norm = t => t.split("\n").map(l => l.replace(/^[ \t]+/, "")).join("\n");
+// step 3's source lines, exactly as the fixture writes them
+const KEPT = "3. Rebuild the code graph with python .claude/scripts/code-graph.py and refresh\n" +
+             "   the HTML view with python .claude/scripts/graph-html.py.";
+assert.ok(raw.includes(KEPT), "the fixture no longer has the wrapped step this pins");
+
+for (const at of [0, 1, 3]) {
+  const p = steps.parseCommandSteps(raw);
+  const g = p.groups.find(x => x.steps.length);
+  const before = g.steps.map(s => norm(s.textBody));
+  steps.insertStep(g, at, NEW);
+  const out = steps.serializeCommandSteps(p);
+
+  const rg = steps.parseCommandSteps(out).groups.find(x => x.steps.length);
+  assert.strictEqual(rg.steps.length, before.length + 1,
+    "insert at " + at + " produced " + rg.steps.length + " steps");
+  // the intended order, with the new step at the position asked for
+  const want = before.slice(0, at).concat([NEW], before.slice(at));
+  assert.deepStrictEqual(rg.steps.map(s => norm(s.textBody)), want,
+    "insert at " + at + " did not round-trip to the intended order");
+  // a list with two steps numbered 3 is worse than no insertion at all
+  assert.deepStrictEqual(rg.steps.map(s => s.num),
+    want.map((_, i) => String(i + 1)), "the list did not renumber after insert at " + at);
+  // and the file grew by exactly the one line the step occupies
+  assert.strictEqual(out.split("\n").length, raw.split("\n").length + 1,
+    "insert at " + at + " moved lines it had no business moving");
+  // the wrapped step's own bytes, indentation included, wherever it now sits
+  const moved = KEPT.replace(/^3\./, String(at <= 2 ? 4 : 3) + ".");
+  assert.ok(out.includes(moved),
+    "insert at " + at + " rewrote the wrapped step:\n" + out);
+  // the section's closing prose is still the last thing in the file
+  assert.ok(/Reviewing is not approving\.\s*$/.test(out),
+    "the closing prose moved on insert at " + at);
+}
+"#);
+}
+
+/// The regression the parser contract exists to prevent. deploy.md's second
+/// precondition wraps onto an indented continuation line; adding a step
+/// somewhere else in the file must leave that step's bytes exactly as they are -
+/// not re-indented, not re-flowed, not promoted into a step of its own.
+#[test]
+fn inserting_a_step_leaves_a_multi_line_step_byte_identical() {
+    if !have_node() { eprintln!("SKIP inserting_a_step_leaves_a_multi_line_step_byte_identical: no node"); return; }
+    run_js(r#"
+const raw = read("deploy.md");
+const WRAPPED = "2. The pipeline on `main` is green and in a terminal state. Pending is not green,\n" +
+                "   and presumed-green is not green.";
+assert.ok(raw.includes(WRAPPED), "the fixture no longer has the wrapped step this pins");
+
+const p = steps.parseCommandSteps(raw);
+const groups = p.groups.filter(x => x.steps.length);
+// an edit in the OTHER group entirely
+steps.insertStep(groups[1], 1, "Announce the window in the release channel.");
+const out = steps.serializeCommandSteps(p);
+
+assert.ok(out.includes(WRAPPED),
+  "the wrapped precondition was rewritten by an insert in another group:\n" + out);
+// the continuation line is still a continuation, not a step
+const rg = steps.parseCommandSteps(out).groups.filter(x => x.steps.length);
+assert.strictEqual(rg[0].steps.length, 3, "the untouched group changed step count");
+assert.ok(/\nand presumed-green is not green/.test(rg[0].steps[1].text),
+  "the continuation line lost or gained indentation");
+// the section's closing prose is still last
+const lines = out.split("\n");
+const proseAt = lines.findIndex(l => l.startsWith("On failure: roll back"));
+const lastStep = lines.map((l, i) => (/^\d+\.\s/.test(l) ? i : -1)).filter(i => i >= 0).pop();
+assert.ok(proseAt > lastStep, "the closing prose is no longer at the end");
+"#);
+}
+
+/// A new step's continuation lines are indented, always, and that is a proof
+/// rather than a preference: every rule that ENDS a step is anchored at column
+/// zero, so text that would have invented a step, a heading or an unbalanced
+/// quarantine marker comes back as one step containing those characters.
+#[test]
+fn an_inserted_step_cannot_invent_steps_out_of_its_own_text() {
+    if !have_node() { eprintln!("SKIP an_inserted_step_cannot_invent_steps_out_of_its_own_text: no node"); return; }
+    run_js(r#"
+const raw = read("review-changes.md");
+const p = steps.parseCommandSteps(raw);
+const g = p.groups.find(x => x.steps.length);
+const n = g.steps.length;
+const NASTY = "Do these in order:\n1. first\n2. second\n# not a heading\n--> not a terminator";
+steps.insertStep(g, 1, NASTY);
+const out = steps.serializeCommandSteps(p);
+
+const rg = steps.parseCommandSteps(out).groups.find(x => x.steps.length);
+assert.strictEqual(rg.steps.length, n + 1,
+  "the inserted text was read back as " + (rg.steps.length - n) + " steps");
+assert.strictEqual(rg.steps[1].textBody, NASTY,
+  "the step did not come back as written:\n" + JSON.stringify(rg.steps[1].textBody));
+// no heading was invented either, so the group did not split
+assert.strictEqual(steps.parseCommandSteps(out).groups.filter(x => x.steps.length).length, 1);
+
+// and text that cannot be a step is refused before it is one
+assert.ok(steps.stepTextIssue("   "), "empty text must be refused");
+assert.ok(steps.stepTextIssue("\nstarts blank"), "a leading blank line must be refused");
+assert.strictEqual(steps.stepTextIssue("ordinary step"), null);
+assert.throws(() => steps.insertStep(g, 0, "  "), /needs some text/);
+assert.throws(() => steps.insertStep({ steps: [] }, 0, "x"), /already has one/);
+"#);
+}
+
+/// The separator between steps is the list's own, not a default. board-audit-style
+/// lists are tight; a loose list has a blank line. Inserting into either must not
+/// convert it to the other, or every save drifts the whole file's spacing.
+#[test]
+fn an_inserted_step_copies_the_lists_own_spacing() {
+    if !have_node() { eprintln!("SKIP an_inserted_step_copies_the_lists_own_spacing: no node"); return; }
+    run_js(r#"
+const tight = "Intro.\n\n1. one\n2. two\n3. three\n";
+const loose = "Intro.\n\n1. one\n\n2. two\n\n3. three\n";
+for (const [name, raw, gap] of [["tight", tight, false], ["loose", loose, true]]) {
+  const p = steps.parseCommandSteps(raw);
+  const g = p.groups.find(x => x.steps.length);
+  steps.insertStep(g, 1, "inserted");
+  const out = steps.serializeCommandSteps(p);
+  const rg = steps.parseCommandSteps(out).groups.find(x => x.steps.length);
+  assert.deepStrictEqual(rg.steps.map(s => s.textBody), ["one", "inserted", "two", "three"],
+    name + ": " + JSON.stringify(out));
+  const blanks = out.split("\n").filter(l => l === "").length;
+  const wantBlanks = raw.split("\n").filter(l => l === "").length + (gap ? 1 : 0);
+  assert.strictEqual(blanks, wantBlanks,
+    name + " list changed its spacing on insert:\n" + JSON.stringify(out));
+}
+"#);
+}
+
+/// The suggestions are what the harness HAS. A list of plausible-looking names
+/// is a list of new typos, so every entry traces to a graph node or to a path
+/// the server listed, and the contexts are kept apart: a command is offered for
+/// `/`, a name for a backtick, a path for a path.
+#[test]
+fn suggestions_come_only_from_the_graph_and_the_path_list() {
+    if !have_node() { eprintln!("SKIP suggestions_come_only_from_the_graph_and_the_path_list: no node"); return; }
+    run_js(r#"
+const nodes = [
+  { id: "agent:code-reviewer", type: "agent", file: ".claude/agents/code-reviewer.md" },
+  { id: "cmd:review-changes", type: "command", file: ".claude/commands/review-changes.md" },
+  { id: "rule:testing", type: "rule", file: ".claude/rules/testing.md" },
+  { id: "hook:guard-main-commit", type: "hook", file: ".claude/hooks/guard-main-commit.ps1" },
+  { id: "human", type: "human" },
+];
+const items = steps.mergeSuggestions(
+  steps.suggestionsFromGraph(nodes),
+  steps.suggestionsFromPaths(["docs/", "docs/templates/", "docs/templates/ADR.md.template"]));
+
+const offer = (text) => {
+  const ctx = steps.completionContext(text, text.length);
+  return ctx ? steps.rankSuggestions(items, ctx, 8).map(x => x.value) : null;
+};
+// a backtick offers names, and only names
+assert.deepStrictEqual(offer("Dispatch `code"), ["code-reviewer"]);
+assert.ok(!offer("ask `r").some(v => v.charAt(0) === "/"), "a command leaked into the name context");
+// a slash offers commands
+assert.deepStrictEqual(offer("then run /rev"), ["/review-changes"]);
+// a path prefix offers paths, files and directories alike
+assert.deepStrictEqual(offer("see docs/temp"),
+  ["docs/templates/", "docs/templates/ADR.md.template"]);
+assert.ok(offer("apply .claude/ru").includes(".claude/rules/testing.md"));
+assert.ok(offer("run .claude/hoo").includes(".claude/hooks/guard-main-commit.ps1"));
+// a node with no file and no name class contributes nothing to invent
+assert.ok(!items.some(x => x.value === "human"), "a graph node became a name it is not");
+// ordinary prose opens nothing at all
+assert.strictEqual(steps.completionContext("Assign the special", 18), null);
+assert.strictEqual(steps.completionContext("", 0), null);
+// nor does a word that is already complete
+assert.deepStrictEqual(offer("Dispatch `code-reviewer"), []);
+"#);
+}
+
+/// A completion replaces the token under the caret and nothing else. This is the
+/// difference between an editor and an autocorrect: the surrounding sentence, and
+/// anything after the caret, comes back byte for byte.
+#[test]
+fn a_completion_replaces_only_the_token_at_the_caret() {
+    if !have_node() { eprintln!("SKIP a_completion_replaces_only_the_token_at_the_caret: no node"); return; }
+    run_js(r#"
+const at = (text, caret) => steps.completionContext(text, caret);
+
+// mid-sentence, with text on both sides
+const t1 = "Dispatch `code to review, then stop.";
+const r1 = steps.applyCompletion(t1, at(t1, 14), { value: "code-reviewer" });
+assert.strictEqual(r1.text, "Dispatch `code-reviewer` to review, then stop.");
+assert.strictEqual(r1.caret, "Dispatch `code-reviewer`".length);
+
+// the author already closed the backtick: no second one is added
+const t2 = "Dispatch `code` now.";
+const r2 = steps.applyCompletion(t2, at(t2, 14), { value: "code-reviewer" });
+assert.strictEqual(r2.text, "Dispatch `code-reviewer` now.");
+
+// a directory keeps its slash and stays open, so no tick is closed over it
+const t3 = "see `docs/temp";
+const r3 = steps.applyCompletion(t3, at(t3, t3.length), { value: "docs/templates/" });
+assert.strictEqual(r3.text, "see `docs/templates/");
+
+// a command carries its own slash, and the one the author typed is replaced
+const t4 = "then run /rev and stop";
+const r4 = steps.applyCompletion(t4, at(t4, 13), { value: "/review-changes" });
+assert.strictEqual(r4.text, "then run /review-changes and stop");
+"#);
+}
+
+/// A step's body is sometimes real markdown - the case that motivated this is a
+/// routing table, which as pre-wrap text is a wall of pipes. It renders, and
+/// rendering is display only: the stored text is not touched by any of it.
+#[test]
+fn a_step_that_is_a_table_parses_as_a_table_and_the_source_is_untouched() {
+    if !have_node() { eprintln!("SKIP a_step_that_is_a_table_parses_as_a_table_and_the_source_is_untouched: no node"); return; }
+    run_js(r#"
+const md = "Intro.\n\n1. Assign the specialist agent per the routing table:\n\n" +
+  "| Work | Agent |\n|------|-------|\n" +
+  "| Code review | `code-reviewer` |\n| Tests | `qa-test` |\n\n2. Then stop.\n";
+const p = steps.parseCommandSteps(md);
+const g = p.groups.find(x => x.steps.length);
+assert.strictEqual(g.steps.length, 2, "the table was read as steps");
+
+const blocks = steps.parseStepMarkdown(g.steps[0].textBody);
+assert.deepStrictEqual(blocks.map(b => b.kind), ["text", "table"]);
+assert.deepStrictEqual(blocks[1].head, ["Work", "Agent"]);
+assert.deepStrictEqual(blocks[1].rows, [["Code review", "`code-reviewer`"], ["Tests", "`qa-test`"]]);
+assert.strictEqual(steps.stepMarkdownIsRich(blocks), true);
+
+// display only: parsing the step's markdown changed nothing that is written back
+assert.strictEqual(steps.serializeCommandSteps(steps.parseCommandSteps(md)), md,
+  "the file changed even though only its display was parsed");
+// and the step still holds the pipe-delimited source, byte for byte, which is
+// what the editor's textarea is filled from
+assert.ok(g.steps[0].textBody.includes("|------|-------|"),
+  "the stored step text was rewritten by the renderer");
+
+// a plain paragraph is left as the pre-wrap text it has always been
+assert.strictEqual(steps.stepMarkdownIsRich(steps.parseStepMarkdown("Run the deploy and stop.")),
+                   false);
+"#);
+}
+
+/// Fall back rather than mangle. A half-parsed table looks authoritative and is
+/// wrong; the run comes back as text and renders exactly as it did before.
+#[test]
+fn markdown_that_is_only_nearly_markdown_falls_back_to_text() {
+    if !have_node() { eprintln!("SKIP markdown_that_is_only_nearly_markdown_falls_back_to_text: no node"); return; }
+    run_js(r#"
+const kinds = t => steps.parseStepMarkdown(t).map(b => b.kind);
+// no delimiter row
+assert.deepStrictEqual(kinds("| Work | Agent |\n| Code review | x |"), ["text"]);
+// delimiter row with the wrong number of columns
+assert.deepStrictEqual(kinds("| a | b |\n|---|\n| 1 | 2 |"), ["text"]);
+// a ragged body row: a pipe somewhere this reader does not model
+assert.deepStrictEqual(kinds("| a | b |\n|---|---|\n| 1 | 2 | 3 |"), ["text"]);
+// header and delimiter with no body is not a table
+assert.deepStrictEqual(kinds("| a | b |\n|---|---|"), ["text"]);
+// but a well-formed one is
+assert.deepStrictEqual(kinds("| a | b |\n|---|---|\n| 1 | 2 |"), ["table"]);
+
+// lists, and the boundary where one ends
+assert.deepStrictEqual(kinds("Do this:\n- one\n- two\nand then stop."), ["text", "list", "text"]);
+const ol = steps.parseStepMarkdown("   1. one\n   2. two")[0];
+assert.strictEqual(ol.ordered, true);
+assert.deepStrictEqual(ol.items.map(i => i.text), ["one", "two"]);
+
+// underscores are never italics: these files are full of snake_case
+const rich = t => steps.stepMarkdownIsRich(steps.parseStepMarkdown(t));
+assert.strictEqual(rich("set MAX_RETRIES from the_config value"), false);
+assert.strictEqual(rich("run `cargo test`"), true);
+assert.strictEqual(rich("this is **required**"), true);
+
+// a link's href is a closed set, because it is the one value a browser acts on
+assert.strictEqual(steps.safeHref("https://example.com/x"), "https://example.com/x");
+assert.strictEqual(steps.safeHref("http://127.0.0.1:7420/"), "http://127.0.0.1:7420/");
+for (const bad of ["javascript:alert(1)", "JavaScript:alert(1)", "data:text/html,x",
+                   "docs/specs/05.md", '#anchor', "", "vbscript:x"]) {
+  assert.strictEqual(steps.safeHref(bad), null, bad + " was accepted as a link target");
+}
+"#);
+}
+
 /// Switching off the FIRST step renumbers what is left starting at 1, and the
 /// step that went away keeps the number it had. Renumbering it too wrote `0.`
 /// into the file, because the counter names the position among the steps still

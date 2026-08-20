@@ -1,6 +1,8 @@
 //! Local viewer: GET / (embedded page), GET /graph.json (fresh scan every
 //! request, so the page is always current), GET /roots (which root the server
-//! started on), POST /toggle (shared contract with /harness-toggle).
+//! started on), GET /paths (the repo-relative names under .claude/ and docs/,
+//! for the step editor's autocomplete), POST /toggle (shared contract with
+//! /harness-toggle).
 //!
 //! The root is selectable per request: GET /graph.json?root=<path> and the
 //! optional "root" field on POST /toggle both scan a caller-named directory,
@@ -242,6 +244,122 @@ fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
         return Err(format!("not a file: {cleaned}"));
     }
     Ok(target_c)
+}
+
+/// Most path names `/paths` will return, and how deep it will walk. Both are
+/// there so a repository with a vendored tree under docs/ cannot turn a
+/// suggestion list into a filesystem crawl: the response is capped and says so.
+const PATHS_CAP: usize = 4000;
+const PATHS_DEPTH: usize = 12;
+
+/// Directory names never worth suggesting and expensive to walk.
+const PATHS_SKIP: [&str; 4] = ["node_modules", "target", "__pycache__", "venv"];
+
+/// Every path the step editor may suggest, repo-relative and slash-separated,
+/// directories marked with a trailing `/`.
+///
+/// This is a NAME service, not a read: it returns no file contents, and it is a
+/// GET behind the same cross-origin gate `/file` uses. It exists because the
+/// GRAPH does not carry these. The graph has nodes for agents, rules, hooks,
+/// commands, scripts, skills and tasks, and those five suggestion classes are
+/// derived from it with no server call at all - but the commands themselves
+/// quote `docs/specs/05-functional-requirements.md`,
+/// `docs/templates/ADR.md.template` and `docs/architecture/decisions/`
+/// constantly, and not one of those is a node. A typo in one is a step that
+/// sends an agent to a file that is not there, which is precisely what the
+/// suggestions are for, so the names have to come from somewhere.
+///
+/// Containment is the allow-list `resolve_file` enforces and nothing wider. The
+/// walk STARTS inside `.claude` and `docs` rather than filtering afterwards, so
+/// there is no traversal to refuse; symlinked directories are not descended
+/// (`DirEntry::file_type` does not follow the link), and every path emitted is
+/// still checked against the canonical root before it goes out.
+fn list_paths(root: &Path) -> (Vec<String>, bool) {
+    let root_c = match root.canonicalize() {
+        Ok(p) => p,
+        Err(_) => return (Vec::new(), false),
+    };
+    let mut out: Vec<String> = Vec::new();
+    let mut truncated = false;
+    // (absolute dir, repo-relative prefix ending in '/', depth)
+    let mut stack: Vec<(PathBuf, String, usize)> = READABLE
+        .iter()
+        .rev()
+        .map(|name| (root_c.join(name), format!("{name}/"), 1usize))
+        .filter(|(p, _, _)| p.is_dir())
+        .collect();
+    for (_, rel, _) in &stack {
+        out.push(rel.clone());
+    }
+    while let Some((dir, prefix, depth)) = stack.pop() {
+        if out.len() >= PATHS_CAP {
+            truncated = true;
+            break;
+        }
+        let entries = match fs::read_dir(&dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            // A dot-directory under .claude/ or docs/ is machine state, not
+            // something a step should cite. `.claude` itself is a seed above.
+            if name.starts_with('.') || PATHS_SKIP.contains(&name.as_str()) {
+                continue;
+            }
+            let ft = match entry.file_type() {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            let path = entry.path();
+            // The decisive check, done per entry rather than per subtree: a
+            // symlinked FILE resolving outside the repo never reaches the list.
+            match path.canonicalize() {
+                Ok(c) if c.starts_with(&root_c) => {}
+                _ => continue,
+            }
+            if ft.is_dir() {
+                let rel = format!("{prefix}{name}/");
+                out.push(rel.clone());
+                if depth < PATHS_DEPTH {
+                    stack.push((path, rel, depth + 1));
+                } else {
+                    truncated = true;
+                }
+            } else if ft.is_file() {
+                out.push(format!("{prefix}{name}"));
+            }
+            if out.len() >= PATHS_CAP {
+                truncated = true;
+                break;
+            }
+        }
+    }
+    out.sort();
+    out.dedup();
+    (out, truncated)
+}
+
+/// The cross-origin gate for the read-only endpoints: `same_origin` minus the
+/// Content-Type rule, because a GET carries no body. Repo names are not public
+/// just because the port is open.
+fn same_origin_get(request: &Request, port: u16) -> Result<(), String> {
+    if let Some(origin) = header_value(request, "Origin") {
+        let allowed = [
+            format!("http://127.0.0.1:{port}"),
+            format!("http://localhost:{port}"),
+        ];
+        if !allowed.iter().any(|a| origin.eq_ignore_ascii_case(a)) {
+            return Err(format!("cross-origin request refused (Origin: {origin})"));
+        }
+    }
+    if let Some(site) = header_value(request, "Sec-Fetch-Site") {
+        let s = site.to_ascii_lowercase();
+        if s != "same-origin" && s != "none" {
+            return Err(format!("cross-origin request refused (Sec-Fetch-Site: {site})"));
+        }
+    }
+    Ok(())
 }
 
 /// Largest command file the step editor will write back. Two orders of
@@ -499,6 +617,33 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                         let graph = scan::scan(&target);
                         let report = assess::assess(&target, &graph);
                         Response::from_string(scan::to_canonical_json(&report))
+                            .with_header(header("Content-Type", "application/json"))
+                    }
+                    Err(e) => root_error(&e),
+                }
+            }
+            (Method::Get, "/paths") => {
+                // Read-only, and names only - see list_paths for why the graph
+                // cannot answer this and what keeps the walk contained.
+                if let Err(msg) = same_origin_get(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let requested = query_param(&raw_url, "root");
+                match resolve_root(requested.as_deref(), &root) {
+                    Ok(target) => {
+                        let (paths, truncated) = list_paths(&target);
+                        let body = serde_json::json!({
+                            "root": display_path(&target),
+                            "paths": paths,
+                            "truncated": truncated,
+                        })
+                        .to_string();
+                        Response::from_string(body)
                             .with_header(header("Content-Type", "application/json"))
                     }
                     Err(e) => root_error(&e),
@@ -789,6 +934,49 @@ mod tests {
         assert!(resolve_file(&tmp, ".claude/agents/nope.md").is_err());
 
         let _ = std::fs::remove_file(&outside);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    /// The suggestion name service obeys the same containment as the reader it
+    /// sits beside: only the two readable subtrees, nothing above the root, and
+    /// no file contents. A list that leaked `SECRET.md` would be a directory
+    /// listing of the whole repository dressed up as an editor convenience.
+    #[test]
+    fn list_paths_offers_only_the_readable_subtrees() {
+        let tmp = std::env::temp_dir().join("hv-serve-paths-test");
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(tmp.join(".claude/rules")).unwrap();
+        std::fs::create_dir_all(tmp.join(".claude/state/history")).unwrap();
+        std::fs::create_dir_all(tmp.join("docs/templates")).unwrap();
+        std::fs::create_dir_all(tmp.join("docs/node_modules/pkg")).unwrap();
+        std::fs::create_dir_all(tmp.join("src")).unwrap();
+        std::fs::write(tmp.join(".claude/rules/testing.md"), "r").unwrap();
+        std::fs::write(tmp.join("docs/templates/ADR.md.template"), "t").unwrap();
+        std::fs::write(tmp.join("docs/node_modules/pkg/index.js"), "x").unwrap();
+        std::fs::write(tmp.join("SECRET.md"), "no").unwrap();
+        std::fs::write(tmp.join("src/main.rs"), "no").unwrap();
+
+        let (paths, truncated) = list_paths(&tmp);
+        assert!(!truncated, "a five-file tree must not report truncation");
+        // the two subtrees themselves, so a bare `docs/` completes
+        assert!(paths.contains(&"docs/".to_string()), "{paths:?}");
+        assert!(paths.contains(&".claude/".to_string()), "{paths:?}");
+        // directories are marked, because half the citations in a command name one
+        assert!(paths.contains(&"docs/templates/".to_string()), "{paths:?}");
+        assert!(paths.contains(&"docs/templates/ADR.md.template".to_string()), "{paths:?}");
+        assert!(paths.contains(&".claude/rules/testing.md".to_string()), "{paths:?}");
+        // and nothing else in the repository
+        assert!(!paths.iter().any(|p| p.contains("SECRET")), "a file outside the subtrees leaked");
+        assert!(!paths.iter().any(|p| p.starts_with("src")), "a file outside the subtrees leaked");
+        assert!(!paths.iter().any(|p| p.contains("node_modules")), "a vendored tree was walked");
+        assert!(paths.iter().all(|p| p.starts_with(".claude/") || p.starts_with("docs/")),
+                "something outside the allow-list was listed: {paths:?}");
+        // sorted and unique, so the client can binary-search or just trust it
+        let mut sorted = paths.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted, paths, "the list is not sorted-unique");
+
         let _ = std::fs::remove_dir_all(&tmp);
     }
 
