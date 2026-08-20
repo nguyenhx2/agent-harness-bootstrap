@@ -259,6 +259,29 @@ def build(out: pathlib.Path, agents_dir: pathlib.Path) -> list[str]:
     return lines
 
 
+def same_content(a: pathlib.Path, b: pathlib.Path) -> bool:
+    """True when two files carry the same CONTENT, whatever git did to their newlines.
+
+    A byte comparison was wrong here, and wrong in the worst way: it only showed on Windows.
+    `.gitattributes` checks `*.md` and `*.json` out NATIVE, so after a commit and a branch
+    switch git rewrites the committed plugin copies with CRLF, while the source files, untouched
+    in the working tree, stay LF on disk. The two are one blob in the object database and CI on
+    Linux sees LF on both sides - so this check stayed green there and went red on a
+    contributor's machine, which is the exact shape of a gate nobody can trust.
+
+    Binary files are still compared byte for byte: a decode failure means "not text", and a font
+    or an image that differs by one byte differs.
+    """
+    ba, bb = a.read_bytes(), b.read_bytes()
+    if ba == bb:
+        return True
+    try:
+        return (ba.decode("utf-8").replace("\r\n", "\n")
+                == bb.decode("utf-8").replace("\r\n", "\n"))
+    except UnicodeDecodeError:
+        return False
+
+
 def differences(a: pathlib.Path, b: pathlib.Path) -> list[str]:
     """Every path that differs between two trees, by content and not by timestamp."""
     out: list[str] = []
@@ -271,6 +294,8 @@ def differences(a: pathlib.Path, b: pathlib.Path) -> list[str]:
         # shallow=False: compare bytes, never size-and-mtime, or a same-size edit slips past.
         _, mismatch, errors = filecmp.cmpfiles(d.left, d.right, d.common_files, shallow=False)
         for n in sorted(mismatch) + sorted(errors):
+            if same_content(pathlib.Path(d.left) / n, pathlib.Path(d.right) / n):
+                continue
             out.append(f"differs: {prefix}{n}")
         for name, sub in sorted(d.subdirs.items()):
             walk(sub, f"{prefix}{name}/")
@@ -300,6 +325,16 @@ def self_test() -> list[str]:
         (b / "extra.md").write_text("x\n", encoding="utf-8", newline="\n")
         if not differences(a, b):
             dead.append("an added file is not reported")
+        (b / "extra.md").unlink()
+        # The newline tolerance is itself a branch that can rot into "nothing is ever
+        # different", so both halves are tested: it must swallow a CRLF-only change and it
+        # must NOT swallow a real edit that happens to arrive with CRLF.
+        (b / "skills" / "x" / "SKILL.md").write_bytes(b"same\r\n")
+        if differences(a, b):
+            dead.append("a CRLF-only difference is reported as drift")
+        (b / "skills" / "x" / "SKILL.md").write_bytes(b"same but edited\r\n")
+        if not differences(a, b):
+            dead.append("an edit is hidden when the newlines also differ")
     return dead
 
 
@@ -331,7 +366,7 @@ def main() -> int:
         want = (tmp / ".agents" / "plugins" / "marketplace.json")
         if not mk.is_file():
             problems.append(".agents/plugins/marketplace.json is missing")
-        elif mk.read_bytes() != want.read_bytes():
+        elif not same_content(mk, want):
             problems.append(".agents/plugins/marketplace.json differs from what the skills imply")
 
     if problems:
