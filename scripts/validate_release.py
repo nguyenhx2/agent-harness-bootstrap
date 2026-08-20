@@ -214,7 +214,7 @@ def main() -> int:
     # constant rather than read from LICENSE - so the two can disagree silently. They did: the
     # licence moved from MIT to PolyForm Noncommercial and all four manifests kept saying MIT,
     # which is the copy a user actually receives. Cheap to check, expensive to get wrong.
-    lic = ROOT / "LICENSE"
+    lic = ROOT / "LICENSE.md"
     if lic.is_file():
         head = lic.read_text(encoding="utf-8", errors="replace")[:400]
         expected = ("PolyForm-Noncommercial-1.0.0" if "PolyForm Noncommercial" in head

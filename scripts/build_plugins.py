@@ -83,7 +83,7 @@ SKIP_NAMES = {"CHANGELOG.md", "__pycache__", ".gitignore"}
 SKIP_SUFFIX = {".pyc"}
 
 REPO_URL = "https://github.com/nguyenhx2/agent-harness-bootstrap"
-# SPDX id for the licence in LICENSE. Written into every plugin manifest, because a
+# SPDX id for the licence in LICENSE.md. Written into every plugin manifest, because a
 # manifest that misstates the licence is the copy a user actually installs.
 LICENSE_ID = "PolyForm-Noncommercial-1.0.0"
 

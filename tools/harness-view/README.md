@@ -355,6 +355,66 @@ character check before any path exists; the only file it can write is
 first. Content is capped at 512 KB, and an empty body is refused: emptying a
 command is not an edit anyone meant, and removing one is `POST /toggle`'s job.
 
+### Writing a step, not just moving one
+
+- **Insert** - `+ step here` adds a step at any position in a group. The steps
+  after it renumber.
+- **Autocomplete** - typing in a step suggests the names it is likely to be
+  reaching for: agent seats, rule files, hook names, and relative paths in the
+  repository. Names come from the graph; paths come from `GET /paths`, which
+  exists because the graph does not carry them. That was measured rather than
+  assumed - of the 21 paths quoted by one real project's commands, zero appeared
+  as the `file` of any graph node, so a step naming
+  `docs/templates/ADR.md.template` had nothing to complete against. Arrow keys
+  and Enter, or a click; Escape dismisses.
+- **Rendered markdown** - a step whose text is a table, a list or a fenced block
+  renders as one, so a routing table in step 4 reads as a table. Opening the step
+  to edit shows its markdown source again. Repository text reaches the DOM
+  through `createElement` and `textContent` only, links are limited to `http(s)`,
+  and anything that does not parse falls back to the raw text.
+
+`GET /paths` walks only `.claude/` and `docs/`, starting inside them, so there is
+nothing above to traverse to. Every entry is canonicalised and prefix-checked,
+directory symlinks are not followed, dot-directories and `node_modules`/`target`
+are skipped, and the walk is capped at 4000 entries and 12 levels.
+
+## Editing the roster
+
+Selecting an agent adds **Edit roster** and **Reference** to its panel.
+
+**Edit roster** changes a seat's `model`, `effort`, `tools` and `description`
+from pickers rather than by hand-editing frontmatter. The write touches only the
+keys that changed: the body below the frontmatter is copied through byte for
+byte, and inside the frontmatter an untouched key keeps its position, its
+comments and its blank lines. CRLF stays CRLF. `name` is refused rather than
+ignored - renaming a seat is a routing-table change, not a field edit. A
+disabled agent is not editable; enable it first.
+
+`POST /agent` takes a bare seat name, never a path, so `..`, a separator, a
+drive letter and a URL all fail a character check before a path exists.
+
+**Reference** is the catalogue behind those pickers: four vendors (Claude Code,
+OpenAI Codex, Gemini CLI, Z.AI GLM) with their models and tools, each carrying a
+`verified` flag and a note on what it does. Entries that could not be confirmed
+against a first-party source are marked `unverified` wherever they appear,
+including inside the picker - a roster decision made against a model that may not
+exist is worse than one made against a shorter list.
+
+The catalogue is yours to change. Add, edit or remove a vendor, a model or a
+tool, and the change is stored **per repository** in
+`.claude/state/references.json` and merged over the shipped seed at read time:
+
+- the shipped asset is never written, so upgrading the skill keeps your edits
+- a seed entry you delete leaves a tombstone, so that decision survives an
+  upgrade too; deleting an entry you added just drops it
+- when the last override goes, the file is deleted rather than left empty
+- keys are sorted at every depth and nothing carries a timestamp, so two people
+  making the same three edits in different orders produce the same file
+- **`verified` on a seed entry always comes from the seed.** An override can
+  correct a label or a note; it cannot promote an unverified model to verified,
+  and it cannot demote a verified one. An entry you add carries your own claim
+  plus `custom: true`, so its provenance stays visible.
+
 ## Markdown rendering
 
 Files opened in the sidebar and the master-plan tab are rendered by
