@@ -55,7 +55,7 @@ flowchart TD
     START(["Repo to be made agent-ready"])
     Q{"Does docs/specs/<br/>hold a requirements set?"}
 
-    SB["spec-builder<br/>elicit, scaffold selective sections<br/>(6 core always + up to 9 optional), fill"]
+    SB["spec-builder<br/>elicit, scaffold selective sections<br/>(6 core always + up to 8 optional), fill"]
     SPECS[/"docs/specs/ 01-13<br/>the requirements contract"/]
 
     HB["harness-bootstrap<br/>analyze, roster, scaffold, wire"]
@@ -398,7 +398,7 @@ distinguishable from "crashed" by a file check instead of a guess.
 ## 5. spec-builder
 
 Same shape, different contract: elicit what only a human knows, let the script lay down the selected
-sections - a 6-file core always, plus up to 9 optional sections chosen from what the input material
+sections - a 6-file core always, plus up to 8 optional sections chosen from what the input material
 actually contains - then spend model tokens on the content rather than on the headings. The governing
 rule is
 that **nothing is invented**. An unstated requirement becomes an assumption (AS-nn) or an open issue

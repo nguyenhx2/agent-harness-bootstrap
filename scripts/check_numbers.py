@@ -53,6 +53,33 @@ def _const(rel: str, name: str) -> int:
     return int(m.group(1))
 
 
+def spec_sections() -> tuple[int, int]:
+    """spec-builder's spec set: (core sections always written, optional sections). -> (6, 8) today.
+
+    A section is optional exactly when its manifest entry carries a `when` flag; everything else is
+    written on every run. `docs/specs/README.md` is the folder's index rather than a numbered
+    section, so it is excluded from the core count - the published claim is "6 core sections", and
+    there are seven unconditional entries.
+
+    Derived because it had already drifted: the README said eight optional, while docs/FLOWS.md,
+    the presentation outline and the deck in three languages all said nine. Nothing checked it, so
+    nothing caught it.
+    """
+    entries = json.loads((ROOT / "spec-builder/assets/manifest.json").read_text(encoding="utf-8"))
+    if isinstance(entries, dict):
+        entries = entries.get("files", [])
+    core = optional = 0
+    for e in entries:
+        dest = str(e.get("dest", ""))
+        if "docs/specs/" not in dest or dest.endswith("/README.md"):
+            continue
+        if e.get("when"):
+            optional += 1
+        else:
+            core += 1
+    return core, optional
+
+
 def roster_range() -> tuple[int, int]:
     """How many of the shipped agent seats a single run can install, at least and at most.
 
@@ -204,6 +231,15 @@ def canonical() -> dict[str, int]:
         # The tailored-roster claim: how few and how many seats a run can install.
         "roster_min": roster_range()[0],
         "roster_max": roster_range()[1],
+        # spec-builder's selective section set, straight off its manifest. This figure was NOT
+        # derived until it had already drifted: the README said "up to eight optional" while
+        # docs/FLOWS.md, the outline and the deck (in all three languages) said nine. The manifest
+        # is the only thing that knows - a section is optional exactly when its entry carries a
+        # `when` flag - so it is counted here rather than remembered. `docs/specs/README.md` is the
+        # index, not a section, which is why the core count published is one lower than the number
+        # of unconditional entries.
+        "spec_optional": spec_sections()[1],
+        "spec_core": spec_sections()[0],
         # The scanned-PDF threshold spec-builder's router applies (a page under this many
         # extracted characters routes to vision). Quoted on the README (both languages), the
         # wiki FAQ and two reference files; derived here from the constant so a retuned
@@ -277,6 +313,13 @@ CHECKS = [
     # claim that the build is smaller than the catalogue is only worth making if it is true.
     ("roster range low",      r"\b(\d+) to \d+ of (?:the |them|its )?\d* ?seats?\b", "roster_min"),
     ("roster range high",     r"\b\d+ to (\d+) of (?:the |them|its )?\d* ?seats?\b", "roster_max"),
+    # spec-builder's selective set. The optional half is the one that drifted - the README said
+    # eight while FLOWS, the outline and the deck in three languages all said nine - but both
+    # halves are checked, because a claim about a "core" is only worth making if the core is real.
+    ("spec optional",         r"up to (\d+) optional", "spec_optional"),
+    # Anchored to the optional clause it sits beside. A bare `(\d+)[- ]core` matched "3-core" in a
+    # vendored third-party skill's docs, which is a different subject entirely.
+    ("spec core",             r"(\d+)(?:-file)? core[^.]{0,40}?up to \d+ optional", "spec_core"),
 ]
 
 # A cheap plain-substring pre-check before each CHECKS regex: every pattern above requires one of
@@ -357,6 +400,12 @@ MEDIA_CHECKS = [
     # the markdown walk covers the READMEs, this covers the deck and docs/assets/*.svg.
     ("media roster low",    r"\b(\d+) to \d+ of (?:the |them|its )?\d* ?seats?\b", "roster_min"),
     ("media roster high",   r"\b\d+ to (\d+) of (?:the |them|its )?\d* ?seats?\b", "roster_max"),
+    # The deck states the spec set in all three languages. Vietnamese and Japanese need their own
+    # patterns: neither phrases it with the word "optional", and the figure drifted in all three
+    # at once precisely because nothing was reading any of them.
+    ("media spec optional",      r"up to (\d+) optional", "spec_optional"),
+    ("media spec optional (vi)", r"tối đa (\d+) mục tuỳ chọn", "spec_optional"),
+    ("media spec optional (ja)", r"最大(\d+)セクションは任意", "spec_optional"),
     # The landing pages state the session tax as a big number over a label, and nothing read
     # it: both index.html and index.ja.html said 63% against a real 64% for several releases.
     ("media session tax",    r"\b(\d\d)%[\s\S]{0,140}?of rule content stays out", "tax_pct"),
@@ -470,6 +519,11 @@ def self_test(c: dict[str, int]) -> list[str]:
         "roster range high":     "installs {roster_min} to {roster_max} of the 16 seats",
         "media roster low":      "{roster_min} to {roster_max} of the 16 seats",
         "media roster high":     "{roster_min} to {roster_max} of the 16 seats",
+        "spec optional":         "{spec_core} core sections, up to {spec_optional} optional",
+        "spec core":             "{spec_core} core sections, up to {spec_optional} optional",
+        "media spec optional":      "({spec_core} core sections, up to {spec_optional} optional)",
+        "media spec optional (vi)": "({spec_core} mục cốt lõi, tối đa {spec_optional} mục tuỳ chọn)",
+        "media spec optional (ja)": "(コア{spec_core}セクション常時、最大{spec_optional}セクションは任意)",
         "media session tax":     '<div class="big">{tax_pct}%</div>\n'
                                  '<div class="lab">of rule content stays out of the session</div>',
         "media session tax ja":  '<div class="big">{tax_pct}%</div>\n'
