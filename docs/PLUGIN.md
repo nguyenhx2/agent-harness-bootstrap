@@ -7,14 +7,20 @@ updates arrive through the client's own update command instead of a manual re-do
 the installed version is always identifiable. The zip download (see the README) remains fully
 supported as the offline, pinned alternative.
 
-| Client | Reads | Marketplace in this repo |
+| Client | Reads | Where it lives here |
 |---|---|---|
-| Claude Code | `.claude-plugin/plugin.json` convention (single-skill) | `.claude-plugin/marketplace.json` |
-| Codex | `.codex-plugin/plugin.json` | `.agents/plugins/marketplace.json` |
-| Cursor, VS Code, Copilot, Kiro, ChatGPT | Agent Plugins `plugin.json` at the plugin root | plugin directories under `plugins/` |
+| Claude Code | single-skill convention (`SKILL.md` at the directory root) | `.claude-plugin/marketplace.json` |
+| Codex | `.codex-plugin/plugin.json` | `plugins/codex/<skill>/`, listed by `.agents/plugins/marketplace.json` |
+| Cursor, VS Code, Copilot, Kiro, ChatGPT | Agent Plugins `plugin.json` at the plugin root | `plugins/<skill>/` |
 
-The three manifests sit at three different paths, so one plugin directory serves every client
-at once, and all of them read the same `skills/` tree.
+**Why Codex has its own directory.** The first attempt put all three manifests in one directory,
+since they sit at three different paths. Codex rejects it: when a root `plugin.json` is present
+it validates it, and it refuses the `$schema` key that Agent Plugins requires
+(`missing or invalid plugin.json`). Every other Agent Plugins field passes, so it is that one
+key. Dropping `$schema` would satisfy both clients today, but it ships a manifest the standard
+calls non-conformant, so each skill gets two roots instead. Pointing Codex at a `skills` path
+outside its own root does not work either: Codex copies only the plugin root into
+`~/.codex/plugins/cache/`, and the skill is simply absent after install.
 
 ## Claude Code
 
@@ -53,12 +59,23 @@ cp -r agent-harness-bootstrap/plugins/harness-bootstrap ~/.cursor/plugins/local/
 Then reload the window. The same directories are what any other Agent Plugins client
 consumes, because the standard fixes both the manifest path and the `skills/` location.
 
-**Verified how far:** the Claude Code route was verified by installing both plugins from
-this repository and reading back what the client reported. The Codex and Cursor routes are
-built to the published specifications and their manifests are validated against the
-Agent Plugins 1.1.0 JSON schema in CI, but the install round-trip has not been exercised
-here - neither CLI is available on the machine this was built on. Treat those two as
-specification-conformant rather than field-tested, and open an issue if a client disagrees.
+**Verified how far:** all three routes were exercised against the real clients.
+
+- **Claude Code** (`claude` 2.x): both plugins installed from this repository, client reported
+  `harness-bootstrap 1.15.0`, Skills (1).
+- **Codex** (`codex-cli` 0.148.0): marketplace added, both plugins installed, and
+  `SKILL.md` confirmed present inside `~/.codex/plugins/cache/.../skills/<skill>/` after
+  install, which is the part that had silently failed in an earlier layout.
+- **Cursor** (`cursor-agent` 2026.08.11): the generated Agent Plugins tree was loaded with
+  `--plugin-dir` and the agent confirmed the skill was available. The test used a
+  uniquely-named copy of the generated tree, because both skills are also installed globally
+  on the test machine and would otherwise have answered for themselves.
+
+Three real defects came out of that round and are fixed: `policy.installation` had to be
+`AVAILABLE` rather than a plausible-looking `user`; the marketplace source path resolves from
+the repository root (`./plugins/...`), not from the directory holding `marketplace.json`; and
+`.codex-plugin/plugin.json` needs an explicit `skills` path plus an `interface` block or the
+install is refused.
 
 ## Invoking the skills
 

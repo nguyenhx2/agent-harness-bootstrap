@@ -1,0 +1,6 @@
+# Built-in agent types the guard-agent-spawn hook permits BESIDES the roster in .claude/agents/.
+# One name per line. Keep this list short and read-only: anything here runs without a roster
+# seat's scope, model budget, or maxTurns cap. Adding a writable type (like general-purpose)
+# re-opens the escape the hook exists to close - that is a team decision, not an agent's.
+Explore
+Plan

@@ -49,6 +49,41 @@ No skill logic changed.
   explicitly forbidden from narrating file-by-file progress - the plan table and the final
   summary are its only two progress surfaces.
 
+## v1.15.1
+
+Verification patch. The v1.15.0 plugin packaging was built to specification but never run against
+Codex or Cursor, because neither CLI existed on the build machine. Both were installed, both were
+run, and three real defects came out.
+
+### Fixed
+
+- **`policy.installation: "user"` is not a value.** Codex's enum is `NOT_AVAILABLE`, `AVAILABLE`
+  or `INSTALLED_BY_DEFAULT`, and it refuses the whole marketplace file otherwise. `authentication`
+  is now omitted rather than guessed: its enum is `ON_INSTALL` or `ON_USE`, neither of which is
+  true of a plugin that authenticates nothing.
+- **The marketplace source path resolves from the repository root**, not from the directory
+  holding `marketplace.json`, so `../../plugins/<skill>` found nothing. Codex's own bundled
+  marketplace is the reference that settled it.
+- **Codex refuses to install without an explicit `skills` path and an `interface` block** in
+  `.codex-plugin/plugin.json`. The Agent Plugins fixed `skills/` location is not enough for it.
+
+### Changed
+
+- **Two plugin roots per skill instead of one.** Codex validates a root `plugin.json` when one is
+  present and rejects the `$schema` key that Agent Plugins REQUIRES, while tolerating every other
+  field of that manifest. Dropping `$schema` satisfies both clients today (Cursor was verified to
+  load the tree with and without it) but ships a manifest the standard calls non-conformant, so
+  Codex gets `plugins/codex/<skill>/` with no root manifest to trip over. Pointing Codex at a
+  `skills` path outside its root was tried first and fails: it copies only the plugin root into
+  its cache, so the skill is absent after install.
+
+### Verified
+
+Claude Code 2.x, `codex-cli` 0.148.0 and `cursor-agent` 2026.08.11, each installing from this
+repository. The Codex check confirms `SKILL.md` is really inside the installed cache; the Cursor
+check used a uniquely-named copy of the generated tree, because both skills are installed
+globally on the test machine and would otherwise have answered for themselves.
+
 ## v1.15.0
 
 The skills stop being Claude-Code-only. They now install as plugins in Cursor, Codex, and every
