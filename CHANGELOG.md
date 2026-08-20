@@ -49,6 +49,51 @@ No skill logic changed.
   explicitly forbidden from narrating file-by-file progress - the plan table and the final
   summary are its only two progress surfaces.
 
+## v1.16.0
+
+The landing page becomes something you step through instead of read, the deck stops crowding its
+own edges on phones, and the contribution section stops being a byline.
+
+### The landing page is a schematic you can operate
+
+Rebuilt in `site/` with the `web-animation-skills` pack (svg-animation, micro-interaction,
+60fps-animation, accessible-animation) over the impeccable design process. Not a restyle: the old
+static figures are gone from the page entirely, and the flows are authored SVG that responds.
+
+- **The delivery flow** runs as a net of five stages. Pick one and the route energizes segment by
+  segment up to it, naming what that stage writes to disk.
+- **Tailoring** shows 16 seat pads over one TAILOR junction. Pick a project shape and 7, 11 or 15
+  fill in sequence, the rest staying dashed and empty, with a line saying why.
+- **The control layers** let you send a real request down the route. `git push --force` stops at
+  the deny list, `cat .env` at the blocking hook with EXIT 2, an agent spawning an agent at the
+  spawn boundary. The refusing gate turns coral, everything downstream stays inert, and the
+  readout states the result.
+- **Proof** is a measurement list: the value, what it measures, and the script that derives it.
+
+Motion carries state, causality and sequence, never decoration. The whole interaction layer is
+radio inputs plus `:has()`, so every flow works with JavaScript off and gets arrow-key traversal
+for free, and no animation library was added. Under `prefers-reduced-motion` every state lands
+instantly rather than halfway, and each state the motion carries is also written in words.
+
+### Fixed
+
+- **The deck crowded its own edge on phones.** Not a padding value: every slide is wrapped in
+  `.wrap`, which is `position:absolute; inset:0` for the desktop box-fit layout and was never
+  reset for mobile. An absolutely positioned child resolves `inset:0` against the containing
+  block's PADDING box, so the wrapper covered the padding and no amount of it would have shown.
+  Measured before and after: content moved from 0px off the card edge to 22px at 360 and 23px at
+  390, with zero overflow.
+- **`build_plugins.py --check` was green in CI and red on Windows.** It compared bytes, and
+  `.gitattributes` checks `*.md` and `*.json` out native, so after a branch switch the committed
+  plugin copies carry CRLF while the untouched sources stay LF. Same blob in git, different bytes
+  on disk. It now compares content for text and bytes for binary, and the tolerance is tested
+  both ways: it must swallow a CRLF-only change and must not swallow a real edit.
+
+### Changed
+
+- The contribution section no longer carries a byline. It says what a contributor needs instead:
+  the two commands that decide whether a change still holds up.
+
 ## v1.15.1
 
 Verification patch. The v1.15.0 plugin packaging was built to specification but never run against
