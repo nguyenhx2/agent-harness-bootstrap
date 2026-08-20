@@ -554,12 +554,13 @@ async function agOpenAgent(node, root) {
   const answer = await agModal({
     title: "Edit " + built.name,
     icon: "owner",
+    wide: true,
     body: [
       node.file ? node.file : "This seat has no file on disk.",
       built.node,
     ],
     actions: [
-      { id: "reference", label: "Reference", icon: "doc" },
+      { id: "reference", label: "Reference", icon: "doc", kind: "info" },
       { id: "cancel", label: "Cancel", icon: "x", kind: "cancel" },
       { id: "save", label: "Save", icon: "save", kind: "primary", default: true },
     ],
@@ -765,6 +766,7 @@ async function agOpenReference(root, vendorId) {
     const answer = await agModal({
       title: "Models and tools",
       icon: "tools",
+      wide: true,
       body: [
         "The shipped list is seed data. Your corrections are stored in this repository at " +
         "`.claude/state/references.json` and merged over it, so upgrading the skill will not lose " +
@@ -774,8 +776,8 @@ async function agOpenReference(root, vendorId) {
         agReferenceBody(reference, vendorId, ctx),
       ],
       actions: [
-        { id: "edit-vendor", label: "Edit vendor", icon: "edit" },
-        { id: "add-vendor", label: "Add vendor", icon: "owner" },
+        { id: "edit-vendor", label: "Edit vendor", icon: "edit", kind: "info" },
+        { id: "add-vendor", label: "Add vendor", icon: "owner", kind: "accent" },
         { id: "delete-vendor", label: "Remove vendor", icon: "trash", kind: "danger" },
         { id: "done", label: "Done", icon: "check", kind: "primary", default: true },
       ],
