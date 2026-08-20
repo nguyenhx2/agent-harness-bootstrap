@@ -244,6 +244,42 @@ fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
     Ok(target_c)
 }
 
+/// Largest command file the step editor will write back. Two orders of
+/// magnitude above the biggest shipped command, and small enough that a runaway
+/// page cannot fill a disk.
+const COMMAND_CAP: usize = 512 * 1024;
+
+/// Resolve the command file the step editor is allowed to rewrite.
+///
+/// This takes a NAME, never a path. `resolve_file` has to accept paths because
+/// the preview reads the whole graph, but the only thing that writes here is the
+/// step editor, and it only ever edits an active command. Building the path from
+/// a validated bare name means there is no traversal to contain: `..`, a
+/// separator, or a drive letter fail the character check before a path exists.
+fn resolve_command(root: &Path, name: &str) -> Result<PathBuf, String> {
+    let n = name.trim();
+    if n.is_empty() {
+        return Err("no command named".into());
+    }
+    if !n
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+        || n.contains("..")
+        || n.starts_with('.')
+    {
+        return Err(format!(
+            "refused: `{name}` is not a bare command name (letters, digits, dash, underscore)"
+        ));
+    }
+    let p = root.join(".claude").join("commands").join(format!("{n}.md"));
+    if !p.is_file() {
+        return Err(format!(
+            "no active command named `{n}` - a disabled command is not editable; enable it first"
+        ));
+    }
+    Ok(p)
+}
+
 /// Directory listing for the folder picker: subdirectory NAMES, a parent link,
 /// and whether each child is itself a harness. No file names, no contents, no
 /// sizes. On Windows an empty path lists the drives, because there is no single
@@ -552,6 +588,14 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                                     .get("confirm_soft")
                                     .and_then(|x| x.as_bool())
                                     .unwrap_or(false);
+                                // Taken verbatim, never normalized: toggle()
+                                // compares it byte-for-byte against
+                                // `disable <name>` and a trim here would let a
+                                // near-miss through.
+                                let confirm_hard = v
+                                    .get("confirm_hard")
+                                    .and_then(|x| x.as_str())
+                                    .unwrap_or("");
                                 match toggle::toggle(
                                     &target,
                                     kind,
@@ -559,6 +603,7 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                                     enable,
                                     reason,
                                     confirm_soft,
+                                    confirm_hard,
                                 ) {
                                     Ok(msg) => Response::from_string(msg).with_header(header(
                                         "Content-Type",
@@ -566,6 +611,69 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                                     )),
                                     Err(e) => Response::from_string(e.msg)
                                         .with_status_code(e.code)
+                                        .with_header(header(
+                                            "Content-Type",
+                                            "text/plain; charset=utf-8",
+                                        )),
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
+                }
+            }
+            // The step editor's write path. Same gate as /toggle - same-origin,
+            // JSON content type - and the same plain-text refusals, because the
+            // page shows what comes back verbatim.
+            (Method::Post, "/command") => {
+                if let Err(msg) = same_origin(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let mut body = String::new();
+                let _ = request.as_reader().read_to_string(&mut body);
+                match serde_json::from_str::<serde_json::Value>(&body) {
+                    Ok(v) => {
+                        let requested = v.get("root").and_then(|x| x.as_str());
+                        match resolve_root(requested, &root) {
+                            Err(e) => Response::from_string(e.msg)
+                                .with_status_code(400)
+                                .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                            Ok(target) => {
+                                let name = v.get("name").and_then(|x| x.as_str()).unwrap_or("");
+                                let content =
+                                    v.get("content").and_then(|x| x.as_str()).unwrap_or("");
+                                let res = if content.len() > COMMAND_CAP {
+                                    Err(format!(
+                                        "refused: {} bytes exceeds the {COMMAND_CAP}-byte cap for \
+                                         a command file",
+                                        content.len()
+                                    ))
+                                } else if content.trim().is_empty() {
+                                    // A save that empties the file is never an
+                                    // edit anyone meant; deleting a command is
+                                    // POST /toggle's job.
+                                    Err("refused: empty content - disable the command instead of \
+                                         emptying it"
+                                        .into())
+                                } else {
+                                    resolve_command(&target, name).and_then(|p| {
+                                        crate::toggle::atomic_write(&p, content)
+                                            .map(|_| format!("wrote .claude/commands/{name}.md"))
+                                            .map_err(|e| format!("write failed: {e}"))
+                                    })
+                                };
+                                match res {
+                                    Ok(msg) => Response::from_string(msg).with_header(header(
+                                        "Content-Type",
+                                        "text/plain; charset=utf-8",
+                                    )),
+                                    Err(msg) => Response::from_string(msg)
+                                        .with_status_code(400)
                                         .with_header(header(
                                             "Content-Type",
                                             "text/plain; charset=utf-8",

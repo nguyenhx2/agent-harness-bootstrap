@@ -6,7 +6,7 @@
 
 <p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
@@ -384,11 +384,39 @@ OSごとのダウンロード方法、ダブルクリックの挙動、他リポ
 同梱される2個(`/spec-ingest`、`/spec-retract`)がある - 完全なガイド、実例、それぞれが強制する
 不変条件は [`docs/TUNING.md`](docs/TUNING.md) にある。
 
+**これらは2か所に存在し、どちらを持っているかが重要になる。**
+
+リポジトリに生成されたもの(`.claude/commands/`)は、インテイクの回答が埋め込まれている。
+`/deploy` があなたのデプロイコマンドを知っているのはそのためだ。これらはブートストラップを
+実行したリポジトリの中にだけ、そのリポジトリ限定で存在する。
+
+同じ8個は**プラグインにも同梱される**ため、プラグインを入れた時点で、ハーネス管理用の
+コマンド一式がどのディレクトリでも使える - 最初のブートストラップより前でも、他の人が
+ブートストラップしたリポジトリでも。プラグインのコマンドはプラグイン名前空間を持ち、
+それが他のインストール済みコマンドとの衝突も同時に解決する:
+
+```
+/harness-bootstrap:harness-tune          /harness-bootstrap:code-graph
+/harness-bootstrap:harness-toggle        /harness-bootstrap:docs-graph
+/harness-bootstrap:harness-update        /harness-bootstrap:board-audit
+/harness-bootstrap:agent-permissions     /harness-bootstrap:skill-wire
+```
+
+プラグイン版は値が埋め込まれている代わりに、リポジトリを読む - `settings.json` とロスターを
+開き、見つけた内容をそのまま提示する - そして現在のディレクトリに `.claude/` が無い場合は
+その旨をはっきり伝える。デリバリー系コマンド(`/test`、`/deploy`、`/new-task` など)は
+意図的に生成専用のままにしてある。デプロイコマンドを推測するしかない汎用の `/deploy` は、
+`/deploy` が無いことより悪い。
+
+Claude Code は、リポジトリに生成版がある場合、素の `/harness-tune` をそちらに解決する。
+したがってブートストラップ済みのリポジトリの挙動はこれまでどおり変わらない。名前空間つきの
+形式は常にプラグイン版に届く。
+
 | コマンド | 何をするか |
 |---|---|
 | [`/board-audit`](docs/TUNING.md#board-audit) | まず `board-check.py` を実行し、そのうえで孤立したタスク、記録されていない実行、ボードのずれ、古くなったコードグラフを読み取り専用で調べる |
 | [`/harness-tune`](docs/TUNING.md#harness-tune) | 制御レベルを再調整 - デプロイ権限、破壊的コマンドの扱い、起動許可リスト、上限値、レビュー範囲、エージェント履歴の詳細度(合計6つのダイヤル) |
-| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | ルール・コマンド・フックを1つ単位で無効化/再有効化する - HARD項目は確認フレーズの入力、SOFT項目は `--yes` が必要で、エージェントは対象外 |
+| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | ルール・コマンド・フック・エージェント席を1つ単位で無効化/再有効化する - HARD項目は確認フレーズの入力、SOFT項目とすべてのエージェント席は `--yes` が必要 |
 | [`/agent-permissions`](docs/TUNING.md#agent-permissions) | 1つのシートに1つのツールを付与・剥奪する |
 | [`/harness-update`](docs/TUNING.md#harness-update) | 新しいアセットや変わったコードベースを取り込むためスキャフォルダを再実行。競合はフラグ付け、上書きは絶対にしない |
 | [`/code-graph`](docs/TUNING.md#code-graph) | コードの依存関係グラフ(mermaid + JSON)を再構築し、ハーネスグラフとHTML出力も更新する。モジュールをまたぐ変更の前にエージェントが参照する |
@@ -475,7 +503,7 @@ agent-harness-bootstrap
 
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
-| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 153,179 | **-35%** |
+| リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 155,195 | **-35%** |
 | モデルが出力として書くバイト数 | 95,064 | 14,787 | **-85%** |
 | デフォルトのセッションから除外されるルール内容 | - | 55,062 of 85,705 B | **64%** |
 | ガードレール評価 | - | **107/107** | - |
@@ -526,4 +554,14 @@ py -3.13 scripts/check_numbers.py    # 公開されたすべての数値がス�
 
 ## 📄 ライセンス
 
-MIT - [LICENSE](LICENSE) を参照。
+**[PolyForm Noncommercial 1.0.0](LICENSE)** - 非商用目的であれば無償で利用できます。
+個人プロジェクト、学習、研究、趣味での利用、および慈善団体・教育機関・公的機関による
+利用が含まれます。
+
+**商用利用には有償ライセンスが必要です。** 販売・提供する製品やサービスの開発・運用への
+利用、営利企業内での利用、クライアント向けの受託開発、商用提供物への再配布などが該当し
+ます。取得については **nguyenhx1@gmail.com** までご連絡ください。
+
+*お客様の*リポジトリに生成されたハーネスのファイルはお客様のものです。商用ライセンスが
+必要になるのは、*本ソフトウェア自体*を商用目的で実行または再配布する場合です。全条項と
+商用ライセンスの詳細は [LICENSE](LICENSE) を参照してください。

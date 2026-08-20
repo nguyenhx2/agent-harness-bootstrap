@@ -397,7 +397,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **153,179** | **-35%** |
+| Read path (bytes pulled into context) | 234,196 | **155,195** | **-34%** |
 | Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **14,787** | **-84%** |
 

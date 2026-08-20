@@ -3,8 +3,9 @@
 
 The only sanctioned mutator for enable/disable state. Mechanics:
 
-  rule/command  .claude/rules/X.md      <->  .claude/disabled/rules/X.md
-                .claude/commands/X.md   <->  .claude/disabled/commands/X.md
+  rule/command/ .claude/rules/X.md      <->  .claude/disabled/rules/X.md
+  agent         .claude/commands/X.md   <->  .claude/disabled/commands/X.md
+                .claude/agents/X.md     <->  .claude/disabled/agents/X.md
   hook          .claude/hooks/X.{sh,ps1} ->  .claude/disabled/hooks/  AND its
                 settings.json registration objects are removed; the removed
                 objects (with their event/matcher/position) are saved verbatim
@@ -18,11 +19,18 @@ after which disable/enable round-trips are byte-identical.
 
 Safety tiers (hardcoded, not configurable):
   HARD - protect-secrets, guard-agent-spawn hooks; security-privacy,
-         agent-guardrails rules; the review-changes command. Disabling needs
-         --confirm "disable <name>" typed literally by the USER.
+         agent-guardrails rules; the review-changes command; the orchestrator
+         and reviewer SEATS. Disabling needs --confirm "disable <name>" typed
+         literally by the USER.
   SOFT - guard-main-commit, check-commit-msg, protect-adr hooks; the
-         ai-governance rule. Disabling needs --yes.
-Agents are never toggled here - roster changes go through /harness-update.
+         ai-governance rule; and EVERY agent seat, by category rather than by
+         name - parking a seat the routing table still lists is a dispatch to
+         nowhere. Disabling needs --yes.
+Parking a seat is reversible and recorded; ADDING or RETIRING one is still a
+roster change and goes through /harness-update.
+
+Parity: tools/harness-view/src/toggle.rs implements this same contract for the
+native viewer. The tier tables and the confirmation phrase must match.
 
 Usage:
   python .claude/scripts/harness-toggle.py list [--target <root>]
@@ -41,12 +49,17 @@ import re
 import shutil
 import sys
 
-KINDS = ("rule", "command", "hook")
-DIRS = {"rule": "rules", "command": "commands", "hook": "hooks"}
+KINDS = ("rule", "command", "hook", "agent")
+DIRS = {"rule": "rules", "command": "commands", "hook": "hooks",
+        "agent": "agents"}
 
 HARD = {"hook/protect-secrets", "hook/guard-agent-spawn",
         "rule/security-privacy", "rule/agent-guardrails",
-        "command/review-changes"}
+        "command/review-changes",
+        # the seats the rest of the harness assumes: only the orchestrator
+        # spawns, and the review seats ARE the code-review gate
+        "agent/orchestrator", "agent/code-reviewer",
+        "agent/security-reviewer", "agent/reviewer", "agent/spec-guardian"}
 SOFT = {"hook/guard-main-commit", "hook/check-commit-msg",
         "hook/protect-adr", "rule/ai-governance"}
 
@@ -237,9 +250,6 @@ def parse_item(item: str) -> tuple[str, str]:
         raise ValueError(f"expected <kind>/<name>, got `{item}`")
     kind, name = item.split("/", 1)
     kind = {"cmd": "command"}.get(kind, kind)
-    if kind == "agent":
-        raise ValueError("agents are not toggled here - roster changes go "
-                         "through /harness-update (routing row first)")
     if kind not in KINDS:
         raise ValueError(f"unknown kind `{kind}` - use rule|command|hook")
     # The name becomes a path component. Reject separators and dot-dot so a
@@ -266,8 +276,12 @@ def check_safety(kind: str, name: str, confirm: str | None, yes: bool) -> int:
                 f"`{want}` and it must be passed as:\n"
                 f"  --confirm \"{want}\"\n"
                 f"Never synthesize this phrase on the user's behalf.", 2)
-    elif key in SOFT and not yes:
-        return die(f"{key} is a protected control - re-run with --yes to "
+    elif (key in SOFT or kind == "agent") and not yes:
+        # Agents are SOFT by category, not by name: whatever a seat is called,
+        # the orchestrator's routing table still points at it.
+        why = ("is a roster seat the routing table still lists"
+               if kind == "agent" else "is a protected control")
+        return die(f"{key} {why} - re-run with --yes to "
                    f"confirm the user asked for this.", 2)
     return 0
 

@@ -1,6 +1,6 @@
 {
   "name": "harness-bootstrap",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
   "author": {
     "name": "nguyenhx2"

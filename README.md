@@ -6,7 +6,7 @@
 
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
@@ -397,11 +397,38 @@ adjust it after the fact, plus two more (`/spec-ingest`, `/spec-retract`) that a
 `spec-builder` spec set - full guidance, worked examples, and the invariants each one enforces live
 in [`docs/TUNING.md`](docs/TUNING.md).
 
+**Two places these live, and it matters which one you have.**
+
+Scaffolded into the repo (`.claude/commands/`), they carry your answers: `/deploy` knows your deploy
+command because intake substituted it. They exist only in a repo that ran the bootstrap, and only
+in that repo.
+
+The same eight also ship **with the plugin**, so the harness-management set is available in any
+directory the moment the plugin is installed - before a first bootstrap, and in repos someone else
+bootstrapped. Plugin commands carry the plugin's namespace, which is also what keeps them from
+colliding with anything else you have installed:
+
+```
+/harness-bootstrap:harness-tune          /harness-bootstrap:code-graph
+/harness-bootstrap:harness-toggle        /harness-bootstrap:docs-graph
+/harness-bootstrap:harness-update        /harness-bootstrap:board-audit
+/harness-bootstrap:agent-permissions     /harness-bootstrap:skill-wire
+```
+
+The plugin copies read the repo instead of having its values baked in - they open `settings.json`
+and the roster and quote back what they find rather than assuming it - and each one says plainly
+when the current directory has no `.claude/` to work on. The delivery commands (`/test`, `/deploy`,
+`/new-task` and the rest) stay scaffold-only: a generic `/deploy` that has to guess your deploy
+command is worse than no `/deploy`.
+
+Claude Code resolves a bare `/harness-tune` to the scaffolded copy when the repo has one, so
+bootstrapped repos keep working exactly as before. The namespaced form always reaches the plugin's.
+
 | Command | What it does |
 |---|---|
 | [`/board-audit`](docs/TUNING.md#board-audit) | Runs `board-check.py` first, then a read-only sweep for orphaned tasks, unlogged runs, board drift, and a stale code graph |
 | [`/harness-tune`](docs/TUNING.md#harness-tune) | Retune control level - deploy rights, destructive-command posture, spawn allowlist, caps, review scope, agent-history detail (six dials) |
-| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | Disable or re-enable one rule, command, or hook - HARD items need a typed confirm phrase, SOFT items need `--yes`, agents are refused |
+| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | Disable or re-enable one rule, command, hook, or agent seat - HARD items need a typed confirm phrase, SOFT items and every seat need `--yes` |
 | [`/agent-permissions`](docs/TUNING.md#agent-permissions) | Grant or revoke one tool on one roster seat |
 | [`/harness-update`](docs/TUNING.md#harness-update) | Re-run the scaffolder to pick up new assets or a changed codebase, conflicts flagged, never clobbered |
 | [`/code-graph`](docs/TUNING.md#code-graph) | Rebuild the code dependency graph (mermaid + JSON) an agent consults before a cross-module change, and refresh the harness graph + HTML exports |
@@ -490,7 +517,7 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 
 | | Before | After | Δ |
 |---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 153,179 | **-35%** |
+| Bytes the model must read to bootstrap a repo | 234,196 | 155,195 | **-34%** |
 | Bytes the model must write as output | 95,064 | 14,787 | **-84%** |
 | Rule content kept out of the default session | - | 55,062 of 85,705 B | **64%** |
 | Guardrail eval | - | **107/107** | - |
@@ -540,4 +567,15 @@ py -3.13 scripts/check_numbers.py    # every published figure must match its scr
 
 ## 📄 License
 
-MIT - see [LICENSE](LICENSE).
+**[PolyForm Noncommercial 1.0.0](LICENSE)** - free for any noncommercial purpose:
+personal projects, study, research, hobby work, and use by charities, schools, and
+public institutions.
+
+**Commercial use requires a paid license.** That includes using this software in the
+development or operation of a product or service you sell, use inside a for-profit
+company, consultancy work for a client, and redistribution as part of a commercial
+offering. To obtain one, contact **nguyenhx1@gmail.com**.
+
+The harness files scaffolded into *your* repository are yours - what needs a commercial
+license is running or redistributing *this software* commercially. Full terms and the
+commercial-licensing section: [LICENSE](LICENSE).

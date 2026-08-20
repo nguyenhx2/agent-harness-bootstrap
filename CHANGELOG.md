@@ -49,6 +49,38 @@ No skill logic changed.
   explicitly forbidden from narrating file-by-file progress - the plan table and the final
   summary are its only two progress surfaces.
 
+## v1.17.0
+
+Post-bootstrap tuning commands ship with the plugin, roster seats and HARD-protected controls
+become toggleable from the viewer, command steps become editable, and the licence changes to
+PolyForm Noncommercial.
+
+### Added
+
+- **The eight harness-management commands ship with the plugin.** `harness-bootstrap/` held a
+  skill and nothing else, so the tuning commands existed only inside a repo that had already run
+  the bootstrap. Installing the plugin and typing `/harness-tune` found nothing at all. They now
+  live in `harness-bootstrap/commands/` as well and resolve anywhere as
+  `/harness-bootstrap:<name>` - a namespace that also settles the collision question, since
+  `/deploy` and `/test` are names other plugins want too. The delivery commands stay
+  scaffold-only: they carry intake's substituted values and a generic copy would have to guess.
+- **The viewer edits command steps.** Steps render as a chain of cards, reorder by dragging,
+  switch off in place, and take edits, with one Save per batch. Only the line spans the steps
+  occupy are rewritten; every fixture command re-serializes byte-identically when nothing was
+  edited, which is a test, not a claim.
+
+### Changed
+
+- **HARD-protected controls are reachable from the viewer**, via the same typed phrase the CLI
+  requires (`disable <name>`, compared byte for byte). The page prompts, the human types, the
+  server checks. Previously the viewer refused with 403 and offered no route forward.
+- **Agent seats toggle** in both `harness-toggle.py` and the viewer. Every seat is at least SOFT;
+  `orchestrator` and the four reviewer seats are HARD. Graph parity between the two scanners was
+  verified byte-identical with a seat parked.
+- **Licence: MIT to [PolyForm Noncommercial 1.0.0](LICENSE).** Free for personal, academic,
+  research, hobby and non-profit use; commercial use needs a paid licence
+  (`nguyenhx1@gmail.com`). The harness files scaffolded into your own repository remain yours.
+
 ## v1.16.0
 
 The landing page becomes something you step through instead of read, the deck stops crowding its

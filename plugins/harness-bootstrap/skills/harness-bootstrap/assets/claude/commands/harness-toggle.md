@@ -1,9 +1,9 @@
 ---
-description: Turn individual rules, commands, or hooks off or back on at runtime - reversibly, with the change recorded and the harness graph refreshed.
+description: Turn individual rules, commands, hooks, or agent seats off or back on at runtime - reversibly, with the change recorded and the harness graph refreshed.
 allowed-tools: Read, Grep, Glob, AskUserQuestion, Bash(python .claude/scripts/harness-toggle.py:*), Bash(python3 .claude/scripts/harness-toggle.py:*), Bash(py -3 .claude/scripts/harness-toggle.py:*)
 ---
 
-Enable or disable a single rule, command, or hook without deleting anything. The script is the
+Enable or disable a single rule, command, hook, or agent seat without deleting anything. The script is the
 only mutator - never move files or edit `settings.json` by hand for this.
 
 Procedure:
@@ -26,7 +26,12 @@ Safety tiers the script enforces (do not try to route around them):
   compose it for them, never paraphrase it into the flag.
 - **SOFT** (`guard-main-commit`, `check-commit-msg`, `protect-adr`, `ai-governance`): pass
   `--yes` only after the user explicitly confirmed.
-- Agents are refused entirely: roster changes go through `/harness-update`.
+- **Agents** park like anything else, but every seat is at least SOFT - the orchestrator's
+  routing table still lists it, so a parked seat leaves a dispatch pointing at nothing. Fix the
+  routing row in the same change. `orchestrator` and the reviewer seats (`code-reviewer`,
+  `security-reviewer`, `reviewer`, `spec-guardian`) are HARD: only the orchestrator spawns, and
+  the review seats ARE the code-review gate. Parking a seat is reversible; ADDING or RETIRING one
+  is still `/harness-update`.
 
 If a scaffold re-run or hand edit resurrected something that should be off, run
 `python .claude/scripts/harness-toggle.py reapply` instead of disabling it again.
