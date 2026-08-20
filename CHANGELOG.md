@@ -12,6 +12,19 @@ No skill logic changed.
 
 ### Changed
 
+- **A release can no longer ship a harness-view binary whose file metadata lies.** The
+  workflow asserted what the binary PRINTS (`--version`) but never what Explorer's
+  Properties tab SHOWS (the compiled VERSIONINFO resource), and `build.rs` deliberately
+  swallowed a failed resource embed - so an exe with blank or stale metadata could ship
+  while every gate stayed green. Three layers now: the release build sets
+  `HARNESS_VIEW_REQUIRE_RESOURCE`, which turns that swallow into a hard failure; a
+  Windows release step reads the built exe's `VersionInfo` and fails on any field that
+  disagrees with the tag; and every tool archive now carries a `VERSION` file, asserted
+  by reading it back out of the packed archive - the same convention the skill zips have
+  had asserted since v1.5.0. All three proven able to fail on this machine before
+  shipping: the strict build fails when the resource cannot embed, the metadata assert
+  fires against a wrong version, and the lenient developer build still succeeds.
+
 - **The landing page is a Vite build now** (`site/`), replacing the hand-written root pages
   that broke on phones three measured ways: a content gutter that collapsed to 0px at 390px,
   two `pre` blocks overflowing the viewport, and an eight-link nav wrapping into a pile. The

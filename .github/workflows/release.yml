@@ -202,6 +202,12 @@ jobs:
       - name: Build
         run: cargo build --release --locked --target ${{ matrix.target }}
         working-directory: tools/harness-view
+        env:
+          # build.rs tolerates a failed VERSIONINFO embed for developer builds and
+          # downgrades it to a warning. A release build must not: this flips the
+          # swallow into a hard failure, so an exe with no file metadata can never
+          # ship green. Harmless on non-Windows targets, which never embed one.
+          HARNESS_VIEW_REQUIRE_RESOURCE: "1"
 
       - name: Verify the built binary reports the release version
         if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-unknown-linux-gnu'
@@ -214,6 +220,27 @@ jobs:
           echo "$OUT"
           [ "$OUT" = "harness-view ${{ steps.v.outputs.version }}" ]
 
+      # --version proves what the binary PRINTS; this proves what Explorer's Properties
+      # tab SHOWS. They come from different places (clap vs the compiled VERSIONINFO
+      # resource), and only the second one is what a user calls "the file's metadata".
+      # Nothing asserted it before, and build.rs used to swallow a failed embed, so an
+      # exe with blank or stale Properties could ship while every gate stayed green.
+      - name: Verify the exe file metadata carries the release version
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: pwsh
+        run: |
+          $v = "${{ steps.v.outputs.version }}"
+          $i = (Get-Item "tools/harness-view/target/${{ matrix.target }}/release/harness-view.exe").VersionInfo
+          "FileVersion=$($i.FileVersion) ProductVersion=$($i.ProductVersion) ProductName=$($i.ProductName)"
+          if ($i.FileVersion -ne $v -or $i.ProductVersion -ne $v) {
+            Write-Error "VERSIONINFO says FileVersion=$($i.FileVersion) ProductVersion=$($i.ProductVersion), the release is $v - the Properties tab would lie about what this file is"
+            exit 1
+          }
+          if ($i.ProductName -ne "harness-view") {
+            Write-Error "ProductName=$($i.ProductName), expected harness-view"
+            exit 1
+          }
+
       - name: Package
         shell: bash
         run: |
@@ -222,6 +249,10 @@ jobs:
           mkdir -p "stage/$NAME"
           cp "tools/harness-view/target/${{ matrix.target }}/release/harness-view${{ matrix.ext }}" "stage/$NAME/"
           cp tools/harness-view/README.md tools/harness-view/SCHEMA.md "stage/$NAME/"
+          # Same convention as the skill zips: a VERSION file at the artifact root, so a
+          # binary sitting in a folder on disk stays identifiable after the archive name
+          # is gone. The skill zips have had this asserted since v1.5.0; the tool did not.
+          printf '%s\n' "$V" > "stage/$NAME/VERSION"
           mkdir -p out
           cd stage
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
@@ -231,6 +262,21 @@ jobs:
           fi
           cd ..
           ls -la out/
+
+      - name: Assert VERSION is inside the archive
+        shell: bash
+        run: |
+          # Read it back OUT OF the archive, not from the staging folder - the staging
+          # folder proves nothing about what was actually packed.
+          V="${{ steps.v.outputs.version }}"
+          NAME="harness-view-$V-${{ matrix.target }}"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            GOT=$(7z e -so "out/$NAME.zip" "$NAME/VERSION" 2>/dev/null | tr -d '\r\n')
+          else
+            GOT=$(tar -xzOf "out/$NAME.tar.gz" "$NAME/VERSION" | tr -d '\r\n')
+          fi
+          echo "archive VERSION: $GOT"
+          [ "$GOT" = "$V" ] || { echo "archive VERSION says '$GOT', expected '$V'" >&2; exit 1; }
 
       - name: Checksum
         shell: bash
