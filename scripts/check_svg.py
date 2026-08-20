@@ -24,7 +24,7 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "docs" / "assets"
