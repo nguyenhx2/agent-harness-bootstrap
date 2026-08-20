@@ -131,10 +131,10 @@ The harness is not a diagram you take on trust. `harness-view` renders the real 
 </p>
 
 <p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 64 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and a findings list naming each problem" width="900">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 79 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and a findings list naming each problem" width="900">
 </p>
 
-Both are a real harness, not a mock-up: 172 nodes, 505 edges, scored 64/100 by the deterministic
+Both are a real harness, not a mock-up: 109 nodes, 130 edges, scored 79/100 by the deterministic
 assess engine. No model is involved in that score, so a browser and a CI run cannot disagree
 about it.
 
