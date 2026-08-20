@@ -81,6 +81,22 @@ PolyForm Noncommercial.
   research, hobby and non-profit use; commercial use needs a paid licence
   (`nguyenhx1@gmail.com`). The harness files scaffolded into your own repository remain yours.
 
+### Fixed while verifying against real repositories
+
+- **A toggle request with a misspelt field silently became a DISABLE.** `serve.rs` read
+  `enable` with `unwrap_or(false)`, so a body carrying `{"action":"enable"}` - or any typo -
+  defaulted to the destructive direction. A HARD item's phrase gate catches that; a SOFT one has
+  no such backstop, so a client meaning "restore" could switch a control off. A missing or
+  non-boolean `enable` is now a 400. Found by sending exactly that malformed body at a real
+  harness, not by reading the code.
+- **Every plugin manifest still claimed MIT** after the licence moved to PolyForm Noncommercial:
+  four manifests, and the manifest is the copy a user actually installs. The generator now takes
+  the SPDX id from one constant, and `validate_release.py` fails when a manifest disagrees with
+  LICENSE - mutation-tested by putting MIT back in one of them.
+- The landing page said `MIT` in its masthead, its register ("use it anywhere"), its footer and
+  its JSON-LD, in both languages. All four corrected; "use it anywhere" was the worst of them,
+  because it is now false.
+
 ## v1.16.0
 
 The landing page becomes something you step through instead of read, the deck stops crowding its

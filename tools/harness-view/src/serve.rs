@@ -580,8 +580,27 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                             Ok(target) => {
                                 let kind = v.get("kind").and_then(|x| x.as_str()).unwrap_or("");
                                 let name = v.get("name").and_then(|x| x.as_str()).unwrap_or("");
-                                let enable =
-                                    v.get("enable").and_then(|x| x.as_bool()).unwrap_or(false);
+                                // Absent `enable` used to default to false, so a body with a
+                                // misspelt field - `{"action":"enable"}` - silently became a
+                                // DISABLE. A HARD item's phrase gate catches that; a SOFT one
+                                // has no such backstop, so the destructive direction must never
+                                // be the default. Missing or non-boolean is a 400.
+                                let enable = match v.get("enable").and_then(|x| x.as_bool()) {
+                                    Some(b) => b,
+                                    None => {
+                                        let _ = request.respond(
+                                            Response::from_string(
+                                                "toggle needs an explicit boolean `enable`:                                                  true to restore, false to disable",
+                                            )
+                                            .with_status_code(400)
+                                            .with_header(header(
+                                                "Content-Type",
+                                                "text/plain; charset=utf-8",
+                                            )),
+                                        );
+                                        continue;
+                                    }
+                                };
                                 let reason =
                                     v.get("reason").and_then(|x| x.as_str()).unwrap_or("");
                                 let confirm_soft = v

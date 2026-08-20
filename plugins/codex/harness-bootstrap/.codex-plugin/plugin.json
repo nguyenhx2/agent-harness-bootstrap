@@ -7,7 +7,7 @@
   },
   "homepage": "https://github.com/nguyenhx2/agent-harness-bootstrap",
   "repository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "skills": "./skills/",
   "interface": {
     "displayName": "harness-bootstrap",
