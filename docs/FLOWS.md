@@ -294,8 +294,16 @@ Re-running on an unchanged repo is idempotent: everything comes back `KEPT`, not
 
 ## 4. One feature, end to end through the generated harness
 
-This is the flow the generated `.claude/` folder exists to run. The orchestrator is the only entry
-point for multi-step work; the specialists are dispatched, not driven by hand. In cost terms: the
+This is the **Guarded** flow - what the generated `.claude/` folder runs when a change spans two or
+more domains, or touches schema, auth, money, a public contract, a migration, a deploy, or personal
+data. It is not what every change runs. A one-module, reversible change is **Direct**: it goes
+straight to the agent that owns that module, with no orchestrator, no task file and no review pass,
+because a planning pass costs more than the change. The tier table in the generated `AGENTS.md`
+decides which of the two a request is, before anything is dispatched.
+
+Note where the gate sits below: **once, on the branch, at the pull-request boundary** - not after
+each agent. A reviewer dispatched per agent re-reads the same files once per agent and reports the
+same findings each time. In cost terms: the
 orchestrator, the reviewers, and the debugger are Opus seats; the dev agents, `qa-test`, and
 `spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are Haiku at `low`
 effort. The hooks cost nothing, being shell scripts rather than a model, and they are the only
