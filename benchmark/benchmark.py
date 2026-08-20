@@ -387,12 +387,22 @@ def scaffold_vars() -> dict:
             "DEP_MANIFEST_GLOBS", "GATED_ACTIONS", "INCIDENT_CONTACT",
             "RESTRICTED_DENIES", "GLOSSARY_SEED", "DOC_LANGUAGE",
             "HISTORY_LEVEL", "HISTORY_KEEP", "TARGET_TOOLS",
+            # Added to the assets when the review gate learned to name the platform it opens a
+            # request on. Their absence here was not obviously wrong from this list: the scaffold
+            # exited 1, wrote nothing, and the benchmark went on to publish a scaffold timing for
+            # a run that produced no files. See the assertion at the end of this function.
+            "GIT_PLATFORM", "PR_CLI", "CI_STATUS_CMD",
         ]},
         "flags": ["posix", "ui", "db", "ai", "ddd", "tests", "unit", "e2e"],
     }
     # scaffold.py cross-validates the hook flavor against the OS flag; "x" would fail.
     payload["vars"]["HOOK_RUNNER"] = "bash"
     payload["vars"]["HOOK_EXT"] = "sh"
+    # RESTRICTED_DENIES is not a word, it is a fragment of a JSON array - it lands inside the
+    # "deny" list in settings.json. Filling it with "x" leaves `x "Read(**/.env)",` there, and the
+    # scaffolder's wiring check then reports, correctly, that settings.json is not valid JSON and
+    # so no hook is registered at all. Same value the eval uses, for the same reason.
+    payload["vars"]["RESTRICTED_DENIES"] = '"Read(**/.restricted/**)",'
     return payload
 
 
@@ -443,6 +453,22 @@ def measure_scaffold_time(new_root: pathlib.Path) -> dict:
             capture_output=True, text=True,
         )
         elapsed2 = time.perf_counter() - t1
+
+        # A timing for a scaffold that FAILED is not a slow measurement, it is a wrong one - and
+        # this function published one for however long `scaffold_vars()` was missing three
+        # variables the assets had started using. The run exited 1, wrote zero files, and 0.126
+        # seconds went into the results as though it meant something. Nothing downstream looked at
+        # `exit_code`, so the only symptom was a number that was quietly measuring the cost of
+        # printing an error.
+        if r.returncode != 0 or written == 0:
+            detail = (r.stdout or r.stderr or "").strip().splitlines()
+            raise SystemExit(
+                "benchmark: the scaffold being timed did not succeed - exit "
+                f"{r.returncode}, {written} files written. A timing from a failed run is a wrong "
+                "number, not a slow one, so this refuses to report it.\n  "
+                + "\n  ".join(detail[-6:])
+            )
+
     return {
         "seconds": round(elapsed, 3),
         "seconds_rerun": round(elapsed2, 3),

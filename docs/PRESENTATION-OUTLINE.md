@@ -133,7 +133,7 @@ prompt stop being the interface."*
 
 | Skill | What it produces | The problem it retires |
 |---|---|---|
-| **`spec-builder`** | The input an AI can understand: a selective spec set under `docs/specs/` (6 core sections always, up to 9 optional), stable IDs, acceptance criteria, a data model, mandatory security NFRs | The AI is guessing what to build |
+| **`spec-builder`** | The input an AI can understand: a selective spec set under `docs/specs/` (6 core sections always, up to 8 optional), stable IDs, acceptance criteria, a data model, mandatory security NFRs | The AI is guessing what to build |
 | **`harness-bootstrap`** | The harness the AI runs inside: `.claude/` with agents, rules, hooks, a deny list, plus a task board | Nothing constrains what it does, nothing survives when it forgets |
 
 **Why "tailored" is the load-bearing word:**
