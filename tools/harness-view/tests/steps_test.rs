@@ -38,7 +38,16 @@ const assert = require("assert");
 const fs = require("fs");
 const steps = require("{module}");
 const cmdDir = "{cmds}";
-const read = n => fs.readFileSync(cmdDir + "/" + n, "utf8");
+// LF, whatever the checkout did. `.gitattributes` marks *.md as `text`, so a
+// Windows clone gets these fixtures with CRLF while a Linux one gets LF - and
+// several assertions below pin a fixture excerpt as a "\n"-joined literal. Those
+// tests were green on the machine they were written on and red on a fresh
+// Windows checkout, which is the worst way for a test to be wrong: it looks like
+// the code broke. The parser's own CRLF handling is asserted separately, by
+// `serializing_an_untouched_parse_returns_the_file_unchanged`, which reads the
+// bytes on disk however they arrived, through `readRaw`.
+const readRaw = n => fs.readFileSync(cmdDir + "/" + n, "utf8");
+const read = n => readRaw(n).replace(/\r\n/g, "\n");
 {body}
 console.log("OK");
 "#
@@ -202,8 +211,12 @@ assert.strictEqual(g.intro, "Intro.");
 fn serializing_an_untouched_parse_returns_the_file_unchanged() {
     if !have_node() { eprintln!("SKIP serializing_an_untouched_parse_returns_the_file_unchanged: no node"); return; }
     run_js(r#"
+// readRaw, not read: this is the one test that must see whatever line endings
+// the checkout produced. A serializer that quietly converted a CRLF working copy
+// to LF would rewrite every line of every command on the first save, and only a
+// byte comparison against the file as it sits on disk catches that.
 for (const name of fs.readdirSync(cmdDir).filter(f => f.endsWith(".md"))) {
-  const raw = read(name);
+  const raw = readRaw(name);
   const out = steps.serializeCommandSteps(steps.parseCommandSteps(raw));
   assert.strictEqual(out, raw, name + " changed when nothing was edited");
 }
@@ -592,4 +605,257 @@ assert.strictEqual(rg.steps[0].num, "1", "the disabled step lost its original nu
 assert.deepStrictEqual(rg.steps.filter(s => !s.disabled).map(s => s.num), ["1", "2"],
   "the steps still standing did not renumber from 1");
 "#);
+}
+
+/// The editor cuts a step into the pieces a person edits differently - prose in
+/// a textarea, a table in a grid - and the cut has to be a PARTITION. Every line
+/// lands in exactly one part, in order, as the bytes it arrived as, so opening a
+/// step and changing nothing gives back the step.
+///
+/// This is the property the whole editor rests on: `joinStepParts` fills the
+/// textarea ui.js's Apply reads, so if the split were lossy, merely LOOKING at a
+/// step in the editor would rewrite it.
+#[test]
+fn splitting_a_step_into_parts_is_the_exact_inverse_of_joining_them() {
+    if !have_node() { eprintln!("SKIP splitting_a_step_into_parts_is_the_exact_inverse_of_joining_them: no node"); return; }
+    run_js(r#"
+const round = t => steps.joinStepParts(steps.splitStepParts(t));
+const cases = [
+  "One plain sentence.",
+  "",
+  "Assign the agent:\n\n| Work | Agent |\n|------|-------|\n| Review | `x` |\n| Tests | `y` |",
+  // trailing blank lines, ragged spacing, a table between two paragraphs
+  "Before.\n\n| a | b |\n|:--|--:|\n| 1 | 2 |\n\nAfter, with   odd   spacing.\n",
+  // a run that is only NEARLY a table stays prose and is edited as text
+  "| a | b |\n| 1 | 2 |",
+  // two tables, separated
+  "| a |\n|---|\n| 1 |\n\n| b |\n|---|\n| 2 |",
+];
+for (const c of cases) {
+  assert.strictEqual(round(c), c, "the split lost bytes for: " + JSON.stringify(c));
+}
+
+// and for every step of every fixture command, which is the real input
+for (const name of ["deploy.md", "review-changes.md", "sync-context.md"]) {
+  const p = steps.parseCommandSteps(read(name));
+  for (const g of p.groups) for (const st of g.steps) {
+    assert.strictEqual(round(st.textBody), st.textBody,
+      name + " step " + st.num + " did not survive the split");
+  }
+}
+
+// the shape the editor branches on
+const withTable = steps.splitStepParts("Intro:\n\n| a | b |\n|---|---|\n| 1 | 2 |");
+assert.deepStrictEqual(withTable.map(p => p.kind), ["prose", "table"]);
+assert.strictEqual(steps.stepPartsHaveTable(withTable), true);
+assert.strictEqual(steps.stepPartsHaveTable(steps.splitStepParts("Just prose.")), false);
+"#);
+}
+
+/// A table nobody edited is written back as the bytes it arrived as, and a table
+/// edited in ONE cell comes back with one line changed.
+///
+/// This is not cosmetic. Before the source lines were held beside the grid,
+/// applying the grid re-rendered every line of the real routing table - the
+/// header spacing, the delimiter row, every untouched row - so the diff of a
+/// one-word correction was the whole table and a reviewer had nothing to look at.
+#[test]
+fn a_table_edit_rewrites_the_row_it_touched_and_no_other() {
+    if !have_node() { eprintln!("SKIP a_table_edit_rewrites_the_row_it_touched_and_no_other: no node"); return; }
+    run_js(r#"
+const src = "Assign the agent:\n\n" +
+  "| Work        | Agent |\n" +
+  "|-------------|-------|\n" +
+  "| Code review | `code-reviewer` |\n" +
+  "| Tests       | `qa-test` |\n" +
+  "| Deploy      | `devops` |";
+const parts = steps.splitStepParts(src);
+const t = parts.find(p => p.kind === "table");
+
+// untouched: the same bytes, delimiter row and column padding included
+assert.deepStrictEqual(steps.renderTablePart(t), t.lines,
+  "an untouched table was rewritten");
+
+// one cell, on the copy the dialog works on - Cancel must cost nothing
+const work = steps.copyTablePart(t);
+work.rows[1][1] = "`qa-test` and `debugger`";
+steps.syncTablePart(work);
+const changed = work.lines.filter((l, i) => l !== t.lines[i]);
+assert.strictEqual(changed.length, 1,
+  "a one-cell edit rewrote " + changed.length + " lines: " + work.lines.join(" / "));
+assert.strictEqual(changed[0], "| Tests | `qa-test` and `debugger` |");
+// the copy is a copy
+assert.strictEqual(t.rows[1][1], "`qa-test`", "the dialog's grid wrote through to the page");
+
+// and what comes out parses back as the table it claims to be
+const back = steps.splitStepParts(steps.joinStepParts([parts[0], work])).find(p => p.kind === "table");
+assert.deepStrictEqual(back.head, ["Work", "Agent"]);
+assert.deepStrictEqual(back.rows.map(r => r[0]), ["Code review", "Tests", "Deploy"]);
+assert.strictEqual(back.rows[1][1], "`qa-test` and `debugger`");
+"#);
+}
+
+/// Add and remove, for rows and for columns, and the result still reads back as
+/// a table. The two refusals are the ones that would turn the grid into pipes the
+/// next time the step was opened: a table with no body row and a table with no
+/// column both fail `readTable`, so the operation that would produce one is
+/// refused rather than applied.
+#[test]
+fn the_grid_adds_and_removes_and_refuses_to_leave_nothing_behind() {
+    if !have_node() { eprintln!("SKIP the_grid_adds_and_removes_and_refuses_to_leave_nothing_behind: no node"); return; }
+    run_js(r#"
+const reparse = p => steps.splitStepParts(p.lines.join("\n")).find(x => x.kind === "table");
+const t = steps.splitStepParts("| a | b |\n|---|---|\n| 1 | 2 |\n| 3 | 4 |")[0];
+
+steps.tableAddRow(t, 1);
+t.rows[1] = ["new", "row"];
+steps.syncTablePart(t);
+assert.deepStrictEqual(reparse(t).rows, [["1", "2"], ["new", "row"], ["3", "4"]]);
+
+steps.tableAddColumn(t, 2);
+t.head[2] = "c";
+steps.syncTablePart(t);
+const r = reparse(t);
+assert.deepStrictEqual(r.head, ["a", "b", "c"]);
+assert.strictEqual(r.rows.every(x => x.length === 3), true);
+
+assert.ok(steps.tableRemoveColumn(t, 2), "removing a spare column was refused");
+assert.deepStrictEqual(reparse(t).head, ["a", "b"]);
+assert.ok(steps.tableRemoveRow(t, 1), "removing a spare row was refused");
+assert.deepStrictEqual(reparse(t).rows, [["1", "2"], ["3", "4"]]);
+
+// the refusals
+const one = steps.splitStepParts("| a |\n|---|\n| 1 |")[0];
+assert.strictEqual(steps.tableRemoveRow(one, 0), null, "the last row was removed");
+assert.strictEqual(steps.tableRemoveColumn(one, 0), null, "the last column was removed");
+assert.strictEqual(steps.tableRemoveRow(one, 7), null, "a row that does not exist was removed");
+
+// a new table is a table
+const fresh = steps.newTablePart();
+const f = reparse(fresh);
+assert.strictEqual(f.head.length, 2);
+assert.strictEqual(f.rows.length, 1);
+
+// and a table needs a sentence in front of it: a step whose first line is a
+// table row serializes as "4. | Work |", which is neither a step nor a table
+assert.strictEqual(steps.appendTablePart([]), null);
+assert.strictEqual(steps.appendTablePart(steps.splitStepParts("")), null);
+const after = steps.splitStepParts("Assign the agent:");
+assert.ok(steps.appendTablePart(after), "a table was refused after real prose");
+assert.deepStrictEqual(after.map(p => p.kind), ["prose", "table"]);
+assert.strictEqual(steps.joinStepParts(after).indexOf("Assign the agent:\n\n|"), 0,
+  "the new table did not get the blank line that makes it a block");
+"#);
+}
+
+/// A pipe inside a cell. Before the grid there was no way to type one, and the
+/// reader split on it - so a table with a pipe in a cell came back one column too
+/// wide, failed the ragged check, and rendered as pipes. It is escaped on the way
+/// out and unescaped on the way back, so the round trip is lossless and a cell can
+/// hold `a | b` without ending the row.
+#[test]
+fn a_pipe_typed_into_a_cell_survives_the_round_trip() {
+    if !have_node() { eprintln!("SKIP a_pipe_typed_into_a_cell_survives_the_round_trip: no node"); return; }
+    run_js(r#"
+const t = steps.splitStepParts("| a | b |\n|---|---|\n| 1 | 2 |")[0];
+t.rows[0][0] = "cargo test | tee log";
+steps.syncTablePart(t);
+assert.strictEqual(t.lines[2], "| cargo test \\| tee log | 2 |");
+const back = steps.splitStepParts(t.lines.join("\n")).find(x => x.kind === "table");
+assert.deepStrictEqual(back.rows, [["cargo test | tee log", "2"]],
+  "the escaped pipe did not read back as one cell");
+
+// a newline pasted into a cell is flattened rather than allowed to end the row
+assert.strictEqual(steps.cellSource("one\ntwo"), "one two");
+assert.strictEqual(steps.cellSource("  padded  "), "padded");
+
+// a row whose cell holds a pipe is still recognised as unchanged. The source
+// spells it escaped and the grid holds it bare; comparing those two forms
+// directly reported every such row as edited, so applying the grid rewrote rows
+// nobody had touched.
+// padded, so that a needless re-render is VISIBLE: re-rendering normalises the
+// spacing, and without the padding the rewritten line happens to equal the
+// original and the assertion passes while detecting nothing
+const same = steps.splitStepParts("| a | b |\n|---|---|\n| x \\| y    |  2 |")[0];
+assert.deepStrictEqual(steps.renderTablePart(same), same.lines,
+  "a row holding an escaped pipe was rewritten though nothing changed");
+
+// and the reader now handles an escape it did not write, which is what makes a
+// hand-written table with a pipe in it drawable at all
+const hand = steps.parseStepMarkdown("| cmd | note |\n|---|---|\n| `a \\| b` | pipes |");
+assert.deepStrictEqual(hand.map(b => b.kind), ["table"]);
+assert.deepStrictEqual(hand[0].rows, [["`a | b`", "pipes"]]);
+"#);
+}
+
+/// The whole path, end to end: read a file, edit one cell of a step's table,
+/// write it back. Everything the panel never showed - the frontmatter, the
+/// headings, the prose between the groups, the trailing text - comes back byte
+/// for byte, and the only line that moved is the row that was edited.
+#[test]
+fn editing_a_table_cell_leaves_every_other_line_of_the_file_alone() {
+    if !have_node() { eprintln!("SKIP editing_a_table_cell_leaves_every_other_line_of_the_file_alone: no node"); return; }
+    run_js(r###"
+const md = [
+  "---",
+  "description: Implement a functional requirement.",
+  "---",
+  "",
+  "Implement **$1**.",
+  "",
+  "## Steps",
+  "",
+  "1. Read the FR in `docs/specs/05-functional-requirements.md`.",
+  "2. Assign the specialist agent per the routing table:",
+  "",
+  "| Work        | Agent |",
+  "|-------------|-------|",
+  "| Code review | `code-reviewer` |",
+  "| Tests       | `qa-test` |",
+  "",
+  "3. Run `/review-changes`.",
+  "",
+  "On failure: stop and report which acceptance criteria are unmet.",
+  "",
+].join("\n");
+
+const p = steps.parseCommandSteps(md);
+const g = p.groups.find(x => x.steps.length);
+const st = g.steps[1];
+
+// exactly what the editor does: split, edit the grid on a copy, apply, join, and
+// hand the text back through the one sanctioned setter
+const parts = steps.splitStepParts(st.textBody);
+const t = parts.find(x => x.kind === "table");
+const work = steps.copyTablePart(t);
+work.rows[1][1] = "`qa-test`, then `code-reviewer`";
+steps.syncTablePart(work);
+t.head = work.head; t.align = work.align; t.rows = work.rows; t.src = work.src;
+steps.syncTablePart(t);
+steps.setStepText(st, steps.joinStepParts(parts));
+
+const out = steps.serializeCommandSteps(p);
+const a = md.split("\n"), b = out.split("\n");
+assert.strictEqual(a.length, b.length, "the file changed length: " + out);
+const moved = a.map((l, i) => l === b[i] ? -1 : i).filter(i => i !== -1);
+assert.deepStrictEqual(moved, [14],
+  "lines other than the edited row changed: " + JSON.stringify(moved) + " " + out);
+assert.strictEqual(b[14], "| Tests | `qa-test`, then `code-reviewer` |");
+
+// the frontmatter, the heading, the intro and the closing prose are untouched
+for (const keep of ["description: Implement a functional requirement.", "## Steps",
+                    "Implement **$1**.",
+                    "On failure: stop and report which acceptance criteria are unmet."]) {
+  assert.notStrictEqual(out.indexOf(keep), -1, "the serializer dropped: " + keep);
+}
+// and the step still numbers 2, because nothing reordered
+assert.ok(/^2\. Assign the specialist agent/m.test(out), "the step lost its number");
+
+// opening the editor and changing NOTHING writes nothing
+const p2 = steps.parseCommandSteps(md);
+const st2 = p2.groups.find(x => x.steps.length).steps[1];
+steps.setStepText(st2, steps.joinStepParts(steps.splitStepParts(st2.textBody)));
+assert.strictEqual(steps.serializeCommandSteps(p2), md,
+  "opening a step in the editor and applying it unchanged rewrote the file");
+"###);
 }
