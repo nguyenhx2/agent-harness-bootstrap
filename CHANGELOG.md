@@ -49,6 +49,34 @@ No skill logic changed.
   explicitly forbidden from narrating file-by-file progress - the plan table and the final
   summary are its only two progress surfaces.
 
+## v1.14.1
+
+A media-honesty patch: the tool's own screenshots now tell the truth, and a release can no
+longer ship one that does not.
+
+### Fixed
+
+- **The harness-view UI screenshots carried a stale version in their footer pixels.** The
+  assess screenshot on the landing page and the README read v1.12.0 bottom-right while the
+  release was v1.14.0 - the same burned-into-pixels drift the video clips had before
+  RENDERED.json, in the one place every text gate is blind. Both screenshots are retaken
+  from this release's binary (footer verified by reading the pixels: v1.14.1), against the
+  same real project, whose figures are unchanged: 172 nodes, 505 edges, scored 64/100.
+
+### Added
+
+- `scripts/capture/capture-screens.mjs`: retakes both screenshots from the current binary
+  with the system Chrome (nothing downloaded), refuses to capture if the page footer
+  disagrees with the binary, and records what it captured in `docs/assets/CAPTURED.json`.
+- Two gates on that provenance, both mutation-tested: `validate_release.py` fails a release
+  whose screenshots were captured by any other version, and `check_numbers.py` holds every
+  caption figure beside the screenshots (nodes, edges, score, in both languages) equal to
+  what was actually captured.
+- From v1.14.0, carried into this tag: the release workflow asserts the Windows exe's
+  VERSIONINFO (the Properties-tab metadata) against the tag, `build.rs` refuses to ship an
+  unstamped exe under `HARNESS_VIEW_REQUIRE_RESOURCE`, and every tool archive carries a
+  `VERSION` file asserted by reading it back out of the packed archive.
+
 ## v1.14.0
 
 The spec set grows a module axis, the section questionnaire becomes a gate that refuses, and

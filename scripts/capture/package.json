@@ -1,0 +1,9 @@
+{
+  "name": "capture-screens",
+  "private": true,
+  "description": "Retakes the harness-view UI screenshots from the CURRENT binary, so the version burned into their footer cannot drift from the release. See capture-screens.mjs.",
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}

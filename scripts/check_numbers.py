@@ -144,6 +144,10 @@ def flag_sync() -> list[str]:
     return problems
 
 
+def _cap() -> dict:
+    return json.loads((ROOT / "docs/assets/CAPTURED.json").read_text(encoding="utf-8"))
+
+
 def canonical() -> dict[str, int]:
     r = subprocess.run([sys.executable, str(ROOT / "benchmark/benchmark.py"), "--json"],
                        capture_output=True, text=True, cwd=ROOT)
@@ -204,6 +208,13 @@ def canonical() -> dict[str, int]:
         # extracted characters routes to vision). Quoted on the README (both languages), the
         # wiki FAQ and two reference files; derived here from the constant so a retuned
         # threshold cannot leave four documents quoting the old number.
+        # What the harness-view UI screenshots actually show, recorded at capture time by
+        # scripts/capture/capture-screens.mjs. The captions beside those screenshots quote
+        # these figures, and a caption that quotes a number the picture does not show is
+        # the same lie as a stale badge - just harder to see.
+        "cap_nodes": _cap()["nodes"],
+        "cap_edges": _cap()["edges"],
+        "cap_score": _cap()["score"],
         "scan_chars": int(re.search(
             r"^TEXT_LAYER_MIN_CHARS_PER_PAGE\s*=\s*(\d+)",
             (ROOT / "spec-builder/scripts/route_sources.py").read_text(encoding="utf-8"),
@@ -251,6 +262,14 @@ CHECKS = [
                               r"|fewer\s+than\s+(\d+)\s+[a-z ]*characters"
                               r"|(\d+)-chars-per-page"
                               r"|(\d+)文字未満", "scan_chars"),
+    # The screenshot captions. EN prose and the two Japanese phrasings; the site pages
+    # carry their own variants below in MEDIA_CHECKS.
+    ("captured nodes",        r"(\d+) nodes, \d+ edges", "cap_nodes"),
+    ("captured edges",        r"\d+ nodes, (\d+) edges", "cap_edges"),
+    ("captured score",        r"scored (\d+)/100", "cap_score"),
+    ("captured nodes (ja)",   r"ノード (\d+)、エッジ", "cap_nodes"),
+    ("captured edges (ja)",   r"ノード \d+、エッジ (\d+)", "cap_edges"),
+    ("captured score (ja)",   r"採点は (\d+)/100", "cap_score"),
     ("unconditional rules",   rf"{NUM} unconditional rules?\b", "unconditional_rules"),
     ("unconditional rules (reversed)", r"\b(\d+) +rules? +unconditional\b", "unconditional_rules"),
     ("path-scoped rules",     rf"{NUM} (?:of \d+ (?:rules are )?)?path-scoped", "scoped_rules"),
@@ -279,6 +298,12 @@ REQUIRED_SUBSTR: dict[str, tuple[str, ...]] = {
     # the README, and a pre-filter narrower than its regex silently disables the check for
     # exactly that file - the contract above says SAFE SUPERSET, and this one was not.
     "scanned-pdf threshold": ("characters", "-chars-per-page", "文字未満"),
+    "captured nodes":         ("nodes,",),
+    "captured edges":         ("nodes,",),
+    "captured score":         ("scored",),
+    "captured nodes (ja)":    ("ノード",),
+    "captured edges (ja)":    ("ノード",),
+    "captured score (ja)":    ("採点",),
     "unconditional rules":   ("unconditional rule",),
     "unconditional rules (reversed)": ("rules unconditional", "rule unconditional"),
     "path-scoped rules":     ("path-scoped",),
@@ -338,6 +363,10 @@ MEDIA_CHECKS = [
     ("media session tax ja", r"\b(\d\d)%[\s\S]{0,160}?既定セッションから外れるルール本文", "tax_pct"),
     ("media session tax en", r"\b(\d\d)% *of (?:the )?rule content", "tax_pct"),
     ("media session tax ja prose", r"ルール本文の[^\n]{0,8}?(\d\d)%", "tax_pct"),
+    # The screenshot captions on the landing pages quote the assess score shown in the
+    # picture; the picture's own provenance lives in docs/assets/CAPTURED.json.
+    ("media captured score",    r"harness (\d+)/100", "cap_score"),
+    ("media captured score ja", r"(\d+)/100 と採点", "cap_score"),
 ]
 # "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
 # far from the canonical count (a video timestamp, a score in an example) is not either.
@@ -410,6 +439,14 @@ def self_test(c: dict[str, int]) -> list[str]:
                                   '<div class="lab">既定セッションから外れるルール本文の割合。</div>',
         "session tax (ja prose)": "ルール本文の  {tax_pct}%  が既定セッションの外に出る",
         "scanned-pdf threshold": "a scan (under {scan_chars} characters a page) routes to vision",
+        "captured nodes":         "{cap_nodes} nodes, {cap_edges} edges, scored {cap_score}/100",
+        "captured edges":         "{cap_nodes} nodes, {cap_edges} edges, scored {cap_score}/100",
+        "captured score":         "{cap_nodes} nodes, {cap_edges} edges, scored {cap_score}/100",
+        "captured nodes (ja)":    "ノード {cap_nodes}、エッジ {cap_edges}",
+        "captured edges (ja)":    "ノード {cap_nodes}、エッジ {cap_edges}",
+        "captured score (ja)":    "採点は {cap_score}/100",
+        "media captured score":    "scoring a real harness {cap_score}/100 and naming",
+        "media captured score ja": "を {cap_score}/100 と採点",
         "unconditional rules":   "{unconditional_rules} unconditional rules stay loaded",
         "unconditional rules (reversed)": "  {unconditional_rules}   rules unconditional",
         "path-scoped rules":     "{scoped_rules} path-scoped rules load on demand",
