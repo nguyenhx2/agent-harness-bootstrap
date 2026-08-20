@@ -1,12 +1,22 @@
 # Installing as a plugin
 
-Both skills, `harness-bootstrap` and `spec-builder`, are distributed as a Claude Code
-plugin marketplace hosted in this repo. This is the recommended install path: updates arrive
-through `/plugin update` instead of a manual re-download, and the installed version is always
-identifiable. The zip download path (see the README) remains fully supported as the offline,
-pinned alternative.
+Both skills, `harness-bootstrap` and `spec-builder`, install as plugins in Claude Code,
+Cursor, Codex, and any other client that reads the
+[Agent Plugins](https://agent-plugins.org/) standard. This is the recommended install path:
+updates arrive through the client's own update command instead of a manual re-download, and
+the installed version is always identifiable. The zip download (see the README) remains fully
+supported as the offline, pinned alternative.
 
-## Add the marketplace and install
+| Client | Reads | Marketplace in this repo |
+|---|---|---|
+| Claude Code | `.claude-plugin/plugin.json` convention (single-skill) | `.claude-plugin/marketplace.json` |
+| Codex | `.codex-plugin/plugin.json` | `.agents/plugins/marketplace.json` |
+| Cursor, VS Code, Copilot, Kiro, ChatGPT | Agent Plugins `plugin.json` at the plugin root | plugin directories under `plugins/` |
+
+The three manifests sit at three different paths, so one plugin directory serves every client
+at once, and all of them read the same `skills/` tree.
+
+## Claude Code
 
 ```bash
 /plugin marketplace add nguyenhx2/agent-harness-bootstrap
@@ -14,9 +24,41 @@ pinned alternative.
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-Install either plugin on its own, or both. Each plugin is a single skill: its `SKILL.md`
-lives at the plugin's root with no `skills/` subdirectory and no skills manifest, so Claude
-Code auto-loads it as a single-skill plugin. No further configuration is required.
+Install either plugin on its own, or both. Each entry points at `harness-bootstrap/` or
+`spec-builder/` directly: its `SKILL.md` lives at that directory's root with no `skills/`
+subdirectory and no skills manifest, so Claude Code auto-loads it as a single-skill plugin.
+No further configuration is required.
+
+## Codex
+
+```bash
+codex plugin marketplace add nguyenhx2/agent-harness-bootstrap
+```
+
+Then open `/plugins` in Codex CLI and install `harness-bootstrap`, `spec-builder`, or both.
+The marketplace lives at `.agents/plugins/marketplace.json`, the path Codex reads from a
+repository, and its entries point at the plugin directories under `plugins/`.
+
+## Cursor and other Agent Plugins clients
+
+The directories under `plugins/` are Agent Plugins 1.1.0 packages: a `plugin.json` at the
+plugin root and the skill under `skills/`. Cursor loads a local plugin by folder, so clone
+this repository and copy (or link) the plugin directory into Cursor's local plugin folder:
+
+```bash
+git clone https://github.com/nguyenhx2/agent-harness-bootstrap
+cp -r agent-harness-bootstrap/plugins/harness-bootstrap ~/.cursor/plugins/local/
+```
+
+Then reload the window. The same directories are what any other Agent Plugins client
+consumes, because the standard fixes both the manifest path and the `skills/` location.
+
+**Verified how far:** the Claude Code route was verified by installing both plugins from
+this repository and reading back what the client reported. The Codex and Cursor routes are
+built to the published specifications and their manifests are validated against the
+Agent Plugins 1.1.0 JSON schema in CI, but the install round-trip has not been exercised
+here - neither CLI is available on the machine this was built on. Treat those two as
+specification-conformant rather than field-tested, and open an issue if a client disagrees.
 
 ## Invoking the skills
 
