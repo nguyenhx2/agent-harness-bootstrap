@@ -1,6 +1,6 @@
 ---
 name: qa-test
-description: Writes and runs the automated tests ({{#IF_UNIT}}unit: {{UNIT_FRAMEWORK}}{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}e2e: {{E2E_FRAMEWORK}}{{/IF_E2E}}) that prove the stated acceptance criteria. Use when a feature needs proving or a suite needs extending.
+description: Writes and runs the automated tests ({{#IF_UNIT}}unit: {{UNIT_FRAMEWORK}}{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}e2e: {{E2E_FRAMEWORK}}{{/IF_E2E}}) that prove the stated acceptance criteria. Use when a feature needs proving or a suite needs extending. Running an existing suite over a small change does not need this seat - run `{{TEST_CMD}}` inline and read the output.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 maxTurns: 40

@@ -603,9 +603,9 @@ const GLOSS = {
   brownfield:{en:"A repository that already contains code, as opposed to greenfield which starts empty. It requires reading and reconciling before anything is generated.",
               vi:"Repository đã có sẵn code, ngược với greenfield là bắt đầu từ trống. Nó đòi hỏi phải đọc và đối chiếu trước khi sinh ra bất cứ thứ gì.",
               ja:"既にコードがあるリポジトリ（空から始める greenfield の対義）。何かを生成する前に読み取りと突き合わせが必要です。"},
-  orchestrator:{en:"The single agent that plans, splits work into registered tasks, dispatches specialists and judges their results. The only entry point for multi-step work.",
-                vi:"Agent duy nhất lập kế hoạch, chia việc thành các task đã đăng ký, điều phối chuyên gia và đánh giá kết quả. Điểm vào duy nhất cho việc nhiều bước.",
-                ja:"計画し、作業を登録済みタスクに分割し、専門家を割り当て、結果を判断する唯一のエージェント。多段階作業の唯一の入口。"},
+  orchestrator:{en:"The single agent that plans, splits work into registered tasks, dispatches specialists and judges their results. For cross-domain work only - a single-domain change goes straight to the agent that owns it.",
+                vi:"Agent duy nhất lập kế hoạch, chia việc thành các task đã đăng ký, điều phối chuyên gia và đánh giá kết quả. Chỉ dùng cho việc liên miền - việc trong một miền thì gọi thẳng agent sở hữu miền đó.",
+                ja:"計画し、作業を登録済みタスクに分割し、専門家を割り当て、結果を判断する唯一のエージェント。領域をまたぐ作業専用で、単一領域の変更は担当エージェントを直接呼びます。"},
   spec:{en:"A written requirements document with stable IDs and acceptance criteria, so a change can be checked against something instead of a memory of a conversation.",
         vi:"Tài liệu yêu cầu được viết ra với ID ổn định và tiêu chí nghiệm thu, để một thay đổi có thể được đối chiếu thay vì dựa vào trí nhớ hội thoại.",
         ja:"安定したIDと受入基準を持つ要件文書。変更を会話の記憶ではなく、対象に照らして検証できます。"}
@@ -938,7 +938,7 @@ const S = [
 
 /* 11 */
 {icon:"i-flow", kind:"pipe", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"One entry point, scoped specialists, sequential gates", vi:"Một điểm vào, chuyên gia có phạm vi, các cổng tuần tự", ja:"単一の入口、スコープを持つ専門家、順序あるゲート"},
+ title:{en:"Process proportional to blast radius", vi:"Quy trình tương xứng với mức độ ảnh hưởng", ja:"影響範囲に見合ったプロセス"},
  sub:{en:"This answers problems 06 and 07: the shape holds whichever model runs inside it.",
       vi:"Đây là câu trả lời cho vấn đề 06 và 07: hình dạng quy trình giữ nguyên bất kể model nào chạy bên trong.",
       ja:"課題06と07への答え: 内側でどのモデルが動いても、形は保たれます。"},

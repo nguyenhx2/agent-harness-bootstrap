@@ -7,6 +7,32 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.18.0] - 2026-08-21
+
+### Added
+
+- **A roster editor.** A seat's `model`, `effort`, `tools` and `description` can be edited from the
+  graph, with pickers backed by a reference of four vendors (Claude Code, OpenAI Codex, Gemini CLI,
+  Z.AI GLM). Every model and tool carries a `verified` flag, and unverified entries are marked
+  wherever they appear. The reference is yours to change: additions, edits and deletions are stored
+  per repository in `.claude/state/references.json` and merged over the shipped seed, so an upgrade
+  never loses them and the shipped file is never written. A seed entry's `verified` always comes
+  from the seed - an override can correct a label, not promote or demote a claim.
+- **The Command Steps panel became an editor.** Autocomplete for agent names, rule files, hook names
+  and relative paths; steps can be inserted at any position; markdown inside a step renders, tables
+  included, and shows its source again when you edit it.
+- Frontmatter writes touch only the keys that changed. The body below the frontmatter is copied
+  through byte for byte; unknown keys, comments, blank lines and key order all survive, and CRLF
+  stays CRLF.
+
+### Changed
+
+- **Custom dialogs and toasts replace the browser's `alert` and `confirm`,** with focus trapping,
+  focus restored on close, and an accessible name on every icon-only button. Every button carries an
+  icon.
+- Disabling a rule, hook or command no longer collapses the detail panel: the selection survives the
+  reload.
+
 ## [1.17.0] - 2026-08-20
 
 ### Added

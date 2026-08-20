@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Reviews the diff against coding standards and project rules before a {{PR_OR_MR}} is opened or merged. Read-only - it raises findings, it never edits. Use after any implementation task and before any merge.
+description: Reviews a branch diff against coding standards and project rules. Read-only - it raises findings, it never edits. Runs once at the branch boundary, before a {{PR_OR_MR}} is opened or merged, over the whole diff. Do NOT dispatch it after each agent or each commit: it would re-read the same files and re-report the same findings.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
