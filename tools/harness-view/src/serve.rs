@@ -18,6 +18,14 @@
 //! tells "nothing is loaded yet" (choose a folder) apart from "the path you
 //! gave me is wrong" (a red banner).
 //!
+//! The roster editor adds three more: GET /reference (the model and tool
+//! reference the pickers are built from - the shipped seed with this
+//! repository's own corrections merged over it), POST /agent (one agent's
+//! model, effort, tools and description) and POST /reference (add, edit or
+//! delete a model, a tool or a vendor in that reference). See agentedit.rs for
+//! what the frontmatter writer guarantees and where a user's corrections are
+//! stored.
+//!
 //! POST /toggle is guarded against cross-origin browser requests: the server
 //! only mutates .claude/ for same-origin calls. Any present Origin header must
 //! name this server's own host:port, any present Sec-Fetch-Site header must be
@@ -25,7 +33,7 @@
 //! anything else is refused with 403. HARD-protected items refuse with 403,
 //! SOFT-protected items with 409 unless the body carries confirm_soft: true.
 
-use crate::{assess, scan, toggle};
+use crate::{agentedit, assess, scan, toggle};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Request, Response, Server};
@@ -40,6 +48,12 @@ const UI_JS: &str = include_str!("ui.js");
 // tested (tests/steps_test.rs). ui.js touches `document` on its first line and
 // cannot be.
 const UI_STEPS_JS: &str = include_str!("ui-steps.js");
+// The agent-frontmatter editor and the model/tool reference manager. Same
+// arrangement as ui-steps.js and for the same reason: it is pure until called,
+// so node can require it, and it attaches to the detail panel by observation
+// rather than by a hook inside ui.js. It rides the UI_STEPS placeholder rather
+// than claiming a new one in ui.html, so the page template needs no edit.
+const UI_AGENT_JS: &str = include_str!("ui-agent.js");
 // Vendored, committed, and inlined rather than fetched: the page must work with
 // no network. See vendor/README.md for versions, licences and provenance.
 const MARKED_JS: &str = include_str!("../vendor/marked.min.js");
@@ -53,7 +67,7 @@ const PURIFY_JS: &str = include_str!("../vendor/purify.min.js");
 fn page() -> String {
     PAGE_TEMPLATE
         .replace("/*__VENDOR__*/", &format!("{MARKED_JS}\n{PURIFY_JS}\n"))
-        .replace("/*__UI_STEPS__*/", UI_STEPS_JS)
+        .replace("/*__UI_STEPS__*/", &format!("{UI_STEPS_JS}\n{UI_AGENT_JS}"))
         .replace("/*__UI_JS__*/", UI_JS)
 }
 
@@ -849,6 +863,109 @@ pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
                     Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
                 }
             }
+            // The model/tool reference the roster pickers are built from: the
+            // shipped seed with this repository's own corrections merged over
+            // it. Read-only, behind the same cross-origin gate as /paths.
+            (Method::Get, "/reference") => {
+                if let Err(msg) = same_origin_get(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let requested = query_param(&raw_url, "root");
+                match resolve_root(requested.as_deref(), &root) {
+                    Ok(target) => match agentedit::merged(&target) {
+                        Ok(v) => Response::from_string(scan::to_canonical_json(&v))
+                            .with_header(header("Content-Type", "application/json")),
+                        Err(msg) => json_error(&msg, 500),
+                    },
+                    Err(e) => root_error(&e),
+                }
+            }
+            // The roster editor's write path: model, effort, tools and
+            // description on one agent file. Same gate as /toggle and /command -
+            // same-origin, JSON content type - and the same plain-text refusals,
+            // because the page shows what comes back verbatim. Containment is
+            // agentedit::resolve_agent: a NAME, never a path.
+            (Method::Post, "/agent") => {
+                if let Err(msg) = same_origin(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let mut body = String::new();
+                let _ = request.as_reader().read_to_string(&mut body);
+                match serde_json::from_str::<serde_json::Value>(&body) {
+                    Ok(v) => {
+                        let requested = v.get("root").and_then(|x| x.as_str());
+                        match resolve_root(requested, &root) {
+                            Err(e) => Response::from_string(e.msg)
+                                .with_status_code(400)
+                                .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                            Ok(target) => {
+                                let name = v.get("name").and_then(|x| x.as_str()).unwrap_or("");
+                                match agentedit::write_agent(&target, name, &v) {
+                                    Ok(msg) => Response::from_string(msg).with_header(header(
+                                        "Content-Type",
+                                        "text/plain; charset=utf-8",
+                                    )),
+                                    Err(msg) => Response::from_string(msg)
+                                        .with_status_code(400)
+                                        .with_header(header(
+                                            "Content-Type",
+                                            "text/plain; charset=utf-8",
+                                        )),
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
+                }
+            }
+            // Add / edit / delete a model, a tool or a whole vendor. Writes the
+            // OVERLAY under the served repository's .claude/state/, never the
+            // reference asset this repository ships - see agentedit's header.
+            (Method::Post, "/reference") => {
+                if let Err(msg) = same_origin(&request, port) {
+                    let _ = request.respond(
+                        Response::from_string(msg)
+                            .with_status_code(403)
+                            .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                    );
+                    continue;
+                }
+                let mut body = String::new();
+                let _ = request.as_reader().read_to_string(&mut body);
+                match serde_json::from_str::<serde_json::Value>(&body) {
+                    Ok(v) => {
+                        let requested = v.get("root").and_then(|x| x.as_str());
+                        match resolve_root(requested, &root) {
+                            Err(e) => Response::from_string(e.msg)
+                                .with_status_code(400)
+                                .with_header(header("Content-Type", "text/plain; charset=utf-8")),
+                            Ok(target) => match agentedit::write_override(&target, &v) {
+                                Ok(msg) => Response::from_string(msg).with_header(header(
+                                    "Content-Type",
+                                    "text/plain; charset=utf-8",
+                                )),
+                                Err(msg) => Response::from_string(msg)
+                                    .with_status_code(400)
+                                    .with_header(header(
+                                        "Content-Type",
+                                        "text/plain; charset=utf-8",
+                                    )),
+                            },
+                        }
+                    }
+                    Err(_) => Response::from_string("invalid JSON body").with_status_code(400),
+                }
+            }
             _ => Response::from_string("not found").with_status_code(404),
         };
         let _ = request.respond(response);
@@ -872,9 +989,13 @@ mod tests {
         assert!(!html.contains("/*__VENDOR__*/"), "the vendor placeholder was never replaced");
         assert!(html.contains("function select("), "the served page carries no UI code");
         assert!(html.contains("function parseCommandSteps("), "the served page carries no steps parser");
+        assert!(
+            html.contains("function agentEditorModel("),
+            "the served page carries no agent editor"
+        );
         assert!(html.contains("DOMPurify"), "the served page carries no sanitiser");
         assert!(
-            html.len() > PAGE_TEMPLATE.len() + UI_JS.len() + UI_STEPS_JS.len(),
+            html.len() > PAGE_TEMPLATE.len() + UI_JS.len() + UI_STEPS_JS.len() + UI_AGENT_JS.len(),
             "the splice lost content"
         );
         // Order is not cosmetic: ui.js calls parseCommandSteps, and a `const` in
