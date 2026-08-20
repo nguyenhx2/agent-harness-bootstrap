@@ -75,6 +75,7 @@ SOURCE_GLOBS = [
 JS_SOURCES = [
     ("tools/harness-view/src/ui.js", 50_000),
     ("tools/harness-view/src/ui-steps.js", 3_000),
+    ("tools/harness-view/src/ui-agent.js", 20_000),
     # The landing page's only script (nav disclosure + progressive touches). Small on
     # purpose; the floor says "the menu logic still exists", not "the file is big".
     ("site/src/main.js", 400),
@@ -145,9 +146,23 @@ def main() -> int:
             problems += 1
             print(f"  FAIL  {rel} is missing - it is a required file, not an optional one")
             continue
+        raw = path.read_bytes()
         js = path.read_text(encoding="utf-8", errors="replace")
         size = len(js.encode("utf-8"))
         checked += 1
+        # A control byte other than tab/newline/carriage-return makes git, grep and
+        # every editor treat the file as binary. ui-agent.js shipped with two literal
+        # NULs used as a join separator: `node --check` was happy, the editor showed
+        # a blank, and `grep -n innerHTML` answered "Binary file matches" instead of
+        # listing lines - which is exactly how a review invariant enforced by grep
+        # stops being enforced. A backslash-u-0000 escape carries the same value in text.
+        stray = sorted({b for b in raw if b < 0x20 and b not in (0x09, 0x0A, 0x0D)})
+        if stray:
+            problems += 1
+            print(f"  FAIL  {rel} holds raw control byte(s) "
+                  f"{', '.join(f'0x{b:02x}' for b in stray)} - write them as escapes, "
+                  f"or grep and git will treat this source as binary")
+            continue
         if size < floor:
             problems += 1
             print(f"  FAIL  {rel} is {size} bytes, below its {floor}-byte floor - "

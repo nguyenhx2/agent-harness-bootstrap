@@ -1,0 +1,882 @@
+{
+  "comment": "Master reference for the agent editor: which models and tools each vendor offers, and what each tool does. Seed data only - harness-view lets a user add, edit and remove entries, and their edits live in .claude/state/references.json in their own repository, never here. Every entry carries  and a  so a reader can tell a documented fact from a guess; nothing in here was invented.",
+  "version": 1,
+  "vendors": {
+    "claude-code": {
+      "label": "Claude Code",
+      "source": "https://code.claude.com/docs/en/tools-reference",
+      "notes": "Agent frontmatter takes the short alias in the model field (opus / sonnet / haiku), not a dated model id. The effort field is low / medium / high / xhigh.",
+      "models": [
+        {
+          "id": "opus",
+          "label": "Claude Opus",
+          "note": "most capable - judgment calls, planning, review gates",
+          "verified": true
+        },
+        {
+          "id": "sonnet",
+          "label": "Claude Sonnet",
+          "note": "balanced - code, tests and docs against a settled spec",
+          "verified": true
+        },
+        {
+          "id": "haiku",
+          "label": "Claude Haiku",
+          "note": "fast and cheap - mechanical, low-judgment work",
+          "verified": true
+        }
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "tools": [
+        {
+          "name": "Agent",
+          "desc": "Spawns a subagent with its own context window to handle a task. With agent teams enabled, a call that carries a `name` can launch a teammate instead. ",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Artifact",
+          "desc": "Publishes an HTML or Markdown file as an artifact: a private, interactive page on claude.ai. You can share it with a public link, or inside your organ",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "AskUserQuestion",
+          "desc": "Asks multiple-choice questions to gather requirements or clarify ambiguity. Questions stay open until you answer them by default. See AskUserQuestion ",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Bash",
+          "desc": "Executes shell commands in your environment. See Bash tool behavior",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "CronCreate",
+          "desc": "Schedules a recurring or one-shot prompt within the current session. Tasks are session-scoped and restored on `--resume` or `--continue` if unexpired.",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "CronDelete",
+          "desc": "Cancels a scheduled task by ID",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "CronList",
+          "desc": "Lists all scheduled tasks in the session",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Edit",
+          "desc": "Makes targeted edits to specific files. See Edit tool behavior",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "EndConversation",
+          "desc": "Ends the session, in rare cases of sustained abusive input or when you ask Claude to demonstrate the tool. Requires Claude Code v2.1.213 or later. See",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "EnterPlanMode",
+          "desc": "Switches to plan mode to design an approach before coding",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "EnterWorktree",
+          "desc": "Creates an isolated git worktree and switches into it. Pass a `path` to switch into an existing worktree instead of creating a new one. On first entry",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "ExitPlanMode",
+          "desc": "Presents a plan for approval and exits plan mode",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "ExitWorktree",
+          "desc": "Exits a worktree session and returns to the original directory. Not available to subagents that already run in their own working directory, such as wi",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Glob",
+          "desc": "Finds files based on pattern matching. See Glob tool behavior",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Grep",
+          "desc": "Searches for patterns in file contents. See Grep tool behavior",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ListAgents",
+          "desc": "Lists the agents Claude can message with `SendMessage`, apart from agent team teammates, which Claude reaches through the team's roster: subagents in ",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ListMcpResourcesTool",
+          "desc": "Lists resources exposed by connected MCP servers",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "LSP",
+          "desc": "Code intelligence via language servers: jump to definitions, find references, report type errors and warnings. See LSP tool behavior",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Monitor",
+          "desc": "Runs a command in the background and feeds each output line back to Claude, so it can react to log entries, file changes, or polled status mid-convers",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "NotebookEdit",
+          "desc": "Modifies Jupyter notebook cells. See NotebookEdit tool behavior",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "PowerShell",
+          "desc": "Executes PowerShell commands natively. See PowerShell tool for availability",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "PushNotification",
+          "desc": "Sends a desktop notification, and a phone push when Remote Control is connected, so a long-running task or scheduled task can reach you when you step ",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "Read",
+          "desc": "Reads the contents of files. See Read tool behavior",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ReadMcpResourceTool",
+          "desc": "Reads a specific MCP resource by URI",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "RemoteTrigger",
+          "desc": "Creates, updates, runs, and lists Routines on claude.ai. Backs the `/schedule` command. The `RemoteTrigger` input reference documents every action and",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ReportFindings",
+          "desc": "Reports code-review findings as a structured list, with a file, summary, and failure scenario per finding, so Claude Code can render them instead of p",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ScheduleWakeup",
+          "desc": "Reschedules the next iteration of a self-paced `/loop`. Claude calls this at the end of each iteration to pick when the next one runs, between one min",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "SendMessage",
+          "desc": "Sends a message to another agent: an agent team teammate, a subagent it resumes by agent ID or name, or one of your other Claude Code sessions, on thi",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "SendUserFile",
+          "desc": "Sends files from the session to you with an optional caption, so a generated report, diagram, screenshot, or built artifact reaches your device instea",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ShareOnboardingGuide",
+          "desc": "Uploads `ONBOARDING.md` and returns a share link teammates can open in Claude Code. Called from `/team-onboarding` after the guide is written. Availab",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "Skill",
+          "desc": "Executes a skill within the main conversation",
+          "category": "agent",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "TaskCreate",
+          "desc": "Creates a new task in the task list. Claude Code leaves it out on the models listed under Task tool availability unless you opt in",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TaskGet",
+          "desc": "Retrieves full details for a specific task. Claude Code leaves it out on the models listed under Task tool availability unless you opt in",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TaskList",
+          "desc": "Lists all tasks with their current status. Claude Code leaves it out on the models listed under Task tool availability unless you opt in",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TaskOutput",
+          "desc": "Retrieves output from a background task. Deprecated in favor of `Read` on the task's output file path. When no task matches the ID, the error lists th",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TaskStop",
+          "desc": "Stops a running background task by ID. It also accepts an agent-team teammate or a named background agent by agent ID or name. Before v2.1.198, it acc",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TaskUpdate",
+          "desc": "Updates task status, dependencies, details, or deletes tasks. Claude Code leaves it out on the models listed under Task tool availability unless you o",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "TodoWrite",
+          "desc": "Manages the session task checklist. Disabled by default in favor of `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate`. Set `CLAUDE_CODE_ENABLE_TAS",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ToolSearch",
+          "desc": "Searches for and loads deferred tools when tool search is enabled",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "WaitForMcpServers",
+          "desc": "Waits for one or more MCP servers that are still connecting in the background, so a request can use their tools without restarting the session. Claude",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "WebFetch",
+          "desc": "Fetches content from a specified URL. See WebFetch tool behavior",
+          "category": "web",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "WebSearch",
+          "desc": "Performs web searches. See WebSearch tool behavior",
+          "category": "web",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "Workflow",
+          "desc": "Runs a dynamic workflow: a script that orchestrates many subagents in the background and returns one consolidated result",
+          "category": "agent",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "Write",
+          "desc": "Creates or overwrites files. See Write tool behavior",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        }
+      ]
+    },
+    "openai-codex": {
+      "label": "OpenAI Codex",
+      "source": "https://developers.openai.com/codex/models",
+      "notes": "Tool names and descriptions are taken directly from the Codex CLI Rust source (codex-rs/core/src/tools/...), not from prose docs, since developers.openai.com does not publish a plain tool-name table. Model ids and descriptions were extracted from the embedded JSON data on the live developers.openai.com/codex/models page (fetched as raw HTML and parsed directly - an earlier AI-summarized fetch of the same page produced the same unusual names (sol/terra/luna), which was independently confirmed against the raw JSON, so these are real, not hallucinated. Already-deprecated models seen in the same page but NOT included above (excluded per 'currently offers'): gpt-5.2 and gpt-5.3-codex (deprecated for ChatGPT sign-in), and gpt-5.1-codex-max (shown with an acknowledged-migration flag, implying it is being phased out). Permission/approval behavior for each tool is governed by Codex's sandbox + approval-mode settings (e.g. workspace-write, on-request, full-auto) rather than being a fixed per-tool property, so 'yes' above means 'requires approval under default/most sandbox modes', not 'always prompts'.",
+      "models": [
+        {
+          "id": "gpt-5.6-sol",
+          "label": "GPT-5.6 Sol",
+          "note": "Flagship GPT-5.6 model - strongest capability for complex coding, computer use, research, and cybersecurity (most capable).",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.6-terra",
+          "label": "GPT-5.6 Terra",
+          "note": "Balanced GPT-5.6 model for everyday work, performance competitive with GPT-5.5 at lower cost (balanced).",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.6-luna",
+          "label": "GPT-5.6 Luna",
+          "note": "Fast, affordable GPT-5.6 model - lowest cost in the family (fast-and-cheap).",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.3-codex-spark",
+          "label": "GPT-5.3 Codex Spark",
+          "note": "Text-only research preview optimized for near-instant, real-time coding iteration; ChatGPT Pro only (fastest/experimental).",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.5",
+          "label": "GPT-5.5",
+          "note": "Previous-generation frontier model for complex coding, computer use, and research workflows (legacy flagship, still selectable).",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.4",
+          "label": "GPT-5.4",
+          "note": "Frontier model for professional work; retires from Codex with ChatGPT sign-in on 2026-08-31 - replace with gpt-5.6-terra.",
+          "verified": true
+        },
+        {
+          "id": "gpt-5.4-mini",
+          "label": "GPT-5.4 Mini",
+          "note": "Fast, efficient mini model for responsive coding tasks and subagents; also retires 2026-08-31 - replace with gpt-5.6-luna.",
+          "verified": true
+        }
+      ],
+      "efforts": [],
+      "tools": [
+        {
+          "name": "shell_command",
+          "desc": "Runs a shell command (bash on macOS/Linux, PowerShell-style on Windows) inside the sandbox.",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "exec_command",
+          "desc": "Starts a persistent, interactive command session (part of the 'unified exec' feature) that later calls can send input to.",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "write_stdin",
+          "desc": "Sends input/keystrokes to an already-running exec_command session.",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "apply_patch",
+          "desc": "Edits or creates files using a freeform patch/diff grammar (not JSON-wrapped).",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "update_plan",
+          "desc": "Records/updates the agent's step-by-step task plan (step text + pending/in_progress/completed status) shown to the user.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "view_image",
+          "desc": "Loads a local image file from disk so the model can visually inspect it.",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "get_context_remaining",
+          "desc": "Reports how many tokens remain in the current context window.",
+          "category": "other",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "new_context",
+          "desc": "Starts a new context window without resetting environment/session state.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "request_permissions",
+          "desc": "Asks the user to grant additional sandbox/network permissions mid-task.",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "request_user_input",
+          "desc": "Pauses the turn to ask the user a question and waits for their reply.",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "tool_search",
+          "desc": "Searches deferred/lazily-loaded tool metadata (BM25) and exposes matching tools - the mechanism Codex uses for MCP tool discovery instead of listing every MCP tool upfront.",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "request_plugin_install",
+          "desc": "Requests installation of a connector/plugin that exactly matches a user's explicit request.",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "list_available_plugins_to_install",
+          "desc": "Lists connectors/plugins available for installation.",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "web_search",
+          "desc": "Hosted web search tool (enabled only when web_search_mode is cached/indexed/live in config).",
+          "category": "web",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "spawn_agent",
+          "desc": "Creates a new sub-agent to work on a delegated task.",
+          "category": "agent",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "send_input",
+          "desc": "Sends a message to an existing sub-agent, optionally interrupting its current work.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "send_message",
+          "desc": "Sends a message to an existing sub-agent without forcing a new turn.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "followup_task",
+          "desc": "Sends a follow-up task to an existing (non-root) sub-agent, triggering a turn if it is idle.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "resume_agent",
+          "desc": "Resumes a previously paused/closed sub-agent.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "wait_agent",
+          "desc": "Waits for one or more sub-agents to reach a final status or produce a mailbox update.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "list_agents",
+          "desc": "Lists currently active sub-agents.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "close_agent",
+          "desc": "Closes a sub-agent (and open descendants) that is no longer needed.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "interrupt_agent",
+          "desc": "Interrupts a sub-agent's current turn while keeping it available for further messages.",
+          "category": "agent",
+          "permission": "no",
+          "verified": true
+        }
+      ]
+    },
+    "gemini-cli": {
+      "label": "Google Gemini CLI",
+      "source": "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/tools/tool-names.ts",
+      "notes": "Tool list and exact string names come from the live main-branch source (packages/core/src/tools/tool-names.ts and .../definitions/base-declarations.ts), which is the authoritative registry (ALL_BUILTIN_TOOL_NAMES). The public docs site (google-gemini.github.io/gemini-cli/docs/tools/) is STALE relative to this: it still documents a 'save_memory' memory tool and does not mention write_todos, ask_user, activate_skill, the tracker_* family, enter/exit_plan_mode, update_topic, complete_task, invoke_agent, get_internal_docs, read_mcp_resource, or list_mcp_resources. save_memory does not appear anywhere in the current ALL_BUILTIN_TOOL_NAMES export, so it should be treated as removed/deprecated, not current - flagged here rather than silently reported as an active tool. Two tool names referenced only inside PLAN_MODE_TOOLS ('codebase_investigator', 'cli_help') could not be independently confirmed as full built-in tools and are deliberately omitted rather than guessed at. Models: only chat/coding-relevant text models are listed; gemini-embedding-001 (embeddings-only) and the two experimental-flag-gated Gemma models (gemma-4-31b-it, gemma-4-26b-a4b-it) exist in VALID_GEMINI_MODELS but are omitted as out of scope for a 'coding-agent' seed list. A model-resolution alias layer also exists ('auto', 'pro', 'flash', 'flash-lite') that resolves to the ids above depending on account preview access - not included as separate model entries since they are not distinct models.",
+      "models": [
+        {
+          "id": "gemini-3-pro-preview",
+          "label": "Gemini 3 Pro Preview",
+          "note": "Preview flagship model (PREVIEW_GEMINI_MODEL); most capable preview tier.",
+          "verified": true
+        },
+        {
+          "id": "gemini-3.1-pro-preview",
+          "label": "Gemini 3.1 Pro Preview",
+          "note": "Newer preview flagship, selected when the 'useGemini3_1' path is enabled; most capable.",
+          "verified": true
+        },
+        {
+          "id": "gemini-2.5-pro",
+          "label": "Gemini 2.5 Pro",
+          "note": "DEFAULT_GEMINI_MODEL - the current stable, non-preview default (balanced/capable).",
+          "verified": true
+        },
+        {
+          "id": "gemini-3-flash-preview",
+          "label": "Gemini 3 Flash Preview",
+          "note": "Preview fast tier (PREVIEW_GEMINI_FLASH_MODEL); source marks this as a rollout value that may change to gemini-3.5-flash.",
+          "verified": true
+        },
+        {
+          "id": "gemini-2.5-flash",
+          "label": "Gemini 2.5 Flash",
+          "note": "DEFAULT_GEMINI_FLASH_MODEL - current stable fast tier (fast-and-cheap).",
+          "verified": true
+        },
+        {
+          "id": "gemini-3.5-flash",
+          "label": "Gemini 3.5 Flash",
+          "note": "DEFAULT_GEMINI_3_5_FLASH_MODEL - newer flash generation, being rolled out to replace 2.5-flash for eligible accounts (fast).",
+          "verified": true
+        },
+        {
+          "id": "gemini-3.1-flash-lite",
+          "label": "Gemini 3.1 Flash Lite",
+          "note": "DEFAULT_GEMINI_FLASH_LITE_MODEL - cheapest/fastest tier.",
+          "verified": true
+        }
+      ],
+      "efforts": [],
+      "tools": [
+        {
+          "name": "glob",
+          "desc": "Finds files matching a glob pattern.",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "grep_search",
+          "desc": "Searches file contents for a regex/text pattern (ripgrep-backed).",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "list_directory",
+          "desc": "Lists the contents of a directory.",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "read_file",
+          "desc": "Reads the contents of a single file, optionally by line range.",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "read_many_files",
+          "desc": "Reads content from multiple files or a directory in one call.",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "write_file",
+          "desc": "Writes/creates a file with given content.",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "replace",
+          "desc": "Edits an existing file by replacing an old string with a new one (displayed to the user as 'Edit').",
+          "category": "write",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "run_shell_command",
+          "desc": "Executes a shell command, optionally in the background.",
+          "category": "execute",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "google_web_search",
+          "desc": "Searches the web via Google Search (displayed as 'GoogleSearch').",
+          "category": "web",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "web_fetch",
+          "desc": "Fetches and processes content from a URL given a prompt describing what to extract.",
+          "category": "web",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "write_todos",
+          "desc": "Writes/updates a structured to-do list the agent tracks for the current task.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "ask_user",
+          "desc": "Asks the user one or more structured questions and waits for their answers.",
+          "category": "other",
+          "permission": "yes",
+          "verified": true
+        },
+        {
+          "name": "activate_skill",
+          "desc": "Loads and activates a named Gemini CLI skill definition for the session.",
+          "category": "other",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "enter_plan_mode",
+          "desc": "Switches the agent into read-only planning mode before making changes.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "exit_plan_mode",
+          "desc": "Exits planning mode and submits the finished plan.",
+          "category": "task",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "update_topic",
+          "desc": "Updates the tracked conversation topic/title/summary and strategic intent context.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "complete_task",
+          "desc": "Marks the current task as complete.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "get_internal_docs",
+          "desc": "Fetches Gemini CLI's own internal/help documentation for a given path/topic.",
+          "category": "read",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "invoke_agent",
+          "desc": "Invokes a sub-agent to perform a delegated task.",
+          "category": "agent",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "tracker_create_task",
+          "desc": "Creates a tracked task item in Gemini CLI's built-in task tracker.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "tracker_update_task",
+          "desc": "Updates a tracked task's fields/status.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "tracker_get_task",
+          "desc": "Retrieves a single tracked task by id.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "tracker_list_tasks",
+          "desc": "Lists tracked tasks.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "tracker_add_dependency",
+          "desc": "Adds a dependency relationship between two tracked tasks.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "tracker_visualize",
+          "desc": "Renders a visualization of tracked tasks and their dependencies.",
+          "category": "task",
+          "permission": "no",
+          "verified": true
+        },
+        {
+          "name": "read_mcp_resource",
+          "desc": "Reads a specific resource exposed by a configured MCP server.",
+          "category": "read",
+          "permission": "unknown",
+          "verified": true
+        },
+        {
+          "name": "list_mcp_resources",
+          "desc": "Lists resources available from configured MCP servers.",
+          "category": "search",
+          "permission": "no",
+          "verified": true
+        }
+      ]
+    },
+    "zai-glm": {
+      "label": "Z.AI GLM Coding Plan",
+      "source": "https://z.ai/model-api",
+      "notes": "Z.AI's GLM Coding Plan is consumed by pointing an existing agent harness's own API base URL/auth token at Z.AI's Anthropic-compatible endpoint (https://api.z.ai/api/anthropic) or an OpenAI-compatible endpoint; per Z.AI's own marketing copy it is used this way with Claude Code, Codex, Cline, Kilo Code, OpenCode, and others. Z.AI does NOT define or expose its own agent/sub-agent tool schema - when used through Claude Code, tool calls are Claude Code's own tools (Read/Write/Edit/Bash/Grep/Glob/WebFetch/WebSearch/Task/etc., as already documented in the Anthropic tools-reference table this task said is already done); when used through Codex or Gemini CLI, that harness's own tools apply instead. That is why the 'tools' array above is empty - it is not a gap, it is the verified answer. IMPORTANT DISCREPANCY: Z.AI's own docs page for Claude Code setup (docs.z.ai/scenario-example/develop-tools/claude, fetched same date) still shows the model-mapping example as ANTHROPIC_DEFAULT_OPUS_MODEL=GLM-4.7, ANTHROPIC_DEFAULT_SONNET_MODEL=GLM-4.7, ANTHROPIC_DEFAULT_HAIKU_MODEL=GLM-4.5-Air, and that same page explicitly recommends NOT hardcoding the mapping so it inherits future defaults automatically. This conflicts with z.ai/subscribe and z.ai/model-api (same fetch date), which advertise GLM-5.3/GLM-5.2/GLM-5-Turbo as the current lineup and do not mention GLM-4.5-Air at all. Most likely the integration-guide page is simply out of date relative to the pricing/model pages. Flagging this rather than picking one - if the harness UI needs a single 'default Sonnet-tier' and 'default Haiku-tier' mapping, that should be re-confirmed against docs.z.ai at time of use, not taken from this file.",
+      "models": [
+        {
+          "id": "glm-5.3",
+          "label": "GLM-5.3",
+          "note": "Current flagship model of the GLM Coding Plan (most capable) per z.ai's own page title/meta description as of fetch date.",
+          "verified": true
+        },
+        {
+          "id": "glm-5.2",
+          "label": "GLM-5.2",
+          "note": "Prior-tier flagship, still offered alongside GLM-5.3.",
+          "verified": true
+        },
+        {
+          "id": "glm-5-turbo",
+          "label": "GLM-5 Turbo",
+          "note": "Fast/cost-efficient tier of the GLM Coding Plan.",
+          "verified": true
+        },
+        {
+          "id": "glm-5.1",
+          "label": "GLM-5.1",
+          "note": "Earlier GLM-5.x generation model, listed on z.ai/model-api.",
+          "verified": true
+        },
+        {
+          "id": "glm-5",
+          "label": "GLM-5",
+          "note": "Base GLM-5 tier, listed on z.ai/model-api and z.ai/subscribe.",
+          "verified": true
+        },
+        {
+          "id": "glm-5v-turbo",
+          "label": "GLM-5V Turbo",
+          "note": "Vision-capable fast tier, listed on z.ai/subscribe.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.7",
+          "label": "GLM-4.7",
+          "note": "Previous major generation flagship; still listed on z.ai/subscribe as of fetch date.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.6",
+          "label": "GLM-4.6",
+          "note": "Widely-referenced prior generation model (200K context); the model most third-party 'use GLM with Claude Code' guides target.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.6v",
+          "label": "GLM-4.6V",
+          "note": "Vision variant of GLM-4.6, listed on z.ai/subscribe.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.5",
+          "label": "GLM-4.5",
+          "note": "Older generation model, listed on z.ai/model-api.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.5v",
+          "label": "GLM-4.5V",
+          "note": "Vision variant of GLM-4.5, listed on z.ai/model-api.",
+          "verified": true
+        },
+        {
+          "id": "glm-4.5-air",
+          "label": "GLM-4.5 Air",
+          "note": "Compact/cheap model historically used as the default Haiku-tier mapping for Claude Code; NOT found on the current z.ai/model-api or z.ai/subscribe pages, only in Z.AI's own (likely stale) Claude Code integration guide - treat as unverified/possibly retired.",
+          "verified": false
+        }
+      ],
+      "efforts": [],
+      "tools": []
+    }
+  }
+}

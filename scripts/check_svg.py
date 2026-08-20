@@ -40,7 +40,24 @@ EXTERNAL = re.compile(r"""(?:href|src|xlink:href)\s*=\s*["']\s*(https?:)?//""", 
 IMPORT = re.compile(r"@import|url\(\s*['\"]?https?:", re.I)
 
 
+# A document type declaration in one of these figures. Refused before parsing.
+#
+# A scanner flagged this file for parsing SVG with the stdlib and asked for
+# `defusedxml`. Measured rather than assumed: stdlib ElementTree REFUSES an
+# external entity outright ("undefined entity"), so the file-disclosure XXE the
+# report described is not reachable. What it does do is expand INTERNAL entities,
+# which is the billion-laughs shape. Refusing the DOCTYPE closes that and says
+# something stronger than a parser setting would - a figure this repo ships has
+# no business carrying a DTD at all - while keeping every gate runnable straight
+# from a clone, which CONTRIBUTING promises and no workflow here installs for.
+DOCTYPE = re.compile(rb"<!DOCTYPE", re.I)
+
+
 def parse(path: pathlib.Path) -> ET.Element | None:
+    if DOCTYPE.search(path.read_bytes()):
+        print(f"  FAIL  {path.name}: carries a DOCTYPE - a shipped figure must not "
+              f"declare entities")
+        return None
     try:
         return ET.parse(path).getroot()
     except ET.ParseError as e:
@@ -212,6 +229,33 @@ def self_test() -> list[str]:
         if (got > 0) != bool(want):
             problems.append(f"self-test: the {name} fixture reported {got} orphan(s); the "
                             f"detector cannot tell a connected box from an unconnected one")
+
+    # The DOCTYPE refusal, both ways round: it must reject a figure that declares
+    # entities, and must NOT reject the ordinary figures this repo actually ships.
+    entity_cases = [
+        ("external entity",
+         '<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]>'
+         '<svg xmlns="http://www.w3.org/2000/svg"><text>&x;</text></svg>', False),
+        ("entity expansion",
+         '<?xml version="1.0"?><!DOCTYPE l [<!ENTITY a "aa"><!ENTITY b "&a;&a;&a;&a;">]>'
+         '<svg xmlns="http://www.w3.org/2000/svg"><text>&b;</text></svg>', False),
+        ("plain figure",
+         '<svg xmlns="http://www.w3.org/2000/svg"><title>t</title></svg>', True),
+    ]
+    for name, body, want_parsed in entity_cases:
+        with tempfile.NamedTemporaryFile("w", suffix=".svg", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(body)
+            tmp = pathlib.Path(fh.name)
+        try:
+            parsed = parse(tmp) is not None
+        finally:
+            tmp.unlink(missing_ok=True)
+        if parsed != want_parsed:
+            problems.append(
+                f"self-test: the {name} fixture was "
+                f"{'accepted' if parsed else 'refused'}; the DOCTYPE check is "
+                f"{'not refusing entity declarations' if parsed else 'refusing ordinary figures'}")
     return problems
 
 
