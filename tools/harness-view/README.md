@@ -145,14 +145,14 @@ What each one actually prints, against a real harness:
 
 ```
 $ harness-view scan D:/Projects/msboost
-harness-view: 109 nodes, 130 edges -> D:\Projects\ost\.claude\state\harness-graph.json
+harness-view: 109 nodes, 112 edges -> D:\Projects\ost\.claude\state\harness-graph.json
 
 $ harness-view serve D:/Projects/msboost --port 7420
 harness-view: serving D:\Projects\msboost on http://127.0.0.1:7420/
 
 $ harness-view watch D:/Projects/msboost
 harness-view: watching D:\Projects\msboost (Ctrl+C to stop)
-harness-view: rebuilt (109 nodes, 130 edges)
+harness-view: rebuilt (109 nodes, 112 edges)
 ```
 
 `scan` writes a file and exits, which is the form to use in a script or a hook.

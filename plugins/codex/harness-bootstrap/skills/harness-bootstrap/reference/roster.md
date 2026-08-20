@@ -88,7 +88,7 @@ Pick the closest, then adjust with the tiers.
 - **S - script / CLI / library, single domain (5-6 ACTIVE seats).** `orchestrator`, `app-dev`,
   `qa-test` (if tests are chosen), `reviewer` (the merged gate, flag `solo_review` - the
   recommended shape here; split reviewers remain the alternative), `spec-guardian`. **This is the
-  floor** - below it the standard feature flow has missing seats. Honesty note: the manifest also
+  floor** - below it the Guarded flow has missing seats. Honesty note: the manifest also
   installs `debugger`, `ba-analyst`, `devops`, and `merge-manager` unconditionally; on preset S
   they simply receive no routing missions until the project grows into them.
 - **M - web/API app with a DB (9-12).** Tier 0 + `qa-test`, `debugger`, `ba-analyst`, `devops`,
@@ -142,8 +142,9 @@ bottleneck; skip it on a solo or low-volume project. What makes it safe:
 
 ## Roster completeness check
 
-Before finishing, verify the formation can actually play the standard feature flow - every seat filled
-by exactly one agent:
+Before finishing, verify the formation can actually play the Guarded flow - every seat filled
+by exactly one agent. A seat here is a seat the flow can call when it needs it, not a seat every
+change must pass through:
 
 | Flow step | Seat | Filled by |
 |---|---|---|

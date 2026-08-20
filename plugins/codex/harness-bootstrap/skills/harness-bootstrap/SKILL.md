@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.17.0
+version: 1.18.0
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -157,9 +157,9 @@ regenerating them - but say so, and fix Python.
 **6. Wire up orchestration.** This is what makes the base *run*, not just exist:
 - `docs/tasks/master-plan.md` gets the index table. In brownfield, seed Phase 1 from the analysis gap
   list - one registered task per gap - so the orchestrator finds real work on its first session.
-- `AGENTS.md` names the orchestrator as the entry point for multi-step work and states the standard
-  feature flow. `CLAUDE.md` is a thin `@AGENTS.md` import plus the Claude-specific bits - do not
-  maintain two copies.
+- `AGENTS.md` carries the tier table (Direct / Standard / Guarded), names the orchestrator as the
+  owner of Guarded work only, and states the Guarded flow. `CLAUDE.md` is a thin `@AGENTS.md` import
+  plus the Claude-specific bits - do not maintain two copies.
 - Task lifecycle: [`reference/task-control.md`](reference/task-control.md). The orchestrator cites
   it for the attempt and escalation discipline; `task-tracking.md` carries only the session-log
   cadence; neither duplicates the lifecycle - this reference is the single source.
@@ -197,8 +197,11 @@ guards port exactly. `AGENTS.md` is already read natively by both tools.
       pending + done), `context/`, `templates/`.
 - [ ] Every path referenced by an agent, command, or rule exists. No references to agents that were not
       created. The routing table covers every agent - no orphans.
-- [ ] Every seat of the standard feature flow is filled by exactly one agent, per the check table in
+- [ ] Every seat of the Guarded flow is filled by exactly one agent, per the check table in
       `roster.md`. Any intentionally unfilled seat is named in AGENTS.md with who covers it instead.
+- [ ] `AGENTS.md` carries the tier table, and its Guarded row names this project's real irreversible
+      surfaces - not a generic list. A harness that routes every change through the orchestrator
+      bills a planning pass for a one-line fix, which is the first thing users turn off.
 
 **Cost and context** (this is the part most bootstraps skip)
 - [ ] Every agent has an explicit `model:` **and** `effort:`. Neither is unset. The allocation matches

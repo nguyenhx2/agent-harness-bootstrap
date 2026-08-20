@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: The merged review gate for small projects - one read-only pass covering both code quality and security before a {{PR_OR_MR}} is opened or merged. Raises findings, never edits. Use after any implementation task and before any merge.
+description: The merged review gate for small projects - one read-only pass over a branch diff covering both code quality and security. Raises findings, never edits. Runs once at the branch boundary, before a {{PR_OR_MR}} is opened or merged. Do NOT dispatch it after each agent or each commit: it would re-read the same files and re-report the same findings.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
