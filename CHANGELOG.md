@@ -12,6 +12,15 @@ agent or through the orchestrator, and the review gate runs once on the branch i
 every agent. harness-view gains a roster editor, an editable Command Steps panel, and custom
 dialogs. See each skill's own CHANGELOG for detail.
 
+## v1.18.1
+
+harness-view gains instruction-file nodes, a visible tier model, a grid editor for tables in a
+command's steps, and `@` mentions. The landing page is rebuilt as an introduction that follows the
+README's argument, with the clips folded in and re-rendered from the page's own palette. The deck
+drops from 30 slides to 25 and teaches the current routing model. Two published figures that
+nothing was deriving are now derived, and updating a harness to a new skill version stops reporting
+line endings as conflicts.
+
 ## Unreleased
 
 Documentation and instruction tuning from a user's-seat audit, and a rebuilt landing page.

@@ -6,6 +6,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.18.1] - 2026-08-21
+
+### Fixed
+
+- **Updating to a new skill version no longer invents conflicts.** `.gitattributes` checks this
+  repo's text out native, so a skill cloned on Windows holds CRLF while the same skill in WSL, in
+  CI, or unzipped from a release holds LF. Bootstrap from one and update from the other and every
+  text asset differed by one byte per line: a real 1.17.0 to 1.18.0 upgrade reported 14 conflicts,
+  **seven of them fake** - five `.gitkeep` files, `.claude/.gitignore` and `spawn-allowlist`,
+  identical in every character. A reconciliation queue nobody can read is a reconciliation queue
+  nobody works, and taking a new version is the one moment when reading it matters most. The
+  scaffolder now forgives line endings and nothing else: a file you edited still conflicts, and a
+  binary asset is still compared byte for byte.
+- spec-builder ships **8** optional spec sections, not 9. The README was right and `docs/FLOWS.md`,
+  the presentation outline and the deck in three languages were wrong. The number is now derived
+  from the manifest and checked on every surface that states it, in all three languages.
+
 ## [1.18.0] - 2026-08-21
 
 ### Changed

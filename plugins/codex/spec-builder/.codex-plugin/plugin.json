@@ -1,6 +1,6 @@
 {
   "name": "spec-builder",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
   "author": {
     "name": "nguyenhx2"
