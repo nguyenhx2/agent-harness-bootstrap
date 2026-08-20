@@ -27,7 +27,16 @@ const COLORS = {
   task: "#475569", doc: "#0d9488", gate: "#c2410c", human: "#0f766e",
   skill: "#9333ea"
 };
-const FLOW_COL = { rule: 0, hook: 1, settings: 1, skill: 1, agent: 2, gate: 3, human: 4, command: 5, script: 6, module: 6, task: 7 };
+// Left-to-right story of the Flow view: what constrains -> what enforces -> what a seat can reach
+// for -> the seats -> the gate -> the human -> what they invoke.
+//
+// Skills get their own column rather than sharing the hooks one. They used to sit at 1 beside
+// hooks and settings, which reads fine on a repo with two skills and falls apart on a real one: a
+// project with twenty installed skills pushed a column of purple through the middle of the six
+// yellow hooks, and the enforcement layer - the part of the picture that says what can say no -
+// became impossible to pick out. They also are not enforcement: a skill is a capability a seat can
+// use, so it belongs between the hooks and the agents that reach for it.
+const FLOW_COL = { rule: 0, hook: 1, settings: 1, skill: 2, agent: 3, gate: 4, human: 5, command: 6, script: 7, module: 7, task: 8 };
 const HIDE_DEFAULT = new Set(["module", "task", "script"]);
 // Hook event -> short badge. The scan carries the full event name; the node is
 // too small for "PostToolUse", and Pre/Post is the distinction that matters.
@@ -328,7 +337,7 @@ const ui = (() => {
       scrim.className = "ui-scrim";
 
       const dlg = document.createElement("div");
-      dlg.className = "ui-dlg" + (spec.tone ? " tone-" + spec.tone : "");
+      dlg.className = "ui-dlg" + (spec.tone ? " tone-" + spec.tone : "") + (spec.wide ? " wide" : "");
       dlg.setAttribute("role", "dialog");
       dlg.setAttribute("aria-modal", "true");
       const titleId = "ui-dlg-title-" + (++openModal.seq);
@@ -398,8 +407,9 @@ const ui = (() => {
       let focusTarget = null, submitBtn = null;
       for (const a of (spec.actions || [])) {
         const btn = document.createElement("button");
-        if (a.kind === "danger") btn.className = "ui-danger";
-        else if (a.kind === "primary") btn.className = "ui-primary";
+        // Every kind that has a colour, not just the two. A footer of four identical grey
+        // buttons makes the reader parse four labels to find the one they want.
+        if (DLG_BTN_CLASS[a.kind]) btn.className = DLG_BTN_CLASS[a.kind];
         setBtn(btn, a.icon || null, a.label);
         btn.onclick = () => done(a.kind === "cancel" ? null : { action: a.id, values: values() });
         if (a.kind !== "cancel" && !submitBtn) submitBtn = btn;
@@ -479,6 +489,11 @@ const ui = (() => {
     chain = p.catch(() => {});
     return p;
   }
+
+  // Action kind -> button class. `cancel` deliberately has none: it is the way out, and a way out
+  // should not compete for attention with the thing the dialog is asking about.
+  const DLG_BTN_CLASS = { danger: "ui-danger", primary: "ui-primary", accent: "ui-accent",
+                          info: "ui-info", warn: "ui-warn", quiet: "ui-quiet" };
 
   const TOAST_ICON = { success: "check", error: "alert", warn: "alert", info: "info" };
 
@@ -701,7 +716,7 @@ function layout() {
   const vis = graph.nodes.filter(visible);
   if (view === "flow") {
     const cols = {};
-    for (const n of vis) { const c = FLOW_COL[n.type] ?? 7; (cols[c] = cols[c] || []).push(n); }
+    for (const n of vis) { const c = FLOW_COL[n.type] ?? 8; (cols[c] = cols[c] || []).push(n); }
     // Columns are placed left to right using the width each one actually needs,
     // so a column of wide boxes cannot be laid on top of its neighbour. The old
     // code spaced columns by a single average and spaced wrapped sub-lanes by
@@ -835,7 +850,10 @@ function computeHighlight(id) {
 }
 function startAnim() {
   if (anim) return;
-  const tick = () => { dashPhase = (dashPhase + 0.7) % 24; draw(); anim = requestAnimationFrame(tick); };
+  // 0.22 px per frame, not 0.7. The march along a lit edge is meant to say "this way", and at
+  // the old speed it read as a warning stripe: fast enough that the eye tracked the motion
+  // instead of the direction, and busy enough to be tiring on a graph with many lit edges.
+  const tick = () => { dashPhase = (dashPhase + 0.22) % 24; draw(); anim = requestAnimationFrame(tick); };
   anim = requestAnimationFrame(tick);
 }
 function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = null; } }
@@ -889,7 +907,7 @@ function face(p, hw, right) { return { x: p.x + (right ? hw : -hw), y: p.y }; }
 // thick line, which is worse than the curves it replaced.
 function channelIndex(vis) {
   const byCol = {};
-  for (const n of vis) { const c = FLOW_COL[n.type] ?? 7; (byCol[c] = byCol[c] || []).push(n); }
+  for (const n of vis) { const c = FLOW_COL[n.type] ?? 8; (byCol[c] = byCol[c] || []).push(n); }
   const idx = {};
   for (const c of Object.keys(byCol)) {
     const ns = byCol[c].slice().sort((p, q) => pos[p.id].y - pos[q.id].y);
