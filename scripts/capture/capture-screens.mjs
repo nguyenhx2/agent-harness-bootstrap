@@ -41,12 +41,28 @@ if (!chrome) { console.error("no system Chrome found"); process.exit(2); }
 
 const version = execFileSync(binary, ["--version"]).toString().trim().split(/\s+/).pop();
 const port = 7461;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Refuse to run when something already owns the port. This is not hypothetical: a
+// harness-view left serving ANOTHER repository on 7461 answered the poll below, the
+// screenshots were taken of that repository, and the run reported a node count and a score
+// belonging to a project nobody asked about. A capture that silently photographs the wrong
+// subject is worse than one that fails.
+try {
+  const squatter = await fetch(`http://127.0.0.1:${port}/roots`);
+  if (squatter.ok) {
+    const who = await squatter.json().catch(() => ({}));
+    console.error(`port ${port} is already serving ${who.current ?? "something"}. ` +
+                  "Stop it before capturing, or the screenshots will be of that repository.");
+    process.exit(2);
+  }
+} catch { /* nothing listening, which is what we want */ }
+
 const server = spawn(binary, ["serve", resolve(target), "--port", String(port)],
                      { stdio: "ignore" });
 const kill = () => { try { server.kill(); } catch {} };
 process.on("exit", kill);
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 try {
   // the server scans the target before it answers; poll rather than sleep-and-hope
   let up = false;
@@ -54,6 +70,14 @@ try {
     try { up = (await fetch(`http://127.0.0.1:${port}/roots`)).ok; } catch { await wait(200); }
   }
   if (!up) throw new Error("server never came up");
+
+  // Confirm the server we are about to photograph is serving the target we were given.
+  const serving = await (await fetch(`http://127.0.0.1:${port}/roots`)).json();
+  const want = resolve(target).replace(/\\/g, "/").toLowerCase();
+  const got = String(serving.current ?? "").replace(/\\/g, "/").toLowerCase();
+  if (!got.endsWith(want) && !want.endsWith(got)) {
+    throw new Error(`the server on ${port} is serving ${serving.current}, not ${resolve(target)}`);
+  }
 
   const browser = await puppeteer.launch({ executablePath: chrome, headless: true,
     args: ["--force-device-scale-factor=1"] });
@@ -83,11 +107,15 @@ try {
     return /\/100/.test(t) && /Findings/i.test(t);
   }, { timeout: 30000 });
   await wait(600);
-  const score = await page.evaluate(() => {
-    const m2 = (document.body.textContent || "").match(/(\d+)\s*\/\s*100/);
-    return m2 ? Number(m2[1]) : null;
-  });
-  if (score === null) throw new Error("cannot read the assess score from the page");
+  // The score comes from the BINARY, not from scraping the page. Matching /(\d+)\/100/
+  // against document.body.textContent picks up whichever figure the DOM happens to put
+  // first - a per-category bar reading 100/100, say - so the same harness recorded 99 on
+  // one run and 79 on the next. `assess` prints one authoritative line; parse that, and
+  // let the caption and the picture come from the same answer.
+  const assessOut = execFileSync(binary, ["assess", resolve(target)]).toString();
+  const sm = assessOut.match(/overall\s+(\d+)\s*\/\s*100/);
+  if (!sm) throw new Error(`cannot read the overall score from assess: ${assessOut.slice(0, 200)}`);
+  const score = Number(sm[1]);
   await page.screenshot({ path: join(outDir, "harness-view-assess.png") });
   await browser.close();
 

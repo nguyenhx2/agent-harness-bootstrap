@@ -112,9 +112,13 @@ shown in the page, and the previous graph stays on screen.
   reaches the page, because the file being previewed comes from the repository
   under inspection and the page is same-origin with `POST /toggle`. Raw mode is
   inserted as text and never parsed.
-- Agents are never toggleable; HARD-protected controls are refused outright and
-  SOFT-protected ones need an explicit confirmation. Full detail under
-  [Runtime toggles](#runtime-toggles).
+- Toggling is tiered: HARD-protected controls need a confirmation phrase typed
+  literally, SOFT-protected ones need an explicit acknowledgement, and roster
+  seats are at least SOFT. Full detail under [Runtime toggles](#runtime-toggles).
+- `POST /command` writes a command file back after a step edit. It takes a bare
+  command NAME, never a path, so the only thing it can write is
+  `.claude/commands/<name>.md`; it is capped at 512 KB and refuses an empty
+  body. Full detail under [Editing command steps](#editing-command-steps).
 
 ## Version and metadata
 
@@ -141,14 +145,14 @@ What each one actually prints, against a real harness:
 
 ```
 $ harness-view scan D:/Projects/msboost
-harness-view: 172 nodes, 505 edges -> D:\Projects\msboost\.claude\state\harness-graph.json
+harness-view: 109 nodes, 130 edges -> D:\Projects\ost\.claude\state\harness-graph.json
 
 $ harness-view serve D:/Projects/msboost --port 7420
 harness-view: serving D:\Projects\msboost on http://127.0.0.1:7420/
 
 $ harness-view watch D:/Projects/msboost
 harness-view: watching D:\Projects\msboost (Ctrl+C to stop)
-harness-view: rebuilt (172 nodes, 505 edges)
+harness-view: rebuilt (109 nodes, 130 edges)
 ```
 
 `scan` writes a file and exits, which is the form to use in a script or a hook.
@@ -245,23 +249,40 @@ It uses the same contract as the harness's `/harness-toggle` command:
 - `.claude/disabled.json` is the committed record: atomic writes, sorted keys,
   no dates.
 
-Safety model: **agents are never toggleable** (roster changes go through
-`/harness-update`). HARD-protected controls - the `protect-secrets` and
-`guard-agent-spawn` hooks, the `security-privacy` and `agent-guardrails` rules,
-and the `/review-changes` command - are refused here with HTTP 403; disabling
-one of those requires the `/harness-toggle` command, where the user must type
-the confirmation phrase themselves. SOFT-protected controls - the
-`guard-main-commit`, `check-commit-msg` and `protect-adr` hooks and the
-`ai-governance` rule - refuse with HTTP 409 until the request carries
-`confirm_soft: true`; the UI asks for that confirmation explicitly.
+Roster seats toggle here too: a parked agent moves to
+`.claude/disabled/agents/X.md` and the graph greys it out, exactly like a rule.
+Parking a seat is reversible and recorded; ADDING or RETIRING one is still a
+roster change and goes through `/harness-bootstrap:harness-update`.
+
+Safety model, in two tiers:
+
+**HARD** - the `protect-secrets` and `guard-agent-spawn` hooks, the
+`security-privacy` and `agent-guardrails` rules, the `/review-changes` command,
+and the `orchestrator`, `code-reviewer`, `security-reviewer`, `reviewer` and
+`spec-guardian` seats. Refused with HTTP 403 unless the request carries
+`confirm_hard` holding the literal phrase `disable <name>`. The page prompts for
+it and sends what was typed, byte for byte: nothing is trimmed or case-folded, so
+`Disable x` and `disable x ` are both refused again. This is the same gate
+`/harness-bootstrap:harness-toggle` applies as `--confirm "disable <name>"`. In
+the CLI the rule is that the model must never compose the phrase on the user's
+behalf; in the browser there is no model in the loop at all, so the human typing
+it *is* the gate rather than a proxy for it.
+
+**SOFT** - the `guard-main-commit`, `check-commit-msg` and `protect-adr` hooks,
+the `ai-governance` rule, and **every** agent seat (by category, not by name: the
+orchestrator's routing table still lists it). Refused with HTTP 409 until the
+request carries `confirm_soft: true`; the UI asks for that explicitly. A HARD
+seat needs both flags, because it is in both tiers.
+
+Enabling is never gated. Restoring a control is not the risk the tiers exist for.
 
 ### The endpoint
 
 `POST /toggle` with a JSON body:
 
 ```json
-{"kind": "rule|command|hook", "name": "<bare name>", "enable": false,
- "reason": "optional", "confirm_soft": false}
+{"kind": "rule|command|hook|agent", "name": "<bare name>", "enable": false,
+ "reason": "optional", "confirm_soft": false, "confirm_hard": ""}
 ```
 
 The endpoint only accepts same-origin browser requests: a request with a
@@ -282,6 +303,57 @@ and the Master plan tab. It is read-only and deliberately narrow:
 - it is always `text/plain` with `X-Content-Type-Options: nosniff`, never
   `text/html`, and the page renders it with `textContent`
 - the same same-origin rules as `/toggle` apply
+
+## Editing command steps
+
+Selecting a command reads its file and renders the numbered steps as a chain of
+cards. The chain is editable:
+
+- **Reorder** - drag a step's number. A step only moves inside its own group, so
+  a precondition can never be dropped into the procedure as an action.
+- **Switch off** - `Off` comments a step out in place, wrapped in
+  `<!-- harness-view:disabled-step ... -->`. `On` puts it back exactly where it
+  was. The steps still standing renumber around the gap.
+- **Retitle** - `Edit` opens the step's own text. `Apply` is local.
+- **Save** - one write for everything unsaved. `Revert` discards it all. The bar
+  only exists while something is unsaved, so its presence is the dirty flag.
+
+Nothing reaches disk until Save, so a mis-drop costs a Revert rather than a file.
+
+**What a save rewrites.** Only the line spans the steps occupy. Frontmatter,
+headings, the prose between groups, the trailing text and every byte the panel
+never showed are passed through untouched, because serialization replaces spans
+rather than regenerating the document from the parse tree. An unedited step is
+written back as the bytes it arrived as, which is what makes the guarantee
+testable: `serializing_an_untouched_parse_returns_the_file_unchanged` parses and
+re-serializes every fixture command and asserts the result is byte-identical,
+line endings included. Two more tests pin that switching a step off and back on
+restores the original, and that reordering leaves a section's closing prose at
+the end instead of dragging it up the page behind the step it was attached to.
+
+**What "off" is, honestly.** An HTML comment removes a step from the rendered
+procedure and records the intent. It does not stop a model that reads the raw
+file from seeing the text. It is a reversible edit, not an enforcement boundary -
+the enforcement boundary is still `POST /toggle`, which quarantines whole files
+out of the tree. A step whose own text contains `-->` cannot be wrapped at all;
+the control is disabled up front with that as its tooltip rather than writing a
+file whose comment block ends early.
+
+### The endpoint
+
+`POST /command` with a JSON body:
+
+```json
+{"name": "<bare command name>", "content": "<the whole file>", "root": "<repo>"}
+```
+
+Same gate as `POST /toggle`: same-origin only, `Content-Type: application/json`,
+plain-text refusals so the page can show them verbatim. It takes a NAME and
+builds the path itself, so `..`, a separator, or a drive letter fail the
+character check before any path exists; the only file it can write is
+`.claude/commands/<name>.md`. A disabled command is not editable - enable it
+first. Content is capped at 512 KB, and an empty body is refused: emptying a
+command is not an edit anyone meant, and removing one is `POST /toggle`'s job.
 
 ## Markdown rendering
 

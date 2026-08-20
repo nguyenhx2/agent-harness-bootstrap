@@ -260,8 +260,9 @@ pub fn scan(root: &Path) -> Value {
     let mut edges: Vec<(String, String, String, i64)> = Vec::new();
     let listed = disabled_entries(&claude);
 
-    // --- agents: never toggleable, but a file parked under disabled/agents
-    // still deserves visibility (harness-graph.py scans both trees) ---
+    // --- agents: both trees, because a seat can be parked under
+    // disabled/agents and still belongs in the graph, greyed out
+    // (harness-graph.py scans both trees; parity depends on it) ---
     let mut agent_names: Vec<String> = Vec::new();
     for (dir_tail, dis) in [(".claude/agents", false), (".claude/disabled/agents", true)] {
         for name in md_stems(&root.join(dir_tail)) {

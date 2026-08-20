@@ -7,6 +7,38 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.17.0] - 2026-08-20
+
+### Added
+
+- **Command steps are editable.** Selecting a command renders its numbered steps as a chain of
+  cards that can be reordered by dragging a step's number, switched off, and retitled, with one
+  Save writing everything at once and Revert discarding it. Nothing reaches disk until Save, so a
+  mis-drop costs a Revert rather than a file.
+- `POST /command`, the write path behind it. It takes a bare command NAME and builds the path
+  itself, so the only file it can write is `.claude/commands/<name>.md`: `..`, a separator or a
+  drive letter fail the character check before a path exists. Same-origin gate as `POST /toggle`,
+  512 KB cap, empty bodies refused.
+- Serialization is surgical: only the line spans the steps occupy are rewritten, and an unedited
+  step is written back as the bytes it arrived as. Three tests pin the consequences - every fixture
+  command re-serializes byte-identically when nothing was edited (line endings included),
+  switching a step off and back on restores the original, and reordering leaves a section's closing
+  prose at the end instead of dragging it up the page behind the step it was attached to.
+
+### Changed
+
+- **HARD-protected controls can be disabled from the page.** They used to refuse with 403 and
+  offer no way forward, which meant the viewer could show a control it could never act on. The
+  request now takes `confirm_hard`, and the page prompts for the phrase `disable <name>` and sends
+  what was typed, byte for byte - nothing trimmed, nothing case-folded, so a near miss is refused
+  again. This is the same gate `/harness-toggle` applies as `--confirm`; in the CLI the rule is
+  that the model must never compose the phrase, and in the browser there is no model in the loop
+  at all, so the human typing it *is* the gate.
+- **Agent seats toggle.** `kind: "agent"` is accepted, the detail panel offers the control, and a
+  parked seat greys out in the graph. Every seat is at least SOFT and the sole spawner plus the
+  review seats are HARD - matching `harness-toggle.py`, which gained the same tiers in this
+  release.
+
 ## [1.16.0] - 2026-08-20
 
 ### Fixed

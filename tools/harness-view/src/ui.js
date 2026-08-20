@@ -834,13 +834,39 @@ function nodeLink(cell, id, text) {
   return true;
 }
 
-// The Command Steps panel. Parsing lives in ui-steps.js (and is tested there);
-// this is the DOM half. Every byte of the command file lands via textContent,
-// so no repository text reaches innerHTML on this path and the panel needs no
-// sanitiser pass at all.
-function renderCommandSteps(host, md) {
+// The Command Steps panel. Parsing and serialization live in ui-steps.js (and
+// are tested there); this is the DOM half. Every byte of the command file lands
+// via textContent, so no repository text reaches innerHTML on this path and the
+// panel needs no sanitiser pass at all.
+//
+// The panel edits: steps can be dragged into a new order, switched off, and
+// retitled, and Save writes the file back through POST /command. Two things keep
+// that honest. Nothing is written until Save - a drag is a local rearrangement,
+// so a mis-drop costs a Revert and not a file. And Save serializes the parse
+// this panel was built from, which rewrites only the step spans, so a save can
+// never damage the parts of the file the panel never showed.
+let stepEdit = null;   // { name, host, md, parsed } for the command on screen
+
+function renderCommandSteps(host, md, name) {
+  stepEdit = { name: name, host: host, md: md, parsed: parseCommandSteps(md) };
+  paintCommandSteps();
+}
+
+/// Throw away every local change and go back to the file as last read.
+function revertCommandSteps() {
+  if (!stepEdit) return;
+  stepEdit.parsed = parseCommandSteps(stepEdit.md);
+  paintCommandSteps();
+}
+
+function stepsDirty() {
+  return !!stepEdit && stepEdit.parsed.groups.some(g => g.dirty ||
+    g.steps.some(s => s.edited));
+}
+
+function paintCommandSteps() {
+  const host = stepEdit.host, parsed = stepEdit.parsed;
   host.textContent = "";
-  const parsed = parseCommandSteps(md);
   const ids = new Set(graph.nodes.map(x => x.id));
   const lbl = document.createElement("div");
   lbl.className = "lbl";
@@ -857,7 +883,9 @@ function renderCommandSteps(host, md) {
     return;
   }
 
-  lbl.textContent = "Steps, read from the command file";
+  lbl.textContent = "Steps, read from the command file - drag a number to reorder";
+  if (stepsDirty()) host.append(buildSaveBar());
+
   for (const g of parsed.groups) {
     const box = document.createElement("div");
     box.className = "stepgrp";
@@ -871,44 +899,234 @@ function renderCommandSteps(host, md) {
     }
     if (g.steps.length) {
       const ol = document.createElement("ol");
-      ol.className = "steps";
-      for (const st of g.steps) {
-        const li = document.createElement("li");
-        // the file's own numbering, not a recount: a second list that starts at
-        // 1 must still read as 1 here, and a command that skips a number is
-        // showing the reader something a renumbered list would hide
-        const num = parseInt(st.num, 10);
-        if (Number.isFinite(num)) li.value = num;
-        const t = document.createElement("div");
-        t.className = "steptext"; t.textContent = st.text;
-        li.append(t);
-        const ts = touches(st.text, ids);
-        if (ts.length) {
-          const row = document.createElement("div");
-          row.className = "steptouch";
-          for (const tk of ts) {
-            // nodeLink returns false when the graph has no such node - a rule
-            // file with no rule node, a script that was deleted - and the
-            // reference is then still shown, just not as a control that lies
-            // about where it would take you.
-            if (!tk.id || !nodeLink(row, tk.id, tk.label)) {
-              const s = document.createElement("span");
-              s.className = "vflat"; s.textContent = tk.label;
-              s.title = "nothing in this graph to select";
-              row.append(s);
-            }
-          }
-          li.append(row);
-        }
-        ol.append(li);
-      }
+      ol.className = "steps flow";
+      let shown = 0;
+      g.steps.forEach((st, i) => {
+        if (!st.disabled) shown++;
+        ol.append(buildStepCard(g, st, i, shown, ids));
+      });
       box.append(ol);
     }
     host.append(box);
   }
 }
 
+/// One step, as a card in the chain.
+function buildStepCard(g, st, index, shown, ids) {
+  const li = document.createElement("li");
+  const card = document.createElement("div");
+  card.className = "stepcard" + (st.disabled ? " off" : "");
+  li.append(card);
+
+  const num = document.createElement("div");
+  num.className = "stepnum";
+  // A dirty group has been renumbered by the serializer, so showing the file's
+  // original number would name a step that is about to stop existing. An
+  // untouched group keeps the file's own numbering, which is the existing
+  // behaviour and the reason test.md's 1,2,3,5 still reads as 1,2,3,5.
+  num.textContent = st.disabled ? "-" : (g.dirty ? String(shown) : st.num);
+  num.title = "drag to reorder";
+  num.draggable = true;
+  card.append(num);
+
+  const bodyBox = document.createElement("div");
+  bodyBox.className = "stepbody";
+  card.append(bodyBox);
+
+  if (st.editing) {
+    const ta = document.createElement("textarea");
+    ta.className = "stepedit";
+    ta.value = st.textBody;
+    ta.spellcheck = false;
+    bodyBox.append(ta);
+    const bar = document.createElement("div");
+    bar.className = "stepacts"; bar.style.marginTop = "4px";
+    const ok = document.createElement("button");
+    ok.textContent = "Apply";
+    ok.onclick = () => {
+      // Apply is local: it marks the step edited and repaints. The file is not
+      // touched until Save, so an edit and a reorder land as one write.
+      if (ta.value.trim()) setStepText(st, ta.value.replace(/\s+$/, ""));
+      st.editing = false;
+      paintCommandSteps();
+    };
+    const no = document.createElement("button");
+    no.textContent = "Cancel";
+    no.onclick = () => { st.editing = false; paintCommandSteps(); };
+    bar.append(ok, no);
+    bodyBox.append(bar);
+  } else {
+    const t = document.createElement("div");
+    t.className = "steptext";
+    t.textContent = st.textBody;
+    bodyBox.append(t);
+    const ts = touches(st.textBody, ids);
+    if (ts.length) {
+      const row = document.createElement("div");
+      row.className = "steptouch";
+      for (const tk of ts) {
+        // nodeLink returns false when the graph has no such node - a rule file
+        // with no rule node, a script that was deleted - and the reference is
+        // then still shown, just not as a control that lies about where it
+        // would take you.
+        if (!tk.id || !nodeLink(row, tk.id, tk.label)) {
+          const s = document.createElement("span");
+          s.className = "vflat"; s.textContent = tk.label;
+          s.title = "nothing in this graph to select";
+          row.append(s);
+        }
+      }
+      bodyBox.append(row);
+    }
+    if (st.tail && st.tail.length) {
+      const nt = document.createElement("div");
+      nt.className = "stepnote";
+      nt.textContent = "the section's closing prose follows this step and stays at the end";
+      bodyBox.append(nt);
+    }
+  }
+
+  const acts = document.createElement("div");
+  acts.className = "stepacts";
+  const ed = document.createElement("button");
+  ed.textContent = "Edit";
+  ed.title = "edit this step's wording";
+  ed.onclick = () => {
+    for (const gg of stepEdit.parsed.groups) for (const s of gg.steps) s.editing = false;
+    st.editing = true;
+    paintCommandSteps();
+  };
+  const off = document.createElement("button");
+  off.textContent = st.disabled ? "On" : "Off";
+  const blocked = !st.disabled && !canDisableStep(st);
+  off.disabled = blocked;
+  off.title = blocked
+    // Refused up front rather than at save time: the wrapper is an HTML comment
+    // and this step already contains its terminator, so wrapping it would close
+    // the block early and drop the tail back into the file as live prose.
+    ? "cannot switch off: this step's text contains `-->`, which would end the comment early"
+    : (st.disabled ? "put this step back into the procedure"
+                   : "comment this step out of the procedure");
+  off.onclick = () => {
+    st.disabled = !st.disabled;
+    st.editing = false;
+    g.dirty = true;
+    paintCommandSteps();
+  };
+  acts.append(ed, off);
+  card.append(acts);
+
+  wireStepDrag(li, card, num, g, index);
+  return li;
+}
+
+// Which card is in flight. Held in a module variable rather than in the
+// dataTransfer payload: the drop target needs to know the source on dragover to
+// draw the insertion line, and dataTransfer is unreadable until drop.
+let stepDrag = null;   // { group, from }
+
+function wireStepDrag(li, card, handle, g, index) {
+  handle.addEventListener("dragstart", ev => {
+    stepDrag = { group: g, from: index };
+    card.classList.add("dragging");
+    // Firefox starts no drag at all without payload; the value is unused.
+    if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", String(index)); }
+  });
+  handle.addEventListener("dragend", () => {
+    stepDrag = null;
+    card.classList.remove("dragging");
+    clearDropMarks();
+  });
+  li.addEventListener("dragover", ev => {
+    // A step only reorders inside its own group. Dragging a precondition into
+    // the Steps list would move a check into the procedure as an action, which
+    // is exactly the confusion the grouping exists to prevent.
+    if (!stepDrag || stepDrag.group !== g || stepDrag.from === index) return;
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = "move";
+    clearDropMarks();
+    card.classList.add(index < stepDrag.from ? "drop-above" : "drop-below");
+  });
+  li.addEventListener("dragleave", () => card.classList.remove("drop-above", "drop-below"));
+  li.addEventListener("drop", ev => {
+    if (!stepDrag || stepDrag.group !== g || stepDrag.from === index) return;
+    ev.preventDefault();
+    const moved = g.steps.splice(stepDrag.from, 1)[0];
+    g.steps.splice(index, 0, moved);
+    g.dirty = true;
+    stepDrag = null;
+    paintCommandSteps();
+  });
+}
+
+function clearDropMarks() {
+  for (const el of document.querySelectorAll(".stepcard.drop-above, .stepcard.drop-below")) {
+    el.classList.remove("drop-above", "drop-below");
+  }
+}
+
+/// The unsaved-changes bar. It exists only while something is unsaved, so its
+/// presence IS the dirty indicator and there is no second piece of state to
+/// keep in step with the first.
+function buildSaveBar() {
+  const bar = document.createElement("div");
+  bar.className = "stepsave";
+  const txt = document.createElement("div");
+  txt.className = "grow";
+  txt.textContent = "Unsaved changes to " + stepEdit.name + ".md";
+  const save = document.createElement("button");
+  save.textContent = "Save";
+  const revert = document.createElement("button");
+  revert.textContent = "Revert";
+  revert.onclick = () => revertCommandSteps();
+  save.onclick = async () => {
+    save.disabled = revert.disabled = true;
+    txt.textContent = "saving ...";
+    let content;
+    try {
+      content = serializeCommandSteps(stepEdit.parsed);
+    } catch (e) {
+      txt.textContent = "could not rebuild the file: " + e;
+      save.disabled = revert.disabled = false;
+      return;
+    }
+    try {
+      const r = await fetch("command", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: stepEdit.name, content: content, root: currentRoot }),
+      });
+      const t = await r.text();
+      if (!r.ok) {
+        txt.textContent = t;
+        save.disabled = revert.disabled = false;
+        return;
+      }
+      // Re-read from what was actually written rather than assuming the parse
+      // in hand now matches the file: a save that renumbered has moved every
+      // line index the current parse holds.
+      stepEdit.md = content;
+      stepEdit.parsed = parseCommandSteps(content);
+      paintCommandSteps();
+    } catch (e) {
+      txt.textContent = "save failed: " + e;
+      save.disabled = revert.disabled = false;
+    }
+  };
+  bar.append(txt, save, revert);
+  return bar;
+}
+
 function select(n) {
+  // Selecting another node rebuilds the panel and the step editor with it, so
+  // anything unsaved would go without being mentioned. Ask first, and keep the
+  // current selection when the answer is no.
+  if (stepsDirty() && stepEdit && n.id !== sel &&
+      !window.confirm("There are unsaved step changes to " + stepEdit.name +
+                      ".md.\n\nLeave without saving?")) {
+    return;
+  }
+  stepEdit = null;
   sel = n.id;
   hi = computeHighlight(n.id);
   startAnim();
@@ -1032,7 +1250,7 @@ function select(n) {
         p.className = "lbl"; p.textContent = err; box.append(p);
         return;
       }
-      renderCommandSteps(box, text);
+      renderCommandSteps(box, text, n.id.split(":").slice(1).join(":"));
     })();
   }
 
@@ -1089,7 +1307,12 @@ function select(n) {
     d.append(host);
   }
 
-  if (["rule", "command", "hook"].includes(n.type)) {
+  // Agents are in this list now. Parking a seat quarantines its file exactly
+  // like a rule's, and the seats the harness structurally assumes - the sole
+  // spawner, the review gates - are HARD-protected server-side rather than
+  // hidden here, so the refusal states its reason instead of the control simply
+  // not existing.
+  if (["rule", "command", "hook", "agent"].includes(n.type)) {
     const b = document.createElement("button");
     // Disabling removes a control and Enabling restores one; they should not
     // look like the same neutral action.
@@ -1101,16 +1324,29 @@ function select(n) {
       // always name the root being viewed, so a toggle can never land on the
       // server's CLI default while the page is showing a different repo
       const payload = { kind: n.type, name: bare, enable: !!n.disabled, root: currentRoot };
-      let res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload) });
-      let txt = await res.text();
+      const post = async () => {
+        const r = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload) });
+        return { res: r, txt: await r.text() };
+      };
+      let { res, txt } = await post();
+      if (res.status === 403 && !payload.enable) {
+        // HARD-protected. The CLI makes the user type `disable <name>` and
+        // forbids the model from composing it; there is no model here, so the
+        // page asks the human for the same phrase and sends what they typed.
+        // Nothing is normalized on the way: a near miss is refused again.
+        const typed = window.prompt(
+          txt + "\n\nType the phrase exactly to confirm:", "");
+        if (typed !== null && typed !== "") {
+          payload.confirm_hard = typed;
+          ({ res, txt } = await post());
+        }
+      }
       if (res.status === 409 && !payload.enable) {
         // SOFT-protected: the server refused pending an explicit confirmation
         if (window.confirm(txt + "\n\nDisable it anyway?")) {
           payload.confirm_soft = true;
-          res = await fetch("toggle", { method: "POST", headers: { "content-type": "application/json" },
-            body: JSON.stringify(payload) });
-          txt = await res.text();
+          ({ res, txt } = await post());
         }
       }
       if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }

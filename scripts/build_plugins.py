@@ -83,6 +83,9 @@ SKIP_NAMES = {"CHANGELOG.md", "__pycache__", ".gitignore"}
 SKIP_SUFFIX = {".pyc"}
 
 REPO_URL = "https://github.com/nguyenhx2/agent-harness-bootstrap"
+# SPDX id for the licence in LICENSE. Written into every plugin manifest, because a
+# manifest that misstates the licence is the copy a user actually installs.
+LICENSE_ID = "PolyForm-Noncommercial-1.0.0"
 
 # Codex's plugin browser shows a short line beside the name; the full blurb is too long for it.
 SHORT = {
@@ -139,7 +142,7 @@ def manifest(skill: str, version: str) -> dict:
         "author": {"name": "nguyenhx2", "url": "https://github.com/nguyenhx2"},
         "homepage": REPO_URL,
         "repository": REPO_URL,
-        "license": "MIT",
+        "license": LICENSE_ID,
         "keywords": ["agent", "harness", "skills", "guardrails",
                      "specifications" if skill == "spec-builder" else "scaffolding"],
     }
@@ -165,7 +168,7 @@ def codex_manifest(skill: str, version: str) -> dict:
         "author": {"name": "nguyenhx2"},
         "homepage": REPO_URL,
         "repository": REPO_URL,
-        "license": "MIT",
+        "license": LICENSE_ID,
         "skills": "./skills/",
         "interface": {
             "displayName": skill,

@@ -37,7 +37,8 @@ fn run_js(body: &str) -> String {
 const assert = require("assert");
 const fs = require("fs");
 const steps = require("{module}");
-const read = n => fs.readFileSync("{cmds}/" + n, "utf8");
+const cmdDir = "{cmds}";
+const read = n => fs.readFileSync(cmdDir + "/" + n, "utf8");
 {body}
 console.log("OK");
 "#
@@ -189,5 +190,113 @@ assert.strictEqual(g.steps.length, 2, "invented or lost a step: " + JSON.stringi
 assert.ok(g.steps[0].text.includes("1. nested, not a step"), "the nested item was dropped");
 assert.ok(g.steps[0].text.includes("1) also not a step"), "the unparseable line was dropped");
 assert.strictEqual(g.intro, "Intro.");
+"#);
+}
+
+/// The property the whole editor rests on: parsing a command and serializing it
+/// straight back must return the file unchanged, byte for byte, for every
+/// command in the fixture. A serializer that drifts by one space per save
+/// rewrites the repository's commands into its own house style over a few
+/// sessions, and every one of those diffs looks deliberate in review.
+#[test]
+fn serializing_an_untouched_parse_returns_the_file_unchanged() {
+    if !have_node() { eprintln!("SKIP serializing_an_untouched_parse_returns_the_file_unchanged: no node"); return; }
+    run_js(r#"
+for (const name of fs.readdirSync(cmdDir).filter(f => f.endsWith(".md"))) {
+  const raw = read(name);
+  const out = steps.serializeCommandSteps(steps.parseCommandSteps(raw));
+  assert.strictEqual(out, raw, name + " changed when nothing was edited");
+}
+"#);
+}
+
+/// Switching a step off wraps it where it stands and switching it back on
+/// restores the original bytes. Anything less makes "off" a one-way door.
+#[test]
+fn disabling_a_step_is_reversible() {
+    if !have_node() { eprintln!("SKIP disabling_a_step_is_reversible: no node"); return; }
+    run_js(r#"
+const raw = read("review-changes.md");
+const p = steps.parseCommandSteps(raw);
+const g = p.groups.find(x => x.steps.length);
+g.steps[1].disabled = true; g.dirty = true;
+const off = steps.serializeCommandSteps(p);
+assert.ok(off.includes("<!-- harness-view:disabled-step"), "no quarantine marker was written");
+
+// the disabled step is still parsed, still in place, and marked
+const rp = steps.parseCommandSteps(off);
+const rg = rp.groups.find(x => x.steps.length);
+assert.strictEqual(rg.steps.length, g.steps.length, "a disabled step vanished from the parse");
+assert.strictEqual(rg.steps[1].disabled, true, "the disabled step lost its mark");
+assert.strictEqual(rg.steps[1].text, g.steps[1].text, "the disabled step's text was altered");
+
+// the steps still standing renumber around it rather than skipping a number
+const live = rg.steps.filter(s => !s.disabled).map(s => s.num);
+assert.deepStrictEqual(live, ["1", "2"], "live steps did not renumber: " + live);
+
+rg.steps[1].disabled = false; rg.dirty = true;
+assert.strictEqual(steps.serializeCommandSteps(rp), raw, "enabling did not restore the original");
+"#);
+}
+
+/// A section's closing prose belongs to the section, not to whichever step the
+/// parser attached it to. deploy.md ends with "On failure: roll back..." after
+/// its last step; moving that step must not carry the conclusion up the page.
+#[test]
+fn reordering_leaves_the_closing_prose_at_the_end() {
+    if !have_node() { eprintln!("SKIP reordering_leaves_the_closing_prose_at_the_end: no node"); return; }
+    run_js(r#"
+const raw = read("deploy.md");
+const p = steps.parseCommandSteps(raw);
+const g = p.groups.filter(x => x.steps.length).pop();
+g.steps.unshift(g.steps.pop());          // last step to the front
+g.dirty = true;
+const out = steps.serializeCommandSteps(p);
+
+const prose = "On failure: roll back";
+assert.ok(out.includes(prose), "the closing prose was lost");
+const lines = out.split(/\r?\n/);
+const proseAt = lines.findIndex(l => l.startsWith(prose));
+const lastStepAt = lines.map((l, i) => (/^\d+\.\s/.test(l) ? i : -1)).filter(i => i >= 0).pop();
+assert.ok(proseAt > lastStepAt,
+  "the closing prose moved above the last step (prose " + proseAt + ", step " + lastStepAt + ")");
+// nothing was invented or dropped on the way
+const before = raw.split(/\r?\n/).filter(l => l.trim()).sort();
+const after = out.split(/\r?\n/).filter(l => l.trim()).sort();
+assert.strictEqual(after.length, before.length, "a line was added or lost by the reorder");
+"#);
+}
+
+/// A step containing the comment terminator cannot be wrapped in a comment, and
+/// the editor has to know that BEFORE offering the control rather than writing a
+/// file that ends its own quarantine block early.
+#[test]
+fn a_step_containing_the_terminator_refuses_to_be_disabled() {
+    if !have_node() { eprintln!("SKIP a_step_containing_the_terminator_refuses_to_be_disabled: no node"); return; }
+    run_js(r#"
+assert.strictEqual(steps.canDisableStep({ text: "ordinary step" }), true);
+assert.strictEqual(steps.canDisableStep({ text: "run `sed -e s/a/b/` --> done" }), false);
+"#);
+}
+
+/// Switching off the FIRST step renumbers what is left starting at 1, and the
+/// step that went away keeps the number it had. Renumbering it too wrote `0.`
+/// into the file, because the counter names the position among the steps still
+/// standing and a disabled first step has none.
+#[test]
+fn a_disabled_step_keeps_its_number_and_never_becomes_zero() {
+    if !have_node() { eprintln!("SKIP a_disabled_step_keeps_its_number_and_never_becomes_zero: no node"); return; }
+    run_js(r#"
+const raw = read("review-changes.md");
+const p = steps.parseCommandSteps(raw);
+const g = p.groups.find(x => x.steps.length);
+g.steps[0].disabled = true; g.dirty = true;
+const out = steps.serializeCommandSteps(p);
+assert.ok(!/^0\.\s/m.test(out), "a step was renumbered to 0:\n" + out);
+
+const rg = steps.parseCommandSteps(out).groups.find(x => x.steps.length);
+assert.strictEqual(rg.steps[0].num, "1", "the disabled step lost its original number");
+assert.deepStrictEqual(rg.steps.filter(s => !s.disabled).map(s => s.num), ["1", "2"],
+  "the steps still standing did not renumber from 1");
 "#);
 }

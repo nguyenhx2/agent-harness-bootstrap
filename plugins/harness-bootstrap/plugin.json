@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.1.0/plugin.schema.json",
   "name": "harness-bootstrap",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
   "author": {
     "name": "nguyenhx2",
@@ -9,7 +9,7 @@
   },
   "homepage": "https://github.com/nguyenhx2/agent-harness-bootstrap",
   "repository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": [
     "agent",
     "harness",

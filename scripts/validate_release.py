@@ -210,6 +210,29 @@ def main() -> int:
         errs.append("docs/assets/CAPTURED.json is missing - the UI screenshots have no "
                     "recorded provenance")
 
+    # A plugin manifest states the licence to whoever installs it, and it is generated from a
+    # constant rather than read from LICENSE - so the two can disagree silently. They did: the
+    # licence moved from MIT to PolyForm Noncommercial and all four manifests kept saying MIT,
+    # which is the copy a user actually receives. Cheap to check, expensive to get wrong.
+    lic = ROOT / "LICENSE"
+    if lic.is_file():
+        head = lic.read_text(encoding="utf-8", errors="replace")[:400]
+        expected = ("PolyForm-Noncommercial-1.0.0" if "PolyForm Noncommercial" in head
+                    else "MIT" if "MIT License" in head else None)
+        if expected is None:
+            errs.append("LICENSE does not name a licence this check knows - teach it the new one "
+                        "rather than leaving the manifests unchecked")
+        else:
+            for man in sorted(ROOT.glob("plugins/**/plugin.json")):
+                try:
+                    got = json.loads(man.read_text(encoding="utf-8")).get("license")
+                except ValueError as e:
+                    errs.append(f"{man.relative_to(ROOT).as_posix()} does not parse: {e}")
+                    continue
+                if got != expected:
+                    errs.append(f"{man.relative_to(ROOT).as_posix()} says license {got!r} but "
+                                f"LICENSE is {expected} - regenerate with build_plugins.py")
+
     # Both skills are released together under one repo version - a version present in one
     # SKILL.md and not the other means the release is half-bumped.
     distinct_skill_md = set(skill_md_versions.values())

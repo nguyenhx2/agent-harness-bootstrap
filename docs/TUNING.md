@@ -107,12 +107,14 @@ pass goes on tasks that do not touch PII/data paths - it cannot be tuned away on
 
 ## `/harness-toggle`
 
-**What it does.** Turns a single rule, command, or hook off or back on, reversibly, without deleting
-anything or rewriting `settings.json` by hand. `python .claude/scripts/harness-toggle.py` is the
+**What it does.** Turns a single rule, command, hook, or agent seat off or back on, reversibly,
+without deleting anything or rewriting `settings.json` by hand. `python .claude/scripts/harness-toggle.py` is the
 only mutator: it moves the file(s) under `.claude/disabled/`, removes (or restores) the matching
 `settings.json` registration, records the change in `.claude/disabled.json`, and regenerates
-`harness-graph.json` plus the HTML view so disabled items render greyed out. Agents are refused
-entirely - roster changes go through `/harness-update` instead.
+`harness-graph.json` plus the HTML view so disabled items render greyed out. A parked agent seat
+moves to `.claude/disabled/agents/` the same way; every seat is at least SOFT, because the
+orchestrator's routing table still lists it, and `orchestrator` plus the reviewer seats are HARD.
+Parking a seat is reversible - ADDING or RETIRING one is still `/harness-update`.
 
 **When to reach for it.** A rule or hook does not fit this repo and you want it off without losing
 the file, or a scaffold re-run resurrected something the team had deliberately disabled.
@@ -449,7 +451,7 @@ the harness does not have them until `spec-builder` is also installed on it.
 |---|---|---|
 | `/board-audit` | Nothing - read-only (runs `board-check.py` first) | N/A |
 | `/harness-tune` | Control-level dials: deploy rights, destructive-command posture, spawn allowlist, caps, review-gate scope, agent-history detail | Diff shown, yes required, one dial at a time |
-| `/harness-toggle` | Enables/disables one rule, command, or hook; updates `.claude/disabled.json` and the harness graph | HARD items need a typed confirm phrase; SOFT items need `--yes`; agents refused |
+| `/harness-toggle` | Enables/disables one rule, command, hook, or agent seat; updates `.claude/disabled.json` and the harness graph | HARD items need a typed confirm phrase; SOFT items and every agent seat need `--yes` |
 | `/agent-permissions` | One tool on one seat | Diff shown, yes required (invariant violations refuse instead) |
 | `/harness-update` | Re-syncs `.claude/` with the current skill version and codebase | `CONFLICT` queue, resolved by hand |
 | `/code-graph` | Rebuilds `.claude/state/code-graph.json` and `docs/context/code-graph.md`, clears the stale log | None - regenerates derived files, nothing hand-authored is touched |
