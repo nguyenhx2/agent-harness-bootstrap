@@ -24,18 +24,32 @@ from manim import (
 )
 
 # --- palette ---------------------------------------------------------------
-BG = "#12141A"
+#
+# The same tokens the landing page is drawn from (site/src/style.css), so a viewer who arrives from
+# that page does not cross into a different product half way down it. The clips are embedded there
+# now, which is what made the mismatch worth fixing: a dark clip in green and purple sitting inside
+# a blueprint plate in blue and amber.
+#
+# The two signal colours keep the page's rule, and it is a rule rather than a preference: --live
+# means a live signal and nothing else, --block means a refusal and nothing else. So GREEN_HI, used
+# for what passes and what is running, becomes the live amber; RED, used for what is stopped,
+# becomes the refusal coral. Nothing else in these clips may use those two.
+#
+# The NAMES stay as they were. Renaming GREEN to LIVE across seven scenes and their Japanese twins
+# would be a large diff for no gain, and video/RENDERED.json hashes each scene's source - a
+# cosmetic rename would invalidate every clip's provenance to say nothing.
+BG = "#0b0e14"         # site --paper, dark
 
-GREEN = "#2D6A4F"
-GREEN_HI = "#52B788"
-PURPLE = "#5A189A"
-PURPLE_HI = "#9D4EDD"
-RED = "#9D0208"
-BLUE = "#1D3557"
-BLUE_HI = "#A8DADC"
-NEUTRAL = "#495057"
-WHITE = "#F8F9FA"
-DIM = "#8A94A0"
+GREEN = "#c79a2e"      # --live held back: a live signal at rest
+GREEN_HI = "#ffc94d"   # site --live
+PURPLE = "#182a7a"     # site --field, the plate itself
+PURPLE_HI = "#2c3f9e"  # site --field-lit
+RED = "#ff7a5c"        # site --block: a refusal, nothing else
+BLUE = "#182a7a"       # site --field
+BLUE_HI = "#7a8ad4"    # site --field-line, route metal
+NEUTRAL = "#6c7885"    # site --edge
+WHITE = "#eef1fb"      # site --on-field
+DIM = "#b3bee9"        # site --on-field-2
 
 FONT = "Segoe UI"  # present on Windows; Manim falls back cleanly if missing
 
