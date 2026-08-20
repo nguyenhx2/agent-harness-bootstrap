@@ -158,40 +158,375 @@ async function withBusy(what, el, fn) {
 // frontmatter and syntax exactly as written, while the master plan is a report
 // people read formatted. One shared setting would let a choice made in the
 // sidebar silently change how the plan renders.
-const ICON_DOC = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
-  '<path d="M3 2.5h10v11H3z"/><path d="M5 5.5h6M5 8h6M5 10.5h4"/></svg>';
-const ICON_CODE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
-  '<path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></svg>';
-// Header button icons. Inline SVG so the page stays self-contained; the text
-// label stays beside each one because the glyphs alone do not say "Master plan".
-const ICONS = {
-  flow: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="10.5" width="4.5" height="3.5" rx="1"/><path d="M5.5 3.75h5M8 3.75v8.5h2.5"/></svg>',
-  graph: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="3" cy="4" r="2"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="13" r="2"/><path d="M4.8 4.9 11 5.7M4.2 5.7 6.2 11.2M11.9 7.7 8.3 11.6"/></svg>',
-  plan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 2h10v12H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>',
-  reload: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2v3.5H10"/></svg>',
-  load: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8"/><path d="M4.75 6.75 8 10l3.25-3.25"/><path d="M2.5 12.5h11"/></svg>',
-  browse: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 12.5v-9h4l1.5 2h7.5v7z"/></svg>',
-  assess: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 13.5h12"/><path d="M4 13.5V8M8 13.5V3.5M12 13.5V6"/></svg>',
-  eye: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="1.8"/></svg>',
-  eyeoff: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 5.2C1.6 6.3 1 8 1 8s2.5 4.5 7 4.5c1.3 0 2.4-.4 3.4-.9"/><path d="M6.3 3.7A7.6 7.6 0 0 1 8 3.5c4.5 0 7 4.5 7 4.5s-.7 1.3-2 2.5"/><path d="M2 2l12 12"/></svg>',
-  off: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v6"/><path d="M4.2 4.4a5.5 5.5 0 1 0 7.6 0"/></svg>',
-  on: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 8.5 6 12l7.5-8"/></svg>',
-};
+// --- icons ------------------------------------------------------------------
+// Every glyph the page can draw is a <symbol> in the sprite at the top of
+// ui.html, and this list is its mirror: icon() refuses a name that is not on it
+// rather than emitting a <use> pointing at nothing, so a typo shows up as a
+// thrown error in development instead of an invisible button in production.
+//
+// Adding an icon means two edits, in this order: a <symbol id="i-NAME"> in the
+// sprite, and NAME here. Nothing is ever fetched - the sprite ships in the page.
+const ICON_IDS = new Set([
+  "flow", "graph", "plan", "reload", "load", "browse", "assess",
+  "eye", "eyeoff", "off", "on", "check", "doc", "code",
+  "state", "status", "owner", "model", "effort", "deps", "fr", "tools", "event",
+  "x", "up", "edit", "save", "undo", "trash", "target", "plus", "shield", "alert",
+  "info", "link",
+]);
+
+/// One icon, as an <svg> element referencing the sprite. Decoration by default:
+/// it is aria-hidden because the control beside it already says the action, and
+/// an icon-only control gets its accessible name from aria-label instead.
+///
+/// The markup is assembled from ICON_IDS - a constant in this file - and never
+/// from anything a scanned repository can influence, which is why an innerHTML
+/// hop is safe here where it would not be for repository text.
+function icon(name) {
+  if (!ICON_IDS.has(name)) throw new Error("unknown icon: " + name);
+  const box = document.createElement("span");
+  box.innerHTML = '<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-' +
+    name + '"></use></svg>';
+  return box.firstChild;
+}
+
+// The two markdown-mode glyphs, named so the mode button reads as intent.
+const ICON_DOC = "doc", ICON_CODE = "code";
 
 // Icons for metadata KEYS, only where the icon adds meaning. A row that is just
 // a string (id, file, title) gets none: decorating every row would make the
 // ones that carry state stop standing out, which is the whole point.
 const FIELD_ICONS = {
-  state:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/></svg>',
-  status: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.2l2 1.3"/></svg>',
-  owner:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg>',
-  model:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2"/><path d="M6.5 6.5h3v3h-3z"/></svg>',
-  effort: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 13h3V8H2zM6.5 13h3V5h-3zM11 13h3V2h-3z"/></svg>',
-  deps:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.5 9.5 4 12a2.5 2.5 0 0 1-3.5-3.5L3 6"/><path d="M9.5 6.5 12 4a2.5 2.5 0 0 1 3.5 3.5L13 10"/><path d="M6 10l4-4"/></svg>',
-  fr:     '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 2h6l2.5 2.5V14H4z"/><path d="M6 7h4M6 10h4"/></svg>',
-  tools:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10.5 2.5a3 3 0 0 0-4 4L2 11v3h3l4.5-4.5a3 3 0 0 0 4-4l-2 2-2-2z"/></svg>',
-  event:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v5l3 2"/><circle cx="8" cy="8" r="6"/></svg>',
+  state: "state", status: "status", owner: "owner", model: "model",
+  effort: "effort", deps: "deps", fr: "fr", tools: "tools", event: "event",
 };
+
+// === reusable components =====================================================
+// Two components, one of each, shared by everything on this page. They exist
+// because the page used to reach for window.prompt/window.confirm and for a bare
+// <div id="msg">: a native dialog renders as "127.0.0.1:7420 says" with the
+// server's multi-line refusal crushed into one system-font blob, and the bare div
+// appended an unbounded error to the sidebar with no way to dismiss it.
+//
+// ---- API CONTRACT (stable; write against this, not against the implementation)
+//
+//   ui.modal(spec) -> Promise<{ action: string, values: Object } | null>
+//
+//     spec = {
+//       title:  string                 required; labels the dialog
+//       icon:   string                 optional sprite name (see ICON_IDS)
+//       tone:   "danger"|"warn"|"info" optional; colours the title mark only
+//       body:   string | Node | Array<string|Node>
+//                                      strings are rendered as prose: blank
+//                                      lines split paragraphs and `backticked`
+//                                      runs become <code>. Every byte lands via
+//                                      textContent, so server or repository text
+//                                      is safe to pass straight in.
+//       fields: [{ name, label, hint, value, placeholder, type }]
+//                                      text inputs, in order. `name` keys the
+//                                      result. Values are returned VERBATIM -
+//                                      never trimmed, cased or defaulted.
+//       actions:[{ id, label, icon, kind, default }]
+//                                      footer buttons, left to right.
+//                                      kind: "primary" | "danger" | "cancel"
+//                                            (omit for a plain button)
+//                                      default: true -> this one takes focus
+//       dismissible: boolean           default true; false hides the X and
+//                                      makes Escape/backdrop do nothing
+//       onReady: ({ close }) => void   called once the dialog is on screen.
+//                                      `close(result)` resolves ui.modal with
+//                                      `result`, so a control built inside
+//                                      `body` (a row's Edit, say) can answer
+//                                      the same way a footer action does.
+//     }
+//
+//     Resolves to null when the dialog was dismissed - Escape, the X, the
+//     backdrop, or a kind:"cancel" action - and otherwise to the id of the
+//     action pressed plus the field values. Calls are serialised: a second
+//     ui.modal() while one is open waits its turn rather than stacking.
+//
+//     Accessibility is handled for you: role="dialog", aria-modal, the title
+//     wired up as the accessible name, focus moved in on open and restored to
+//     whatever was focused before, focus trapped with Tab/Shift+Tab, and Escape
+//     cancelling. Give the CANCEL action `default: true` whenever the other
+//     action is destructive, so the dangerous button is never pre-armed.
+//
+//   ui.toast(spec) -> { dismiss() }
+//
+//     spec = {
+//       kind:  "success"|"info"|"warn"|"error"   default "info"
+//       title: string                           required, one line
+//       body:  string                           optional; same prose rendering
+//       timeout: number (ms)                    optional override; 0 = sticky
+//     }
+//
+//     success and info auto-dismiss after TOAST_MS; warn and error are sticky,
+//     because a failure the reader missed is a failure they will repeat. Every
+//     toast has a dismiss button. success/info announce as role="status",
+//     warn/error as role="alert".
+//
+//   ui.prose(host, text)   the same renderer, for anywhere else that shows
+//                          server text: paragraphs plus `code`, DOM only.
+//   ui.icon(name)          an <svg> element from the sprite.
+// =============================================================================
+
+const TOAST_MS = 6000;
+
+const ui = (() => {
+  /// Server text as readable DOM. Blank lines split paragraphs; a run in
+  /// `backticks` becomes <code>, because the refusals name identifiers and a
+  /// phrase that must be typed byte-for-byte has to be unambiguous about where
+  /// it starts and ends. Nothing here touches innerHTML.
+  function prose(host, text) {
+    const wrap = document.createElement("div");
+    wrap.className = "ui-prose";
+    for (const para of String(text).split(/\n\s*\n/)) {
+      if (!para.trim()) continue;
+      const p = document.createElement("p");
+      // split on `...`, keeping the delimiters: odd indexes are the code runs
+      const parts = para.split(/`([^`]+)`/);
+      parts.forEach((piece, i) => {
+        if (i % 2 === 1) {
+          const c = document.createElement("code");
+          c.textContent = piece;
+          p.append(c);
+        } else if (piece) {
+          p.append(document.createTextNode(piece));
+        }
+      });
+      wrap.append(p);
+    }
+    host.append(wrap);
+    return wrap;
+  }
+
+  function putBody(host, body) {
+    const items = Array.isArray(body) ? body : [body];
+    for (const it of items) {
+      if (it === null || it === undefined || it === "") continue;
+      if (it instanceof Node) host.append(it);
+      else prose(host, it);
+    }
+  }
+
+  // Everything focusable inside the dialog, in document order. Queried fresh on
+  // every Tab rather than cached: a dialog whose body changes (an action that
+  // disables itself, a field revealed by another) would otherwise trap focus
+  // against a stale list.
+  function focusables(root) {
+    return [...root.querySelectorAll(
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), " +
+      "textarea:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])")];
+  }
+
+  let chain = Promise.resolve();
+
+  function openModal(spec) {
+    return new Promise(resolve => {
+      const prevFocus = document.activeElement;
+      const dismissible = spec.dismissible !== false;
+      const scrim = document.createElement("div");
+      scrim.className = "ui-scrim";
+
+      const dlg = document.createElement("div");
+      dlg.className = "ui-dlg" + (spec.tone ? " tone-" + spec.tone : "");
+      dlg.setAttribute("role", "dialog");
+      dlg.setAttribute("aria-modal", "true");
+      const titleId = "ui-dlg-title-" + (++openModal.seq);
+      dlg.setAttribute("aria-labelledby", titleId);
+      scrim.append(dlg);
+
+      const top = document.createElement("div");
+      top.className = "ui-dlg-top";
+      if (spec.icon) {
+        const m = document.createElement("span");
+        m.className = "ui-dlg-mark"; m.append(icon(spec.icon));
+        top.append(m);
+      }
+      const h = document.createElement("h2");
+      h.id = titleId; h.textContent = spec.title || "";
+      top.append(h);
+      if (dismissible) {
+        const x = document.createElement("button");
+        x.className = "ui-dlg-x";
+        setIconBtn(x, "x", "Close this dialog");
+        x.onclick = () => done(null);
+        top.append(x);
+      }
+      dlg.append(top);
+
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "ui-dlg-body";
+      putBody(bodyEl, spec.body);
+
+      // Field values are read straight off the inputs at resolve time. Nothing
+      // normalises them on the way out, and nothing may: the one caller that
+      // matters compares its value byte-for-byte on the server.
+      const inputs = [];
+      for (const f of (spec.fields || [])) {
+        const box = document.createElement("div");
+        box.className = "ui-field";
+        const id = "ui-field-" + (++openModal.seq);
+        const lab = document.createElement("label");
+        lab.htmlFor = id; lab.textContent = f.label || f.name;
+        const inp = document.createElement("input");
+        inp.id = id; inp.type = f.type || "text";
+        inp.value = f.value === undefined ? "" : f.value;
+        if (f.placeholder) inp.placeholder = f.placeholder;
+        inp.spellcheck = false;
+        inp.autocomplete = "off";
+        inp.name = f.name;
+        box.append(lab, inp);
+        if (f.hint) {
+          const hh = document.createElement("div");
+          hh.className = "ui-hint"; hh.textContent = f.hint;
+          hh.id = id + "-hint"; inp.setAttribute("aria-describedby", hh.id);
+          box.append(hh);
+        }
+        bodyEl.append(box);
+        inputs.push(inp);
+      }
+      dlg.append(bodyEl);
+
+      const values = () => {
+        const out = {};
+        for (const i of inputs) out[i.name] = i.value;
+        return out;
+      };
+
+      const foot = document.createElement("div");
+      foot.className = "ui-dlg-foot";
+      let focusTarget = null, submitBtn = null;
+      for (const a of (spec.actions || [])) {
+        const btn = document.createElement("button");
+        if (a.kind === "danger") btn.className = "ui-danger";
+        else if (a.kind === "primary") btn.className = "ui-primary";
+        setBtn(btn, a.icon || null, a.label);
+        btn.onclick = () => done(a.kind === "cancel" ? null : { action: a.id, values: values() });
+        if (a.kind !== "cancel" && !submitBtn) submitBtn = btn;
+        if (a.default) focusTarget = btn;
+        foot.append(btn);
+      }
+      if (spec.actions && spec.actions.length) dlg.append(foot);
+
+      // Enter in a field means "do the thing", which is the non-cancel action.
+      // Not wired as a <form>: a form in this page would submit and navigate.
+      for (const inp of inputs) {
+        inp.addEventListener("keydown", ev => {
+          if (ev.key === "Enter" && submitBtn) { ev.preventDefault(); submitBtn.click(); }
+        });
+      }
+
+      const onKey = ev => {
+        if (ev.key === "Escape") {
+          if (!dismissible) return;
+          ev.preventDefault(); ev.stopPropagation();
+          done(null);
+          return;
+        }
+        if (ev.key !== "Tab") return;
+        const f = focusables(dlg);
+        if (!f.length) { ev.preventDefault(); return; }
+        const first = f[0], last = f[f.length - 1];
+        // The trap has to handle the case where focus escaped the dialog
+        // entirely (a click on the scrim); sending it back to an edge is what
+        // keeps Tab from walking into the page underneath.
+        if (!dlg.contains(document.activeElement)) { ev.preventDefault(); first.focus(); return; }
+        if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+      };
+      // capture, so Escape reaches this before the folder browser's own
+      // window-level Escape handler closes something behind the dialog
+      document.addEventListener("keydown", onKey, true);
+      scrim.addEventListener("mousedown", ev => { if (ev.target === scrim && dismissible) done(null); });
+
+      let settled = false;
+      function done(result) {
+        if (settled) return;
+        settled = true;
+        document.removeEventListener("keydown", onKey, true);
+        scrim.remove();
+        // Focus goes back where it came from - the button that opened this - so
+        // a keyboard user is not dropped at the top of the document.
+        if (prevFocus && prevFocus.focus && document.contains(prevFocus)) prevFocus.focus();
+        resolve(result);
+      }
+
+      document.body.append(scrim);
+      // A destructive confirm must not arrive with the dangerous button armed,
+      // so `default: true` belongs on Cancel and the fallback below picks the
+      // first field, then the first non-destructive button.
+      if (!focusTarget) focusTarget = inputs[0] || null;
+      if (!focusTarget) focusTarget = foot.querySelector("button:not(.ui-danger)") || focusables(dlg)[0];
+      if (focusTarget) focusTarget.focus();
+
+      // A dialog whose body is a list has to be able to resolve from inside that
+      // body: a row's own Edit or Delete is not expressible as a footer action.
+      // `onReady` hands the body the same `done` the footer buttons use, so an
+      // in-body control resolves this promise with a real result. Without it the
+      // only route out was to synthesise an Escape keydown, which works only
+      // while the dialog is dismissible and tells ui.js nothing about what was
+      // chosen - the caller had to smuggle its answer past a resolved null.
+      if (typeof spec.onReady === "function") {
+        try { spec.onReady({ close: done }); }
+        catch (err) { console.error("modal onReady threw", err); }
+      }
+    });
+  }
+  openModal.seq = 0;
+
+  function modal(spec) {
+    const p = chain.then(() => openModal(spec));
+    chain = p.catch(() => {});
+    return p;
+  }
+
+  const TOAST_ICON = { success: "check", error: "alert", warn: "alert", info: "info" };
+
+  function toast(spec) {
+    const kind = TOAST_ICON[spec.kind] ? spec.kind : "info";
+    const loud = kind === "error" || kind === "warn";
+    const host = document.getElementById("ui-toasts");
+    const el = document.createElement("div");
+    el.className = "ui-toast k-" + kind;
+    // A failure is announced as an alert and a success as a status: the first
+    // interrupts, the second waits its turn, and that is the difference between
+    // the two for someone who is not looking at the corner of the screen.
+    el.setAttribute("role", loud ? "alert" : "status");
+    el.setAttribute("aria-live", loud ? "assertive" : "polite");
+
+    const mark = document.createElement("span");
+    mark.className = "ui-tmark"; mark.append(icon(TOAST_ICON[kind]));
+    const body = document.createElement("div");
+    body.className = "ui-tbody";
+    const t = document.createElement("div");
+    t.className = "ui-ttitle"; t.textContent = spec.title || "";
+    body.append(t);
+    if (spec.body) prose(body, spec.body);
+
+    const x = document.createElement("button");
+    x.className = "ui-tx";
+    setIconBtn(x, "x", "Dismiss this message");
+    let timer = null;
+    const dismiss = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      el.remove();
+    };
+    x.onclick = dismiss;
+
+    el.append(mark, body, x);
+    host.append(el);
+    // Sticky for anything that went wrong: an error that vanished before it was
+    // read is an error that gets hit again.
+    const ms = spec.timeout === undefined ? (loud ? 0 : TOAST_MS) : spec.timeout;
+    if (ms > 0) timer = setTimeout(dismiss, ms);
+    return { dismiss: dismiss, el: el };
+  }
+
+  return { modal: modal, toast: toast, prose: prose, icon: icon };
+})();
+// Published on window so the panels other people are building can reach it
+// without depending on where in this file it happens to be declared.
+window.ui = ui;
 
 // A cheap seat and an expensive seat should be distinguishable at a glance:
 // cost control is one of the things this project measures, so the panel should
@@ -203,13 +538,23 @@ const EFFORT_TONE = { high: "hot", medium: "mid", low: "cool" };
 // text that already says the action, so it stays out of the accessibility tree.
 function setBtn(btn, iconKey, text) {
   btn.textContent = "";
-  if (ICONS[iconKey]) {
-    const i = document.createElement("span");
-    i.className = "bicon"; i.innerHTML = ICONS[iconKey];
-    btn.append(i);
-  }
+  if (iconKey) btn.append(icon(iconKey));
   btn.append(document.createTextNode(text));
   btn.setAttribute("aria-label", text);
+}
+
+/// An icon-only control: the glyph carries no accessible name of its own, so
+/// the label is supplied twice - as the tooltip a sighted user gets on hover and
+/// as visually-hidden text a screen reader reads. aria-label alone would leave
+/// voice-control users with no visible name to speak.
+function setIconBtn(btn, iconKey, label) {
+  btn.textContent = "";
+  btn.append(icon(iconKey));
+  const vh = document.createElement("span");
+  vh.className = "ui-vh"; vh.textContent = label;
+  btn.append(vh);
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
 }
 
 function iconize(id, key) {
@@ -217,9 +562,7 @@ function iconize(id, key) {
   if (!b) return;
   const text = b.textContent;
   b.textContent = "";
-  const s = document.createElement("span");
-  s.innerHTML = ICONS[key];           // our own constant, never repo content
-  b.append(s.firstChild, document.createTextNode(text));
+  b.append(icon(key), document.createTextNode(text));
   if (!b.getAttribute("aria-label")) b.setAttribute("aria-label", b.title || text);
 }
 
@@ -252,12 +595,11 @@ function makeModeButton(key, onChange, file) {
   b.className = "icon-btn";
   const paint = () => {
     const raw = mdMode(key) === "raw";
-    b.innerHTML = raw ? ICON_DOC : ICON_CODE;
     b.setAttribute("aria-pressed", raw ? "true" : "false");
     const what = { json: "JSON", yaml: "YAML", md: "markdown" }[fileKind(file)];
     const t = raw ? "Showing the raw file. Switch to formatted " + what + "."
                   : "Showing formatted " + what + ". Switch to the raw file.";
-    b.title = t; b.setAttribute("aria-label", t);
+    setIconBtn(b, raw ? ICON_DOC : ICON_CODE, t);
   };
   b.onclick = () => {
     localStorage.setItem(key, mdMode(key) === "raw" ? "formatted" : "raw");
@@ -501,6 +843,21 @@ function clearSel() {
   sel = null; hi = { nodes: new Set(), edges: new Set() };
   stopAnim();
   setPanel(false);
+}
+
+/// Re-scan, then put the sidebar back on the node it was showing.
+///
+/// A toggle used to end with clearSel(): the operator disabled a rule and the
+/// panel they were reading vanished, taking the state row that had just changed
+/// with it. The selection survives the reload instead, so the same node
+/// re-renders in its new state - state reads `disabled`, the button now reads
+/// Enable. Only a node that genuinely left the graph falls back to clearing,
+/// because there is then nothing left to show.
+async function reloadKeeping(id) {
+  await load();
+  const again = graph.nodes.find(x => x.id === id);
+  if (again) select(again, true); else clearSel();
+  draw();
 }
 
 // --- edge routing -----------------------------------------------------------
@@ -808,7 +1165,7 @@ function row(table, k, v, cls) {
   // aria-hidden: a screen reader announcing "circle status" helps nobody.
   if (FIELD_ICONS[k]) {
     const i = document.createElement("span");
-    i.className = "kicon"; i.innerHTML = FIELD_ICONS[k];
+    i.className = "kicon"; i.append(icon(FIELD_ICONS[k]));
     kwrap.append(i);
   }
   kwrap.append(document.createTextNode(k));
@@ -827,7 +1184,9 @@ function nodeLink(cell, id, text) {
   if (!target) return false;
   const a = document.createElement("button");
   a.className = "vlink";
-  a.textContent = text;
+  // the arrow says "this goes somewhere"; the identifier stays the label, so
+  // the control still reads as the thing it points at
+  a.append(icon("link"), document.createTextNode(text));
   a.title = "select " + id;
   a.onclick = () => { select(target); draw(); };
   cell.append(a);
@@ -942,7 +1301,7 @@ function buildStepCard(g, st, index, shown, ids) {
     const bar = document.createElement("div");
     bar.className = "stepacts"; bar.style.marginTop = "4px";
     const ok = document.createElement("button");
-    ok.textContent = "Apply";
+    setBtn(ok, "check", "Apply");
     ok.onclick = () => {
       // Apply is local: it marks the step edited and repaints. The file is not
       // touched until Save, so an edit and a reorder land as one write.
@@ -951,7 +1310,7 @@ function buildStepCard(g, st, index, shown, ids) {
       paintCommandSteps();
     };
     const no = document.createElement("button");
-    no.textContent = "Cancel";
+    setBtn(no, "x", "Cancel");
     no.onclick = () => { st.editing = false; paintCommandSteps(); };
     bar.append(ok, no);
     bodyBox.append(bar);
@@ -988,25 +1347,27 @@ function buildStepCard(g, st, index, shown, ids) {
 
   const acts = document.createElement("div");
   acts.className = "stepacts";
+  // Icon-only, and deliberately so: the sidebar is 320px by default and these
+  // two buttons repeat on every card, so the words "Edit" and "Off" beside a
+  // glyph cost the step's own text several lines of wrapping each. The name is
+  // carried by the tooltip and by hidden text instead of by pixels.
   const ed = document.createElement("button");
-  ed.textContent = "Edit";
-  ed.title = "edit this step's wording";
+  setIconBtn(ed, "edit", "Edit this step's wording");
   ed.onclick = () => {
     for (const gg of stepEdit.parsed.groups) for (const s of gg.steps) s.editing = false;
     st.editing = true;
     paintCommandSteps();
   };
   const off = document.createElement("button");
-  off.textContent = st.disabled ? "On" : "Off";
   const blocked = !st.disabled && !canDisableStep(st);
-  off.disabled = blocked;
-  off.title = blocked
+  setIconBtn(off, st.disabled ? "on" : "off", blocked
     // Refused up front rather than at save time: the wrapper is an HTML comment
     // and this step already contains its terminator, so wrapping it would close
     // the block early and drop the tail back into the file as live prose.
     ? "cannot switch off: this step's text contains `-->`, which would end the comment early"
     : (st.disabled ? "put this step back into the procedure"
-                   : "comment this step out of the procedure");
+                   : "comment this step out of the procedure"));
+  off.disabled = blocked;
   off.onclick = () => {
     st.disabled = !st.disabled;
     st.editing = false;
@@ -1075,9 +1436,10 @@ function buildSaveBar() {
   txt.className = "grow";
   txt.textContent = "Unsaved changes to " + stepEdit.name + ".md";
   const save = document.createElement("button");
-  save.textContent = "Save";
+  setBtn(save, "save", "Save");
+  save.className = "ui-primary";
   const revert = document.createElement("button");
-  revert.textContent = "Revert";
+  setBtn(revert, "undo", "Revert");
   revert.onclick = () => revertCommandSteps();
   save.onclick = async () => {
     save.disabled = revert.disabled = true;
@@ -1117,13 +1479,28 @@ function buildSaveBar() {
   return bar;
 }
 
-function select(n) {
+// `force` skips the unsaved-changes question. It is for the callers that are
+// re-rendering the node already on screen (reloadKeeping) or acting on an answer
+// the reader has just given, where asking again would be asking twice.
+function select(n, force) {
   // Selecting another node rebuilds the panel and the step editor with it, so
   // anything unsaved would go without being mentioned. Ask first, and keep the
-  // current selection when the answer is no.
-  if (stepsDirty() && stepEdit && n.id !== sel &&
-      !window.confirm("There are unsaved step changes to " + stepEdit.name +
-                      ".md.\n\nLeave without saving?")) {
+  // current selection when the answer is no. The dialog is asynchronous, so the
+  // selection happens in the callback rather than by falling through; select()
+  // itself stays synchronous because every caller paints straight afterwards.
+  if (!force && stepsDirty() && stepEdit && n.id !== sel) {
+    const name = stepEdit.name;
+    ui.modal({
+      title: "Leave without saving?",
+      icon: "alert",
+      tone: "warn",
+      body: "There are unsaved step changes to `" + name + ".md`. Selecting " +
+            "another node rebuilds the editor and those changes are lost.",
+      actions: [
+        { id: "stay", label: "Stay here", icon: "x", kind: "cancel", default: true },
+        { id: "leave", label: "Discard and leave", icon: "trash", kind: "danger" },
+      ],
+    }).then(answer => { if (answer) { select(n, true); draw(); } });
     return;
   }
   stepEdit = null;
@@ -1334,23 +1711,64 @@ function select(n) {
         // HARD-protected. The CLI makes the user type `disable <name>` and
         // forbids the model from composing it; there is no model here, so the
         // page asks the human for the same phrase and sends what they typed.
-        // Nothing is normalized on the way: a near miss is refused again.
-        const typed = window.prompt(
-          txt + "\n\nType the phrase exactly to confirm:", "");
-        if (typed !== null && typed !== "") {
-          payload.confirm_hard = typed;
-          ({ res, txt } = await post());
-        }
+        //
+        // The dialog deliberately offers no help with the typing. It does not
+        // prefill the field, it has no "copy the phrase into the box" button,
+        // and it does not trim or case-fold what comes back - the server
+        // compares byte-for-byte and a gate that assembles its own answer is
+        // not a gate. The phrase is shown as <code> only so its exact bounds
+        // are readable; the refusal text from the server already contains it.
+        const answer = await ui.modal({
+          title: "This control is HARD-protected",
+          icon: "shield",
+          tone: "danger",
+          body: txt,
+          fields: [{
+            name: "phrase",
+            label: "Type the phrase exactly to confirm",
+            hint: "Compared byte-for-byte. Nothing here is corrected for you.",
+          }],
+          actions: [
+            { id: "cancel", label: "Cancel", icon: "x", kind: "cancel", default: true },
+            { id: "go", label: "Disable it", icon: "off", kind: "danger" },
+          ],
+        });
+        if (!answer) { fit(); return; }
+        payload.confirm_hard = answer.values.phrase;   // verbatim, always
+        ({ res, txt } = await post());
       }
       if (res.status === 409 && !payload.enable) {
         // SOFT-protected: the server refused pending an explicit confirmation
-        if (window.confirm(txt + "\n\nDisable it anyway?")) {
-          payload.confirm_soft = true;
-          ({ res, txt } = await post());
-        }
+        const answer = await ui.modal({
+          title: "Disable a protected control?",
+          icon: "alert",
+          tone: "warn",
+          body: txt,
+          actions: [
+            { id: "cancel", label: "Keep it enabled", icon: "x", kind: "cancel", default: true },
+            { id: "go", label: "Disable it anyway", icon: "off", kind: "danger" },
+          ],
+        });
+        if (!answer) { fit(); return; }
+        payload.confirm_soft = true;
+        ({ res, txt } = await post());
       }
-      if (!res.ok) { const m = document.createElement("div"); m.id = "msg"; m.textContent = txt; d.append(m); }
-      else { clearSel(); await load(); }
+      if (!res.ok) {
+        // Sticky, dismissible, and rendered as prose: the refusals are several
+        // sentences with backticked identifiers in them, and the old bare div
+        // appended one raw blob to the sidebar with no way to get rid of it.
+        ui.toast({
+          kind: "error",
+          title: (payload.enable ? "Could not enable " : "Could not disable ") + label(n),
+          body: txt,
+        });
+      } else {
+        ui.toast({ kind: "success", title: txt });
+        // Keep the panel on the node the operator was reading. Disabling
+        // something used to empty the sidebar, so the state that just changed
+        // was the one thing they could no longer see.
+        await reloadKeeping(n.id);
+      }
       fit();
     };
     head.append(b);
@@ -1827,7 +2245,7 @@ function renderAssessment(a) {
     top.append(sev, title);
     if (f.node) {
       const go = document.createElement("button"); go.className = "agoto";
-      go.textContent = "show in graph";
+      setBtn(go, "target", "show in graph");
       go.onclick = () => gotoNode(f.node);
       top.append(go);
     }
@@ -1929,13 +2347,15 @@ async function openBrowse(path) {
       const a = document.createElement("span"); a.className = "p"; a.textContent = p;
       a.onclick = () => { closeModal(); rootInput.value = p; loadTyped(); };
       const x = document.createElement("button");
-      x.className = "x"; x.textContent = "x"; x.title = "Forget this folder";
+      x.className = "x";
+      // icon-only, so the name is carried twice: a tooltip and hidden text
+      setIconBtn(x, "trash", "Forget " + p);
       x.onclick = ev => { ev.stopPropagation(); forgetRoot(p); openBrowse(browsePath); };
       row.append(a, x); body.append(row);
     }
     const clr = document.createElement("div"); clr.className = "recent";
     const cb = document.createElement("button");
-    cb.textContent = "Clear history"; cb.style.padding = "2px 8px";
+    setBtn(cb, "trash", "Clear history"); cb.style.padding = "2px 8px";
     cb.onclick = () => { localStorage.removeItem("hv-recent"); buildRoots(); openBrowse(browsePath); };
     clr.append(cb); body.append(clr);
     const h2 = document.createElement("h4"); h2.textContent = "Folders"; body.append(h2);
@@ -2000,6 +2420,10 @@ iconize("btn-assess", "assess");
 iconize("btn-reload", "reload");
 iconize("btn-browse", "browse");
 iconize("btn-load", "load");
+// the folder browser's own three controls, so nothing on the page is a bare word
+iconize("m-up", "up");
+iconize("m-close", "x");
+iconize("m-pick", "browse");
 buildRoots();
 applySide();
 fit();

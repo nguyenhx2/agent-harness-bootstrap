@@ -286,7 +286,17 @@ def same_content(a: pathlib.Path, b: pathlib.Path) -> bool:
 
 
 def differences(a: pathlib.Path, b: pathlib.Path) -> list[str]:
-    """Every path that differs between two trees, by content and not by timestamp."""
+    """Every path that differs between two trees, by content and not by timestamp.
+
+    Content is compared here, file by file, and NOT through `filecmp.cmpfiles`. Even with
+    `shallow=False` that function answers from a module-level cache keyed by each file's size and
+    mtime. Comparing one pair of paths twice in a process - which `self_test` does by design,
+    once identical and once after an edit - lets a same-size edit inside a single filesystem
+    timestamp tick come back as "identical" from the cache: measured at 52 of 200 trials on
+    Windows. The real tree comparison sees each pair once and was not affected, but the
+    self-test was, so `--check` died with a spurious DEAD CHECK about a quarter of the time.
+    A gate that fails at random gets ignored, so the cache is out of the path entirely.
+    """
     out: list[str] = []
 
     def walk(d: filecmp.dircmp, prefix: str) -> None:
@@ -294,12 +304,13 @@ def differences(a: pathlib.Path, b: pathlib.Path) -> list[str]:
             out.append(f"only in the committed tree: {prefix}{n}")
         for n in sorted(d.right_only):
             out.append(f"missing from the committed tree: {prefix}{n}")
-        # shallow=False: compare bytes, never size-and-mtime, or a same-size edit slips past.
-        _, mismatch, errors = filecmp.cmpfiles(d.left, d.right, d.common_files, shallow=False)
-        for n in sorted(mismatch) + sorted(errors):
-            if same_content(pathlib.Path(d.left) / n, pathlib.Path(d.right) / n):
-                continue
-            out.append(f"differs: {prefix}{n}")
+        # `common_funny` is a name that is a file on one side and a directory on the other,
+        # or unreadable - never silently common ground.
+        for n in sorted(d.common_funny):
+            out.append(f"differs in kind: {prefix}{n}")
+        for n in sorted(d.common_files):
+            if not same_content(pathlib.Path(d.left) / n, pathlib.Path(d.right) / n):
+                out.append(f"differs: {prefix}{n}")
         for name, sub in sorted(d.subdirs.items()):
             walk(sub, f"{prefix}{name}/")
 

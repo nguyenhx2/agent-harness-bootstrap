@@ -17,7 +17,6 @@
   /* header buttons carry an icon beside the label; the label stays because the
      glyphs alone do not say "Master plan" */
   header button { display: inline-flex; align-items: center; gap: 6px; }
-  header button svg { width: 14px; height: 14px; flex: 0 0 auto; }
   /* the checkbox sat above the neighbouring text baselines: the label was the
      only header control not centred as a flex row */
   #autowrap { display: inline-flex; align-items: center; gap: 6px; }
@@ -107,7 +106,8 @@
   #detail table.meta td.k { white-space: nowrap; width: 104px; color: var(--dim); }
   #detail table.meta td.v { word-break: break-word; overflow-wrap: anywhere; }
   #detail .desc { margin: 6px 0 2px; padding: 6px 8px; background: #f1f5f9; border-radius: 6px; white-space: pre-wrap; word-break: break-word; }
-  #msg { color: #b91c1c; white-space: pre-wrap; margin-top: 8px; }
+  /* a refused toggle used to append a bare, undismissable red blob here; it is
+     a toast now (see ui.toast), so the sidebar has no error slot at all */
   .toggle-btn { margin-top: 8px; width: 100%; }
   .prev-btn { margin-top: 8px; width: 100%; }
   pre.preview { margin-top: 8px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; }
@@ -130,9 +130,12 @@
   .stepgrp > .gintro { color: var(--dim); font-size: 11px; white-space: pre-wrap; word-break: break-word; margin: 2px 0; }
   ol.steps { margin: 4px 0 0 20px; padding: 0; }
   ol.steps > li { margin: 0 0 7px; }
-  /* pre-wrap, not markdown: a step is one paragraph of prose whose line breaks
-     are how the author wrote it, and every byte lands via textContent so a
-     scanned repository's own text can never reach innerHTML on this path. */
+  /* A step's body is now RENDERED as the markdown it usually is - the routing
+     tables in /implement-fr were unreadable as raw pipes - but the half of the
+     original rule that mattered is untouched: every byte of repository text
+     still lands via createElement + textContent, never innerHTML. Anything that
+     does not parse as supported markdown falls back to this pre-wrap text, and
+     editing always shows the original source. See STEP_CSS in ui-steps.js. */
   .steptext { white-space: pre-wrap; word-break: break-word; }
   .steptouch { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .steptouch .vlink { margin: 0; }
@@ -237,7 +240,7 @@
   .fm span { word-break: break-word; }
   /* icon toggle: two states, current mode is the pressed one */
   .icon-btn { padding: 3px 7px; line-height: 0; display: inline-flex; align-items: center; }
-  .icon-btn svg { width: 15px; height: 15px; display: block; }
+  .icon-btn svg.ico { width: 15px; height: 15px; display: block; }
   .icon-btn[aria-pressed="true"] { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
   .md-bar { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
   .md-bar .prev-btn { margin-top: 0; }
@@ -264,9 +267,8 @@
      `table-layout: fixed` stop applying, the row splits 50/50, and the cell's
      border-top stops drawing as one continuous row separator. */
   #detail td.k .kwrap { display: flex; align-items: center; gap: 5px; }
-  .kicon, .bicon { display: inline-flex; line-height: 0; flex: 0 0 auto; }
-  .kicon svg { width: 11px; height: 11px; opacity: 0.65; }
-  .bicon svg { width: 13px; height: 13px; margin-right: 5px; }
+  .kicon { display: inline-flex; line-height: 0; flex: 0 0 auto; }
+  .kicon svg.ico { width: 11px; height: 11px; opacity: 0.65; }
   button.prev-btn, button.toggle-btn { display: inline-flex; align-items: center; justify-content: center; }
   /* Disable is destructive-ish, Enable restores: different intent, different colour */
   .toggle-btn.danger { border-color: #fca5a5; color: #b91c1c; background: #fff5f5; }
@@ -305,9 +307,150 @@
   .recent .p:hover { text-decoration: underline; }
   .recent .x { border: none; background: none; color: var(--dim); cursor: pointer; padding: 0 4px; font-size: 14px; }
   .recent .x:hover { color: #b91c1c; }
+
+  /* ==== icon sprite ========================================================
+     Every glyph on the page is a <symbol> in the sprite below and is used as
+     <svg class="ico"><use href="#i-NAME"/></svg>. The stroke properties live
+     here rather than on each symbol because CSS inheritance reaches into the
+     shadow tree a <use> builds, so one rule styles every instance and an icon
+     always takes the colour of the control it sits in. */
+  .ui-sprite { display: none; }
+  svg.ico { width: 14px; height: 14px; flex: 0 0 auto; display: block;
+            fill: none; stroke: currentColor; stroke-width: 1.5;
+            stroke-linecap: round; stroke-linejoin: round; }
+  /* text that exists only for a screen reader, on icon-only controls whose
+     accessible name would otherwise be the empty string */
+  .ui-vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+           overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* every control that carries an icon lays out as a row, so the glyph and the
+     label share a baseline instead of the icon sitting on the text */
+  button { display: inline-flex; align-items: center; gap: 6px; }
+  .agoto, .vlink, .stepacts button { gap: 4px; }
+  .agoto svg.ico, .vlink svg.ico, .stepacts svg.ico, .recent .x svg.ico { width: 12px; height: 12px; }
+
+  /* ==== dialog + toast components =========================================
+     One dialog and one toast host serve the whole page. See the API contract
+     in ui.js ("reusable components"). Both extend the existing palette rather
+     than introducing a second style system. */
+  .ui-scrim { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 40;
+              display: flex; align-items: center; justify-content: center; padding: 24px;
+              animation: ui-fade 0.14s ease-out; }
+  .ui-dlg { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+            width: min(560px, 94vw); max-height: 86vh; display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: ui-rise 0.16s ease-out; }
+  .ui-dlg-top { display: flex; align-items: flex-start; gap: 8px; padding: 11px 13px;
+                border-bottom: 1px solid var(--line); }
+  .ui-dlg-mark { flex: 0 0 auto; line-height: 0; margin-top: 2px; color: var(--dim); }
+  .ui-dlg-mark svg.ico { width: 16px; height: 16px; }
+  .ui-dlg.tone-danger .ui-dlg-mark { color: #b91c1c; }
+  .ui-dlg.tone-warn .ui-dlg-mark { color: #a16207; }
+  .ui-dlg.tone-info .ui-dlg-mark { color: #1d4ed8; }
+  .ui-dlg h2 { flex: 1 1 auto; font-size: 14px; line-height: 1.35; word-break: break-word; }
+  .ui-dlg-x { border: none; background: none; color: var(--dim); cursor: pointer;
+              padding: 3px; border-radius: 5px; }
+  .ui-dlg-x:hover { background: #f1f5f9; color: var(--ink); }
+  .ui-dlg-body { flex: 1 1 auto; overflow-y: auto; padding: 12px 13px; }
+  .ui-dlg-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+                 padding: 10px 13px; border-top: 1px solid var(--line); background: #f8fafc;
+                 border-radius: 0 0 10px 10px; }
+  /* the server's refusals are prose with backticked identifiers in them; this
+     is how they read, on both the dialog and the toast */
+  .ui-prose p { margin: 0 0 7px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .ui-prose p:last-child { margin-bottom: 0; }
+  /* user-select:all so one click takes the whole phrase: the operator still has
+     to type it, but they should be able to read it without ambiguity */
+  .ui-prose code { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px;
+                   padding: 1px 5px; user-select: all; word-break: break-all; }
+  .ui-field { margin-top: 13px; }
+  .ui-field label { display: block; margin-bottom: 4px; color: var(--dim); }
+  .ui-field input { font: inherit; width: 100%; padding: 6px 8px; color: inherit;
+                    border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .ui-field input:focus { border-color: #1d4ed8; outline: 2px solid #bfdbfe; outline-offset: 0; }
+  .ui-hint { margin-top: 4px; font-size: 11px; color: var(--dim); }
+  button.ui-danger { border-color: #fca5a5; color: #b91c1c; background: #fff5f5; }
+  button.ui-danger:hover { background: #fee2e2; }
+  button.ui-primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  button.ui-primary:hover { background: #1e40af; }
+  :focus-visible { outline: 2px solid #1d4ed8; outline-offset: 1px; }
+
+  .ui-toasts { position: fixed; right: 14px; bottom: 32px; z-index: 50; display: flex;
+               flex-direction: column-reverse; gap: 8px; pointer-events: none;
+               width: min(430px, calc(100vw - 28px)); }
+  .ui-toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 8px;
+              background: var(--panel); border: 1px solid var(--line); border-left-width: 4px;
+              border-radius: 8px; padding: 9px 10px; box-shadow: 0 6px 20px rgba(15,23,42,0.18);
+              animation: ui-rise 0.18s ease-out; }
+  .ui-toast.k-success { border-left-color: #16a34a; }
+  .ui-toast.k-error   { border-left-color: #dc2626; }
+  .ui-toast.k-warn    { border-left-color: #d97706; }
+  .ui-toast.k-info    { border-left-color: #1d4ed8; }
+  .ui-tmark { flex: 0 0 auto; line-height: 0; margin-top: 2px; }
+  .ui-tmark svg.ico { width: 15px; height: 15px; }
+  .k-success .ui-tmark { color: #15803d; }
+  .k-error   .ui-tmark { color: #b91c1c; }
+  .k-warn    .ui-tmark { color: #a16207; }
+  .k-info    .ui-tmark { color: #1d4ed8; }
+  .ui-tbody { flex: 1 1 auto; min-width: 0; }
+  .ui-ttitle { font-weight: bold; word-break: break-word; }
+  .ui-tbody .ui-prose { margin-top: 3px; font-size: 12px; color: #334155;
+                        max-height: 40vh; overflow-y: auto; }
+  .ui-tx { flex: 0 0 auto; border: none; background: none; color: var(--dim);
+           cursor: pointer; padding: 2px; border-radius: 5px; }
+  .ui-tx:hover { background: #f1f5f9; color: var(--ink); }
+  @keyframes ui-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ui-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  /* motion is decoration here: nothing on this page conveys meaning by moving,
+     so a reader who asked for stillness loses nothing by getting it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+    }
+  }
 </style>
 </head>
 <body>
+<!-- The icon sprite. Inline, because the page is one response and fetching an
+     external sprite would break that; every glyph the UI can draw is here, and
+     ui.js's ICON_IDS list is the mirror of it. Symbols carry only geometry -
+     colour and size come from `svg.ico` in the stylesheet above. -->
+<svg class="ui-sprite" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-flow" viewBox="0 0 16 16"><rect x="1" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="2" width="4.5" height="3.5" rx="1"/><rect x="10.5" y="10.5" width="4.5" height="3.5" rx="1"/><path d="M5.5 3.75h5M8 3.75v8.5h2.5"/></symbol>
+  <symbol id="i-graph" viewBox="0 0 16 16"><circle cx="3" cy="4" r="2"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="13" r="2"/><path d="M4.8 4.9 11 5.7M4.2 5.7 6.2 11.2M11.9 7.7 8.3 11.6"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 16 16"><path d="M3 2h10v12H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></symbol>
+  <symbol id="i-reload" viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.5 2v3.5H10"/></symbol>
+  <symbol id="i-load" viewBox="0 0 16 16"><path d="M8 2v8"/><path d="M4.75 6.75 8 10l3.25-3.25"/><path d="M2.5 12.5h11"/></symbol>
+  <symbol id="i-browse" viewBox="0 0 16 16"><path d="M1.5 12.5v-9h4l1.5 2h7.5v7z"/></symbol>
+  <symbol id="i-assess" viewBox="0 0 16 16"><path d="M2 13.5h12"/><path d="M4 13.5V8M8 13.5V3.5M12 13.5V6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 16 16"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8z"/><circle cx="8" cy="8" r="1.8"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 16 16"><path d="M2.5 5.2C1.6 6.3 1 8 1 8s2.5 4.5 7 4.5c1.3 0 2.4-.4 3.4-.9"/><path d="M6.3 3.7A7.6 7.6 0 0 1 8 3.5c4.5 0 7 4.5 7 4.5s-.7 1.3-2 2.5"/><path d="M2 2l12 12"/></symbol>
+  <symbol id="i-off" viewBox="0 0 16 16"><path d="M8 2v6"/><path d="M4.2 4.4a5.5 5.5 0 1 0 7.6 0"/></symbol>
+  <symbol id="i-on" viewBox="0 0 16 16"><path d="M2.5 8.5 6 12l7.5-8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M2.5 8.5 6 12l7.5-8"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M3 2.5h10v11H3z"/><path d="M5 5.5h6M5 8h6M5 10.5h4"/></symbol>
+  <symbol id="i-code" viewBox="0 0 16 16"><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></symbol>
+  <symbol id="i-state" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/></symbol>
+  <symbol id="i-status" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.2l2 1.3"/></symbol>
+  <symbol id="i-owner" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></symbol>
+  <symbol id="i-model" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2"/><path d="M6.5 6.5h3v3h-3z"/></symbol>
+  <symbol id="i-effort" viewBox="0 0 16 16"><path d="M2 13h3V8H2zM6.5 13h3V5h-3zM11 13h3V2h-3z"/></symbol>
+  <symbol id="i-deps" viewBox="0 0 16 16"><path d="M6.5 9.5 4 12a2.5 2.5 0 0 1-3.5-3.5L3 6"/><path d="M9.5 6.5 12 4a2.5 2.5 0 0 1 3.5 3.5L13 10"/><path d="M6 10l4-4"/></symbol>
+  <symbol id="i-fr" viewBox="0 0 16 16"><path d="M4 2h6l2.5 2.5V14H4z"/><path d="M6 7h4M6 10h4"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 16 16"><path d="M10.5 2.5a3 3 0 0 0-4 4L2 11v3h3l4.5-4.5a3 3 0 0 0 4-4l-2 2-2-2z"/></symbol>
+  <symbol id="i-event" viewBox="0 0 16 16"><path d="M8 2v5l3 2"/><circle cx="8" cy="8" r="6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3.5"/><path d="M4 7.5 8 3.5l4 4"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="M11 2.5 13.5 5 6 12.5 2.5 13.5 3.5 10z"/><path d="M9.5 4 12 6.5"/></symbol>
+  <symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 2.5h9L13.5 5v8.5h-11z"/><path d="M5 2.5v4h5v-4M5 13.5v-4h6v4"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2.5 2v3.5H6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.5 4h11"/><path d="M6 4V2.5h4V4"/><path d="M4 4l.8 9.5h6.4L12 4"/><path d="M6.7 6.5v5M9.3 6.5v5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6"/></symbol>
+  <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.6"/><path d="M8 .8v2.2M8 13v2.2M.8 8H3M13 8h2.2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.6 13.2 3.6v4.2c0 3.2-2.2 5.4-5.2 6.6-3-1.2-5.2-3.4-5.2-6.6V3.6z"/><path d="M5.9 8 7.4 9.5 10.3 6.4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 1.9 15 14H1z"/><path d="M8 6v3.6"/><path d="M8 11.6v.6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.3v4"/><path d="M8 4.9v.6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 16 16"><path d="M3.5 8h9"/><path d="M8.8 4.3 12.5 8l-3.7 3.7"/></symbol>
+</defs></svg>
 <header>
   <b>harness-view</b>
   <button id="btn-flow">Flow</button>
@@ -351,6 +494,9 @@
     </div>
   </div>
 </div>
+<!-- where ui.toast() stacks its messages; the dialog builds its own scrim on
+     demand, but the toast host has to exist before the first message arrives -->
+<div id="ui-toasts" class="ui-toasts"></div>
 <script>
 /*__VENDOR__*/
 </script>
