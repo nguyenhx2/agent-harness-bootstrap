@@ -232,6 +232,11 @@ const FIELD_ICONS = {
 //                                      default: true -> this one takes focus
 //       dismissible: boolean           default true; false hides the X and
 //                                      makes Escape/backdrop do nothing
+//       onReady: ({ close }) => void   called once the dialog is on screen.
+//                                      `close(result)` resolves ui.modal with
+//                                      `result`, so a control built inside
+//                                      `body` (a row's Edit, say) can answer
+//                                      the same way a footer action does.
 //     }
 //
 //     Resolves to null when the dialog was dismissed - Escape, the X, the
@@ -453,6 +458,18 @@ const ui = (() => {
       if (!focusTarget) focusTarget = inputs[0] || null;
       if (!focusTarget) focusTarget = foot.querySelector("button:not(.ui-danger)") || focusables(dlg)[0];
       if (focusTarget) focusTarget.focus();
+
+      // A dialog whose body is a list has to be able to resolve from inside that
+      // body: a row's own Edit or Delete is not expressible as a footer action.
+      // `onReady` hands the body the same `done` the footer buttons use, so an
+      // in-body control resolves this promise with a real result. Without it the
+      // only route out was to synthesise an Escape keydown, which works only
+      // while the dialog is dismissible and tells ui.js nothing about what was
+      // chosen - the caller had to smuggle its answer past a resolved null.
+      if (typeof spec.onReady === "function") {
+        try { spec.onReady({ close: done }); }
+        catch (err) { console.error("modal onReady threw", err); }
+      }
     });
   }
   openModal.seq = 0;

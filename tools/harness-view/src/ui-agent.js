@@ -161,8 +161,8 @@ function agentChangedKeys(before, after) {
     if (typeof after[k] === "string" && after[k] !== before[k]) out[k] = after[k];
   });
   if (Array.isArray(after.tools)) {
-    const a = (before.tools || []).join(" ");
-    if (a !== after.tools.join(" ")) out.tools = after.tools;
+    const a = (before.tools || []).join("\u0000");
+    if (a !== after.tools.join("\u0000")) out.tools = after.tools;
   }
   return out;
 }
@@ -335,31 +335,27 @@ function agFail(e) {
 //
 // `ui.modal` resolves on a FOOTER action or on dismissal. A list where each row
 // carries its own Edit and Delete is not expressible as footer actions, so a row
-// button records an intent and then dismisses the dialog, and this wrapper
-// returns the intent in place of the null that dismissal produces. Dismissal is
-// requested the way a user requests it - an Escape keydown, which ui.js listens
-// for on `document` in the capture phase - with the dialog's own close button as
-// the fallback. Nothing here reaches into the dialog's state.
-function agDismissModal() {
-  try {
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-  } catch (e) { /* fall through */ }
-  const x = document.querySelector(".ui-dlg-x");
-  if (x) x.click();
-}
-
+// button resolves the dialog itself through the `close` handle ui.js hands to
+// `onReady`. The result it passes has the same shape a footer action produces -
+// an `action` plus what the row was about - so every caller reads one answer.
 async function agModal(spec, ctx) {
   const u = agUi();
   if (!u) return null;
-  ctx.intent = null;
-  const answer = await u.modal(spec);
-  if (ctx.intent) return { action: ctx.intent.action, intent: ctx.intent };
+  ctx.close = null;
+  const withReady = Object.assign({}, spec, {
+    onReady: api => { ctx.close = api.close; },
+  });
+  const answer = await u.modal(withReady);
+  ctx.close = null;
   return answer;
 }
 
 function agRowIntent(ctx, action, payload) {
-  ctx.intent = Object.assign({ action: action }, payload);
-  agDismissModal();
+  const intent = Object.assign({ action: action }, payload);
+  // No close handle means the dialog is not open (or ui.js is older than this
+  // file). Saying so beats a click that silently does nothing.
+  if (!ctx.close) { console.error("agRowIntent with no open dialog", action); return; }
+  ctx.close({ action: action, intent: intent });
 }
 
 // --- the agent editor -------------------------------------------------------
