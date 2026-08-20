@@ -6,7 +6,7 @@
 
 <p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
@@ -554,7 +554,7 @@ py -3.13 scripts/check_numbers.py    # 公開されたすべての数値がス�
 
 ## 📄 ライセンス
 
-**[PolyForm Noncommercial 1.0.0](LICENSE)** - 非商用目的であれば無償で利用できます。
+**[PolyForm Noncommercial 1.0.0](LICENSE.md)** - 非商用目的であれば無償で利用できます。
 個人プロジェクト、学習、研究、趣味での利用、および慈善団体・教育機関・公的機関による
 利用が含まれます。
 
@@ -564,4 +564,4 @@ py -3.13 scripts/check_numbers.py    # 公開されたすべての数値がス�
 
 *お客様の*リポジトリに生成されたハーネスのファイルはお客様のものです。商用ライセンスが
 必要になるのは、*本ソフトウェア自体*を商用目的で実行または再配布する場合です。全条項と
-商用ライセンスの詳細は [LICENSE](LICENSE) を参照してください。
+商用ライセンスの詳細は [LICENSE](LICENSE.md) を参照してください。

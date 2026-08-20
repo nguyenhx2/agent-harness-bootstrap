@@ -6,7 +6,7 @@
 
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
@@ -567,7 +567,7 @@ py -3.13 scripts/check_numbers.py    # every published figure must match its scr
 
 ## 📄 License
 
-**[PolyForm Noncommercial 1.0.0](LICENSE)** - free for any noncommercial purpose:
+**[PolyForm Noncommercial 1.0.0](LICENSE.md)** - free for any noncommercial purpose:
 personal projects, study, research, hobby work, and use by charities, schools, and
 public institutions.
 
@@ -578,4 +578,4 @@ offering. To obtain one, contact **nguyenhx1@gmail.com**.
 
 The harness files scaffolded into *your* repository are yours - what needs a commercial
 license is running or redistributing *this software* commercially. Full terms and the
-commercial-licensing section: [LICENSE](LICENSE).
+commercial-licensing section: [LICENSE](LICENSE.md).
