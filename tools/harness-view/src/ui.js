@@ -170,7 +170,7 @@ const ICON_IDS = new Set([
   "flow", "graph", "plan", "reload", "load", "browse", "assess",
   "eye", "eyeoff", "off", "on", "check", "doc", "code",
   "state", "status", "owner", "model", "effort", "deps", "fr", "tools", "event",
-  "x", "up", "edit", "save", "undo", "trash", "target", "shield", "alert",
+  "x", "up", "edit", "save", "undo", "trash", "target", "plus", "shield", "alert",
   "info", "link",
 ]);
 

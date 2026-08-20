@@ -130,9 +130,12 @@
   .stepgrp > .gintro { color: var(--dim); font-size: 11px; white-space: pre-wrap; word-break: break-word; margin: 2px 0; }
   ol.steps { margin: 4px 0 0 20px; padding: 0; }
   ol.steps > li { margin: 0 0 7px; }
-  /* pre-wrap, not markdown: a step is one paragraph of prose whose line breaks
-     are how the author wrote it, and every byte lands via textContent so a
-     scanned repository's own text can never reach innerHTML on this path. */
+  /* A step's body is now RENDERED as the markdown it usually is - the routing
+     tables in /implement-fr were unreadable as raw pipes - but the half of the
+     original rule that mattered is untouched: every byte of repository text
+     still lands via createElement + textContent, never innerHTML. Anything that
+     does not parse as supported markdown falls back to this pre-wrap text, and
+     editing always shows the original source. See STEP_CSS in ui-steps.js. */
   .steptext { white-space: pre-wrap; word-break: break-word; }
   .steptouch { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .steptouch .vlink { margin: 0; }
@@ -441,6 +444,7 @@
   <symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 2.5h9L13.5 5v8.5h-11z"/><path d="M5 2.5v4h5v-4M5 13.5v-4h6v4"/></symbol>
   <symbol id="i-undo" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2.5 2v3.5H6"/></symbol>
   <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.5 4h11"/><path d="M6 4V2.5h4V4"/><path d="M4 4l.8 9.5h6.4L12 4"/><path d="M6.7 6.5v5M9.3 6.5v5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6"/></symbol>
   <symbol id="i-target" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.6"/><path d="M8 .8v2.2M8 13v2.2M.8 8H3M13 8h2.2"/></symbol>
   <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.6 13.2 3.6v4.2c0 3.2-2.2 5.4-5.2 6.6-3-1.2-5.2-3.4-5.2-6.6V3.6z"/><path d="M5.9 8 7.4 9.5 10.3 6.4"/></symbol>
   <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 1.9 15 14H1z"/><path d="M8 6v3.6"/><path d="M8 11.6v.6"/></symbol>

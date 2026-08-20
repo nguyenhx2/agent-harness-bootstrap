@@ -1166,7 +1166,7 @@ function insertRow(doc, g, index) {
   b.type = "button";
   // A crosshair, because this control marks a POSITION rather than an object -
   // it is the one place in the panel that means "here". The sprite has no plus.
-  stepBtn(b, "target", "step here");
+  stepBtn(b, "plus", "step here");
   b.title = "add a new step at position " + (index + 1);
   b.addEventListener("click", () => openInsert(li, g, index));
   li.appendChild(b);
