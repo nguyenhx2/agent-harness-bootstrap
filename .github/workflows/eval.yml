@@ -124,6 +124,14 @@ jobs:
       - name: Every shipped clip must match the source it was rendered from
         run: python scripts/check_media.py
 
+      # The skills ship to Cursor, Codex and every other Agent Plugins client as a COPY
+      # under plugins/, because that standard requires the content to really be inside the
+      # plugin root (a symlink out is rejected). A copy that nobody re-generates is last
+      # month's instructions with this month's version number on it, so the tree is
+      # generated and this fails when it stops matching the skills.
+      - name: The plugin tree must match the skills it packages
+        run: python scripts/build_plugins.py --check
+
       # The wiki lives in a separate git repository that nothing else reads, which is
       # exactly how wikis go stale. Its reference pages are generated from the assets,
       # so building them here means a change that breaks a page fails the build rather

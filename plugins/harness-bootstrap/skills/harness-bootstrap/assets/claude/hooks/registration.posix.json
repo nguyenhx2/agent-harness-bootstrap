@@ -1,0 +1,49 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/protect-adr.sh" },
+          { "type": "command", "command": "bash .claude/hooks/guard-agent-scope.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/guard-main-commit.sh" },
+          { "type": "command", "command": "bash .claude/hooks/check-commit-msg.sh" }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/guard-agent-spawn.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/specs-reminder.sh" },
+          { "type": "command", "command": "bash .claude/hooks/graph-stale.sh" }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/agent-history.sh" }
+        ]
+      }
+    ]
+  }
+}

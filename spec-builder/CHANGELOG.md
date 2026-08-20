@@ -6,6 +6,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.15.0] - 2026-08-20
+
+### Added
+
+- Ships as an Agent Plugins 1.1.0 package under `plugins/spec-builder/`, so it installs in
+  Cursor, Codex, VS Code, Copilot and Kiro as well as Claude Code. The package is generated
+  from this skill by `scripts/build_plugins.py` and CI fails when the two drift apart.
+
 ## [1.14.1] - 2026-08-20
 
 ### Fixed

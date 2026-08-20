@@ -7,6 +7,13 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.15.0] - 2026-08-20
+
+### Fixed
+
+- No functional change in this tool. Released with the skills' 1.15.0 to keep the versions in
+  step.
+
 ## [1.14.1] - 2026-08-20
 
 ### Fixed

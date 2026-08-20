@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+{{#IF_RTK}}  "env": {
+    "RTK_TELEMETRY_DISABLED": "1"
+  },
+{{/IF_RTK}}  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git push origin:*)",
+      "Bash(git push -u origin:*)",
+      "Bash(git worktree list)",
+{{#IF_PR_CLI}}      "Bash({{PR_CLI}} list:*)",
+      "Bash({{PR_CLI}} view:*)",
+      "Bash({{CI_STATUS_CMD}}:*)",
+{{/IF_PR_CLI}}      "Bash(python .claude/scripts/:*)",
+      "Bash(python3 .claude/scripts/:*)",
+{{#IF_TESTS}}      "Bash({{TEST_CMD}}:*)",
+{{/IF_TESTS}}      "Bash({{LINT_CMD}}:*)",
+      "Bash({{BUILD_CMD}}:*)"
+    ],
+    "deny": [
+      {{RESTRICTED_DENIES}}
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.development)",
+      "Read(**/.env.dev)",
+      "Read(**/.env.test)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.production)",
+      "Read(**/.env.prod)",
+      "Read(**/.env_*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.p12)",
+      "Read(**/id_rsa*)",
+      "Read(**/credentials.json)",
+      "Read(**/secrets/**)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf:*)",
+{{^IF_DEPLOY_ASK}}
+      "Bash({{DEPLOY_CMD}}:*)",
+{{/IF_DEPLOY_ASK}}
+      "Bash({{DB_RESET_CMD}}:*)"
+    ],
+    "ask": [
+{{#IF_PR_CLI}}      "Bash({{PR_CLI}} create:*)",
+      "Bash({{PR_CLI}} merge:*)"{{#IF_DEPLOY_ASK}},{{/IF_DEPLOY_ASK}}
+{{/IF_PR_CLI}}{{#IF_DEPLOY_ASK}}      "Bash({{DEPLOY_CMD}}:*)"
+{{/IF_DEPLOY_ASK}}    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/protect-adr.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-agent-scope.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/protect-secrets.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{#IF_AUDIT}}      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/protect-repos.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_AUDIT}}      {
+        "matcher": "Bash",
+        "hooks": [
+{{#IF_RTK}}          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/rtk-rewrite.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+{{/IF_RTK}}          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-main-commit.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/check-commit-msg.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-agent-spawn.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/specs-reminder.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/graph-stale.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/agent-history.{{HOOK_EXT}}",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
