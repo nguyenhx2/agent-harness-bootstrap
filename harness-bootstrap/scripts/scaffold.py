@@ -125,6 +125,30 @@ def validate_flags(flags: set[str]) -> list[str]:
     return problems
 
 
+def same_content(existing: bytes, payload: bytes) -> bool:
+    """True when an installed file already says what the asset says, whatever the line endings.
+
+    This decides KEPT vs CONFLICT, and a byte comparison gets it wrong in the one situation that
+    matters most: updating an existing harness to a newer skill version. `.gitattributes` checks
+    this repo's text out NATIVE, so a skill cloned on Windows holds CRLF while the same skill in
+    WSL, in CI, or in a zip holds LF. Bootstrap from one and update from the other and every single
+    text asset differs by a byte per line - the run reports a wall of conflicts, none of them real,
+    and the seven files that DID change are buried in it. A reconciliation queue nobody can read is
+    a reconciliation queue nobody works.
+
+    Only newlines are forgiven. A file the user edited still conflicts, and binary assets are
+    compared byte for byte: a decode failure means "not text", where one differing byte is a real
+    difference.
+    """
+    if existing == payload:
+        return True
+    try:
+        return (existing.decode("utf-8").replace("\r\n", "\n")
+                == payload.decode("utf-8").replace("\r\n", "\n"))
+    except UnicodeDecodeError:
+        return False
+
+
 def resolve_blocks(text: str, flags: set[str]) -> str:
     """Resolve {{#IF_X}}/{{^IF_X}} blocks. Innermost-first via repeated passes."""
     prev = None
@@ -289,7 +313,7 @@ def main() -> int:
 
         if dest.exists():
             existing = dest.read_bytes()
-            if existing == payload:
+            if same_content(existing, payload):
                 kept.append(dest_rel)
                 continue
             conflicts.append(dest_rel)
