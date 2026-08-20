@@ -24,8 +24,14 @@ fn main() {
         // FileVersion and ProductVersion default to CARGO_PKG_VERSION.
         if let Err(e) = res.compile() {
             // A missing resource compiler must not block a developer build; the
-            // binary is still correct, it just loses its icon and metadata. CI
-            // builds on windows-latest, which always has the SDK.
+            // binary is still correct, it just loses its icon and metadata. But a
+            // RELEASE build with no metadata is exactly the unidentifiable binary
+            // this file exists to prevent, and a swallowed error here would ship
+            // it green: the release workflow sets HARNESS_VIEW_REQUIRE_RESOURCE,
+            // which turns the swallow back into the failure it really is.
+            if std::env::var_os("HARNESS_VIEW_REQUIRE_RESOURCE").is_some() {
+                panic!("windows resource embedding failed, refusing to ship an unstamped exe: {e}");
+            }
             println!("cargo:warning=windows resource not embedded ({e})");
         }
     }
