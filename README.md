@@ -184,7 +184,7 @@ Full depth, including which section draws on which standard and the honest limit
 
 ## 🚀 Quickstart
 
-**Install as a plugin** (recommended) - inside any Claude Code session:
+**Install as a plugin** (recommended). In **Claude Code**:
 
 ```text
 /plugin marketplace add nguyenhx2/agent-harness-bootstrap
@@ -192,8 +192,16 @@ Full depth, including which section draws on which standard and the honest limit
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-Updates arrive with `/plugin update` when a release bumps the version - no re-download, no
-stale copy. Details, update mechanics and namespaced invocation:
+In **Codex**:
+
+```bash
+codex plugin marketplace add nguyenhx2/agent-harness-bootstrap
+```
+
+**Cursor, VS Code, Copilot, Kiro** and every other client that reads the
+[Agent Plugins](https://agent-plugins.org/) standard install the packages under
+[`plugins/`](plugins/). Updates arrive through the client's own update command when a release
+bumps the version - no re-download, no stale copy. Per-client steps:
 [`docs/PLUGIN.md`](docs/PLUGIN.md).
 
 **Or install from the release zip** - the offline, pinned path. Requires **Python 3**.

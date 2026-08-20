@@ -1,0 +1,3 @@
+# Keeps this directory in git. The harness's own guards key off these directories
+# existing: guard-agent-spawn refuses a write-capable dispatch when the task board is
+# missing, and the quality gate lists every one of them.

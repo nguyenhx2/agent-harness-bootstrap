@@ -49,6 +49,54 @@ No skill logic changed.
   explicitly forbidden from narrating file-by-file progress - the plan table and the final
   summary are its only two progress surfaces.
 
+## v1.15.0
+
+The skills stop being Claude-Code-only. They now install as plugins in Cursor, Codex, and every
+other client that reads the Agent Plugins standard.
+
+### Portable plugin packaging
+
+[Agent Plugins 1.1.0](https://agent-plugins.org/) is the vendor-neutral packaging standard
+published this month, steered by Amazon, Cursor, Microsoft, OpenAI and Vercel, and read by
+ChatGPT, Codex, Cursor, GitHub Copilot, Kiro and VS Code. Building to it reaches all of them at
+once instead of writing an adapter per tool.
+
+- **`plugins/harness-bootstrap/` and `plugins/spec-builder/`** are Agent Plugins packages: a
+  `plugin.json` at the plugin root and the skill under the standard's fixed `skills/` path. The
+  same directories carry `.codex-plugin/plugin.json` for Codex. The three manifest paths do not
+  collide, so one directory serves Claude Code, Codex and Cursor, and all of them read the same
+  `skills/` tree.
+- **`.agents/plugins/marketplace.json`** makes `codex plugin marketplace add
+  nguyenhx2/agent-harness-bootstrap` work. It had to be un-ignored: `.agents/` was ignored as
+  build scratch, which would have made the install command find nothing.
+- Cursor's native `.cursor-plugin/` manifest is deliberately not written. Cursor documents the
+  Agent Plugins root manifest as a supported format, and a second manifest for the same client
+  is one more thing that can disagree with the first.
+
+### Generated, not hand-maintained
+
+The standard requires the skill content to be really inside the plugin root: a symlink pointing
+back at `../../harness-bootstrap` resolves outside it and clients MUST reject it. So the tree is
+a copy, and a copy nobody re-generates is last month's instructions wearing this month's version
+number.
+
+`scripts/build_plugins.py` generates it from the skills, and `--check` re-generates into a temp
+directory and fails when the committed tree differs - the contract `build_wiki.py` already has
+for the wiki, now in CI for this too. The copies are byte-identical, so git stores one blob for
+both paths. Its drift detector carries a self-test proving it reports an edited file, an added
+file, and no false positive on identical trees.
+
+Every plugin description comes from the one curated blurb in `.claude-plugin/marketplace.json`
+rather than a second wording, and the manifests are validated against the published Agent
+Plugins 1.1.0 JSON schema.
+
+### Honest limits
+
+The Claude Code route was verified by installing both plugins and reading back what the client
+reported. The Codex and Cursor routes are built to their published specifications and validated
+against the schema, but the install round-trip was not exercised: neither CLI exists on the
+machine this was built on. `docs/PLUGIN.md` says so on the page rather than in a commit message.
+
 ## v1.14.1
 
 A media-honesty patch: the tool's own screenshots now tell the truth, and a release can no

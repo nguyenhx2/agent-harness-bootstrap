@@ -179,7 +179,7 @@ ID を持ちます。
 
 ## 🚀 クイックスタート
 
-**プラグインとしてインストール**(推奨)- Claude Code のセッション内で:
+**プラグインとしてインストール**(推奨)。**Claude Code** の場合:
 
 ```text
 /plugin marketplace add nguyenhx2/agent-harness-bootstrap
@@ -187,8 +187,16 @@ ID を持ちます。
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-リリースがバージョンを上げると `/plugin update` で更新が届く - 再ダウンロードも古いコピーもなし。
-詳細・更新の仕組み・名前空間付きの呼び出しは [`docs/PLUGIN.md`](docs/PLUGIN.md)(英語)を参照。
+**Codex** の場合:
+
+```bash
+codex plugin marketplace add nguyenhx2/agent-harness-bootstrap
+```
+
+**Cursor・VS Code・Copilot・Kiro** など [Agent Plugins](https://agent-plugins.org/) 標準を読む
+クライアントは [`plugins/`](plugins/) 配下のパッケージをインストールする。リリースがバージョンを
+上げれば、各クライアントの更新コマンドで更新が届く - 再ダウンロードも古いコピーもなし。
+クライアント別の手順は [`docs/PLUGIN.md`](docs/PLUGIN.md)(英語)を参照。
 
 **または リリース zip からインストール** - オフライン・バージョン固定の経路。**Python 3** が必要。
 
