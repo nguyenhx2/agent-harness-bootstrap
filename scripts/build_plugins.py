@@ -16,12 +16,30 @@ ChatGPT, Codex, Cursor, GitHub Copilot, Kiro and VS Code read. Its rules that sh
   - every path a client resolves MUST stay inside the plugin root, so a symlink pointing back
     at `../../harness-bootstrap` is not an option: the content has to be really there.
 
-The manifests do not collide, so one directory serves every client at once. Claude reads
-`.claude-plugin/`, Codex reads `.codex-plugin/`, and Cursor plus the other Agent Plugins clients
-read the root `plugin.json`. All of them read the SAME `skills/` tree, which is why one copy is
-enough. Cursor also defines a native `.cursor-plugin/` manifest; it is deliberately NOT written,
-because Cursor documents the Agent Plugins root manifest as a supported format and a second
-manifest for the same client is one more thing that can disagree with the first.
+TWO TREES, BECAUSE TWO CLIENTS FIGHT OVER ONE FILENAME
+------------------------------------------------------
+The plan was one directory per skill: Claude reads `.claude-plugin/`, Codex reads
+`.codex-plugin/`, Agent Plugins clients read the root `plugin.json`, and all of them share one
+`skills/`. Testing against the real CLIs killed it. Codex validates the root `plugin.json` when
+one is present and rejects `$schema` outright ("missing or invalid plugin.json"), while Agent
+Plugins REQUIRES `$schema`. Codex tolerates every other Agent Plugins field - author, homepage,
+repository, license, keywords - so this is that one key, not a general strictness.
+
+Dropping `$schema` would satisfy both clients today (verified: Cursor loads the plugin with and
+without it), but it ships a manifest the standard calls non-conformant, betting that no stricter
+client ever appears. So each skill gets two roots instead:
+
+    plugins/<skill>/            root plugin.json WITH $schema, for Cursor and every other
+                                Agent Plugins client
+    plugins/codex/<skill>/      .codex-plugin/plugin.json only, no root manifest to trip over
+
+Pointing Codex at a `skills` path outside its plugin root was tried first and does not work:
+Codex copies only the plugin root into `~/.codex/plugins/cache/`, so the skill simply is not
+there after install. The content has to be inside each root, which is why there are two copies.
+
+Cursor also defines a native `.cursor-plugin/` manifest; it is deliberately NOT written, because
+Cursor loads the Agent Plugins root manifest (verified) and a second manifest for the same
+client is one more thing that can disagree with the first.
 
 WHY GENERATED AND GATED, NOT HAND-MAINTAINED
 --------------------------------------------
@@ -65,6 +83,15 @@ SKIP_NAMES = {"CHANGELOG.md", "__pycache__", ".gitignore"}
 SKIP_SUFFIX = {".pyc"}
 
 REPO_URL = "https://github.com/nguyenhx2/agent-harness-bootstrap"
+
+# Codex's plugin browser shows a short line beside the name; the full blurb is too long for it.
+SHORT = {
+    "harness-bootstrap": "Build the agent harness this repo actually needs",
+    "spec-builder": "Turn any input into one requirements contract",
+}
+# Codex plugin roots live under this subdirectory, away from the Agent Plugins roots, because
+# Codex rejects a root plugin.json carrying $schema and the standard requires that key.
+CODEX_DIR = "codex"
 
 
 def repo_version() -> str:
@@ -125,14 +152,27 @@ def manifest(skill: str, version: str) -> dict:
 
 
 def codex_manifest(skill: str, version: str) -> dict:
-    """Codex reads `.codex-plugin/plugin.json`, its own path, with its own (open) shape."""
+    """Codex reads `.codex-plugin/plugin.json`. Shape copied from Codex's own bundled plugins.
+
+    `skills` is an explicit path rather than the Agent Plugins fixed location, and `interface`
+    carries what the plugin browser shows. Both were added after the real client refused an
+    install without them.
+    """
     return {
         "name": skill,
         "version": version,
         "description": blurb(skill),
         "author": {"name": "nguyenhx2"},
         "homepage": REPO_URL,
+        "repository": REPO_URL,
         "license": "MIT",
+        "skills": "./skills/",
+        "interface": {
+            "displayName": skill,
+            "shortDescription": SHORT[skill],
+            "developerName": "nguyenhx2",
+            "category": "Engineering",
+        },
     }
 
 
@@ -171,11 +211,21 @@ def marketplace(version: str) -> dict:
         "plugins": [
             {
                 "name": skill,
-                "description": blurb(skill),
-                "version": version,
-                "category": "development",
-                "source": {"path": f"../../plugins/{skill}"},
-                "policy": {"installation": "user", "authentication": "none"},
+                # `./plugins/<name>`, not `../../plugins/<name>`: the path is resolved from the
+                # REPOSITORY root, not from the directory holding marketplace.json. Codex's own
+                # bundled marketplace sits at .agents/plugins/marketplace.json and points at
+                # ./plugins/browser, which is the shape copied here.
+                "source": {"source": "local", "path": f"./plugins/{CODEX_DIR}/{skill}"},
+                # `installation` is a closed enum: NOT_AVAILABLE, AVAILABLE or
+                # INSTALLED_BY_DEFAULT. A plausible-looking "user" is rejected outright, which
+                # is how the first version of this file failed against the real client.
+                #
+                # `authentication` is OMITTED on purpose. Its enum is ON_INSTALL or ON_USE, with
+                # no value meaning "none", and these plugins authenticate nothing. Omitting is
+                # the only honest option; claiming ON_INSTALL would describe a prompt that never
+                # happens. Codex accepts the entry without the key.
+                "policy": {"installation": "AVAILABLE"},
+                "category": "Engineering",
             }
             for skill in SKILLS
         ],
@@ -195,9 +245,13 @@ def build(out: pathlib.Path, agents_dir: pathlib.Path) -> list[str]:
     for skill in SKILLS:
         root = out / skill
         write_json(root / "plugin.json", manifest(skill, version))
-        write_json(root / ".codex-plugin" / "plugin.json", codex_manifest(skill, version))
         n = copy_skill(skill, root / "skills" / skill)
-        lines.append(f"  ok    plugins/{skill}: manifest + .codex-plugin + {n} skill file(s)")
+        lines.append(f"  ok    plugins/{skill}: Agent Plugins manifest + {n} skill file(s)")
+
+        codex_root = out / CODEX_DIR / skill
+        write_json(codex_root / ".codex-plugin" / "plugin.json", codex_manifest(skill, version))
+        copy_skill(skill, codex_root / "skills" / skill)
+        lines.append(f"  ok    plugins/{CODEX_DIR}/{skill}: Codex manifest + {n} skill file(s)")
     write_json(agents_dir / "marketplace.json", marketplace(version))
     # --check builds into a temp directory, which is not under ROOT, so the label is fixed
     # rather than derived: relative_to() would raise there and take the check down with it.

@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.15.1] - 2026-08-20
+
+### Fixed
+
+- The Codex packaging of this skill is now verified against the real client: `codex plugin add spec-builder@agent-harness-bootstrap` installs it and the skill lands in the plugin cache. Three manifest defects found and fixed; see the root CHANGELOG.
+
 ## [1.15.0] - 2026-08-20
 
 ### Added

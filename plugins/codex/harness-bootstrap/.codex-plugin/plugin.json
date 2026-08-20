@@ -1,10 +1,18 @@
 {
   "name": "harness-bootstrap",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
   "author": {
     "name": "nguyenhx2"
   },
   "homepage": "https://github.com/nguyenhx2/agent-harness-bootstrap",
-  "license": "MIT"
+  "repository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "harness-bootstrap",
+    "shortDescription": "Build the agent harness this repo actually needs",
+    "developerName": "nguyenhx2",
+    "category": "Engineering"
+  }
 }

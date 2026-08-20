@@ -6,29 +6,25 @@
   "plugins": [
     {
       "name": "harness-bootstrap",
-      "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
-      "version": "1.15.0",
-      "category": "development",
       "source": {
-        "path": "../../plugins/harness-bootstrap"
+        "source": "local",
+        "path": "./plugins/codex/harness-bootstrap"
       },
       "policy": {
-        "installation": "user",
-        "authentication": "none"
-      }
+        "installation": "AVAILABLE"
+      },
+      "category": "Engineering"
     },
     {
       "name": "spec-builder",
-      "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
-      "version": "1.15.0",
-      "category": "development",
       "source": {
-        "path": "../../plugins/spec-builder"
+        "source": "local",
+        "path": "./plugins/codex/spec-builder"
       },
       "policy": {
-        "installation": "user",
-        "authentication": "none"
-      }
+        "installation": "AVAILABLE"
+      },
+      "category": "Engineering"
     }
   ]
 }
