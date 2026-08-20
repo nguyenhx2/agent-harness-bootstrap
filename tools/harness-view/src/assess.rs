@@ -697,6 +697,55 @@ fn check_broken_tables(c: &Ctx, out: &mut Vec<Finding>) {
     }
 }
 
+/// The contract itself. `AGENTS.md` is the one file every tool in the roster
+/// reads - it is the only reason a harness scaffolded for Claude Code means
+/// anything in Codex, Cursor or Antigravity - and a repository without it has
+/// enforcement with nothing to enforce.
+///
+/// The routing tiers are a separate, softer finding. They arrived in v1.18.0, so
+/// an older AGENTS.md legitimately predates them; it is `info` because a harness
+/// generated before that release never promised to have them.
+fn check_instruction_files(c: &Ctx, out: &mut Vec<Finding>) {
+    let instr = c.of_type("instruction");
+    let has = |key: &str| {
+        instr
+            .iter()
+            .any(|n| n.get("id").and_then(|x| x.as_str()) == Some(&format!("instr:{key}")))
+    };
+    if !has("agents") {
+        out.push(Finding {
+            check: "instruction-contract",
+            category: "Contract",
+            sev: Sev::Medium,
+            title: "no AGENTS.md at the repository root".into(),
+            why: "AGENTS.md is the vendor-neutral contract every tool but Claude Code reads; \
+                  without it the rules under .claude/ reach one client and nothing else.",
+            node: None,
+            file: None,
+        });
+        return;
+    }
+    let tiered = instr.iter().any(|n| {
+        n.get("tiers")
+            .and_then(|t| t.as_array())
+            .map(|a| !a.is_empty())
+            .unwrap_or(false)
+    });
+    if !tiered {
+        out.push(Finding {
+            check: "instruction-tiers",
+            category: "Contract",
+            sev: Sev::Info,
+            title: "AGENTS.md states no routing tiers".into(),
+            why: "Without the Direct / Standard / Guarded table there is nothing that says which \
+                  changes go straight to the owning agent and which earn the orchestrator, so \
+                  every change costs the heaviest process or none of it.",
+            node: Some("instr:agents".into()),
+            file: Some("AGENTS.md".into()),
+        });
+    }
+}
+
 /// -> 1-based line number of a blank line that sits between two table rows.
 pub fn blank_line_in_table(text: &str) -> Option<usize> {
     let lines: Vec<&str> = text.lines().collect();
@@ -878,6 +927,7 @@ pub fn assess(root: &Path, graph: &Value) -> Value {
     check_dangling_scripts(&c, &mut f);
     check_skill_wiring(&c, &mut f);
     check_broken_tables(&c, &mut f);
+    check_instruction_files(&c, &mut f);
 
     f.sort_by(|a, b| {
         a.sev

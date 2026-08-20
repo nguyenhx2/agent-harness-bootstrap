@@ -20,9 +20,25 @@ fn write(root: &Path, rel: &str, body: &str) {
     fs::write(p, body).unwrap();
 }
 
+/// The contract as v1.18.0 generates it, cut down to the parts the engine reads:
+/// the routing tiers, and one rule citation so the graph has an edge to check.
+const AGENTS_MD: &str = "# AGENTS.md\n\n\
+Rules live in `.claude/rules/agent-guardrails.md`.\n\n\
+### How much process a change gets\n\n\
+| Tier | The change | Who runs it | What it adds |\n\
+|------|------------|-------------|--------------|\n\
+| **Direct** | one module, reversible | the owning agent, called straight | the agent proves each criterion |\n\
+| **Standard** | one domain, several files | the owning agent | a hand check of every criterion |\n\
+| **Guarded** | two or more domains | `orchestrator` - one at a time | the full flow below |\n";
+
 /// A harness that passes everything the engine checks, as the baseline other
 /// fixtures deviate from.
 fn good(root: &Path) {
+    // The contract, with the v1.18.0 routing tiers in it. Both are checked, so a
+    // baseline without them is not a clean harness - it is a harness whose rules
+    // reach Claude Code and no other tool.
+    write(root, "AGENTS.md", AGENTS_MD);
+    write(root, "CLAUDE.md", "@AGENTS.md\n\nThe Claude-only surface.\n");
     write(root, ".claude/settings.json", r#"{
       "permissions": { "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)", "Read(./**/.env)"] },
       "hooks": { "PreToolUse": [ { "matcher": "Bash",
