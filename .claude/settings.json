@@ -19,6 +19,11 @@
             "type": "command",
             "command": "bash .claude/hooks/guard-pr-merge.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-no-ai-trailer.sh",
+            "timeout": 10
           }
         ]
       }

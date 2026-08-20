@@ -58,7 +58,28 @@ control byte in a source file is treated as a defect (`scripts/check_js.py`).
 `plugins/` tree. `scripts/validate_release.py` checks all of it; `scripts/build_plugins.py --check`
 checks the generated tree matches the skills. Run both before tagging.
 
-## 7. Style
+## 7. No AI attribution in the history
 
-English throughout. No emoji. A hyphen, never an em dash. This is the repository's own rule file,
-not a shipped template - no `{{VAR}}` placeholders belong in it.
+A commit message, a tag message and a pull-request description carry **no** AI attribution. None of
+these belong in this repository:
+
+```
+Co-Authored-By: Claude <...>          Claude-Session: https://claude.ai/code/...
+🤖 Generated with [Claude Code](...)   Generated with Claude Code
+```
+
+`Co-Authored-By:` is the one with a visible consequence: GitHub reads it and adds that identity to
+the repository's **Contributors** list, where it sits beside the people who own this work. The
+history records who is answerable for a change, and that is a person. Which tool helped write it is
+no more part of the record than which editor it was typed in.
+
+The rest is the same rule in a different place: a PR description is read by contributors deciding
+whether to trust this project, and a machine-generated footer is noise in it.
+
+Enforced for commit messages by `.claude/hooks/guard-no-ai-trailer.sh`. Nothing enforces it for PR
+descriptions, so that one is discipline - check before opening.
+
+## 8. Style
+
+English throughout. No emoji anywhere, including commit messages. A hyphen, never an em dash. This
+is the repository's own rule file, not a shipped template - no `{{VAR}}` placeholders belong in it.

@@ -58,6 +58,7 @@ run() {  # run <label> <want-exit> <hook> <payload>
 
 STDLIB=.claude/hooks/guard-stdlib-only.sh
 MERGE=.claude/hooks/guard-pr-merge.sh
+TRAILER=.claude/hooks/guard-no-ai-trailer.sh
 
 echo "--- guard-stdlib-only blocks a dependency in a gate script ---"
 run "the PR #18 edit: defusedxml into check_svg.py" 2 "$STDLIB" \
@@ -86,6 +87,24 @@ run "a vendored file under node_modules" 0 "$STDLIB" \
   "$(edit_payload Edit "$ROOT/scripts/capture/node_modules/a/b.py" 'import requests')"
 run "a file that is not Python" 0 "$STDLIB" \
   "$(edit_payload Edit "$ROOT/scripts/notes.md" 'import requests')"
+
+echo "--- guard-no-ai-trailer keeps the history free of attribution ---"
+run "Co-Authored-By: Claude - the Contributors-list one" 2 "$TRAILER"   "$(bash_payload 'git commit -m "fix: a thing
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"')"
+run "a Claude-Session link" 2 "$TRAILER"   "$(bash_payload 'git commit -m "fix: a thing
+
+Claude-Session: https://claude.ai/code/session_abc"')"
+run "the Generated with Claude Code footer" 2 "$TRAILER"   "$(bash_payload 'git commit -m "docs: x
+
+Generated with Claude Code"')"
+run "a robot emoji in the message" 2 "$TRAILER"   "$(bash_payload 'git commit -m "docs: x 🤖"')"
+run "the same trailer on a tag message" 2 "$TRAILER"   "$(bash_payload 'git tag -a v9.9.9 -m "v9.9.9
+
+Co-Authored-By: Claude <x>"')"
+run "an ordinary commit message" 0 "$TRAILER"   "$(bash_payload 'git commit -m "fix(scaffold): a line ending is not a conflict"')"
+run "a commit mentioning Claude Code as a subject" 0 "$TRAILER"   "$(bash_payload 'git commit -m "docs: explain how Claude Code loads the rules"')"
+run "not a commit at all" 0 "$TRAILER" "$(bash_payload 'git log --oneline -1')"
 
 echo "--- guard-pr-merge judges only gh pr merge ---"
 run "an unrelated command" 0 "$MERGE" "$(bash_payload 'git status')"
