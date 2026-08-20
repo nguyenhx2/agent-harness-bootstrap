@@ -76,11 +76,28 @@ def load() -> dict[str, str]:
     return json.loads(MANIFEST.read_text(encoding="utf-8")).get("rendered_from", {})
 
 
+THEMES = ("video/src/theme.py", "video/src/ja/theme.py")
+
+
+def theme_digest() -> str:
+    """One hash over every shared theme file that exists. -> "" when none do."""
+    h = hashlib.sha256()
+    seen = False
+    for rel in THEMES:
+        f = ROOT / rel
+        if f.is_file():
+            h.update(rel.encode("utf-8"))
+            h.update(f.read_bytes())
+            seen = True
+    return h.hexdigest() if seen else ""
+
+
 def save(data: dict[str, str]) -> None:
     body = {
         "comment": "sha256 of the scene source each shipped clip was last rendered from. "
                    "Written by scripts/check_media.py --update, verified by the same script.",
         "version": 1,
+        "theme": theme_digest(),
         "rendered_from": dict(sorted(data.items())),
     }
     MANIFEST.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -216,6 +233,23 @@ def main(argv: list[str]) -> int:
     if stale or missing:
         print(f"\n  {len(stale) + len(missing)} stale, {ok} current.")
         return 1
+
+    # The theme is reported, not enforced, and the difference is deliberate. Hashing it INTO each
+    # clip's provenance would fail the build for a one-colour tweak and demand fourteen re-renders,
+    # which is the trade this gate documents refusing. But going silent is its own failure: the
+    # whole palette was moved onto the landing page's tokens, every shipped clip became a
+    # different drawing from its source, and nothing here had anything to say about it. A warning
+    # costs nothing and is the difference between a known gap and an invisible one.
+    recorded_theme = json.loads(MANIFEST.read_text(encoding="utf-8")).get("theme", "") \
+        if MANIFEST.is_file() else ""
+    now = theme_digest()
+    if recorded_theme and now and recorded_theme != now:
+        print(f"  WARN  {' and '.join(t for t in THEMES if (ROOT / t).is_file())} changed since")
+        print("        these clips were rendered. Every frame of every clip is drawn from it, so")
+        print("        they no longer look like their source. Nothing here fails on that - a")
+        print("        palette does not make a published number false - but re-render before")
+        print("        shipping, then: python scripts/check_media.py --update <artifact>")
+
     print(f"  ok    {ok} clips, each rendered from the source that ships beside it")
     return 0
 

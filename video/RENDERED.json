@@ -1,6 +1,7 @@
 {
   "comment": "sha256 of the scene source each shipped clip was last rendered from. Written by scripts/check_media.py --update, verified by the same script.",
   "version": 1,
+  "theme": "9d62527e00ed771258f74fa7b210312020b10788e53171b7d69f67324928dce6",
   "rendered_from": {
     "video/gif/04-solution.gif": "07c3db12a6dfcdcf6351e1e3fddc40006153780ec9cc0cee89599d55f90af5cd",
     "video/gif/ja/04-solution.gif": "25f81afa927af56a91a297f950c23bb83169a5b4521764c60598a25a54b0fd55",
