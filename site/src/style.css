@@ -452,6 +452,32 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .gr:has(#gr-2:checked) [data-gate="2"],
 .gr:has(#gr-3:checked) [data-gate="3"] { --blk: 1; }
 
+/* ------- figure 4: the routing tier, and figure 5: the viewer route */
+
+/* Three alternatives, not three stages, so only the chosen lane energizes. The
+   lane is the variable; the branch gate and the reviewed MR below it are the
+   constant, so they stay live under every tier. Lighting the result while
+   leaving the gate between it dark read as a change that reached the MR
+   without passing the gate, which is the one thing this drawing must not say. */
+.tr:has(#tier-1:checked) :is([data-lv="1"], [data-lv="2"], [data-lv="5"], [data-lv="6"]),
+.tr:has(#tier-2:checked) :is([data-lv="1"], [data-lv="3"], [data-lv="5"], [data-lv="6"]),
+.tr:has(#tier-3:checked) :is([data-lv="1"], [data-lv="4"], [data-lv="5"], [data-lv="6"]) { --on: 1; }
+
+.tr [data-lv="1"] { --i: 0; }
+.tr [data-lv="2"], .tr [data-lv="3"], .tr [data-lv="4"] { --i: 1; }
+.tr [data-lv="5"] { --i: 2; }
+.tr [data-lv="6"] { --i: 3; }
+
+.tr .dgm { width: min(100%, 26rem); margin-inline: auto; }
+/* N5 carries no picker: it draws one fixed route, so it ships energized. */
+.vw { width: min(100%, 28rem); margin-inline: auto; }
+.vwfig { margin-top: var(--s-2); }
+.vwfig .plate { margin-top: 0; }
+.vw__cap { margin-top: var(--s-1); }
+.vw__cap p { max-width: 56ch; color: var(--ink-2); font-size: var(--t--1); }
+.vw__cap p + p { margin-top: var(--s-1); }
+.vw__cap b { color: var(--ink); font-weight: 600; }
+
 .g-box {
   fill: color-mix(in srgb,
         color-mix(in srgb, var(--block) 28%, var(--field-lit)) calc(var(--blk) * 100%),
@@ -586,16 +612,20 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   .gr:has(#gr-5:checked) .rd[data-rd="5"],
   .fit:has(#fit-1:checked) .rd[data-rd="1"],
   .fit:has(#fit-2:checked) .rd[data-rd="2"],
-  .fit:has(#fit-3:checked) .rd[data-rd="3"] { display: block; }
+  .fit:has(#fit-3:checked) .rd[data-rd="3"],
+  .tr:has(#tier-1:checked) .rd[data-rd="1"],
+  .tr:has(#tier-2:checked) .rd[data-rd="2"],
+  .tr:has(#tier-3:checked) .rd[data-rd="3"] { display: block; }
 }
 
 @media (min-width: 62rem) {
-  .fit, .gr {
+  .fit, .gr, .tr__fig, .vwfig {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--s-3);
     align-items: start;
   }
+  .vwfig .vw__cap { margin-top: 0; }
   .fit > figcaption > :first-child, .gr > .rd:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 }
 
@@ -679,6 +709,188 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .versus h3 { font-size: var(--t--1); font-family: var(--mono); font-weight: 500; letter-spacing: 0.02em; }
 .versus p { margin-top: 0.4rem; max-width: 56ch; color: var(--ink-2); font-size: var(--t--1); }
 
+/* ---------------------------------------------------------------- the symptoms */
+
+/* The opening question. One rule per symptom: the complaint on the left in the
+   reader's own voice, what answers it on the right. Three columns only when
+   there is room for two measures side by side; below that the icon keeps its
+   own column and the two paragraphs stack under each other. */
+.symp { margin-top: var(--s-2); padding: 0; list-style: none; }
+.symp > li {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.35rem 0.9rem;
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--line);
+  align-items: start;
+}
+.symp > li > svg {
+  grid-row: span 2;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.15rem;
+  color: var(--accent-text);
+}
+.symp .q { max-width: 52ch; color: var(--ink); font-style: italic; }
+.symp .q::before { content: "\201C"; }
+.symp .q::after { content: "\201D"; }
+.symp .a { max-width: 58ch; color: var(--ink-2); font-size: var(--t--1); }
+@media (min-width: 56rem) {
+  .symp > li { grid-template-columns: 1.35rem minmax(0, 1fr) minmax(0, 1fr); }
+  .symp > li > svg { grid-row: auto; }
+  .symp .a { padding-left: var(--s-1); border-left: 1px solid var(--line); }
+}
+
+/* ---------------------------------------------------------------- the three pieces */
+
+.pieces { display: grid; gap: var(--s-1); margin-top: var(--s-2); padding: 0; list-style: none; }
+@media (min-width: 52rem) { .pieces { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); } }
+.pieces > li { padding-top: 0.7rem; border-top: 2px solid var(--accent-text); }
+.pieces h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.pieces h3 svg, .layers h3 svg, .step__h h3 svg, .clip h3 svg {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent-text);
+}
+.pieces p { margin-top: 0.45rem; max-width: 46ch; color: var(--ink-2); font-size: var(--t--1); }
+
+/* A section's own sub-heading, quieter than the h2 it sits under. */
+.sub-h {
+  margin-top: var(--s-3);
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Where a figure came from, said beside the figure rather than in a trophy
+   cabinet at the end of the page. */
+.src {
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: var(--t--2);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+  color: var(--ink-3);
+  max-width: 62ch;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- the clips */
+
+/* The video gallery, folded into this page: it was a second page nobody had a
+   reason to open. The lead clip spans the grid; the other six sit behind a
+   disclosure and preload nothing until it is opened. */
+.clips { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: 0; list-style: none; }
+@media (min-width: 60rem) { .clips { grid-template-columns: 1fr 1fr; } .clip--lead { grid-column: 1 / -1; } }
+.clip h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.clip h3 .dur { font-size: var(--t--2); letter-spacing: 0.1em; color: var(--ink-3); }
+.clip p { margin-top: 0.45rem; max-width: 60ch; color: var(--ink-2); font-size: var(--t--1); }
+.clip video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  margin-top: 0.8rem;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+@media (min-width: 60rem) { .clip--lead video { max-width: 52rem; } }
+.clip__links { display: flex; flex-wrap: wrap; gap: 0 var(--s-1); margin-top: 0; }
+.clip__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-size: var(--t--2);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.clip__links a:hover { color: var(--accent-text); }
+
+.more { margin-top: var(--s-2); border-top: 1px solid var(--line); }
+.more > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  color: var(--ink-2);
+  transition: color 140ms ease;
+}
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 180ms var(--ease);
+}
+.more[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+.more > summary:hover { color: var(--ink); }
+
+/* ---------------------------------------------------------------- screenshots */
+
+.shots { display: grid; gap: var(--s-2); margin-top: var(--s-2); }
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.shot figcaption { margin-top: 0.6rem; max-width: 64ch; color: var(--ink-2); font-size: var(--t--1); }
+.shot figcaption b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+
+/* ---------------------------------------------------------------- the three states */
+
+/* What a re-scaffold reports, per file. This was a two-column table and it had
+   to side-scroll on a phone to say three short things, so it is a definition
+   list that reflows instead. */
+.states { margin-top: var(--s-1); }
+.states > div {
+  display: grid;
+  gap: 0.15rem 1.25rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 44rem) { .states > div { grid-template-columns: 9rem 1fr; align-items: baseline; } }
+.states dt {
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  letter-spacing: 0.06em;
+  color: var(--accent-text);
+}
+.states dd { margin: 0; max-width: 58ch; color: var(--ink-2); font-size: var(--t--1); }
+
 /* ---------------------------------------------------------------- layers */
 
 .layers { margin-top: var(--s-2); padding: 0; list-style: none; }
@@ -691,35 +903,16 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 @media (min-width: 44rem) {
   .layers > li { grid-template-columns: 13rem 1fr; align-items: baseline; }
 }
-.layers h3 { font-family: var(--mono); font-size: var(--t--1); font-weight: 500; letter-spacing: 0.02em; }
-.layers p { color: var(--ink-2); font-size: var(--t--1); max-width: 56ch; }
-
-/* ---------------------------------------------------------------- proof */
-
-.meas { margin-top: var(--s-2); padding: 0; list-style: none; }
-.meas > li {
-  display: grid;
-  gap: 0.25rem 1.25rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--line);
-}
-@media (min-width: 48rem) {
-  .meas > li { grid-template-columns: 9rem 1fr 13rem; align-items: baseline; }
-}
-.meas__v {
+.layers h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-family: var(--mono);
-  font-size: var(--t-1);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  color: var(--accent-text);
+  font-size: var(--t--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
-.meas__c { color: var(--ink); max-width: 50ch; }
-.meas__s { font-family: var(--mono); font-size: var(--t--1); color: var(--ink-3); overflow-wrap: anywhere; }
-
-.ticks { display: block; width: min(100%, 15rem); height: auto; margin-top: 0.45rem; }
-.ticks .t-off { fill: var(--line); }
-.ticks .t-on { fill: var(--accent-text); }
+.layers p { color: var(--ink-2); font-size: var(--t--1); max-width: 56ch; }
 
 /* ---------------------------------------------------------------- install */
 
@@ -731,6 +924,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   gap: 0.4rem 0.7rem;
   margin-bottom: 0.6rem;
 }
+.step__h h3 { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
 .tag {
   font-family: var(--mono);
   font-size: var(--t--2);
@@ -757,7 +951,6 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .scroller pre { margin: 0; }
 .scroller code { color: var(--ink); font-size: var(--t--1); line-height: 1.75; }
 .scroller .cmt { color: var(--ink-3); }
-.scroller--table { padding: 1rem; }
 
 /* The listing wraps the scroller so the copy control can be positioned against
    the block rather than against the content that scrolls under it. */
@@ -786,27 +979,6 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .copy:hover { color: var(--ink); border-color: var(--accent-text); transform: translateY(-1px); }
 .copy:active { transform: translateY(0) scale(0.96); }
 .copy[data-state="done"] { color: var(--accent-text); border-color: var(--accent-text); }
-
-table.routes { border-collapse: collapse; width: 100%; min-width: 30rem; font-size: var(--t--1); }
-table.routes th, table.routes td {
-  text-align: left;
-  vertical-align: top;
-  padding: 0.7rem 1.25rem 0.7rem 0;
-  border-top: 1px solid var(--line);
-}
-table.routes thead th {
-  border-top: 0;
-  padding-top: 0;
-  font-family: var(--mono);
-  font-size: var(--t--2);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  font-weight: 500;
-}
-table.routes tbody th { font-weight: 400; color: var(--ink-2); }
-/* The routes are this section's navigation, so each link carries a real target. */
-table.routes a { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* ---------------------------------------------------------------- footer */
 
@@ -844,10 +1016,21 @@ table.routes a { display: inline-flex; align-items: center; min-height: 44px; }
 :lang(ja) .note,
 :lang(ja) .rd ul,
 :lang(ja) .layers p,
-:lang(ja) .meas__c,
 :lang(ja) .step p,
+:lang(ja) .symp .a,
+:lang(ja) .states dd,
+:lang(ja) .vw__cap p,
+:lang(ja) .clip p,
+:lang(ja) .shot figcaption,
+:lang(ja) .src,
 :lang(ja) .colophon p { max-width: 40em; }
 :lang(ja) .rd__t { max-width: 28em; }
+:lang(ja) .symp .q { max-width: 34em; }
+:lang(ja) .pieces p { max-width: 30em; }
+/* A mincho quotation takes the CJK marks, not the Latin ones. */
+:lang(ja) .symp .q::before { content: "\300C"; }
+:lang(ja) .symp .q::after { content: "\300D"; }
+:lang(ja) .symp .q { font-style: normal; }
 
 /* ---------------------------------------------------------------- motion */
 
