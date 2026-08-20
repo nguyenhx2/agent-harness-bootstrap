@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.17.0] - 2026-08-20
+
+### Fixed
+
+- No change in this skill. Released with the repo 1.17.0 plugin-commands and viewer-editing work.
+
 ## [1.16.0] - 2026-08-20
 
 ### Fixed

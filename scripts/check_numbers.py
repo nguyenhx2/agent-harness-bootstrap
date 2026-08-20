@@ -584,7 +584,13 @@ def main() -> int:
                 print(f"    MISMATCH  {rel}:{line}  port adapter self-test: says {a}/{b}, "
                       f"reality is {c['adapter_cases']}/{c['adapter_cases']}")
                 bad += 1
-        active = (CHECKS
+        # A CHANGELOG entry records what a PAST release captured. Re-pointing the camera at
+        # another project moves today's figures, and rewriting the history to match would
+        # falsify what that release actually shipped. The pair rules below already carry this
+        # exemption; the caption checks need it for the same reason.
+        checks = [c for c in CHECKS
+                  if not (historical and c[0].startswith("captured"))]
+        active = (checks
                   + (COUNT_CHECKS if rel in COUNT_FILES else [])
                   + (SPLIT_CHECKS if rel in SPLIT_FILES else [])
                   + (BENCH_CHECKS if rel in BENCH_FILES else []))

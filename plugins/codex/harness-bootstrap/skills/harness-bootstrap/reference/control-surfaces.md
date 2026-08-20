@@ -44,6 +44,33 @@ Swap Opus for Haiku and the result is byte-identical. **The safety floor is mode
 `agent-guardrails.md` builds this into a four-layer model and puts rules at layer 3 of 4: *"Rules are
 layer 3 - they are not the only layer, and they are not a substitute for the other three."*
 
+## The runtime band: switching a control off
+
+Every control above can be switched off, and that is deliberate - a guardrail nobody can remove is
+a guardrail people route around. What matters is that removing one is *recorded and graded*, which
+is what `harness-toggle.py` and the viewer's `POST /toggle` share:
+
+| Tier | What is in it | What it costs to disable |
+|---|---|---|
+| **HARD** | `protect-secrets`, `guard-agent-spawn` hooks; `security-privacy`, `agent-guardrails` rules; `/review-changes`; the `orchestrator` and reviewer seats | the literal phrase `disable <name>`, compared byte for byte |
+| **SOFT** | `guard-main-commit`, `check-commit-msg`, `protect-adr`; `ai-governance`; **every** agent seat | an explicit acknowledgement (`--yes` / `confirm_soft`) |
+| unlisted | everything else | nothing beyond the record |
+
+The phrase is the whole HARD gate, and it is a gate on *authorship*, not on knowledge. In the CLI
+the rule is that the model may relay it only if the user typed it and must never compose it; in the
+browser there is no model in the loop, so the human typing it into the prompt **is** the gate rather
+than a proxy for one. Enabling is never gated: restoring a control is not the risk.
+
+Nothing is deleted. Files move to `.claude/disabled/<kind>/`, a hook's `settings.json` registration
+is stored verbatim with its position, and `.claude/disabled.json` is committed - so the team sees
+what was switched off and why, a scaffold re-run does not resurrect it, and `reapply` repairs a tree
+where something came back. **A disabled control is a decision with a name on it, not an absence.**
+
+One thing in this band is weaker than the rest, and is labelled as such: switching off an individual
+*step* inside a command (the viewer's step editor) comments it out of the file. That removes it from
+the rendered procedure and records the intent, but a model reading the raw file still sees the text.
+It is a reversible edit, not an enforcement boundary. The boundary is the file-level toggle above.
+
 ## Turning an advisory control into an enforced one
 
 A soft control becomes hard when it can be expressed as a file the harness checks.

@@ -9,10 +9,15 @@
 //!   - settings.json is rewritten with indent 2 PRESERVING key order (order is
 //!     semantic there); disabled.json is the only file written with sorted keys
 //! Safety tiers match harness-toggle.py:
-//!   HARD  - refused here entirely (403); only /harness-toggle with the typed
-//!           user phrase may disable them
+//!   HARD  - refused (403) unless `confirm_hard` carries the exact phrase
+//!           `disable <name>`. The CLI requires the USER to type that phrase and
+//!           forbids the model from composing it; the browser has no model in
+//!           the loop at all, so the page prompts for it and sends what the
+//!           human typed. Same phrase, same gate, two front ends.
 //!   SOFT  - refused (409) unless the caller passes an explicit acknowledgement
-//! Agents are never toggleable.
+//! Agents ARE toggleable (a parked seat quarantines to .claude/disabled/agents/),
+//! but every seat is at least SOFT, and the seats the harness structurally
+//! assumes - the sole spawner and the review gates - are HARD.
 
 use crate::scan::sort_keys_deep;
 use serde_json::{json, Map, Value};
@@ -35,7 +40,21 @@ const HARD: &[(&str, &str)] = &[
     ("rule", "security-privacy"),
     ("rule", "agent-guardrails"),
     ("command", "review-changes"),
+    // The seats the rest of the harness is built around. Only the orchestrator
+    // holds Agent, so parking it removes dispatch entirely; the review seats are
+    // the code-review gate that /harness-tune may rescope but never remove.
+    ("agent", "orchestrator"),
+    ("agent", "code-reviewer"),
+    ("agent", "security-reviewer"),
+    ("agent", "reviewer"),
+    ("agent", "spec-guardian"),
 ];
+
+/// The phrase a HARD-protected item needs before it will move. The CLI takes it
+/// as `--confirm "disable <name>"` typed by the user; the page prompts for it.
+fn hard_phrase(name: &str) -> String {
+    format!("disable {name}")
+}
 
 /// SOFT-protected items and what each one protects, mirroring
 /// harness-toggle.py's SOFT set (which requires --yes).
@@ -46,11 +65,33 @@ const SOFT: &[(&str, &str, &str)] = &[
     ("rule", "ai-governance", "carries the AI-governance ground rules"),
 ];
 
+/// What a SOFT-protected item protects, or None when the item is unprotected.
+///
+/// The static SOFT table names individual rules and hooks. Agents are not in it
+/// by name because the rule is categorical: parking ANY seat is a roster change,
+/// and a routing row pointing at a seat that is not there is a dispatch to
+/// nowhere. So every non-HARD agent is SOFT, whatever it is called.
+fn soft_reason(kind: &str, name: &str) -> Option<String> {
+    if let Some((_, _, protects)) = SOFT.iter().find(|(k, n, _)| *k == kind && *n == name) {
+        return Some((*protects).to_string());
+    }
+    if kind == "agent" {
+        // Phrased to read after "it": the caller's sentence supplies the subject.
+        return Some(
+            "is a roster seat the orchestrator's routing table still lists, so parking it \
+             leaves a dispatch pointing at nothing"
+                .to_string(),
+        );
+    }
+    None
+}
+
 fn canon_kind(kind: &str) -> Option<&'static str> {
     match kind {
         "rule" | "rules" => Some("rule"),
         "command" | "commands" | "cmd" => Some("command"),
         "hook" | "hooks" => Some("hook"),
+        "agent" | "agents" => Some("agent"),
         _ => None,
     }
 }
@@ -59,6 +100,7 @@ fn kind_dir(kind: &str) -> &'static str {
     match kind {
         "rule" => "rules",
         "command" => "commands",
+        "agent" => "agents",
         _ => "hooks",
     }
 }
@@ -66,7 +108,7 @@ fn kind_dir(kind: &str) -> &'static str {
 /// Atomic replace: write a temp file then rename over the target. fs::rename
 /// replaces the destination on both Windows and Unix, so the target never
 /// stops existing.
-fn atomic_write(path: &Path, content: &str) -> std::io::Result<()> {
+pub fn atomic_write(path: &Path, content: &str) -> std::io::Result<()> {
     let tmp = path.with_extension("tmp-write");
     fs::write(&tmp, content)?;
     fs::rename(&tmp, path)
@@ -264,7 +306,10 @@ fn write_settings(root: &Path, settings: &Value) -> Result<(), ToggleError> {
 }
 
 /// Toggle one item. `confirm_soft` is the explicit acknowledgement required to
-/// disable a SOFT-protected item (harness-toggle.py's --yes).
+/// disable a SOFT-protected item (harness-toggle.py's --yes). `confirm_hard` is
+/// the literal phrase `disable <name>` required for a HARD-protected one
+/// (harness-toggle.py's --confirm), and must be what a human typed - the page
+/// prompts for it and sends it verbatim, exactly as the CLI takes it.
 pub fn toggle(
     root: &Path,
     kind: &str,
@@ -272,25 +317,32 @@ pub fn toggle(
     enable: bool,
     reason: &str,
     confirm_soft: bool,
+    confirm_hard: &str,
 ) -> Result<String, ToggleError> {
-    let kind = canon_kind(kind).ok_or_else(|| {
-        err(400, "kind must be rule, command or hook; agents are roster changes, not toggles")
-    })?;
+    let kind = canon_kind(kind)
+        .ok_or_else(|| err(400, "kind must be rule, command, hook or agent"))?;
     if name.is_empty() || name.contains('/') || name.contains('\\') || name.contains("..") {
         return Err(err(400, "invalid name"));
     }
     if !enable {
         if HARD.iter().any(|(k, n)| *k == kind && *n == name) {
-            return Err(err(
-                403,
-                format!(
-                    "{kind}/{name} is HARD-protected. Disabling it removes a safety control; \
-                     use the /harness-toggle command, which requires the user to type the \
-                     confirmation phrase."
-                ),
-            ));
+            let want = hard_phrase(name);
+            // Compared byte-for-byte and never trimmed or case-folded: the point
+            // of the phrase is that someone typed exactly it, and a gate that
+            // accepts "Disable X " accepts a paraphrase.
+            if confirm_hard != want {
+                return Err(err(
+                    403,
+                    format!(
+                        "{kind}/{name} is HARD-protected. Disabling it removes a control the \
+                         rest of the harness assumes.\nTo proceed, the phrase `{want}` must be \
+                         typed literally and sent as confirm_hard. Never compose it on the \
+                         user's behalf."
+                    ),
+                ));
+            }
         }
-        if let Some((_, _, protects)) = SOFT.iter().find(|(k, n, _)| *k == kind && *n == name) {
+        if let Some(protects) = soft_reason(kind, name) {
             if !confirm_soft {
                 return Err(err(
                     409,

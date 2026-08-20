@@ -6,6 +6,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.17.0] - 2026-08-20
+
+### Added
+
+- **The eight harness-management commands now ship with the plugin**, not only into a bootstrapped
+  repo. Until now `harness-bootstrap/` held a skill and nothing else, so `/harness-tune`,
+  `/harness-toggle`, `/harness-update`, `/agent-permissions`, `/board-audit`, `/code-graph`,
+  `/docs-graph` and `/skill-wire` existed *only* after a bootstrap had written them into that
+  repo's `.claude/commands/`. Installing the plugin and typing `/harness-tune` found nothing,
+  which read as the commands being broken rather than absent. They are now also in
+  `harness-bootstrap/commands/`, available anywhere as `/harness-bootstrap:<name>`.
+- The plugin copies are repo-agnostic where the scaffolded ones are substituted: they read the
+  deploy command, the destructive commands, the sensitive paths and the reviewer layout out of
+  `settings.json` and the roster and quote them back, rather than having intake's answers baked
+  in, and each one states plainly when the current directory has no `.claude/`. The delivery
+  commands stay scaffold-only on purpose - a `/deploy` that guesses is worse than no `/deploy`.
+
+### Changed
+
+- **`harness-toggle.py` toggles agent seats.** A parked seat moves to `.claude/disabled/agents/`
+  and comes back byte-identically, exactly like a rule. Every seat is at least SOFT (`--yes`),
+  because the orchestrator's routing table still lists it and a parked seat leaves a dispatch
+  pointing at nothing; `orchestrator`, `code-reviewer`, `security-reviewer`, `reviewer` and
+  `spec-guardian` are HARD (the typed phrase), because only the orchestrator spawns and the review
+  seats *are* the code-review gate. Adding or retiring a seat is still `/harness-update`.
+  Both scanners already read `.claude/disabled/agents/`, so graph parity is unaffected - verified
+  byte-identical with a seat parked.
+
 ## [1.16.0] - 2026-08-20
 
 ### Fixed

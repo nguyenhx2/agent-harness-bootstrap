@@ -140,6 +140,49 @@
     border-radius: 6px; background: #f8fafc; color: #475569; }
   /* a command with no numbered list at all: its prose, exactly as written */
   .stepprose { white-space: pre-wrap; word-break: break-word; margin-top: 4px; }
+
+  /* ---- step editor -------------------------------------------------------
+     The list becomes a flow chart: one card per step, joined by a connector, so
+     the order a command runs in is visible as a shape rather than inferred from
+     numbers. The cards are the drag targets; nothing else on the panel is
+     draggable, because a mis-drop here rewrites a file. */
+  ol.steps.flow { list-style: none; margin-left: 0; }
+  ol.steps.flow > li { position: relative; margin: 0 0 18px; }
+  /* the connector between one card and the next, drawn on the gap the margin
+     above leaves; :last-child has nothing to point at and so draws nothing */
+  ol.steps.flow > li:not(:last-child)::after {
+    content: ""; position: absolute; left: 15px; bottom: -15px; width: 2px; height: 12px;
+    background: var(--line);
+  }
+  ol.steps.flow > li:not(:last-child)::before {
+    content: ""; position: absolute; left: 11px; bottom: -17px; z-index: 1;
+    border: 5px solid transparent; border-top-color: var(--line);
+  }
+  .stepcard { display: flex; gap: 8px; align-items: flex-start; padding: 7px 8px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .stepcard.off { opacity: .55; border-style: dashed; background: #f8fafc; }
+  .stepcard.drop-above { box-shadow: 0 -3px 0 0 #2563eb; }
+  .stepcard.drop-below { box-shadow: 0  3px 0 0 #2563eb; }
+  .stepcard.dragging { opacity: .4; }
+  /* the number doubles as the drag handle: it is the part of a step that means
+     "position", which is the thing dragging changes */
+  .stepnum { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; cursor: grab;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+    background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; user-select: none; }
+  .stepcard.off .stepnum { background: #f1f5f9; color: var(--dim); border-color: var(--line); }
+  .stepnum:active { cursor: grabbing; }
+  .stepbody { flex: 1 1 auto; min-width: 0; }
+  .stepacts { display: flex; gap: 4px; flex: 0 0 auto; }
+  .stepacts button { padding: 1px 6px; font-size: 11px; line-height: 1.5; }
+  .stepedit { width: 100%; box-sizing: border-box; font: inherit; font-size: 12px;
+    min-height: 66px; padding: 5px 6px; border: 1px solid #93c5fd; border-radius: 6px;
+    background: #f8fbff; resize: vertical; white-space: pre-wrap; }
+  /* the save bar only exists once something is unsaved, so its presence is the
+     dirty indicator and there is no separate badge to keep in sync */
+  .stepsave { display: flex; gap: 6px; align-items: center; margin: 8px 0 2px;
+    padding: 6px 8px; border-radius: 6px; background: #fffbeb; border: 1px solid #fde68a; }
+  .stepsave .grow { flex: 1 1 auto; font-size: 11px; color: #92400e; }
+  .stepnote { font-size: 11px; color: var(--dim); margin-top: 4px; }
   .md h1 { font-size: 15px; margin: 8px 0 4px; } .md h2 { font-size: 14px; margin: 8px 0 4px; }
   .md h3 { font-size: 13px; margin: 6px 0 3px; }
   .md p, .md li { margin: 3px 0; word-break: break-word; }
