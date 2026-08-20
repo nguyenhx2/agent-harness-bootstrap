@@ -4,7 +4,7 @@
 
 <p align="center"><b>AIエージェントに、本当に理解できるリポジトリと、抜け出せないハーネスを与える。</b></p>
 
-<p align="center">作者: <a href="https://github.com/nguyenhx2">nguyenhx2</a> · <a href="README.md">English</a> · <b>日本語</b></p>
+<p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
@@ -510,10 +510,19 @@ Cinematic Universe Wiki）。マーベルおよびディズニーが本プロジ
 
 いずれのプロジェクトも本プロジェクトを推奨するものではありません。
 
-## 👤 作者について
+## 🤝 コントリビューション
 
-[**nguyenhx2**](https://github.com/nguyenhx2) が作成。コントリビューション歓迎 -
-まずは [`CONTRIBUTING.md`](CONTRIBUTING.md) から。
+Issue と Pull Request を歓迎します。このリポジトリは他の人のエージェントが動く枠組みを生成するため、
+基準は「ビルドが通るか」ではなく「主張がまだ成り立つか」です。それを答えるチェックは自動化されている
+ので、手で覚えておく必要はありません:
+
+```bash
+py -3.13 eval/guardrail_eval.py      # ガードレールが今も遮断するか
+py -3.13 scripts/check_numbers.py    # 公開されたすべての数値がスクリプトと一致するか
+```
+
+ゲートの一覧と、それぞれが何を捕らえるために存在するのかは
+[`CONTRIBUTING.md`](CONTRIBUTING.md)(英語)にあります。
 
 ## 📄 ライセンス
 
