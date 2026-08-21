@@ -72,6 +72,12 @@
   --block: #ff7a5c;       /*  5.0:1 on the field - a refusal, nothing else */
   --on-live: #241a00;     /* 10.9:1 on the gold */
 
+  /* The highlighter. One pale tint of the field, used only to bind a question to
+     its answer in the symptoms list - the page's third background after film and
+     plate, and the only one that carries body ink rather than plate ink. */
+  --mark: #dbe3f5;        /* --ink 14.3:1, --ink-2 6.9:1 */
+  --mark-line: #b2c0e5;
+
   --focus: #22318c;
 
   --serif: 'Andada Pro', Georgia, 'Times New Roman', serif;
@@ -90,7 +96,11 @@
   --s-2: clamp(1.5rem, 1.2rem + 1.4vw, 2.25rem);
   --s-3: clamp(2.5rem, 1.9rem + 2.8vw, 4rem);
 
-  --measure: 58ch;
+  /* One measure for body prose, and it is the only number that decides where a
+     paragraph wraps. 58ch was under the readable band (~65-75 characters) and
+     every component then cut a tighter one of its own on top of it, so a
+     paragraph in a full-width section wrapped at half the width it had. */
+  --measure: 70ch;
   /* The gutter has a floor. This is the only rule that sets padding-inline on
      a wrap, so there is no path by which it collapses on a narrow phone. */
   --gutter: max(20px, env(safe-area-inset-left, 0px));
@@ -119,6 +129,9 @@
     --live: #ffc94d;        /*  9.9:1 */
     --block: #ff7f61;       /*  6.1:1 */
 
+    --mark: #17203a;        /* --ink 12.9:1, --ink-2 6.9:1 */
+    --mark-line: #2c3a63;
+
     --focus: #93a4ee;
   }
 }
@@ -145,7 +158,11 @@ body {
   overflow-x: clip;
 }
 
-h1, h2, h3 { margin: 0; font-weight: 720; line-height: 1.12; text-wrap: balance; letter-spacing: -0.02em; }
+/* `balance` evens the lines of a heading out, which means it will break a
+   heading that fits on one line into two short ones just to make them equal
+   length. `pretty` keeps the break where it belongs and only pulls back a
+   trailing orphan, so a heading with room stays on one line. */
+h1, h2, h3 { margin: 0; font-weight: 720; line-height: 1.12; text-wrap: pretty; letter-spacing: -0.02em; }
 h1 { font-size: var(--t-3); letter-spacing: -0.032em; }
 h2 { font-size: var(--t-2); }
 h3 { font-size: var(--t-1); letter-spacing: -0.012em; }
@@ -275,14 +292,14 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   .hero__do .act { justify-content: center; }
 }
 .hero h1 { max-width: 17ch; }
-.net-lead { margin-bottom: var(--s-2); color: var(--ink-2); font-size: var(--t--1); max-width: 56ch; }
+.net-lead { margin-bottom: var(--s-2); color: var(--ink-2); font-size: var(--t--1); max-width: var(--measure); }
 .hero .lede {
   margin-top: var(--s-1);
   font-size: var(--t-1);
   color: var(--ink-2);
   max-width: 46ch;
 }
-.hero .sub { margin-top: var(--s-1); color: var(--ink-3); max-width: 54ch; }
+.hero .sub { margin-top: var(--s-1); color: var(--ink-3); max-width: var(--measure); }
 /* The refusal word is one unit. Japanese breaks between characters, so without
    this the verb splits across two lines and stops reading as a word. */
 .block-word { color: var(--block-text); white-space: nowrap; }
@@ -333,7 +350,11 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 
 .sec { padding-block: var(--s-3); border-top: 1px solid var(--line); }
 .sec--net { padding-top: var(--s-2); border-top: 0; }
-.sec h2 { max-width: 20ch; }
+/* Long enough for the longest h2 on the page to set on one line at desktop
+   ("The roster is decided, not installed", 36 characters), short enough that a
+   future one still breaks before it runs the width of the section. At 20ch it
+   broke every heading here into two lines with the row half empty. */
+.sec h2 { max-width: 38ch; }
 .sec .intro { margin-top: var(--s-1); color: var(--ink-2); }
 
 .note {
@@ -342,7 +363,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   border-left: 1px solid var(--edge);
   color: var(--ink-2);
   font-size: var(--t--1);
-  max-width: 58ch;
+  max-width: var(--measure);
 }
 
 /* ---------------------------------------------------------------- the plate */
@@ -474,7 +495,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .vwfig { margin-top: var(--s-2); }
 .vwfig .plate { margin-top: 0; }
 .vw__cap { margin-top: var(--s-1); }
-.vw__cap p { max-width: 56ch; color: var(--ink-2); font-size: var(--t--1); }
+.vw__cap p { max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 .vw__cap p + p { margin-top: var(--s-1); }
 .vw__cap b { color: var(--ink); font-weight: 600; }
 
@@ -562,7 +583,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .rd__k b { color: var(--accent-text); font-weight: 500; }
 .rd__t { margin-top: 0.45rem; font-size: var(--t-1); max-width: 46ch; }
 .rd ul { margin-top: var(--s-1); padding: 0; list-style: none; }
-.rd li { position: relative; padding-left: 1.1rem; max-width: 56ch; color: var(--ink-2); font-size: var(--t--1); }
+.rd li { position: relative; padding-left: 1.1rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 .rd li + li { margin-top: 0.4rem; }
 .rd li::before {
   content: "";
@@ -707,38 +728,77 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 .versus > li { padding-top: 0.7rem; border-top: 2px solid var(--edge); }
 .versus > li + li { border-top-color: var(--accent-text); }
 .versus h3 { font-size: var(--t--1); font-family: var(--mono); font-weight: 500; letter-spacing: 0.02em; }
-.versus p { margin-top: 0.4rem; max-width: 56ch; color: var(--ink-2); font-size: var(--t--1); }
+.versus p { margin-top: 0.4rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 
 /* ---------------------------------------------------------------- the symptoms */
 
-/* The opening question. One rule per symptom: the complaint on the left in the
-   reader's own voice, what answers it on the right. Three columns only when
-   there is room for two measures side by side; below that the icon keeps its
-   own column and the two paragraphs stack under each other. */
-.symp { margin-top: var(--s-2); padding: 0; list-style: none; }
+/* The opening question, as pairs. Each symptom is a heading in the reader's own
+   voice with the answer under it, and the two are bound by a highlight band
+   behind the question - italics alone left a rule of eight quotations that read
+   as one grey list. Two cards side by side the moment there is room for two
+   measures, which is also what stops a 1440px row from carrying one short
+   column of text and half a screen of nothing. */
+.symp {
+  display: grid;
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 56rem) {
+  .symp { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-1) var(--s-2); }
+}
 .symp > li {
   display: grid;
-  grid-template-columns: 1.35rem minmax(0, 1fr);
-  gap: 0.35rem 0.9rem;
-  padding: 0.95rem 0;
-  border-top: 1px solid var(--line);
-  align-items: start;
+  grid-template-rows: auto 1fr;
+  gap: 0.6rem;
+  padding: var(--s-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-2);
 }
-.symp > li > svg {
-  grid-row: span 2;
+.symp .q {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 3px;
+  background: var(--mark);
+  box-shadow: inset 0 0 0 1px var(--mark-line);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: var(--t-0);
+  font-weight: 640;
+  line-height: 1.4;
+  letter-spacing: -0.006em;
+}
+.symp .q > svg {
   width: 1.35rem;
   height: 1.35rem;
-  margin-top: 0.15rem;
+  margin-top: 0.06em;
   color: var(--accent-text);
 }
-.symp .q { max-width: 52ch; color: var(--ink); font-style: italic; }
-.symp .q::before { content: "\201C"; }
-.symp .q::after { content: "\201D"; }
-.symp .a { max-width: 58ch; color: var(--ink-2); font-size: var(--t--1); }
-@media (min-width: 56rem) {
-  .symp > li { grid-template-columns: 1.35rem minmax(0, 1fr) minmax(0, 1fr); }
-  .symp > li > svg { grid-row: auto; }
-  .symp .a { padding-left: var(--s-1); border-left: 1px solid var(--line); }
+/* The marks sit inside the sentence, not beside it: a pseudo-element on the
+   heading itself would become a third grid item and land on top of the text. */
+.symp .q > span::before { content: "\201C"; }
+.symp .q > span::after { content: "\201D"; }
+.symp .a {
+  margin: 0;
+  padding-left: calc(1.35rem + 1.4rem);
+  max-width: var(--measure);
+  color: var(--ink-2);
+  font-size: var(--t--1);
+}
+.symp .a > b {
+  display: block;
+  font-family: var(--mono);
+  font-size: var(--t--2);
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 
 /* ---------------------------------------------------------------- the three pieces */
@@ -761,7 +821,51 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   height: 1.1rem;
   color: var(--accent-text);
 }
-.pieces p { margin-top: 0.45rem; max-width: 46ch; color: var(--ink-2); font-size: var(--t--1); }
+.pieces p { margin-top: 0.45rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
+
+/* ---------------------------------------------------------------- the tuning commands */
+
+/* Eight cards, two abreast, because a bare list of command names is what this
+   section used to be and it told nobody when to reach for one. Each card is the
+   same three things in the same order: the name, the moment you want it, and
+   what it will and will not do. */
+.cmds { display: grid; gap: var(--s-1); margin-top: var(--s-2); padding: 0; list-style: none; }
+@media (min-width: 56rem) { .cmds { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-1) var(--s-2); } }
+.cmds > li {
+  padding: var(--s-1);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--accent-text);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+}
+.cmds h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: var(--t--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.cmds h3 svg { flex: none; width: 1.1rem; height: 1.1rem; color: var(--accent-text); }
+.cmds p { margin-top: 0.5rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
+.cmds .when {
+  margin-top: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 3px;
+  background: var(--mark);
+  box-shadow: inset 0 0 0 1px var(--mark-line);
+  color: var(--ink);
+}
+.cmds .when b {
+  display: block;
+  font-family: var(--mono);
+  font-size: var(--t--2);
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
 
 /* A section's own sub-heading, quieter than the h2 it sits under. */
 .sub-h {
@@ -783,7 +887,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   letter-spacing: 0.04em;
   line-height: 1.7;
   color: var(--ink-3);
-  max-width: 62ch;
+  max-width: var(--measure);
   overflow-wrap: anywhere;
 }
 
@@ -805,7 +909,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   letter-spacing: 0.02em;
 }
 .clip h3 .dur { font-size: var(--t--2); letter-spacing: 0.1em; color: var(--ink-3); }
-.clip p { margin-top: 0.45rem; max-width: 60ch; color: var(--ink-2); font-size: var(--t--1); }
+.clip p { margin-top: 0.45rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 .clip video {
   display: block;
   width: 100%;
@@ -867,7 +971,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-.shot figcaption { margin-top: 0.6rem; max-width: 64ch; color: var(--ink-2); font-size: var(--t--1); }
+.shot figcaption { margin-top: 0.6rem; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 .shot figcaption b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
 
 /* ---------------------------------------------------------------- the three states */
@@ -889,7 +993,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   letter-spacing: 0.06em;
   color: var(--accent-text);
 }
-.states dd { margin: 0; max-width: 58ch; color: var(--ink-2); font-size: var(--t--1); }
+.states dd { margin: 0; max-width: var(--measure); color: var(--ink-2); font-size: var(--t--1); }
 
 /* ---------------------------------------------------------------- layers */
 
@@ -912,7 +1016,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   font-weight: 500;
   letter-spacing: 0.02em;
 }
-.layers p { color: var(--ink-2); font-size: var(--t--1); max-width: 56ch; }
+.layers p { color: var(--ink-2); font-size: var(--t--1); max-width: var(--measure); }
 
 /* ---------------------------------------------------------------- install */
 
@@ -936,7 +1040,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   padding: 0.3rem 0.45rem;
 }
 .tag--q { color: var(--ink-3); }
-.step p { color: var(--ink-2); font-size: var(--t--1); max-width: 58ch; }
+.step p { color: var(--ink-2); font-size: var(--t--1); max-width: var(--measure); }
 .step .scroller + p { margin-top: 0.7rem; }
 
 .scroller {
@@ -983,7 +1087,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 /* ---------------------------------------------------------------- footer */
 
 .colophon { border-top: 1px solid var(--line); padding-block: var(--s-2) var(--s-3); }
-.colophon p { color: var(--ink-2); font-size: var(--t--1); max-width: 56ch; }
+.colophon p { color: var(--ink-2); font-size: var(--t--1); max-width: var(--measure); }
 .colophon nav { display: flex; flex-wrap: wrap; gap: 0 var(--s-1); margin-top: 0.35rem; }
 .colophon nav a {
   display: inline-flex;
@@ -1012,25 +1116,30 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 :lang(ja) .hero .lede { max-width: 30em; }
 :lang(ja) .hero .sub,
 :lang(ja) .sec h2 { max-width: 32em; }
+/* The Latin measure is counted in `ch` and the Japanese one in `em`, because a
+   full-width script sets one glyph per em: 44em is 44 CJK characters a line,
+   which is the top of the Japanese reading band the same way 70ch is the top of
+   the Latin one. It is raised from 40em for the same reason `--measure` moved,
+   and no further - past the band a CJK line is genuinely harder to track back. */
 :lang(ja) .prose,
 :lang(ja) .note,
 :lang(ja) .rd ul,
 :lang(ja) .layers p,
 :lang(ja) .step p,
+:lang(ja) .cmds p,
 :lang(ja) .symp .a,
 :lang(ja) .states dd,
 :lang(ja) .vw__cap p,
 :lang(ja) .clip p,
 :lang(ja) .shot figcaption,
 :lang(ja) .src,
-:lang(ja) .colophon p { max-width: 40em; }
+:lang(ja) .versus p,
+:lang(ja) .colophon p { max-width: 44em; }
 :lang(ja) .rd__t { max-width: 28em; }
-:lang(ja) .symp .q { max-width: 34em; }
-:lang(ja) .pieces p { max-width: 30em; }
+:lang(ja) .pieces p { max-width: 34em; }
 /* A mincho quotation takes the CJK marks, not the Latin ones. */
-:lang(ja) .symp .q::before { content: "\300C"; }
-:lang(ja) .symp .q::after { content: "\300D"; }
-:lang(ja) .symp .q { font-style: normal; }
+:lang(ja) .symp .q > span::before { content: "\300C"; }
+:lang(ja) .symp .q > span::after { content: "\300D"; }
 
 /* ---------------------------------------------------------------- motion */
 

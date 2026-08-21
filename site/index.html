@@ -59,9 +59,9 @@
   Andada Pro over a mono data face. Inside a plate exactly two signal inks by
   law - gold is a live signal, coral is a refusal - and nothing else uses them.
   STORY: does any of this sound familiar; here is what answers it; watch it;
-  install it; move to a new version; run it; here is how the orchestrator
-  actually decides; here is what the harness is made of; here is the viewer
-  that reads all of it back off disk.
+  install it; move to a new version; run it; tune it afterwards; here is how the
+  orchestrator actually decides; here is what the harness is made of; here is
+  the viewer that reads all of it back off disk.
   FIRST VIEWPORT: the claim at display scale with the refusal word in coral,
   the lede, four actions with install filled in the field ink, a ruled register
   of four verified fields, then the first symptom.
@@ -101,6 +101,16 @@
   <symbol id="i-at" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.6"/><path d="M10.6 8v1.5a2 2 0 003.9 0V8A6.5 6.5 0 108 14.5"/></symbol>
   <symbol id="i-dialog" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="1.3"/><path d="M1.8 6h12.4"/><path d="M9.4 11.4l2.6-2.6M11.4 11.4l.7-.7"/></symbol>
   <symbol id="i-book" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 2.8h4.2A1.6 1.6 0 018 4.4v9.2a1.4 1.4 0 00-1.4-1.4H2.4z"/><path d="M13.6 2.8H9.4A1.6 1.6 0 008 4.4v9.2a1.4 1.4 0 011.4-1.4h4.2z"/></symbol>
+
+  <!-- The three clients this page names. Drawn here in the page's own line style -
+       one weight, round caps, the same 16-unit grid as every other mark - rather
+       than pasted from anybody's brand kit: these are third-party names and their
+       actual logo artwork is theirs, not ours to ship. A spark, a hexagonal knot
+       and a pointer: enough to tell three rows apart, beside a label that already
+       says which is which. -->
+  <symbol id="i-claude" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.7v3.6M8 10.7v3.6M1.7 8h3.6M10.7 8h3.6"/><path d="M3.6 3.6l2.5 2.5M9.9 9.9l2.5 2.5M12.4 3.6L9.9 6.1M6.1 9.9l-2.5 2.5"/></symbol>
+  <symbol id="i-codex" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6l5.5 3.2v6.4L8 14.4 2.5 11.2V4.8z"/><path d="M10.6 6.3v3.4L8 11.4 5.4 9.7V6.3L8 4.6z"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 2.2l8.6 4.2-3.7 1.2-1.2 3.7z"/><path d="M8.7 8.7l3.9 4.9"/></symbol>
 </svg>
 
 <header class="masthead">
@@ -151,44 +161,36 @@
 
       <ul class="symp">
         <li>
-          <svg aria-hidden="true"><use href="#i-spread"/></svg>
-          <p class="q">I asked for one feature. It touched 14 files across 3 modules and force-pushed to <code>main</code>.</p>
-          <p class="a">Scoped agents, path-based rules, and a hook that exits 2 and refuses the push before it lands.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-spread"/></svg><span>I asked for one feature. It touched 14 files across 3 modules and force-pushed to <code>main</code>.</span></h3>
+          <p class="a"><b>What answers it</b>Scoped agents, path-based rules, and a hook that exits 2 and refuses the push before it lands.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-break"/></svg>
-          <p class="q">The session compacted and it forgot the plan it was three steps into.</p>
-          <p class="a">The task board and its session log live on disk, so a fresh session resumes where the last one stopped.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-break"/></svg><span>The session compacted and it forgot the plan it was three steps into.</span></h3>
+          <p class="a"><b>What answers it</b>The task board and its session log live on disk, so a fresh session resumes where the last one stopped.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-key"/></svg>
-          <p class="q">It opened <code>.env</code> while just fixing a bug.</p>
-          <p class="a">Those paths are denied before the read happens. It cannot leak what it was never allowed to open.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-key"/></svg><span>It opened <code>.env</code> while just fixing a bug.</span></h3>
+          <p class="a"><b>What answers it</b>Those paths are denied before the read happens. It cannot leak what it was never allowed to open.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-drift"/></svg>
-          <p class="q">The 40th generated doc quietly contradicts the spec.</p>
-          <p class="a">Every requirement gets a stable ID, and the traceability graph names the document that drifted.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-drift"/></svg><span>The 40th generated doc quietly contradicts the spec.</span></h3>
+          <p class="a"><b>What answers it</b>Every requirement gets a stable ID, and the traceability graph names the document that drifted.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-stack"/></svg>
-          <p class="q">The kit installed forty agents and a hundred skills my project never needed.</p>
-          <p class="a">The roster is derived from your contract and your real modules: 7 to 15 of the 16 seats, never all of them by default.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-stack"/></svg><span>The kit installed forty agents and a hundred skills my project never needed.</span></h3>
+          <p class="a"><b>What answers it</b>The roster is derived from your contract and your real modules: 7 to 15 of the 16 seats, never all of them by default.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-void"/></svg>
-          <p class="q">It wrote tests that pass no matter what the code does.</p>
-          <p class="a">A test's expected value must come from the acceptance criterion, not from running the code.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-void"/></svg><span>It wrote tests that pass no matter what the code does.</span></h3>
+          <p class="a"><b>What answers it</b>A test's expected value must come from the acceptance criterion, not from running the code.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-scan"/></svg>
-          <p class="q">It read my scanned PDF and wrote a spec from the three words it got.</p>
-          <p class="a">Every source routes to a reader that can actually read it. A page holding under 80 characters is treated as a scan and goes to a vision pass; a file nothing can read becomes a named open issue, never a guess.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-scan"/></svg><span>It read my scanned PDF and wrote a spec from the three words it got.</span></h3>
+          <p class="a"><b>What answers it</b>Every source routes to a reader that can actually read it. A page holding under 80 characters is treated as a scan and goes to a vision pass; a file nothing can read becomes a named open issue, never a guess.</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-lens"/></svg>
-          <p class="q">I cannot tell what my <code>.claude/</code> actually enforces any more.</p>
-          <p class="a"><a href="#viewer">harness-view</a> reads it off disk, scores it, and names every unwired part.</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-lens"/></svg><span>I cannot tell what my <code>.claude/</code> actually enforces any more.</span></h3>
+          <p class="a"><b>What answers it</b><a href="#viewer">harness-view</a> reads it off disk, scores it, and names every unwired part.</p>
         </li>
       </ul>
     </div>
@@ -509,7 +511,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Claude Code</h3>
+          <h3><svg aria-hidden="true"><use href="#i-claude"/></svg>Claude Code</h3>
           <p class="tag">Plugin route</p>
         </div>
         <div class="listing">
@@ -524,7 +526,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Codex</h3>
+          <h3><svg aria-hidden="true"><use href="#i-codex"/></svg>Codex</h3>
           <p class="tag">Plugin route</p>
         </div>
         <div class="listing">
@@ -536,7 +538,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Cursor, and every Agent Plugins client</h3>
+          <h3><svg aria-hidden="true"><use href="#i-cursor"/></svg>Cursor, and every Agent Plugins client</h3>
           <p class="tag">Plugin route</p>
         </div>
         <div class="listing">
@@ -697,14 +699,123 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
 /secret-scan               <span class="cmt"># any hit blocks until it is rotated</span>
 /task-resume TASK-007      <span class="cmt"># after a compaction or a crash, trusting files over memory</span></code></pre></div>
         </div>
-        <p>A second set tunes the harness after the fact - <code>/harness-tune</code>,
-          <code>/harness-toggle</code>, <code>/agent-permissions</code>, <code>/board-audit</code>,
-          <code>/code-graph</code>, <code>/docs-graph</code>, <code>/skill-wire</code> and
-          <code>/harness-update</code>. Those eight ship with the plugin as well as into the repo, so they
-          work in a project somebody else bootstrapped. Three things none of them will ever do, whatever you
-          confirm: reviewers never gain write access, only the orchestrator spawns, and the code-review gate
-          cannot be removed - only rescoped.</p>
+        <p>Those five drive work through the harness. A second set changes the harness itself, after
+          it exists - <a href="#tuning">the tuning commands</a>, below, one at a time and with the
+          moment you would reach for each.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6b. tuning -->
+  <section class="sec" id="tuning" aria-labelledby="tuning-h">
+    <div class="wrap">
+      <h2 id="tuning-h">Tuning it after the bootstrap</h2>
+      <p class="intro prose">The bootstrap writes a first draft, not a verdict. Eight commands change
+        the harness after it exists, and every one of them is deliberately narrow: it shows you the
+        diff, asks, applies exactly what you chose, and records why in
+        <code>docs/context/tool-changelog.md</code>. Each also refuses something, and the refusals are
+        the half worth reading before you need them.</p>
+
+      <ul class="cmds">
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>/harness-tune</h3>
+          <p class="when"><b>Reach for it when</b>the floor is tighter or looser than your team can
+            work with, and you want to move a dial rather than remove a control.</p>
+          <p>Turns one dial per confirmation: who may run the deploy command, the posture on
+            force-push, <code>rm -rf</code> and a database reset, the spawn allowlist, per-seat turn
+            caps and the attempt cap, how deep the review pass goes, and how much agent history
+            lands on disk. Lowering a cap is free; raising one comes with the cost it will add.
+            Removing the code-review gate is refused outright - that is a different repository, not
+            a tuning - and switching a whole control off is not a tune either, it is the next
+            command.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-toggle"/></svg>/harness-toggle</h3>
+          <p class="when"><b>Reach for it when</b>one named rule, command, hook or seat is in the
+            way and you want it off without deleting it.</p>
+          <p>A script is the only thing that moves: it parks the file under
+            <code>.claude/disabled/</code>, strips its registration out of <code>settings.json</code>,
+            writes your one-line reason into <code>.claude/disabled.json</code> - committed, so the
+            team shares it and a re-scaffold respects it - and regenerates the graph so the item
+            renders greyed out. The protected controls (the secret guard, the spawn guard, the review
+            seats) need a confirmation phrase typed literally, byte for byte. Enabling is never
+            gated: restoring a control is not the risk the tiers exist for.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>/harness-update</h3>
+          <p class="when"><b>Reach for it when</b>you moved to a newer skill version, or the codebase
+            moved under a harness that was fitted to its old shape.</p>
+          <p>Re-reads the code first, because a dev agent scoped to a path that no longer exists is a
+            seat pointing at nothing. Then it re-runs the scaffolder against your recorded answers and
+            reports every file as ADDED, KEPT or CONFLICT, and the conflicts are yours to resolve one
+            at a time. Afterwards it re-applies your toggle state, so an update cannot resurrect
+            something you deliberately switched off, and re-ports only to the Cursor or Codex targets
+            intake recorded rather than re-detecting them.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>/agent-permissions</h3>
+          <p class="when"><b>Reach for it when</b>one seat needs one more tool - or, more often, one
+            fewer.</p>
+          <p>Edits a single seat's <code>tools:</code> line, after checking the change against the
+            invariants that make a roster safe. Reviewers never gain Edit or Write, because a gate
+            that edits is a dev agent that lost its independence. Only the orchestrator holds the
+            spawn tool. There are no wildcard grants. And <code>model:</code> and <code>effort:</code>
+            are not permissions, so they are refused here and sent to the roster and the cost model
+            instead. A revocation skips the whole check: narrowing is always safe.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-lens"/></svg>/board-audit</h3>
+          <p class="when"><b>Reach for it when</b>you are about to trust a status - or when work
+            seems to be happening somewhere the board does not know about.</p>
+          <p>Validates the board's own frontmatter and its dependency chains first, because every
+            sweep after that assumes well-formed task files. Then it looks for Active tasks nobody is
+            driving, finished agent runs nobody collected, a task whose status disagrees with the
+            master plan, attempts past the cap still marked Active, worktrees and branches no task
+            references, Blocked tasks naming no owner or condition that would unblock them, and a
+            code graph that has gone stale. It is read-only on purpose: it reports, and you or the
+            orchestrator reconcile.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>/code-graph</h3>
+          <p class="when"><b>Reach for it when</b>a change crosses a module boundary, or the moment
+            the staleness log stops being empty.</p>
+          <p>Answers the question an agent cannot answer by reading one file: what breaks if I change
+            this module. Modules, files, import edges with reference counts, and an owner per module
+            matched from the roster's scopes. The orchestrator checks a target's fan-in before
+            dispatch, and a high fan-in means the brief has to name the dependents. Honest about its
+            limits: the built-in extractor is static, so a missing edge is absence of evidence, not
+            evidence of isolation.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-doc"/></svg>/docs-graph</h3>
+          <p class="when"><b>Reach for it when</b>the specs changed, or you suspect something is
+            being built that no requirement ever asked for.</p>
+          <p>The traceability twin of the code graph, and neither substitutes for the other. Every ID
+            - FR, NFR, BR, ADR, TASK - the document that defines it, every document that references
+            it, and a self-contained interactive graph that opens in any browser with no network.
+            <code>spec-guardian</code> checks a diff's claimed IDs against it: an implementation
+            naming a requirement the graph does not know is implementing an invented one. An orphan
+            ID is either unstarted work or a dead reference, and the report says which.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>/skill-wire</h3>
+          <p class="when"><b>Reach for it when</b>you installed a skill and nothing is using it. A
+            skill serves nobody until a seat is told to reach for it.</p>
+          <p>Re-reads every file of the skill at wire time rather than trusting the install-time
+            review, because an update can have rewritten the text since - and if it arrived inside a
+            plugin, the whole bundle, since a plugin's hooks and MCP servers run whichever of its
+            skills you wired. It refuses a skill whose instructions edit <code>.claude/</code>,
+            <code>settings.json</code> or hooks; it keeps reviewers on read-only skills, because
+            write-shaped instructions get followed whatever the tool grants say. Unwiring is always
+            allowed, and both directions are recorded.</p>
+        </li>
+      </ul>
+
+      <p class="note">All eight are written into your repository by the bootstrap and ship with the
+        plugin as well, as <code>/harness-bootstrap:harness-tune</code> and so on, so they work in a
+        project somebody else set up. Three things none of them will do, whatever you confirm:
+        reviewers never gain write access, only the orchestrator spawns, and the code-review gate
+        cannot be removed - only rescoped.</p>
     </div>
   </section>
 

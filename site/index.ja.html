@@ -59,9 +59,9 @@
   Andada Pro over a mincho stack and a mono data face. Inside a plate exactly
   two signal inks by law - gold is a live signal, coral is a refusal.
   STORY: does any of this sound familiar; here is what answers it; watch it;
-  install it; move to a new version; run it; here is how the orchestrator
-  actually decides; here is what the harness is made of; here is the viewer
-  that reads all of it back off disk.
+  install it; move to a new version; run it; tune it afterwards; here is how the
+  orchestrator actually decides; here is what the harness is made of; here is
+  the viewer that reads all of it back off disk.
   FORM: schematic capture and net routing; five authored nets, N1 to N5.
   FINISH: every figure is derived by a script and gated by
   scripts/check_numbers.py; every shipping raster carries its provenance in
@@ -98,6 +98,16 @@
   <symbol id="i-at" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.6"/><path d="M10.6 8v1.5a2 2 0 003.9 0V8A6.5 6.5 0 108 14.5"/></symbol>
   <symbol id="i-dialog" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="1.3"/><path d="M1.8 6h12.4"/><path d="M9.4 11.4l2.6-2.6M11.4 11.4l.7-.7"/></symbol>
   <symbol id="i-book" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 2.8h4.2A1.6 1.6 0 018 4.4v9.2a1.4 1.4 0 00-1.4-1.4H2.4z"/><path d="M13.6 2.8H9.4A1.6 1.6 0 008 4.4v9.2a1.4 1.4 0 011.4-1.4h4.2z"/></symbol>
+
+  <!-- The three clients this page names. Drawn here in the page's own line style -
+       one weight, round caps, the same 16-unit grid as every other mark - rather
+       than pasted from anybody's brand kit: these are third-party names and their
+       actual logo artwork is theirs, not ours to ship. A spark, a hexagonal knot
+       and a pointer: enough to tell three rows apart, beside a label that already
+       says which is which. -->
+  <symbol id="i-claude" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.7v3.6M8 10.7v3.6M1.7 8h3.6M10.7 8h3.6"/><path d="M3.6 3.6l2.5 2.5M9.9 9.9l2.5 2.5M12.4 3.6L9.9 6.1M6.1 9.9l-2.5 2.5"/></symbol>
+  <symbol id="i-codex" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6l5.5 3.2v6.4L8 14.4 2.5 11.2V4.8z"/><path d="M10.6 6.3v3.4L8 11.4 5.4 9.7V6.3L8 4.6z"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 2.2l8.6 4.2-3.7 1.2-1.2 3.7z"/><path d="M8.7 8.7l3.9 4.9"/></symbol>
 </svg>
 
 <header class="masthead">
@@ -148,44 +158,36 @@
 
       <ul class="symp">
         <li>
-          <svg aria-hidden="true"><use href="#i-spread"/></svg>
-          <p class="q">機能を一つ頼んだだけなのに、3 モジュール 14 ファイルに手を入れて <code>main</code> に強制プッシュした。</p>
-          <p class="a">スコープを持つエージェント、パス単位のルール、そして着地する前に終了コード 2 でプッシュを拒否するフック。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-spread"/></svg><span>機能を一つ頼んだだけなのに、3 モジュール 14 ファイルに手を入れて <code>main</code> に強制プッシュした。</span></h3>
+          <p class="a"><b>これが答えます</b>スコープを持つエージェント、パス単位のルール、そして着地する前に終了コード 2 でプッシュを拒否するフック。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-break"/></svg>
-          <p class="q">セッションが圧縮され、三工程まで進めていた計画を忘れた。</p>
-          <p class="a">タスクボードとセッションログはディスク上にあるので、新しいセッションは前回止まった場所から再開します。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-break"/></svg><span>セッションが圧縮され、三工程まで進めていた計画を忘れた。</span></h3>
+          <p class="a"><b>これが答えます</b>タスクボードとセッションログはディスク上にあるので、新しいセッションは前回止まった場所から再開します。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-key"/></svg>
-          <p class="q">バグを直すだけと言いながら <code>.env</code> を開いた。</p>
-          <p class="a">それらのパスは読み取りが起きる前に拒否されます。そもそも開けなかったものを漏らすことはできません。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-key"/></svg><span>バグを直すだけと言いながら <code>.env</code> を開いた。</span></h3>
+          <p class="a"><b>これが答えます</b>それらのパスは読み取りが起きる前に拒否されます。そもそも開けなかったものを漏らすことはできません。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-drift"/></svg>
-          <p class="q">40 個目の生成ドキュメントが、いつの間にか仕様と矛盾している。</p>
-          <p class="a">すべての要件に安定した ID が付き、トレーサビリティグラフが乖離した文書を名指しします。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-drift"/></svg><span>40 個目の生成ドキュメントが、いつの間にか仕様と矛盾している。</span></h3>
+          <p class="a"><b>これが答えます</b>すべての要件に安定した ID が付き、トレーサビリティグラフが乖離した文書を名指しします。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-stack"/></svg>
-          <p class="q">キットがエージェント 40 個とスキル 100 個を入れたが、うちのプロジェクトにはどれも要らなかった。</p>
-          <p class="a">ロースターは契約と実在するモジュールから導かれます。16 席のうち 7〜15 席で、既定ですべてが埋まることはありません。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-stack"/></svg><span>キットがエージェント 40 個とスキル 100 個を入れたが、うちのプロジェクトにはどれも要らなかった。</span></h3>
+          <p class="a"><b>これが答えます</b>ロースターは契約と実在するモジュールから導かれます。16 席のうち 7〜15 席で、既定ですべてが埋まることはありません。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-void"/></svg>
-          <p class="q">コードが何をしても通るテストを書いた。</p>
-          <p class="a">テストの期待値は受け入れ基準から取るものであって、コードを実行した結果から取るものではありません。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-void"/></svg><span>コードが何をしても通るテストを書いた。</span></h3>
+          <p class="a"><b>これが答えます</b>テストの期待値は受け入れ基準から取るものであって、コードを実行した結果から取るものではありません。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-scan"/></svg>
-          <p class="q">スキャンした PDF を「読んで」、拾えた三単語から仕様書を書いた。</p>
-          <p class="a">すべてのソースが、実際に読めるリーダーへ振り分けられます。1 ページあたり 80文字未満のページはスキャンと判定されて画像認識に回り、どうしても読めないファイルは推測ではなく、名前の付いた未解決事項になります。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-scan"/></svg><span>スキャンした PDF を「読んで」、拾えた三単語から仕様書を書いた。</span></h3>
+          <p class="a"><b>これが答えます</b>すべてのソースが、実際に読めるリーダーへ振り分けられます。1 ページあたり 80文字未満のページはスキャンと判定されて画像認識に回り、どうしても読めないファイルは推測ではなく、名前の付いた未解決事項になります。</p>
         </li>
         <li>
-          <svg aria-hidden="true"><use href="#i-lens"/></svg>
-          <p class="q">自分の <code>.claude/</code> が結局何を強制しているのか、もう分からない。</p>
-          <p class="a"><a href="#viewer">harness-view</a> がディスクから読み取り、採点し、配線されていない部分をすべて名指しします。</p>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-lens"/></svg><span>自分の <code>.claude/</code> が結局何を強制しているのか、もう分からない。</span></h3>
+          <p class="a"><b>これが答えます</b><a href="#viewer">harness-view</a> がディスクから読み取り、採点し、配線されていない部分をすべて名指しします。</p>
         </li>
       </ul>
     </div>
@@ -503,7 +505,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Claude Code</h3>
+          <h3><svg aria-hidden="true"><use href="#i-claude"/></svg>Claude Code</h3>
           <p class="tag">プラグイン経路</p>
         </div>
         <div class="listing">
@@ -518,7 +520,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Codex</h3>
+          <h3><svg aria-hidden="true"><use href="#i-codex"/></svg>Codex</h3>
           <p class="tag">プラグイン経路</p>
         </div>
         <div class="listing">
@@ -530,7 +532,7 @@
 
       <div class="step">
         <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Cursor、および Agent Plugins 対応クライアント</h3>
+          <h3><svg aria-hidden="true"><use href="#i-cursor"/></svg>Cursor、および Agent Plugins 対応クライアント</h3>
           <p class="tag">プラグイン経路</p>
         </div>
         <div class="listing">
@@ -685,14 +687,114 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
 /secret-scan               <span class="cmt"># 検出されたらローテーションまで停止</span>
 /task-resume TASK-007      <span class="cmt"># 圧縮やクラッシュの後、記憶ではなくファイルを信じて再開</span></code></pre></div>
         </div>
-        <p>もう一組はハーネスを後から調整するためのもの - <code>/harness-tune</code>、
-          <code>/harness-toggle</code>、<code>/agent-permissions</code>、<code>/board-audit</code>、
-          <code>/code-graph</code>、<code>/docs-graph</code>、<code>/skill-wire</code>、
-          <code>/harness-update</code>。この 8 つはリポジトリだけでなくプラグインにも同梱されるので、
-          他の誰かがブートストラップしたプロジェクトでも動きます。何を承認しても決して起きないことが三つ。
-          レビュアーが書き込み権限を得ることはなく、起動するのはオーケストレーターだけで、コードレビューゲートは
-          削除できません - 範囲を変えられるだけです。</p>
+        <p>この五つはハーネスの中で作業を進めるためのものです。もう一組は、出来上がったハーネス自体を
+          変えるためのもの - <a href="#tuning">チューニングコマンド</a>を、それぞれどんなときに使うのかと
+          合わせて下にまとめてあります。</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6b. tuning -->
+  <section class="sec" id="tuning" aria-labelledby="tuning-h">
+    <div class="wrap">
+      <h2 id="tuning-h">ブートストラップ後の調整</h2>
+      <p class="intro prose">ブートストラップが書くのは最終判断ではなく初稿です。出来上がったハーネスを
+        後から変えるコマンドが八つあり、どれも意図的に狭く作られています。差分を見せ、確認を取り、選ばれた
+        ぶんだけを適用し、理由を <code>docs/context/tool-changelog.md</code> に記録します。そしてどれもが
+        何かを拒否します。必要になる前に読んでおく価値があるのは、むしろその拒否の側です。</p>
+
+      <ul class="cmds">
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>/harness-tune</h3>
+          <p class="when"><b>こんなときに</b>安全性の下限がチームの実態に対して厳しすぎる、あるいは
+            緩すぎる。制御そのものを外すのではなく、つまみを回したいとき。</p>
+          <p>確認一回につきつまみは一つです。デプロイコマンドを誰が実行してよいか、force-push・
+            <code>rm -rf</code>・データベースリセットへの姿勢、spawn 許可リスト、席ごとのターン上限と
+            試行回数の上限、レビューをどこまで深く回すか、エージェント履歴をどれだけディスクに残すか。
+            上限を下げるのは無償で、上げるときは増えるコストが提示されます。コードレビューゲートの削除は
+            拒否されます - それはチューニングではなく別のリポジトリです。制御をまるごと止めるのも
+            チューニングではなく、次のコマンドの仕事です。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-toggle"/></svg>/harness-toggle</h3>
+          <p class="when"><b>こんなときに</b>特定のルール・コマンド・フック・席が一つ邪魔で、削除せずに
+            止めたいとき。</p>
+          <p>動かすのはスクリプトだけです。ファイルを <code>.claude/disabled/</code> に退避し、
+            <code>settings.json</code> の登録を外し、一行の理由を <code>.claude/disabled.json</code> に
+            書きます。このファイルはコミットされるので、チームで共有され、再スキャフォールドでも尊重されます。
+            さらにグラフを再生成し、止めた項目がグレー表示になります。保護された制御(シークレット保護、
+            spawn 保護、レビュー席)は、確認フレーズをバイト単位でそのまま入力しなければ動きません。
+            有効化に確認は要りません。制御を戻すことは、この段階が存在する理由のリスクではないからです。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>/harness-update</h3>
+          <p class="when"><b>こんなときに</b>スキルを新しいバージョンに上げた、あるいは以前の形に合わせて
+            組んだハーネスの下でコードベースが動いたとき。</p>
+          <p>まず現状のコードを読み直します。存在しないパスにスコープされた開発エージェントは、何も指して
+            いない席だからです。そのうえで記録済みの回答でスキャフォルダを再実行し、すべてのファイルを
+            ADDED・KEPT・CONFLICT のいずれかとして報告します。CONFLICT は一件ずつ手で解決するものです。
+            その後トグル状態を再適用するので、意図して止めた制御が更新で復活することはありません。移植先も
+            インテイクが記録した Cursor / Codex だけで、再検出はしません。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>/agent-permissions</h3>
+          <p class="when"><b>こんなときに</b>ある席にツールを一つ足したい - あるいは、より多くの場合、
+            一つ減らしたいとき。</p>
+          <p>一つの席の <code>tools:</code> 行だけを編集します。編集前に、ロースターを安全に保つ不変条件と
+            突き合わせます。レビュアーが Edit や Write を得ることはありません。編集するゲートは、独立性を
+            失った開発エージェントだからです。spawn ツールを持つのはオーケストレーターだけ。ワイルドカードの
+            付与もありません。<code>model:</code> と <code>effort:</code> は権限ではないのでここでは拒否され、
+            ロースターとコストモデルの話に回されます。剥奪は確認を飛ばします。狭めるのは常に安全だからです。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-lens"/></svg>/board-audit</h3>
+          <p class="when"><b>こんなときに</b>ステータスを信じて次へ進む直前、あるいはボードの知らない
+            どこかで作業が進んでいる気配があるとき。</p>
+          <p>まずボード自身のフロントマターと依存関係の連鎖を検証します。以降のすべての走査が、整形式の
+            タスクファイルを前提にしているからです。そのうえで、誰も進めていない Active タスク、誰も回収して
+            いない完了済みエージェント実行、マスタープランと食い違うステータス、上限を超えてなお Active な
+            試行回数、どのタスクも参照していないワークツリーとブランチ、解除条件も担当者も書かれていない
+            Blocked タスク、そして古くなったコードグラフを探します。読み取り専用です。報告はしますが、
+            直すのはあなたかオーケストレーターです。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>/code-graph</h3>
+          <p class="when"><b>こんなときに</b>変更がモジュール境界をまたぐとき、あるいは陳腐化ログが空で
+            なくなった瞬間。</p>
+          <p>ファイルを一つ読んでも答えられない問い - このモジュールを変えたら何が壊れるか - に答えます。
+            モジュール、ファイル、参照回数付きの import エッジ、そしてロースターのスコープから割り出した
+            モジュールごとの担当。オーケストレーターは割り当て前に対象の被参照数を確認し、多ければ依存側を
+            指示に明記させます。限界も正直に。組み込みの抽出は静的なので、エッジが無いことは孤立の証拠では
+            なく、証拠が無いだけです。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-doc"/></svg>/docs-graph</h3>
+          <p class="when"><b>こんなときに</b>仕様を変更した後、あるいはどの要件も求めていないものが
+            作られている疑いがあるとき。</p>
+          <p>コードグラフの対になるトレーサビリティ側で、どちらも他方の代わりにはなりません。すべての ID -
+            FR、NFR、BR、ADR、TASK - と、それを定義する文書、参照するすべての文書、そしてネットワーク不要で
+            ブラウザから開ける自己完結のインタラクティブグラフ。<code>spec-guardian</code> は差分が名乗る ID を
+            これと突き合わせます。グラフが知らない要件を名乗る実装は、でっち上げた要件を実装しています。
+            孤立した ID は未着手の作業か、死んだ参照のどちらかで、報告はどちらなのかを述べます。</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>/skill-wire</h3>
+          <p class="when"><b>こんなときに</b>スキルを入れたのに何も使っていないとき。スキルは、どの席が
+            それを使うのか指示されるまで誰の役にも立ちません。</p>
+          <p>導入時のレビューを信用せず、配線時にスキルの全ファイルを読み直します。更新で本文が書き換わって
+            いる可能性があるからです。プラグイン経由で入ったものなら束ごと読みます。プラグインのフックや
+            MCP サーバーは、どのスキルを配線したかに関係なく動くからです。<code>.claude/</code>・
+            <code>settings.json</code>・フックを編集させるスキルは拒否します。レビュアーには読み取り専用の
+            スキルだけを配線します。書き込みを促す指示は、ツール付与に関係なく従われてしまうからです。
+            配線解除はいつでも可能で、どちらの向きも記録されます。</p>
+        </li>
+      </ul>
+
+      <p class="note">八つとも、ブートストラップがリポジトリに書き込むと同時に、プラグインにも
+        <code>/harness-bootstrap:harness-tune</code> のような形で同梱されます。だから他の誰かが用意した
+        プロジェクトでも動きます。何を承認しても決して起きないことが三つ。レビュアーが書き込み権限を
+        得ることはなく、起動するのはオーケストレーターだけで、コードレビューゲートは削除できません -
+        範囲を変えられるだけです。</p>
     </div>
   </section>
 
