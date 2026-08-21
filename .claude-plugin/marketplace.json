@@ -9,13 +9,13 @@
       "name": "harness-bootstrap",
       "source": "./harness-bootstrap",
       "description": "Bootstraps or standardizes the complete AI-agent harness for a repo - agents, path-scoped rules, commands, hooks, settings.json, docs tree, and AGENTS.md/CLAUDE.md - with a read-only audit mode as well.",
-      "version": "1.18.1"
+      "version": "1.18.2"
     },
     {
       "name": "spec-builder",
       "source": "./spec-builder",
       "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
-      "version": "1.18.1"
+      "version": "1.18.2"
     }
   ]
 }

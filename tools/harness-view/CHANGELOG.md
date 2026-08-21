@@ -7,6 +7,31 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.18.2] - 2026-08-21
+
+### Added
+
+- **Every `CLAUDE.md`, not just the one at the root.** A project can carry one per folder - Claude
+  Code reads the copy governing the directory being worked in - and this viewer treated it as a
+  single file at the top. A repo with `src/CLAUDE.md`, `src/api/CLAUDE.md` and `docs/CLAUDE.md`
+  showed **one** contract in the graph and obeyed four, which is worse than showing none: a viewer
+  whose whole job is "here is what governs this repository" is believed. Every copy is now its own
+  node, and every copy is editable. `AGENTS.md` is treated the same way.
+
+  The walk is capped at 8 levels and 200 files, skips dot-directories and vendored or build trees -
+  a `CLAUDE.md` under `node_modules` belongs to someone else's project - and does not follow
+  directory symlinks. The nested path is validated component by component before any path is built,
+  and the last component must be the file itself.
+- Tool categories in the roster editor carry colour. The catalogue is 44 rows and every chip on it
+  was the same grey, which leaves the category unable to answer the question it exists for.
+  `execute` and `agent` - the two worth hesitating over while ticking boxes - now stand off the page.
+
+### Fixed
+
+- A button's kind is set where the button is made. `ui-steps.js` had been inferring colour from the
+  sprite each button carried, so renaming an icon in `ui.js` would silently drain the colour out of
+  a panel in another file with nothing failing.
+
 ## [1.18.1] - 2026-08-21
 
 ### Added
