@@ -293,7 +293,30 @@ const AG_CHIP = {
 };
 const AG_CHIP_WARM = { borderColor: "#f59e0b", color: "#b45309" };
 
+// A colour per tool category, because the catalogue is forty-four rows and every chip on it was
+// the same grey. The category exists to answer "what can this seat DO" at a glance, which is
+// unanswerable when `read`, `write` and `execute` look identical - so the ramp runs from the
+// harmless to the consequential: reading and searching cool, writing and executing warm, and
+// reaching the network or spawning another agent gets its own hue rather than a shade of one.
+//
+// Not decoration. `execute` and `agent` are the two rows worth hesitating over while ticking
+// boxes, and they are the two that now stand off the page.
+const AG_CAT_CHIP = {
+  read:    { borderColor: "#93c5fd", color: "#1d4ed8", background: "#eff6ff" },
+  search:  { borderColor: "#a5b4fc", color: "#4338ca", background: "#eef2ff" },
+  write:   { borderColor: "#fcd34d", color: "#a16207", background: "#fffbeb" },
+  execute: { borderColor: "#fca5a5", color: "#b91c1c", background: "#fef2f2" },
+  web:     { borderColor: "#67e8f9", color: "#0e7490", background: "#ecfeff" },
+  agent:   { borderColor: "#d8b4fe", color: "#7e22ce", background: "#faf5ff" },
+  task:    { borderColor: "#6ee7b7", color: "#047857", background: "#ecfdf5" },
+  other:   { borderColor: "#cbd5e1", color: "#475569", background: "#f8fafc" },
+};
+
 function agChip(text, warm) {
+  if (!warm) {
+    const cat = AG_CAT_CHIP[String(text)];
+    if (cat) return agEl("span", Object.assign({}, AG_CHIP, cat), text);
+  }
   return agEl("span", warm ? Object.assign({}, AG_CHIP, AG_CHIP_WARM) : AG_CHIP, text);
 }
 
