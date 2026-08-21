@@ -1989,11 +1989,16 @@ function paintChips(ed) {
 
 // ---- colour on the panel's own buttons --------------------------------------
 
-/// ui.js draws the card's Edit/Off pair, the Apply/Cancel pair and the save bar
-/// as plain buttons. They are told apart here by the sprite they carry, which is
-/// the only stable thing about someone else's DOM, and given one of the page's
-/// six button kinds. A sprite this does not recognise keeps the plain button it
-/// had, so a rename in ui.js costs colour and nothing else.
+/// A FALLBACK, and deliberately still here.
+///
+/// ui.js now sets the kind on the buttons it makes - Apply is `ui-primary`, Revert is `ui-warn` -
+/// which is where that decision belongs: inferring what a button means from the sprite it happens
+/// to carry meant a rename in someone else's file silently drained the colour out of this panel.
+///
+/// What is left below covers the buttons ui.js has not been given a kind for, and the case where
+/// this file is newer than the ui.js it is spliced into. The two cannot fight: it adds a class
+/// rather than assigning one, so a kind ui.js already set survives, and each button is visited
+/// once. An unrecognised sprite keeps the plain button it had - colour lost, nothing broken.
 const BTN_KIND = {
   "#i-edit": "ui-info", "#i-off": "ui-warn", "#i-on": "ui-accent",
   "#i-check": "ui-primary", "#i-undo": "ui-warn", "#i-trash": "ui-danger",
