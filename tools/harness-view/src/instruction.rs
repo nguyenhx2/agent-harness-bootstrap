@@ -60,7 +60,39 @@ pub struct Spec {
     /// Graph node type. Everything here is "instruction" except settings.json,
     /// which already has a node type and only borrows this module's write path.
     pub kind: &'static str,
+
+    /// May this file also appear in SUBDIRECTORIES, each copy governing its own subtree?
+    ///
+    /// `CLAUDE.md` does: Claude Code reads a per-directory file for work under that directory, and
+    /// a real project puts one beside the module it describes. Treating it as a single root file
+    /// meant a repo with `src/api/CLAUDE.md` showed one contract in the graph and obeyed four - and
+    /// a viewer that shows three quarters of what governs a repo is worse than one that admits it
+    /// does not look, because it reads as completeness.
+    ///
+    /// `AGENTS.md` carries the same per-folder convention and the same failure if missed.
+    /// Everything else here is a genuine single file or a directory set, and stays false.
+    pub nested: bool,
 }
+
+/// How deep a nested search goes, and how many files it will accept.
+///
+/// Caps rather than an unbounded walk: this runs on every scan, and a vendored tree that slips past
+/// the skip list should cost a truncated list, not a hung viewer.
+const NEST_MAX_DEPTH: usize = 8;
+const NEST_MAX_FILES: usize = 200;
+
+/// Directories a nested search never descends into. Vendored and build trees can hold instruction
+/// files belonging to somebody else's project, and those are not this repo's contract.
+const NEST_SKIP: &[&str] = &[
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "vendor",
+    "__pycache__",
+    "venv",
+    ".venv",
+];
 
 /// The allow-list. Order is not significant; `from_rel` matches on the longest
 /// applicable prefix by construction, because no entry's path is a prefix of
@@ -79,6 +111,7 @@ pub const FILES: &[Spec] = &[
                that it reads AGENTS.md, so the claim is unverified and is not made here. Kiro's \
                documented instruction surface is .kiro/steering/.",
         json: false,
+        nested: true,
         kind: "instruction",
     },
     Spec {
@@ -90,6 +123,7 @@ pub const FILES: &[Spec] = &[
         verified: true,
         note: "A thin @AGENTS.md import plus the Claude-only surface; it is not a second contract.",
         json: false,
+        nested: true,
         kind: "instruction",
     },
     Spec {
@@ -101,6 +135,7 @@ pub const FILES: &[Spec] = &[
         verified: true,
         note: "Antigravity accepts either GEMINI.md or AGENTS.md at the workspace root.",
         json: false,
+        nested: false,
         kind: "instruction",
     },
     Spec {
@@ -113,6 +148,7 @@ pub const FILES: &[Spec] = &[
         note: "Written by the porter, one per .claude/rules/*.md. No `paths:` becomes \
                alwaysApply: true; `paths: [glob]` becomes globs:.",
         json: false,
+        nested: false,
         kind: "instruction",
     },
     Spec {
@@ -125,6 +161,7 @@ pub const FILES: &[Spec] = &[
         note: "Workspace steering files. This repository does not port to Kiro, so these are \
                hand-written where they exist.",
         json: false,
+        nested: false,
         kind: "instruction",
     },
     Spec {
@@ -137,6 +174,7 @@ pub const FILES: &[Spec] = &[
         note: "Workspace rules, at the workspace or git root. Global rules live in \
                ~/.gemini/GEMINI.md, outside any repository, so they are not scannable.",
         json: false,
+        nested: false,
         kind: "instruction",
     },
     Spec {
@@ -148,6 +186,7 @@ pub const FILES: &[Spec] = &[
         verified: true,
         note: "The superseded location, still read for backward compatibility.",
         json: false,
+        nested: false,
         kind: "instruction",
     },
     // Not an instruction file, and not an instruction node: settings.json is
@@ -164,6 +203,7 @@ pub const FILES: &[Spec] = &[
         verified: true,
         note: "",
         json: true,
+        nested: false,
         kind: "settings",
     },
 ];
@@ -188,13 +228,86 @@ pub fn bare_name_ok(n: &str) -> bool {
         && !n.starts_with('.')
 }
 
+/// Every copy of `file_name` BELOW the root, repo-relative and sorted. The root copy is not
+/// included - `found` has already added it, and adding it twice would give one file two nodes.
+///
+/// Breadth-first with an explicit queue rather than recursion, so the depth cap is the depth cap
+/// and not the stack's opinion of one. Directory symlinks are not followed: a link pointing back up
+/// the tree would otherwise walk the repository again under a second set of names, and a link
+/// pointing outside it would put somebody else's file in this repository's graph.
+fn nested_copies(root: &Path, file_name: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut queue: Vec<(PathBuf, String, usize)> = vec![(root.to_path_buf(), String::new(), 0)];
+
+    while let Some((dir, prefix, depth)) = queue.pop() {
+        if depth >= NEST_MAX_DEPTH || out.len() >= NEST_MAX_FILES {
+            continue;
+        }
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        for entry in rd.flatten() {
+            let Ok(name) = entry.file_name().into_string() else {
+                continue;
+            };
+            let Ok(ft) = entry.file_type() else { continue };
+            if ft.is_symlink() {
+                continue;
+            }
+            if ft.is_dir() {
+                // Dot-directories are tool state, not the project's own contracts. `.claude` is
+                // covered by its own entries in FILES and must not be walked for these.
+                if name.starts_with('.') || NEST_SKIP.contains(&name.as_str()) {
+                    continue;
+                }
+                let child = if prefix.is_empty() {
+                    name.clone()
+                } else {
+                    format!("{prefix}/{name}")
+                };
+                queue.push((entry.path(), child, depth + 1));
+            } else if name == file_name && !prefix.is_empty() {
+                if out.len() < NEST_MAX_FILES {
+                    out.push(format!("{prefix}/{name}"));
+                }
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
 /// Repo-relative, slash-separated path for one entry.
 pub fn rel_for(s: &Spec, name: &str) -> String {
     if s.ext.is_empty() {
-        s.path.to_string()
+        // A nested copy carries its whole repo-relative path as its name; the root copy has none.
+        if s.nested && !name.trim().is_empty() {
+            name.trim().to_string()
+        } else {
+            s.path.to_string()
+        }
     } else {
         format!("{}/{}{}", s.path, name, s.ext)
     }
+}
+
+/// Is `rel` a repo-relative path to a nested copy of `file_name`?
+///
+/// Every component is checked with the same rule a bare name gets, so `..`, a leading dot, a
+/// backslash, a drive letter and an absolute path all fail here - before any path exists. The last
+/// component must be exactly the file being looked for, which is what stops this from becoming a
+/// way to address arbitrary files by dressing them as an instruction file. At least one directory
+/// component is required, because the root copy is not addressed this way.
+pub fn nested_rel_ok(rel: &str, file_name: &str) -> bool {
+    if rel.contains('\\') || rel.starts_with('/') {
+        return false;
+    }
+    let parts: Vec<&str> = rel.split('/').collect();
+    if parts.len() < 2 {
+        return false;
+    }
+    if *parts.last().unwrap() != file_name {
+        return false;
+    }
+    parts[..parts.len() - 1].iter().all(|p| bare_name_ok(p))
 }
 
 /// Build the absolute path for `key` (plus a leaf `name` for a set entry) out
@@ -205,11 +318,29 @@ pub fn build(root: &Path, key: &str, name: &str) -> Result<PathBuf, String> {
         format!("refused: `{key}` is not an instruction file this viewer knows about")
     })?;
     if s.ext.is_empty() {
-        if !name.trim().is_empty() {
-            return Err(format!(
-                "refused: `{}` is a single file and takes no name",
-                s.path
-            ));
+        let n = name.trim();
+        if !n.is_empty() {
+            // A per-folder copy is addressed by its repo-relative path. Every component is
+            // validated before a path is built, and the last one must be the file itself, so this
+            // cannot be turned into a way to reach an arbitrary file.
+            if !s.nested {
+                return Err(format!(
+                    "refused: `{}` is a single file and takes no name",
+                    s.path
+                ));
+            }
+            if !nested_rel_ok(n, s.path) {
+                return Err(format!(
+                    "refused: `{name}` is not a path to a nested `{}` (plain directory names, \
+                     then the file itself)",
+                    s.path
+                ));
+            }
+            let mut p = root.to_path_buf();
+            for part in n.split('/') {
+                p.push(part);
+            }
+            return Ok(p);
         }
         let mut p = root.to_path_buf();
         for part in s.path.split('/') {
@@ -274,6 +405,15 @@ pub fn found(root: &Path) -> Vec<(&'static Spec, String, String)> {
             }
             if p.is_file() {
                 out.push((s, String::new(), s.path.to_string()));
+            }
+            // A per-folder contract governs its own subtree, so every copy is part of what
+            // actually governs this repository - not just the one at the top. The root copy above
+            // keeps its empty name so its node id and its write path are unchanged; a nested one
+            // is named by its repo-relative path, which is what makes it addressable at all.
+            if s.nested {
+                for rel in nested_copies(root, s.path) {
+                    out.push((s, rel.clone(), rel));
+                }
             }
             continue;
         }

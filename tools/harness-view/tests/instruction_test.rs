@@ -560,3 +560,71 @@ fn every_entry_in_the_table_carries_its_evidence() {
         }
     }
 }
+
+/// A per-folder CLAUDE.md is part of what governs the repo, so every copy has to appear.
+///
+/// The first version of this module looked only at the root. A project with `src/api/CLAUDE.md`
+/// showed one contract in the graph and obeyed four, which is worse than showing none - a viewer
+/// that is quietly incomplete reads as complete.
+#[test]
+fn every_nested_copy_of_a_per_folder_contract_is_found() {
+    let root = tmp("nested-found");
+    fixture(&root);
+    write(&root, "CLAUDE.md", "# root\n");
+    write(&root, "src/CLAUDE.md", "# src\n");
+    write(&root, "src/api/CLAUDE.md", "# api\n");
+    write(&root, "docs/CLAUDE.md", "# docs\n");
+    // Not this repository's contract, and not walked into.
+    write(&root, "node_modules/pkg/CLAUDE.md", "# vendored\n");
+    write(&root, ".cache/CLAUDE.md", "# tool state\n");
+
+    let found = instruction::found(&root);
+    let mut rels: Vec<String> = found
+        .iter()
+        .filter(|(s, _, _)| s.key == "claude")
+        .map(|(_, _, rel)| rel.clone())
+        .collect();
+    rels.sort();
+
+    assert_eq!(
+        rels,
+        vec![
+            "CLAUDE.md".to_string(),
+            "docs/CLAUDE.md".to_string(),
+            "src/CLAUDE.md".to_string(),
+            "src/api/CLAUDE.md".to_string(),
+        ],
+        "every nested copy must be found, and vendored or dot directories must not be"
+    );
+}
+
+/// The nested path is the one new place a request-supplied string reaches a filesystem path, so it
+/// is checked component by component before any path is built.
+#[test]
+fn a_nested_instruction_path_refuses_everything_that_is_not_one() {
+    let root = tmp("nested-containment");
+    fixture(&root);
+
+    // The shape that is allowed.
+    assert!(instruction::build(&root, "claude", "src/api/CLAUDE.md").is_ok());
+
+    for bad in [
+        "../CLAUDE.md",              // climbs out
+        "src/../../CLAUDE.md",       // climbs out mid-path
+        "/etc/CLAUDE.md",            // absolute
+        "C:/Windows/CLAUDE.md",      // drive letter
+        r"src\api\CLAUDE.md",        // backslash separator
+        ".git/CLAUDE.md",            // dot directory
+        "src/SECRET.md",             // right shape, wrong file
+        "src/CLAUDE.md.bak",         // not the file either
+        "CLAUDE.md",                 // the root copy is not addressed this way
+    ] {
+        assert!(
+            instruction::build(&root, "claude", bad).is_err(),
+            "`{bad}` should have been refused"
+        );
+    }
+
+    // A spec that is NOT per-folder still takes no name at all.
+    assert!(instruction::build(&root, "gemini", "src/GEMINI.md").is_err());
+}
