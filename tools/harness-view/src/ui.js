@@ -1270,6 +1270,14 @@ function stepsDirty() {
     g.steps.some(s => s.edited));
 }
 
+// Repaints the whole step chain from `stepEdit.parsed`. Every button it makes carries its own
+// `ui-*` kind, so nothing downstream has to work out what a button means from the sprite it holds.
+//
+// ui-steps.js watches this host with a MutationObserver and upgrades what lands here - the split
+// prose/table editor, the mention picker, the tag chips. Its `decorate()` runs on a
+// `requestAnimationFrame`, so in a tab that never paints (a headless run with the panel offscreen,
+// say) the editor is simply never built. That is fine in a browser somebody is looking at, and it
+// is a confusing hour if you are driving this from a test and wondering where your editor went.
 function paintCommandSteps() {
   const host = stepEdit.host, parsed = stepEdit.parsed;
   host.textContent = "";
@@ -1349,6 +1357,7 @@ function buildStepCard(g, st, index, shown, ids) {
     bar.className = "stepacts"; bar.style.marginTop = "4px";
     const ok = document.createElement("button");
     setBtn(ok, "check", "Apply");
+    ok.className = "ui-primary";
     ok.onclick = () => {
       // Apply is local: it marks the step edited and repaints. The file is not
       // touched until Save, so an edit and a reorder land as one write.
@@ -1487,6 +1496,7 @@ function buildSaveBar() {
   save.className = "ui-primary";
   const revert = document.createElement("button");
   setBtn(revert, "undo", "Revert");
+  revert.className = "ui-warn";
   revert.onclick = () => revertCommandSteps();
   save.onclick = async () => {
     save.disabled = revert.disabled = true;
@@ -1678,6 +1688,7 @@ function paintFileEditor(host) {
   save.className = "ui-primary";
   const revert = document.createElement("button");
   setBtn(revert, "undo", "Revert");
+  revert.className = "ui-warn";
   const sync = () => {
     const dirty = fileEditDirty();
     txt.textContent = dirty ? "Unsaved changes to " + fileEdit.rel : fileEdit.rel + " matches the file on disk";
