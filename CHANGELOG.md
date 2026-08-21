@@ -21,6 +21,13 @@ drops from 30 slides to 25 and teaches the current routing model. Two published 
 nothing was deriving are now derived, and updating a harness to a new skill version stops reporting
 line endings as conflicts.
 
+## v1.18.2
+
+harness-view finds every per-folder `CLAUDE.md` rather than only the root one, and colours the tool
+catalogue by category. The landing page stops breaking lines with room to spare, turns its symptom
+list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
+and gains Claude Code, Codex and Cursor marks.
+
 ## Unreleased
 
 Documentation and instruction tuning from a user's-seat audit, and a rebuilt landing page.

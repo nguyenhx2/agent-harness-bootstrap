@@ -1,8 +1,8 @@
 {
   "comment": "What the harness-view UI screenshots were captured from. Written by scripts/capture/capture-screens.mjs, held by validate_release.py (tool_version == release) and check_numbers.py (caption figures == these).",
   "version": 1,
-  "tool_version": "1.18.1",
+  "tool_version": "1.18.2",
   "nodes": 111,
-  "edges": 140,
+  "edges": 162,
   "score": 79
 }
