@@ -6,6 +6,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.19.0] - 2026-08-24
+
+### Added
+
+- **A bar for what earns a task, and a hook that holds it.** Task creation was unbounded: nothing
+  said what earns a task, and executing one agreed piece of work could leave a board with a dozen
+  rows nobody approved. `.claude/rules/task-tracking.md` now states it plainly - a task is work the
+  USER agreed to, tasks are few and large, executing a task never creates more, and no agent opens
+  one on its own, subagents included. The new `guard-task-scope` hook refuses to create a task file
+  whose `requested_by:` is missing, is a bare `user`, or is an agent name (an agent cannot approve
+  its own task), and one with fewer than two real acceptance criteria. Both hook flavours, six new
+  eval cases, and the eval is now 112/112 per flavour.
+- **`/new-task` asks and waits.** Unless your own message already asked for the task, the command
+  puts it to you with `AskUserQuestion` before writing anything - the same discipline
+  `/harness-toggle` uses for a protected control, where a confirmation counts only when you gave it
+  yourself. The hook records the claim; the asking is the gate.
+
+### Fixed
+
+- The scanner a bootstrapped repo runs gained the **per-folder `CLAUDE.md`** support that shipped
+  in harness-view a version ago but never reached this scanner. A project with `src/api/CLAUDE.md`
+  now shows all its contracts in the graph, not just the root one.
+- The published "bytes the model must write" figure stopped tracking the size of rules this skill
+  SHIPS. It was estimated as `median(shipped rule size) x 3`, so improving a shipped rule inflated
+  the figure and dropped the reduction headline. It is now a declared per-rule size with the basis
+  stated, plus a measured `vars.json`.
+
 ## [1.18.2] - 2026-08-21
 
 No change to the skill itself. The version moves with `harness-view`, which gained per-folder

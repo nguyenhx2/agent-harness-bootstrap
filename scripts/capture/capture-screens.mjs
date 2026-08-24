@@ -40,36 +40,49 @@ const chrome = [
 if (!chrome) { console.error("no system Chrome found"); process.exit(2); }
 
 const version = execFileSync(binary, ["--version"]).toString().trim().split(/\s+/).pop();
-const port = 7461;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Refuse to run when something already owns the port. This is not hypothetical: a
-// harness-view left serving ANOTHER repository on 7461 answered the poll below, the
-// screenshots were taken of that repository, and the run reported a node count and a score
-// belonging to a project nobody asked about. A capture that silently photographs the wrong
-// subject is worse than one that fails.
-try {
-  const squatter = await fetch(`http://127.0.0.1:${port}/roots`);
-  if (squatter.ok) {
-    const who = await squatter.json().catch(() => ({}));
-    console.error(`port ${port} is already serving ${who.current ?? "something"}. ` +
-                  "Stop it before capturing, or the screenshots will be of that repository.");
-    process.exit(2);
-  }
-} catch { /* nothing listening, which is what we want */ }
-
-const server = spawn(binary, ["serve", resolve(target), "--port", String(port)],
-                     { stdio: "ignore" });
-const kill = () => { try { server.kill(); } catch {} };
+// A LIST of candidate ports, not one hardcoded number. 7461 was fixed here for a year and then
+// Windows swallowed a whole band of it: Hyper-V and WSL reserve dynamic port ranges, and a serve
+// on a reserved port fails with "os error 10013" (forbidden) - not "in use", so the squatter poll
+// below cannot see it. The old single port turned every capture on such a machine into "server
+// never came up" with no hint why. Each candidate is tried in turn: skipped if something is
+// already serving it (the wrong-repository hazard the poll guards against), skipped if the binary
+// cannot bind it, kept the moment one answers for the target we were given.
+const PORTS = [7461, 8137, 8532, 9218, 9714, 41983];
+let port = null;
+let server = null;
+const kill = () => { try { server && server.kill(); } catch {} };
 process.on("exit", kill);
 
-try {
-  // the server scans the target before it answers; poll rather than sleep-and-hope
+for (const candidate of PORTS) {
+  // Something already here? Do not photograph whatever it is serving.
+  try {
+    const squatter = await fetch(`http://127.0.0.1:${candidate}/roots`);
+    if (squatter.ok) {
+      const who = await squatter.json().catch(() => ({}));
+      console.error(`port ${candidate} is already serving ${who.current ?? "something"}; trying the next.`);
+      continue;
+    }
+  } catch { /* nothing listening, which is what we want */ }
+
+  const s = spawn(binary, ["serve", resolve(target), "--port", String(candidate)], { stdio: "ignore" });
   let up = false;
-  for (let i = 0; i < 50 && !up; i++) {
-    try { up = (await fetch(`http://127.0.0.1:${port}/roots`)).ok; } catch { await wait(200); }
+  let dead = false;
+  s.on("exit", () => { dead = true; });   // a forbidden port makes the binary exit immediately
+  for (let i = 0; i < 25 && !up && !dead; i++) {
+    try { up = (await fetch(`http://127.0.0.1:${candidate}/roots`)).ok; } catch { await wait(200); }
   }
-  if (!up) throw new Error("server never came up");
+  if (up) { server = s; port = candidate; break; }
+  try { s.kill(); } catch {}
+}
+
+if (port === null) {
+  throw new Error(`no usable port among ${PORTS.join(", ")} - every one was taken or forbidden ` +
+                  "(Windows reserves ranges for Hyper-V/WSL; `netsh interface ipv4 show excludedportrange protocol=tcp` lists them)");
+}
+
+try {
 
   // Confirm the server we are about to photograph is serving the target we were given.
   const serving = await (await fetch(`http://127.0.0.1:${port}/roots`)).json();

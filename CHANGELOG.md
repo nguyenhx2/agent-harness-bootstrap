@@ -28,6 +28,13 @@ catalogue by category. The landing page stops breaking lines with room to spare,
 list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
 and gains Claude Code, Codex and Cursor marks.
 
+## v1.19.0
+
+A bar for what earns a task - agreed with the user, few and large - enforced by a new blocking hook
+and asked for explicitly by `/new-task`. The bootstrapped scanner catches up to harness-view on
+per-folder `CLAUDE.md`, `assess` flags stub nested contracts, and the write-path figure stops
+measuring the size of rules the skill ships. Eval is 112/112 per hook flavour.
+
 ## Unreleased
 
 Documentation and instruction tuning from a user's-seat audit, and a rebuilt landing page.

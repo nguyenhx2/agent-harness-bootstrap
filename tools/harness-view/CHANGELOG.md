@@ -7,6 +7,15 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.19.0] - 2026-08-24
+
+### Added
+
+- **`assess` reports a per-folder contract that governs a subtree and says almost nothing.** A
+  nested `CLAUDE.md` applies to every change under its directory, so an empty one is worse than
+  none: the folder reads as governed and whoever opens the file to learn how stops looking. Whether
+  the rules inside are right is not something a scanner can know, and it does not pretend to.
+
 ## [1.18.2] - 2026-08-21
 
 ### Added
