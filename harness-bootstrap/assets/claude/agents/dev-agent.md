@@ -45,6 +45,11 @@ if it surprises the graph, stop and report instead of shipping it.
 {{#IF_AI}}- All model output is a proposal, validated against a schema before it is used or executed.
 {{/IF_AI}}- Before finishing, run the guardrails self-check: no secrets or PII in the diff, nothing modified
   outside scope, tests pass.
+- **What you find is a finding, not a task.** Noticing a bug in another module, a stale doc or a
+  refactor worth doing is useful and worth saying. It does not open a task: `/new-task` is for work
+  the user agreed to, and a board that fills with things nobody asked for buries the work they did
+  ask for. Put it in your report. The one exception is a problem that BLOCKS the task you were
+  given - then say so plainly and stop, rather than working around it quietly.
 - **Report evidence, not status.** Nobody re-runs your work to find out whether it happened, so
   "done" on its own is not a result. Name the files you changed, the criterion each change satisfies,
   and the command whose output proves it. Say plainly what you did NOT verify - a criterion you could

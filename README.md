@@ -7,7 +7,7 @@
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 112/112](https://img.shields.io/badge/guardrail%20eval-112%2F112-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
 
@@ -49,7 +49,7 @@ Two Claude Code skills and a viewer. You can use any one of them alone.
 
 **The floor does not depend on the model.** The guardrails are shell scripts and exit codes, so
 swapping every agent from Opus to Haiku leaves the safety result byte-identical.
-`python eval/guardrail_eval.py` proves it: 107/107 per hook flavour, 214/214 across both.
+`python eval/guardrail_eval.py` proves it: 112/112 per hook flavour, 224/224 across both.
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
@@ -95,7 +95,7 @@ are dangerous. The roster is derived from those two, and from nothing else:
 | The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
 | The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
 | The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
-| The paths that exist | Which rules are path-scoped, which keeps **64%** of rule content out of the default session. |
+| The paths that exist | Which rules are path-scoped, which keeps **62%** of rule content out of the default session. |
 
 The numbers above are measured, not claimed: scaffold with the leanest answers and you get 7 seats;
 answer yes to databases, tests and a long-lived project and you get 15. Nothing installs itself, and
@@ -174,7 +174,7 @@ implementation:
 - **MoSCoW** - the Must/Should/Could/Won't priority column
 - **Cockburn use cases + Gherkin** - the UC blocks and Given/When/Then acceptance criteria
 - **C4 (context level) + arc42 (context and scope)** - the one architecture diagram in 01
-- **OWASP ASVS 5.0 + OWASP LLM Top 10 (2025)** - section 07's mandatory, never-TBD security NFRs
+- **OWASP ASVS 5.0 + OWASP LLM Top 11 (2025)** - section 07's mandatory, never-TBD security NFRs
 
 Full depth, including which section draws on which standard and the honest limits:
 [`spec-builder/SKILL.md`](spec-builder/SKILL.md) ·
@@ -351,8 +351,8 @@ The spawn boundary itself - only a roster seat may run, and only at its pinned m
 the `guard-agent-spawn` hook, not by a rule an agent could drift from.
 
 Shipped toolbox this tailoring draws from - the asset superset, not a per-project guarantee: 16
-agents, 16 rules, 22 slash commands, 10 hooks (9 always; the rtk wrapper only behind its
-flag). Roughly 8-10 agents land in a default install; a `long`
+agents, 16 rules, 22 slash commands, 11 hooks (9 always; the rtk wrapper only behind its
+flag). Roughly 8-11 agents land in a default install; a `long`
 project adds `brainstormer` + `tech-researcher` + `history-tracker`, `tests` adds `qa-test`, and
 `solo_review` swaps the split reviewers for one merged `reviewer`. What actually lands in your
 `.claude/` depends on the dimensions above; see [`roster.md`](harness-bootstrap/reference/roster.md)
@@ -518,9 +518,9 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 | | Before | After | Δ |
 |---|---:|---:|---:|
 | Bytes the model must read to bootstrap a repo | 234,196 | 155,597 | **-34%** |
-| Bytes the model must write as output | 95,064 | 14,787 | **-84%** |
-| Rule content kept out of the default session | - | 55,062 of 85,705 B | **64%** |
-| Guardrail eval | - | **107/107** | - |
+| Bytes the model must write as output | 95,064 | 9,439 | **-90%** |
+| Rule content kept out of the default session | - | 55,062 of 87,196 B | **62%** |
+| Guardrail eval | - | **112/112** | - |
 
 ---
 

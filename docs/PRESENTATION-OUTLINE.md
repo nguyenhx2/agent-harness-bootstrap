@@ -308,7 +308,7 @@ shape behaviour; they do not enforce it.
 ### The strongest claim in the talk
 
 `eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **40 must-block, 67 must-allow, 107/107 correct.**
+at it: **44 must-block, 68 must-allow, 112/112 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -344,7 +344,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 
 | Profile | USD / feature | vs default | Per 100 features |
 |---|---:|---:|---:|
-| all-frontier (fable, xhigh) | 8.007 | 2.92x | 801 |
+| all-frontier (fable, xhigh) | 8.007 | 2.92x | 791 |
 | all-opus (xhigh, no effort tuning) | 4.004 | 1.46x | 400 |
 | **DEFAULT roster** | **2.746** | **1.00x** | **275** |
 | economy (gates opus, rest haiku) | 2.152 | 0.78x | 215 |
@@ -353,7 +353,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 > **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 16 rules are path-scoped, keeping **64% of rule content out of the
+Context is the other lever: 9 of 16 rules are path-scoped, keeping **62% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -385,7 +385,7 @@ is not there. `tools/harness-view` reads what is on disk, with no model in the l
   Flow view that runs from `settings.json` to the human.
 - **`assess`.** Scores a harness against the project's own quality gate and links every finding back to
   the node that caused it: a seat with no module, a rule matching no path, a skill no agent was told
-  to use. Run against three real harnesses it scores 99, 79 and 64 out of 100.
+  to use. Run against three real harnesses it scores 99, 90 and 64 out of 100.
 - **And it edits.** Park a rule, hook, command or seat (recorded in `.claude/disabled.json`, and
   switching off a reviewer needs a human to type the confirmation phrase); reorder, retitle or switch
   off a command's numbered steps; set a seat's `model`, `effort` and `tools` from pickers backed by a
@@ -415,7 +415,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
    - `git commit` on `main` → blocked, with the hook's message
    - Edit an Accepted ADR → blocked
 6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **107/107** in seconds. Say it: *"No model was consulted. These are exit codes."*
+   **112/112** in seconds. Say it: *"No model was consulted. These are exit codes."*
 7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
    session and watch it pick up mid-task.
 
@@ -434,7 +434,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **107/107** (40 blocked, 67 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **112/112** (44 blocked, 68 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **32/32** | `port.py --self-test` |
 
@@ -444,7 +444,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|---:|
 | Read path (bytes pulled into context) | 234,196 | **155,597** | **-34%** |
 | Read path (files read) | 24 | **10** | **-58%** |
-| Write path (bytes the model must author) | 95,064 | **14,787** | **-84%** |
+| Write path (bytes the model must author) | 95,064 | **9,439** | **-90%** |
 
 ### Session tax (paid on every request, of every agent, forever)
 
@@ -452,7 +452,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|
 | Unconditional (always loaded) | 7 | 30,643 |
 | Path-scoped (on demand) | 9 | 55,062 |
-| **Kept out of the default session** | | **64%** |
+| **Kept out of the default session** | | **62%** |
 
 ### Cost per feature (modelled)
 
@@ -547,11 +547,11 @@ section. It is the visual for this script, not a second copy of it: if a claim c
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
 - **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
-- **7** rules unconditional, **9** path-scoped → **64%** of rule content stays out of session
+- **7** rules unconditional, **9** path-scoped → **62%** of rule content stays out of session
 - Always-RAM rules **30,643 bytes**; path-scoped **55,062 bytes**
 - Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
-- Write path **-84%** (95,064 → 14,787 bytes)
-- Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
+- Write path **-90%** (95,064 → 9,439 bytes)
+- Guardrail eval **112/112** (44 must-block, 68 must-allow), model-independent
 - Port adapter self-test **32/32**
 - Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh
 - Scaffold **~0.2s**, idempotent on re-run
@@ -559,4 +559,4 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - Three tiers of process: Direct, Standard, Guarded - and the gate runs once, on the branch
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Three modes: Greenfield, Brownfield, Audit
-- `harness-view assess` on three real harnesses: **99**, **79** and **64** out of 100
+- `harness-view assess` on three real harnesses: **99**, **90** and **64** out of 100

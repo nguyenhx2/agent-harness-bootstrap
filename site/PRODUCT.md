@@ -71,11 +71,11 @@ and mean it. Every claim on the surface is answered by a script in the repositor
 
 Real, derived, and re-runnable by the visitor:
 
-- guardrail eval 107/107 per hook flavour, 214/214 across both hook flavours
-- the guardrail suite splits into 40 must-block and 67 must-allow cases
+- guardrail eval 112/112 per hook flavour, 224/224 across both hook flavours
+- the guardrail suite splits into 44 must-block and 68 must-allow cases
 - Cursor and Codex port adapter self-test 32/32
 - a bare repository blocks 0/22 benchmark payloads; the same repository, harnessed, blocks all 22
-- 64% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
+- 62% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
 - a run installs 7 to 15 of 16 seats
 - `harness-view` scored 79/100 on a real harness, over 109 nodes and 112 edges, naming each
   finding (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)

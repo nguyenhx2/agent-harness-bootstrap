@@ -10,6 +10,13 @@ status: Planned
 #   Pending - deliberately parked; the reason is recorded below; the file moves to docs/tasks/pending/
 #   Done    - complete; the result is recorded below; the file moves to docs/tasks/done/
 fr: <FR-NN, or "-">
+# WHO ASKED FOR THIS. A task is work the user agreed to; no agent opens one on its own, and that
+# includes every subagent (.claude/rules/task-tracking.md). Record what they actually said or the
+# request it came from - "user: split the billing module", "issue #41" - so a reader six weeks
+# later can tell agreed work from work that appeared. `user` alone is not an answer, and neither is
+# an agent name: an agent cannot approve its own task. The guard-task-scope hook refuses a task
+# file without it.
+requested_by: <what the user asked for, or the issue/PR this came from>
 owner: <agent>
 deps: <TASK-NNN, TASK-NNN, or "-">
 # Optional. Set only when status: Blocked AND the blocker needs a human DECISION rather than more

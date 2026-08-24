@@ -108,7 +108,7 @@ xychart-beta
 | Unconditional, always loaded | 7 | 30,643 | ~8,500 |
 | Path-scoped, loaded on demand | 9 | 52,113 | ~14,500 |
 
-64% of rule content stays out of the default session. The seven that cannot be scoped are the ones
+62% of rule content stays out of the default session. The seven that cannot be scoped are the ones
 no glob can match: `00-overview`, `agent-guardrails`, `task-tracking`, `conventional-commits` (it
 governs commit *messages*, not files, which is why it is kept under 25 lines on purpose),
 `output-style` (it governs how the agent writes, which no path predicts), and the two governance
@@ -149,8 +149,8 @@ capability landed. A benchmark that only ever improves is a marketing document.
 - **Baseline A imports the eval's own payload suite** rather than re-declaring it, so the safety
   number cannot drift from the suite it claims to represent. It runs the `.sh` hook flavor and is
   skipped with a message if `bash` is unavailable.
-- **Baseline A counts only the 22 must-block payloads** in the eval's hook suite. The eval's full
-  107 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
+- **Baseline A counts only the 26 must-block payloads** in the eval's hook suite. The eval's full
+  112 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
   measure different properties and are not safety wins.
 - **The bare repo is built from the same fixtures** as the harnessed one, then has `.claude/`
   removed. If it lacked the `.env` or the ADR, "nothing was blocked" would be trivially true.

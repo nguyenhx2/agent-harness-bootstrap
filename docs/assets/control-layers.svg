@@ -16,8 +16,8 @@
   <!-- LAYER 2 - hooks -->
   <rect x="42" y="140" width="796" height="426" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="62" y="164" font-size="14" font-weight="700" fill="#D8F3DC">LAYER 2   PreToolUse hooks, exit 2   -&gt;   what it cannot DO</text>
-  <text x="62" y="182" font-size="13" fill="#D8F3DC">protect-secrets, guard-main-commit, check-commit-msg, protect-adr, guard-agent-spawn block. 10 hooks ship in all.</text>
-  <text x="62" y="200" font-size="13" fill="#D8F3DC">guard-agent-scope only advises: the Edit/Write payload names no calling seat. eval 107/107 per hook flavour.</text>
+  <text x="62" y="182" font-size="13" fill="#D8F3DC">protect-secrets, guard-main-commit, check-commit-msg, protect-adr, guard-agent-spawn block. 11 hooks ship in all.</text>
+  <text x="62" y="200" font-size="13" fill="#D8F3DC">guard-agent-scope only advises: the Edit/Write payload names no calling seat. eval 112/112 per hook flavour.</text>
 
   <!-- ENFORCED, but not one of the four named layers: the agent frontmatter -->
   <rect x="64" y="208" width="752" height="346" rx="12" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>

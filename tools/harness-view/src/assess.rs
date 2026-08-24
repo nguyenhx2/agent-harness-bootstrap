@@ -744,6 +744,33 @@ fn check_instruction_files(c: &Ctx, out: &mut Vec<Finding>) {
             file: Some("AGENTS.md".into()),
         });
     }
+
+    // Per-folder contracts. A nested CLAUDE.md governs its own subtree, which makes an empty one
+    // worse than none: the directory reads as governed, and a reader who opens the file to find
+    // out how stops looking. This is the only claim about them that can be checked from the
+    // outside - whether the rules inside are RIGHT is not something a scanner can know.
+    for n in &instr {
+        let file = n.get("file").and_then(|x| x.as_str()).unwrap_or("");
+        if !file.contains('/') {
+            continue; // the root copies are covered above
+        }
+        let bytes = n
+            .get("meta")
+            .and_then(|m| m.get("bytes"))
+            .and_then(|b| b.as_u64())
+            .unwrap_or(u64::MAX);
+        if bytes < 120 {
+            out.push(Finding {
+                check: "instruction-nested-stub",
+                category: "Contract",
+                sev: Sev::Low,
+                title: format!("{file} governs a subtree and says almost nothing"),
+                why: "A per-folder contract applies to every change under its directory. An empty                       one is worse than none: the folder reads as governed, and whoever opens the                       file to learn how stops looking.",
+                node: n.get("id").and_then(|x| x.as_str()).map(|s| s.to_string()),
+                file: Some(file.to_string()),
+            });
+        }
+    }
 }
 
 /// -> 1-based line number of a blank line that sits between two table rows.

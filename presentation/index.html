@@ -996,14 +996,14 @@ const S = [
       vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
       ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"107/107", cls:"g", l:{en:"<b>Does the floor hold?</b> 40 forbidden actions blocked, 67 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 40 hành động bị cấm đều chặn, 67 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止40件を遮断、許可と配線検査67件を維持"}},
+  {v:"112/112", cls:"g", l:{en:"<b>Does the floor hold?</b> 44 forbidden actions blocked, 68 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 44 hành động bị cấm đều chặn, 68 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止44件を遮断、許可と配線検査68件を維持"}},
   {v:"Opus = Haiku", cls:"g", l:{en:"<b>Does it depend on the model?</b> Re-run on the cheapest tier, the result is byte-identical", vi:"<b>Có phụ thuộc model không?</b> Chạy lại trên tier rẻ nhất, kết quả giống hệt từng byte", ja:"<b>モデルに依存するか</b> 最安ティアで再実行しても結果はバイト単位で同一"}},
-  {v:"107/107", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
+  {v:"112/112", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
   {v:"32/32", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions, both hook flavors", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó, cả hai flavor hook", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断、両方のフック形式で"}}],
  note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
        vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
        ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
- nav:{en:"107/107 proof", vi:"Bằng chứng 107/107", ja:"107/107 の証明"}},
+ nav:{en:"112/112 proof", vi:"Bằng chứng 112/112", ja:"112/112 の証明"}},
 
 /* 16 */
 {icon:"i-coins", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
@@ -1109,7 +1109,7 @@ const S = [
   {v:"-84%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
   {v:"64%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
   {v:"~0.2s", cls:"g", l:{en:"to scaffold the harness, and a re-run reports KEPT for every file", vi:"để scaffold harness, và chạy lại thì mọi file đều báo KEPT", ja:"ハーネスのscaffold。再実行では全ファイルが KEPT と報告される"}},
-  {v:"16", cls:"a", l:{en:"agents, 16 rules, 22 commands, 10 hooks", vi:"agents, 16 rules, 22 commands, 10 hooks", ja:"エージェント、16ルール、22コマンド、10フック"}},
+  {v:"16", cls:"a", l:{en:"agents, 16 rules, 22 commands, 11 hooks", vi:"agents, 16 rules, 22 commands, 11 hooks", ja:"エージェント、16ルール、22コマンド、10フック"}},
   {v:"$2.75", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
  note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
        vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",

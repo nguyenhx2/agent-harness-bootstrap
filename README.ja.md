@@ -7,7 +7,7 @@
 <p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 112/112](https://img.shields.io/badge/guardrail%20eval-112%2F112-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
 
@@ -49,7 +49,7 @@
 
 **安全性の下限はモデルに依存しません。** ガードレールはシェルスクリプトと終了コードなので、
 全エージェントを Opus から Haiku に替えても結果はバイト単位で同一です。
-`python eval/guardrail_eval.py` が証明します: フック形式ごとに 107/107、両形式で 214/214。
+`python eval/guardrail_eval.py` が証明します: フック形式ごとに 112/112、両形式で 224/224。
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.ja.svg" alt="AI-DLCの流れ: spec-builderが契約書を作り、harness-bootstrapがハーネスを構築し、その内側でデリバリーループが回る" width="820">
@@ -94,7 +94,7 @@
 | 実在するモジュール | それぞれに開発エージェント1名、実在するパスにスコープ。モジュールがなければ席もない。 |
 | 契約とあなたの回答 | 16席のうちどれを埋めるか。1回の構築で入るのは **7〜15席** であり、既定で16席全部ということはない。 |
 | リポジトリ内のマニフェスト | そもそもどのスキルが提案されるか。あなたはその絞り込み候補から選び、`/skill-wire` が各スキルを使うエージェントへつなぐ。 |
-| 実在するパス | どのルールがパススコープになるか。これによりルール本文の **64%** が既定セッションの外に出る。 |
+| 実在するパス | どのルールがパススコープになるか。これによりルール本文の **62%** が既定セッションの外に出る。 |
 
 上の数値は主張ではなく実測です。最小限の回答で構築すれば7席、データベース・テスト・長期プロジェクト
 に「はい」と答えれば15席になります。何ひとつ勝手にはインストールされず、`harness-view assess` は
@@ -504,9 +504,9 @@ agent-harness-bootstrap
 | | 導入前 | 導入後 | 差分 |
 |---|---:|---:|---:|
 | リポジトリをブートストラップするためにモデルが読むバイト数 | 234,196 | 155,597 | **-35%** |
-| モデルが出力として書くバイト数 | 95,064 | 14,787 | **-85%** |
-| デフォルトのセッションから除外されるルール内容 | - | 55,062 of 85,705 B | **64%** |
-| ガードレール評価 | - | **107/107** | - |
+| モデルが出力として書くバイト数 | 95,064 | 9,439 | **-80%** |
+| デフォルトのセッションから除外されるルール内容 | - | 55,062 of 87,196 B | **62%** |
+| ガードレール評価 | - | **112/112** | - |
 
 ---
 

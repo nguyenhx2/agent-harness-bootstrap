@@ -45,11 +45,11 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 107
+CASES_PER_FLAVOR = 112
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
-MUST_BLOCK_PER_FLAVOR = 40
-MUST_ALLOW_PER_FLAVOR = 67
+MUST_BLOCK_PER_FLAVOR = 44
+MUST_ALLOW_PER_FLAVOR = 68
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -169,6 +169,22 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("commit: AI-attribution trailer",   "check-commit-msg", 2, p("Bash", command='git commit -m "feat(a): x\n\nCo-Authored-By: Claude <noreply@anthropic.com>"')),
         ("adr: edit an Accepted ADR",        "protect-adr",      2, p("Edit", file_path="docs/architecture/decisions/ADR-001-x.md")),
 
+        # --- the board stays a plan: a task is agreed work, few and large ---
+        # The rule came first and was not enough: prose is what gets skipped under momentum,
+        # which is how a board ends up with a dozen rows for one agreed piece of work.
+        ("task: no requested_by", "guard-task-scope", 2,
+         p("Write", file_path="docs/tasks/active/TASK-900-tidy.md",
+           content="---\ntitle: tidy\nowner: app-dev\n---\n- [ ] imports sorted\n- [ ] lint passes\n")),
+        ("task: requested_by is a label", "guard-task-scope", 2,
+         p("Write", file_path="docs/tasks/active/TASK-901-x.md",
+           content="---\nrequested_by: user\n---\n- [ ] a thing\n- [ ] another thing\n")),
+        ("task: an agent approving itself", "guard-task-scope", 2,
+         p("Write", file_path="docs/tasks/active/TASK-902-x.md",
+           content="---\nrequested_by: orchestrator\n---\n- [ ] a thing\n- [ ] another\n")),
+        ("task: nothing observable to satisfy", "guard-task-scope", 2,
+         p("Write", file_path="docs/tasks/active/TASK-903-x.md",
+           content="---\nrequested_by: \"user: fix the header typo\"\n---\n- [ ] the header reads Billing\n")),
+
         # --- the spawn boundary: agents outside the harness never start ---
         ("spawn: type outside the roster",   "guard-agent-spawn", 2, p("Agent", subagent_type="general-purpose", prompt="explore the repo")),
         ("spawn: model escalation on a seat","guard-agent-spawn", 2, p("Agent", subagent_type="history-tracker", model="opus", prompt="summarize TASK-001")),
@@ -247,6 +263,9 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("allow: conventional commit",       "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): add endpoint"')),
         ("allow: human co-author",           "check-commit-msg", 0, p("Bash", command='git commit -m "feat(api): x\n\nCo-Authored-By: Mai Tran <mai@acme.io>"')),
         ("allow: edit a Proposed ADR",       "protect-adr",      0, p("Edit", file_path="docs/architecture/decisions/ADR-002-y.md")),
+        ("allow: a real task, properly asked for", "guard-task-scope", 0,
+         p("Write", file_path="docs/tasks/active/TASK-904-billing.md",
+           content="---\nrequested_by: \"user: split the billing module before the Q3 migration\"\nowner: app-dev\n---\n- [ ] POST /invoice returns 201 with the new invoice id\n- [ ] the legacy billing path and its tests are removed\n")),
 
         # --- robustness: a hook that crashes on bad input fails OPEN, which is worse than useless ---
         ("robust: empty payload",            "protect-secrets",  0, "{}"),
