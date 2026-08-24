@@ -65,6 +65,8 @@ The five task states are defined once, in the frontmatter of `docs/templates/TAS
   counts as passed only when the log records the run.
 - Write every status change in the task file frontmatter AND the `docs/tasks/master-plan.md` row,
   in the same change. The two must never disagree.
+- **A task is work the user agreed to.** What you notice while executing is a finding: report it,
+  let them decide. It does not become a task on its own (`.claude/rules/task-tracking.md`).
 
 ## Agents and orchestration
 
@@ -85,9 +87,9 @@ Decide the tier before dispatching anything. Most changes are Direct.
 | **Guarded** | two or more domains, OR it touches schema, auth, money, a public contract, a migration, a deploy, or {{PII_OR_DATA}} | `orchestrator` - one at a time, never two on the same board | the full flow below |
 
 Choosing a heavier tier than the change needs is a defect, not caution: a one-line fix that pays for
-a planning pass, a task file, and three reviews spends real time to learn nothing. Choosing a lighter
-tier for a change on the Guarded list is the failure that list exists to prevent. When two look
-equally right, name the one you picked and why, then continue.
+a planning pass, a task file and three reviews spends real time to learn nothing. Choosing a lighter
+one for a change on the Guarded list is the failure that list exists to prevent. When two look
+equally right, name the one you picked and why.
 
 The Guarded flow, none of it optional: `spec-guardian` locks the scope, the specialist implements
 against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}), and the branch gate below runs before the

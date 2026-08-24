@@ -95,7 +95,7 @@ are dangerous. The roster is derived from those two, and from nothing else:
 | The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
 | The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
 | The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
-| The paths that exist | Which rules are path-scoped, which keeps **64%** of rule content out of the default session. |
+| The paths that exist | Which rules are path-scoped, which keeps **63%** of rule content out of the default session. |
 
 The numbers above are measured, not claimed: scaffold with the leanest answers and you get 7 seats;
 answer yes to databases, tests and a long-lived project and you get 15. Nothing installs itself, and
@@ -518,8 +518,8 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 | | Before | After | Δ |
 |---|---:|---:|---:|
 | Bytes the model must read to bootstrap a repo | 234,196 | 155,597 | **-34%** |
-| Bytes the model must write as output | 95,064 | 14,787 | **-84%** |
-| Rule content kept out of the default session | - | 55,062 of 85,705 B | **64%** |
+| Bytes the model must write as output | 95,064 | 20,061 | **-79%** |
+| Rule content kept out of the default session | - | 55,062 of 87,196 B | **63%** |
 | Guardrail eval | - | **107/107** | - |
 
 ---

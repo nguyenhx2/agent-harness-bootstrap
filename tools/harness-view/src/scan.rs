@@ -781,7 +781,12 @@ pub fn scan(root: &Path) -> Value {
         node.insert("label".into(), json!(relpath));
         node.insert("file".into(), json!(relpath));
         node.insert("disabled".into(), json!(false));
-        node.insert("meta".into(), Value::Object(crate::instruction::meta_for(sp)));
+        let mut meta = crate::instruction::meta_for(sp);
+        // Size travels with the node so `assess` can tell a per-folder contract that governs a
+        // subtree from one that only looks like it does. Counted from the text already read for
+        // the tier parse below, so this costs nothing extra.
+        meta.insert("bytes".into(), json!(text.len()));
+        node.insert("meta".into(), Value::Object(meta));
         // The write path takes a key and a bare name, never this path - see the
         // containment note in instruction.rs. The node carries both so the page
         // never has to compose one.

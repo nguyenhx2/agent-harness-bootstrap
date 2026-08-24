@@ -328,6 +328,47 @@ def tier_rows(text: str) -> list[dict]:
     return []
 
 
+# Contracts that may also appear in SUBDIRECTORIES, each copy governing its own subtree. Claude Code
+# reads the CLAUDE.md for the directory being worked in, so a repo with src/api/CLAUDE.md is
+# governed by four contracts and a scanner that reports one is quietly wrong. Mirrors the `nested`
+# flag on `instruction::Spec`.
+NESTED_KEYS = ("agents", "claude")
+NEST_MAX_DEPTH = 8
+NEST_MAX_FILES = 200
+NEST_SKIP = {"node_modules", "target", "dist", "build", "vendor", "__pycache__", "venv", ".venv"}
+
+
+def nested_copies(root: pathlib.Path, file_name: str) -> list[str]:
+    """Every copy of `file_name` BELOW `root`, repo-relative and sorted.
+
+    Breadth-first with an explicit queue so the depth cap is the cap. Directory symlinks are not
+    followed: one pointing up the tree walks the repo again under a second set of names, one
+    pointing out puts a stranger's file in this graph. The root copy is excluded - the caller has
+    already added it, and twice would be two nodes for one file.
+    """
+    out: list[str] = []
+    queue: list[tuple[pathlib.Path, str, int]] = [(root, "", 0)]
+    while queue:
+        d, prefix, depth = queue.pop()
+        if depth >= NEST_MAX_DEPTH or len(out) >= NEST_MAX_FILES:
+            continue
+        try:
+            entries = list(d.iterdir())
+        except OSError:
+            continue
+        for e in entries:
+            name = e.name
+            if e.is_symlink():
+                continue
+            if e.is_dir():
+                if name.startswith(".") or name in NEST_SKIP:
+                    continue
+                queue.append((e, name if not prefix else f"{prefix}/{name}", depth + 1))
+            elif name == file_name and prefix and len(out) < NEST_MAX_FILES:
+                out.append(f"{prefix}/{name}")
+    return sorted(out)
+
+
 def instruction_files(root: pathlib.Path):
     """-> [(entry, name, repo-relative path)] for every one that exists.
 
@@ -341,6 +382,9 @@ def instruction_files(root: pathlib.Path):
         if not ext:
             if (root / path).is_file():
                 found.append((entry, "", path))
+            if key in NESTED_KEYS:
+                for rel in nested_copies(root, path):
+                    found.append((entry, rel, rel))
             continue
         d = root / path
         if not d.is_dir():
@@ -646,6 +690,17 @@ def build(root: pathlib.Path) -> dict:
         imeta: dict = {"tools": list(tools), "source": source, "verified": verified}
         if note:
             imeta["note"] = note
+        # Size travels with the node so `assess` can tell a per-folder contract that governs a
+        # subtree from one that only looks like it does. Counted from the text already read for
+        # the tier parse below, so it costs nothing extra. Twin of the same line in scan.rs.
+        # From the BYTES on disk, not from `text`: read_text normalises CRLF to LF, so a file
+        # checked out natively on Windows would be counted three bytes short per line and the two
+        # scanners would disagree on every one. That is the same native-checkout trap that has bitten
+        # this repo in the plugin tree, the scaffolder and the step fixtures.
+        try:
+            imeta["bytes"] = (root / relpath).stat().st_size
+        except OSError:
+            imeta["bytes"] = len(text.encode("utf-8"))
         rows = tier_rows(text)
         for row in rows:
             # A tier row that NAMES a seat routes to it. The Direct and Standard

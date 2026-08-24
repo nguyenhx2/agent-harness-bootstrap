@@ -344,7 +344,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 
 | Profile | USD / feature | vs default | Per 100 features |
 |---|---:|---:|---:|
-| all-frontier (fable, xhigh) | 8.007 | 2.92x | 801 |
+| all-frontier (fable, xhigh) | 8.007 | 2.92x | 791 |
 | all-opus (xhigh, no effort tuning) | 4.004 | 1.46x | 400 |
 | **DEFAULT roster** | **2.746** | **1.00x** | **275** |
 | economy (gates opus, rest haiku) | 2.152 | 0.78x | 215 |
@@ -353,7 +353,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 > **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 16 rules are path-scoped, keeping **64% of rule content out of the
+Context is the other lever: 9 of 16 rules are path-scoped, keeping **63% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -444,7 +444,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|---:|
 | Read path (bytes pulled into context) | 234,196 | **155,597** | **-34%** |
 | Read path (files read) | 24 | **10** | **-58%** |
-| Write path (bytes the model must author) | 95,064 | **14,787** | **-84%** |
+| Write path (bytes the model must author) | 95,064 | **20,061** | **-79%** |
 
 ### Session tax (paid on every request, of every agent, forever)
 
@@ -452,7 +452,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|
 | Unconditional (always loaded) | 7 | 30,643 |
 | Path-scoped (on demand) | 9 | 55,062 |
-| **Kept out of the default session** | | **64%** |
+| **Kept out of the default session** | | **63%** |
 
 ### Cost per feature (modelled)
 
@@ -547,10 +547,10 @@ section. It is the visual for this script, not a second copy of it: if a claim c
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
 - **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
-- **7** rules unconditional, **9** path-scoped → **64%** of rule content stays out of session
+- **7** rules unconditional, **9** path-scoped → **63%** of rule content stays out of session
 - Always-RAM rules **30,643 bytes**; path-scoped **55,062 bytes**
 - Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
-- Write path **-84%** (95,064 → 14,787 bytes)
+- Write path **-79%** (95,064 → 20,061 bytes)
 - Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
 - Port adapter self-test **32/32**
 - Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh

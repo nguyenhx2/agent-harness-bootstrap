@@ -75,7 +75,7 @@ Real, derived, and re-runnable by the visitor:
 - the guardrail suite splits into 40 must-block and 67 must-allow cases
 - Cursor and Codex port adapter self-test 32/32
 - a bare repository blocks 0/22 benchmark payloads; the same repository, harnessed, blocks all 22
-- 64% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
+- 63% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
 - a run installs 7 to 15 of 16 seats
 - `harness-view` scored 79/100 on a real harness, over 109 nodes and 112 edges, naming each
   finding (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)

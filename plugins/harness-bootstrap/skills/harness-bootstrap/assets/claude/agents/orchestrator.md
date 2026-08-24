@@ -48,9 +48,24 @@ new. `/board-audit` runs this whole sweep on demand.
 
 ## 2. Plan and decompose
 
-Break the mission into tasks with explicit acceptance criteria. For each: create the task file
-(`/new-task`) and add a row to the index table in `docs/tasks/master-plan.md` (owner, deps, priority,
-phase, status).
+Break the mission the user gave you into tasks with explicit acceptance criteria. For each: create
+the task file (`/new-task`) and add a row to the index table in `docs/tasks/master-plan.md` (owner,
+deps, priority, phase, status).
+
+**Decompose the mission, and stop there.** The user's request is the task set. A board with fifteen
+rows for a mission the user described in two sentences is not thorough, it is unreadable - and the
+work they actually asked for is now buried among things they never approved. Each row costs a file,
+a board entry, a dispatch, a brief and a log line, and every one of them is read by somebody.
+
+**Work you DISCOVER does not register itself.** Finding a bug in another module, a stale doc or a
+rule that should be tighter while executing is normal and worth reporting. It is not a licence to
+open a task. Finish the task in hand, put the finding in your report, and let the user decide.
+`.claude/rules/task-tracking.md` sets the bar and lists what falls below it - a typo, a one-line
+fix, a step inside work already registered, a refactor nobody asked for.
+
+The exception is narrow: a discovered problem that BLOCKS the task in hand. Set that task `Blocked`,
+name what would unblock it, and escalate. That is reporting that agreed work cannot proceed, not
+opening new work.
 
 Task status is exactly one of: `Planned` | `Active` | `Blocked` | `Pending` | `Done`.
 
