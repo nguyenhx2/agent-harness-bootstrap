@@ -353,7 +353,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 > **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 16 rules are path-scoped, keeping **63% of rule content out of the
+Context is the other lever: 9 of 16 rules are path-scoped, keeping **62% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -385,7 +385,7 @@ is not there. `tools/harness-view` reads what is on disk, with no model in the l
   Flow view that runs from `settings.json` to the human.
 - **`assess`.** Scores a harness against the project's own quality gate and links every finding back to
   the node that caused it: a seat with no module, a rule matching no path, a skill no agent was told
-  to use. Run against three real harnesses it scores 99, 79 and 64 out of 100.
+  to use. Run against three real harnesses it scores 99, 90 and 64 out of 100.
 - **And it edits.** Park a rule, hook, command or seat (recorded in `.claude/disabled.json`, and
   switching off a reviewer needs a human to type the confirmation phrase); reorder, retitle or switch
   off a command's numbered steps; set a seat's `model`, `effort` and `tools` from pickers backed by a
@@ -444,7 +444,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|---:|
 | Read path (bytes pulled into context) | 234,196 | **155,597** | **-34%** |
 | Read path (files read) | 24 | **10** | **-58%** |
-| Write path (bytes the model must author) | 95,064 | **20,061** | **-79%** |
+| Write path (bytes the model must author) | 95,064 | **9,439** | **-90%** |
 
 ### Session tax (paid on every request, of every agent, forever)
 
@@ -452,7 +452,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 |---|---:|---:|
 | Unconditional (always loaded) | 7 | 30,643 |
 | Path-scoped (on demand) | 9 | 55,062 |
-| **Kept out of the default session** | | **63%** |
+| **Kept out of the default session** | | **62%** |
 
 ### Cost per feature (modelled)
 
@@ -547,10 +547,10 @@ section. It is the visual for this script, not a second copy of it: if a claim c
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
 - **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
-- **7** rules unconditional, **9** path-scoped → **63%** of rule content stays out of session
+- **7** rules unconditional, **9** path-scoped → **62%** of rule content stays out of session
 - Always-RAM rules **30,643 bytes**; path-scoped **55,062 bytes**
 - Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
-- Write path **-79%** (95,064 → 20,061 bytes)
+- Write path **-90%** (95,064 → 9,439 bytes)
 - Guardrail eval **107/107** (40 must-block, 67 must-allow), model-independent
 - Port adapter self-test **32/32**
 - Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh
@@ -559,4 +559,4 @@ Enforced by `scripts/check_numbers.py`, so these will not drift:
 - Three tiers of process: Direct, Standard, Guarded - and the gate runs once, on the branch
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Three modes: Greenfield, Brownfield, Audit
-- `harness-view assess` on three real harnesses: **99**, **79** and **64** out of 100
+- `harness-view assess` on three real harnesses: **99**, **90** and **64** out of 100

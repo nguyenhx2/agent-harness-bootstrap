@@ -222,7 +222,7 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
    (214/214 across both hook flavors).
 2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
    Measured: 45% less to read (down from 54% - the skill grew capability faster than compression
-   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 63% of rule content kept out
+   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 62% of rule content kept out
    of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the

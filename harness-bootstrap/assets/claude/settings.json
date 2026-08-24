@@ -73,6 +73,11 @@
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-agent-scope.{{HOOK_EXT}}",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-task-scope.{{HOOK_EXT}}",
+            "timeout": 10
           }
         ]
       },

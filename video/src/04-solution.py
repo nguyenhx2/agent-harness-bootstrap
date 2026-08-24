@@ -210,7 +210,7 @@ class Solution(Scene):
             box("16 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("16 rules\n7 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
             box("22 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("10 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("11 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  a board that survives a crash", NEUTRAL, WHITE, w=6.8, h=0.7, fs=19).move_to(

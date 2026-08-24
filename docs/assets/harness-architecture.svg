@@ -76,7 +76,7 @@
   <text x="744" y="692" font-size="13" font-weight="700" fill="#D8F3DC" text-anchor="middle">SURVIVES A MODEL SWAP</text>
   <text x="42" y="715" font-size="13" fill="#F8F9FA">enforced by: the context window. Billed every turn. Lost on compaction.</text>
   <text x="42" y="738" font-size="13" fill="#F8F9FA">Always-RAM:   CLAUDE.md -&gt; @AGENTS.md,  7 unconditional rules,  the agent body,  the tool schemas</text>
-  <text x="42" y="758" font-size="13" fill="#F8F9FA">Lazy-RAM:      9 path-scoped rules - loaded only on a matching file touch.  63% of the rule content.</text>
+  <text x="42" y="758" font-size="13" fill="#F8F9FA">Lazy-RAM:      9 path-scoped rules - loaded only on a matching file touch.  62% of the rule content.</text>
 
   <!-- L3 STATE PLANE -->
   <rect x="24" y="790" width="832" height="196" rx="10" fill="#495057" stroke="#212529" stroke-width="4"/>
@@ -108,7 +108,7 @@
 
   <rect x="42" y="1092" width="796" height="50" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="56" y="1112" font-size="13" fill="#D8F3DC">PreToolUse hooks, exit 2  -&gt;  cannot DO:  protect-secrets, guard-agent-spawn, guard-main-commit,</text>
-  <text x="56" y="1130" font-size="13" fill="#D8F3DC">check-commit-msg, protect-adr. 10 hooks ship; guard-agent-scope advises, specs-reminder and agent-history record.</text>
+  <text x="56" y="1130" font-size="13" fill="#D8F3DC">check-commit-msg, protect-adr. 11 hooks ship; guard-agent-scope advises, specs-reminder and agent-history record.</text>
 
   <rect x="42" y="1150" width="796" height="32" rx="6" fill="#2D6A4F" stroke="#081C15" stroke-width="2"/>
   <text x="56" y="1171" font-size="13" fill="#D8F3DC">tools: allowlist  -&gt;  cannot REACH:  reviewers get Read, Grep, Glob, Bash - never Edit or Write</text>

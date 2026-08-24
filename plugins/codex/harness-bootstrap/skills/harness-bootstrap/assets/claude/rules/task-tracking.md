@@ -43,6 +43,24 @@ rows, the answer is that those are steps in TASK-014, and the task file has a pl
 steps. Splitting them out does not make the work more tracked, it makes the board unreadable and
 hides what the user actually approved.
 
+**A task needs the user's agreement, and it is asked for directly.** If the user's own message did
+not ask for this task, `/new-task` puts it to them with `AskUserQuestion` and waits for an explicit
+yes before anything is written. Not an agent deciding they would probably approve, and not a
+subagent telling its dispatcher - the person. This is the same rule `/harness-toggle` applies to a
+protected control: a confirmation counts only when the user gave it themselves, in this
+conversation.
+
+That step is the real gate, and it is worth being clear why: a hook cannot tell a fabricated
+`requested_by` from a true one. What the hook does is make the claim exist in writing.
+
+**The file records the agreement.** Every task file carries
+`requested_by:` naming what was asked for - their words, or the issue it came from. `user` on its
+own is a label, not a record, and an agent name is refused outright: an agent cannot approve its
+own task. `guard-task-scope` blocks a task file without it, and one with fewer than two real
+acceptance criteria. The hook cannot prove the user actually agreed - nothing can - but it makes
+the claim explicit in the file that outlives the session, so a fabricated answer is a visible lie
+rather than an invisible omission.
+
 **No agent opens a task on its own - and that includes every subagent.** Only work the user agreed
 to becomes a row. A subagent that finds something reports it to whoever dispatched it; it does not
 register it, and the dispatcher does not register it either without asking. The board records agreed

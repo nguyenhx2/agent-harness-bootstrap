@@ -328,6 +328,13 @@
       ]
     },
     {
+      "src": "claude/hooks/guard-task-scope.ps1",
+      "dest": ".claude/hooks/guard-task-scope.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
       "src": "claude/hooks/protect-secrets.ps1",
       "dest": ".claude/hooks/protect-secrets.ps1",
       "when": [
@@ -401,6 +408,14 @@
     {
       "src": "claude/hooks/protect-adr.sh",
       "dest": ".claude/hooks/protect-adr.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-task-scope.sh",
+      "dest": ".claude/hooks/guard-task-scope.sh",
       "when": [
         "posix"
       ],

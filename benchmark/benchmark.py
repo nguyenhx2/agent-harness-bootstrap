@@ -504,19 +504,45 @@ def compat_old(old_root: pathlib.Path, c: Counter) -> dict | None:
     }
 
 
+# What the model still hand-authors after a bootstrap, in bytes.
+#
+# The scaffolder ships every invariant asset, so what is left to write is: tech-stack.md,
+# coding-standards.md and git-workflow.md - the three rules SKILL.md says are derived from YOUR
+# code and are never shipped - plus the orchestrator's routing table. None of those exist in this
+# repository, so their size cannot be read off disk and has to be declared.
+#
+# It used to be estimated as `median(shipped rule sizes) * 3`, and that was wrong in a way worth
+# recording. The shipped rules are generic documents nobody hand-writes, so the figure tracked the
+# wrong quantity entirely: adding a paragraph to a rule this skill SHIPS inflated the published
+# "bytes the model must write" by three times that paragraph, and the reduction headline fell -
+# which says a skill got worse for shipping more. It also made the number move under edits that
+# have nothing to do with authoring, so nobody could tell a real regression from a docs change.
+#
+# Declared instead, from the three files as they appear in real bootstrapped repositories: they run
+# 2-3 KB each once filled in for an actual stack. 2,400 is the middle of that. This is an estimate
+# and it is labelled as one; what it is NOT is an estimate of something else.
+AUTHORED_RULE_BYTES = 2400
+AUTHORED_RULE_COUNT = 3
+ROUTING_TABLE_BYTES = 1024
+
+
 def compat_new(new_root: pathlib.Path, c: Counter) -> dict:
     """This skill's read path, and the write path it still leaves to the model. Same contract."""
     read = files(new_root, "SKILL.md") + files(new_root, "reference/*.md")
     read_txt = read_all(read)
-    rules = sorted((new_root / "assets/claude/rules").glob("*.md"))
-    sizes = sorted(len(p.read_text(encoding="utf-8", errors="replace")) for p in rules)
-    med = sizes[len(sizes) // 2] if sizes else 0
-    # three hand-authored rules + a ~2KB vars.json + a ~1KB routing table
-    write_bytes = med * 3 + 2048 + 1024
+    # vars.json is the one part of the write path that IS measurable: it is the payload this
+    # benchmark itself hands the scaffolder, so it is counted rather than guessed.
+    vars_bytes = len(json.dumps(scaffold_vars()))
+    write_bytes = AUTHORED_RULE_BYTES * AUTHORED_RULE_COUNT + vars_bytes + ROUTING_TABLE_BYTES
     return {
         "name": "harness-bootstrap (after)",
         "read_files": len(read), "read_bytes": len(read_txt), "read_tokens": c.tokens(read_txt),
-        "write_files": 3, "write_bytes": write_bytes,
+        "write_files": AUTHORED_RULE_COUNT, "write_bytes": write_bytes,
+        "write_bytes_basis": (
+            f"{AUTHORED_RULE_COUNT} authored rules at a declared {AUTHORED_RULE_BYTES} B each, "
+            f"a measured {vars_bytes} B vars.json, and a declared {ROUTING_TABLE_BYTES} B routing "
+            f"table. The rule size is an estimate; it does not move when a SHIPPED rule is edited."
+        ),
         "write_tokens": round(write_bytes / CHARS_PER_TOKEN),
     }
 

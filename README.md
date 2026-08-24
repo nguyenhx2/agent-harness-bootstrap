@@ -95,7 +95,7 @@ are dangerous. The roster is derived from those two, and from nothing else:
 | The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
 | The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
 | The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
-| The paths that exist | Which rules are path-scoped, which keeps **63%** of rule content out of the default session. |
+| The paths that exist | Which rules are path-scoped, which keeps **62%** of rule content out of the default session. |
 
 The numbers above are measured, not claimed: scaffold with the leanest answers and you get 7 seats;
 answer yes to databases, tests and a long-lived project and you get 15. Nothing installs itself, and
@@ -174,7 +174,7 @@ implementation:
 - **MoSCoW** - the Must/Should/Could/Won't priority column
 - **Cockburn use cases + Gherkin** - the UC blocks and Given/When/Then acceptance criteria
 - **C4 (context level) + arc42 (context and scope)** - the one architecture diagram in 01
-- **OWASP ASVS 5.0 + OWASP LLM Top 10 (2025)** - section 07's mandatory, never-TBD security NFRs
+- **OWASP ASVS 5.0 + OWASP LLM Top 11 (2025)** - section 07's mandatory, never-TBD security NFRs
 
 Full depth, including which section draws on which standard and the honest limits:
 [`spec-builder/SKILL.md`](spec-builder/SKILL.md) ·
@@ -351,8 +351,8 @@ The spawn boundary itself - only a roster seat may run, and only at its pinned m
 the `guard-agent-spawn` hook, not by a rule an agent could drift from.
 
 Shipped toolbox this tailoring draws from - the asset superset, not a per-project guarantee: 16
-agents, 16 rules, 22 slash commands, 10 hooks (9 always; the rtk wrapper only behind its
-flag). Roughly 8-10 agents land in a default install; a `long`
+agents, 16 rules, 22 slash commands, 11 hooks (9 always; the rtk wrapper only behind its
+flag). Roughly 8-11 agents land in a default install; a `long`
 project adds `brainstormer` + `tech-researcher` + `history-tracker`, `tests` adds `qa-test`, and
 `solo_review` swaps the split reviewers for one merged `reviewer`. What actually lands in your
 `.claude/` depends on the dimensions above; see [`roster.md`](harness-bootstrap/reference/roster.md)
@@ -518,8 +518,8 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 | | Before | After | Δ |
 |---|---:|---:|---:|
 | Bytes the model must read to bootstrap a repo | 234,196 | 155,597 | **-34%** |
-| Bytes the model must write as output | 95,064 | 20,061 | **-79%** |
-| Rule content kept out of the default session | - | 55,062 of 87,196 B | **63%** |
+| Bytes the model must write as output | 95,064 | 9,439 | **-90%** |
+| Rule content kept out of the default session | - | 55,062 of 87,196 B | **62%** |
 | Guardrail eval | - | **107/107** | - |
 
 ---

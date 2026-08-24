@@ -376,7 +376,7 @@
           <ul>
             <li>16 agents, each with an explicit model, effort and tool budget</li>
             <li>16 rules, 9 of them loaded only on the paths they govern</li>
-            <li>10 blocking hooks, 22 commands, and a task board that survives compaction</li>
+            <li>11 blocking hooks, 22 commands, and a task board that survives compaction</li>
             <li>Skills are found from your own manifests and wired to the seat that needs them, so an installed skill nobody uses shows up as a finding</li>
           </ul>
           <p class="rd__out"><span>writes</span> .claude/ - agents, rules, hooks, commands, settings</p>
@@ -1048,7 +1048,7 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
             <li>
               <h3>A run installs 7 to 15 of the 16 seats</h3>
               <p>Never all of them by default. Rules are scoped to paths that exist, which is why
-                63% of rule content stays out of the default session.</p>
+                62% of rule content stays out of the default session.</p>
               <p class="src">derived by benchmark/benchmark.py --json</p>
             </li>
           </ul>
@@ -1172,7 +1172,7 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
         </li>
         <li>
           <h3>2 - blocking hooks</h3>
-          <p>10 blocking hooks. A hook that exits 2 stops the tool call and returns its reason, so the
+          <p>11 blocking hooks. A hook that exits 2 stops the tool call and returns its reason, so the
             model learns what it may not do instead of being told to be careful.</p>
         </li>
         <li>
@@ -1182,7 +1182,7 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
         </li>
         <li>
           <h3>4 - path-scoped rules</h3>
-          <p>A rule loads only on the paths it governs, which keeps 63% of rule content out of the
+          <p>A rule loads only on the paths it governs, which keeps 62% of rule content out of the
             default session and stops rules from becoming background noise.</p>
         </li>
         <li>
