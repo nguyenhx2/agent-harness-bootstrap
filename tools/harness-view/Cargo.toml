@@ -3,7 +3,7 @@ name = "harness-view"
 # Tracks the repo release version (the two skills' SKILL.md frontmatter), NOT an
 # independent number. scripts/validate_release.py fails the gate when they drift,
 # so a tagged build cannot ship a binary stamped with a stale version.
-version = "1.18.2"
+version = "1.19.0"
 edition = "2021"
 description = "Deterministic analyzer and viewer for a .claude/ agent harness: scan, serve, watch"
 license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
