@@ -143,7 +143,7 @@
         </div>
 
         <dl class="record">
-          <div><dt>Guardrail eval</dt><dd><b>107/107</b> <span class="u-quiet">per hook flavour</span></dd></div>
+          <div><dt>Guardrail eval</dt><dd><b>112/112</b> <span class="u-quiet">per hook flavour</span></dd></div>
           <div><dt>Licence</dt><dd><b>PolyForm NC</b> <span class="u-quiet">free for noncommercial use</span></dd></div>
           <div><dt>Latest</dt><dd><b>v1.18.0</b> <span class="u-quiet">binaries attached</span></dd></div>
           <div><dt>Port adapter</dt><dd><b>32/32</b> <span class="u-quiet">Cursor and Codex</span></dd></div>
@@ -223,7 +223,7 @@
 
       <p class="note">The floor does not depend on the model. The guardrails are shell scripts and exit
         codes, so swapping every agent from Opus to Haiku leaves the safety result byte-identical.
-        <code>python eval/guardrail_eval.py</code> proves it: 107/107 per hook flavour, 214/214 across
+        <code>python eval/guardrail_eval.py</code> proves it: 112/112 per hook flavour, 224/224 across
         both.</p>
     </div>
   </section>
@@ -1196,7 +1196,7 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
         the floor is enforced by shell scripts and exit codes, so it does not depend on which model is
         driving. What a cheaper model does change is the quality of the code written and the depth of
         the review, which is the ceiling, and this eval does not measure it.</p>
-      <p class="src">107/107 per hook flavour - 40 must-block, 67 must-allow - re-run it yourself with
+      <p class="src">112/112 per hook flavour - 44 must-block, 68 must-allow - re-run it yourself with
         <code>py -3.13 eval/guardrail_eval.py</code></p>
     </div>
   </section>

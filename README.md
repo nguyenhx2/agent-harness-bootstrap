@@ -7,7 +7,7 @@
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
 [![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 107/107](https://img.shields.io/badge/guardrail%20eval-107%2F107-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+[![Guardrail eval: 112/112](https://img.shields.io/badge/guardrail%20eval-112%2F112-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
 
@@ -49,7 +49,7 @@ Two Claude Code skills and a viewer. You can use any one of them alone.
 
 **The floor does not depend on the model.** The guardrails are shell scripts and exit codes, so
 swapping every agent from Opus to Haiku leaves the safety result byte-identical.
-`python eval/guardrail_eval.py` proves it: 107/107 per hook flavour, 214/214 across both.
+`python eval/guardrail_eval.py` proves it: 112/112 per hook flavour, 224/224 across both.
 
 <p align="center">
   <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
@@ -520,7 +520,7 @@ Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harne
 | Bytes the model must read to bootstrap a repo | 234,196 | 155,597 | **-34%** |
 | Bytes the model must write as output | 95,064 | 9,439 | **-90%** |
 | Rule content kept out of the default session | - | 55,062 of 87,196 B | **62%** |
-| Guardrail eval | - | **107/107** | - |
+| Guardrail eval | - | **112/112** | - |
 
 ---
 

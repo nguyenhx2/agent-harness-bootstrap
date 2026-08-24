@@ -45,11 +45,11 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 107
+CASES_PER_FLAVOR = 112
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
-MUST_BLOCK_PER_FLAVOR = 40
-MUST_ALLOW_PER_FLAVOR = 67
+MUST_BLOCK_PER_FLAVOR = 44
+MUST_ALLOW_PER_FLAVOR = 68
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"

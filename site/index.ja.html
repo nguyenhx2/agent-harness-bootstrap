@@ -140,7 +140,7 @@
         </div>
 
         <dl class="record">
-          <div><dt>ガードレール評価</dt><dd><b>107/107</b> <span class="u-quiet">フック形式ごと</span></dd></div>
+          <div><dt>ガードレール評価</dt><dd><b>112/112</b> <span class="u-quiet">フック形式ごと</span></dd></div>
           <div><dt>ライセンス</dt><dd><b>PolyForm NC</b> <span class="u-quiet">非商用なら無償</span></dd></div>
           <div><dt>最新版</dt><dd><b>v1.18.0</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
           <div><dt>移植アダプタ</dt><dd><b>32/32</b> <span class="u-quiet">Cursor と Codex</span></dd></div>
@@ -220,7 +220,7 @@
 
       <p class="note">下限はモデルに依存しません。ガードレールはシェルスクリプトと終了コードなので、全エージェントを
         Opus から Haiku に替えても安全性の結果はバイト単位で同一です。<code>python eval/guardrail_eval.py</code>
-        がそれを示します。フック形式ごとに 107/107、両形式で 214/214。</p>
+        がそれを示します。フック形式ごとに 112/112、両形式で 224/224。</p>
     </div>
   </section>
 
@@ -1173,7 +1173,7 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
         それがこの設計の要点で、下限はシェルスクリプトと終了コードによって強制されるため、どのモデルが
         動かしているかに依存しません。安いモデルで変わるのは、書かれるコードの質とレビューの深さ、
         すなわち上限であり、この評価はそれを測っていません。</p>
-      <p class="src">フック形式ごとに 107/107 - ブロック必須 40 件、許可必須 67 件。
+      <p class="src">フック形式ごとに 112/112 - ブロック必須 40 件、許可必須 67 件。
         <code>py -3.13 eval/guardrail_eval.py</code> で自分で再実行できます</p>
     </div>
   </section>
