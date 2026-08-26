@@ -28,6 +28,14 @@ catalogue by category. The landing page stops breaking lines with room to spare,
 list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
 and gains Claude Code, Codex and Cursor marks.
 
+## v1.19.1
+
+`harness-view serve` now starts on Windows machines whose default port sits in a Hyper-V/WSL
+reserved range. In the viewer, reading and editing a file share one box instead of two stacked
+frames with empty space between them, controls that do not apply to a repository say so rather than
+disappearing, long dialog lists use the height they are given, the completion popup lists its own
+triggers, and the header carries a name and a mark.
+
 ## v1.19.0
 
 A bar for what earns a task - agreed with the user, few and large - enforced by a new blocking hook

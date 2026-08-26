@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.19.1] - 2026-08-24
+
+No change to the skill. The version moves with `harness-view`, which fixes a `serve` that could not
+start on Windows and reworks the viewer's file panel, filters and dialogs.
+
 ## [1.19.0] - 2026-08-24
 
 ### Added
