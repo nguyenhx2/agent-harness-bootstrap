@@ -7,6 +7,35 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.19.1] - 2026-08-24
+
+### Fixed
+
+- **`serve` starts on Windows.** It bound one hardcoded port and gave up. Windows reserves bands of
+  the ephemeral range for Hyper-V and WSL, and a bind inside one fails with `os error 10013` - an
+  ACCESS error, not an in-use error - so the default 7420 failed out of the box on a normal Windows
+  11 machine, with a message that read like a permissions problem, and left nothing listening. It
+  now falls back through a candidate list and prints the port it took. The browser is opened AFTER
+  the bind, since the port asked for is not always the port bound.
+- **Reading and editing a file are one box.** They were two, each claiming `flex: 1 1 auto` with its
+  own minimum height, so an editor nobody had opened still reserved 140px and pushed the file's own
+  content below a band of empty space - and Edit then opened a second framed box under the first,
+  showing the same file twice. Now one box: the file's name, a Preview/Code switch and Edit floating
+  at its top right, and Edit swaps the body in place. The file loads on open.
+- **A control that does not apply says so.** A repository with no board simply had no `task` filter,
+  and the Master plan button removed itself, so one repo showed a control and another showed a gap.
+  Both now appear disabled, with "not available for this project" on hover.
+- **A long list uses the dialog it is in.** `tools (44)` scrolled inside a hardcoded 210px with
+  roughly 200px of dialog empty beneath it.
+- **The completion popup lists its own triggers** - `@` anything, `` ` `` a rule or agent, `/` a
+  command, `docs/` a file path - pinned, so the row explaining how to open the list is not itself
+  below the list it explains.
+
+### Changed
+
+- The header carries a mark, the name **Harness View**, and one line saying what the tool is for.
+  `harness-view` in bold monospace read as a command someone had pasted into the toolbar.
+
 ## [1.19.0] - 2026-08-24
 
 ### Added
