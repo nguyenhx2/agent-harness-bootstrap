@@ -559,8 +559,45 @@ fn same_origin(request: &Request, port: u16) -> Result<(), String> {
     Ok(())
 }
 
+/// Ports tried after the requested one, when that one cannot be bound.
+///
+/// Windows reserves whole bands of the ephemeral range for Hyper-V and WSL, and a bind inside one
+/// fails with "os error 10013" (an ACCESS error, not an in-use error). The default 7420 lands in
+/// such a band on a normal Windows 11 machine, so `harness-view serve` failed out of the box there
+/// with a message that read like a permissions problem and left nothing listening. Falling back is
+/// what makes the tool start; `netsh interface ipv4 show excludedportrange protocol=tcp` lists the
+/// bands if anyone needs to know why their preferred port was refused.
+const FALLBACK_PORTS: [u16; 5] = [7420, 8137, 8532, 9218, 41983];
+
+/// Binds the requested port, or the first fallback that is free. Returns the port actually bound so
+/// the caller opens the browser at the right URL rather than at the one it asked for.
+pub fn bind(preferred: u16) -> Result<(Server, u16), String> {
+    let mut tried: Vec<String> = Vec::new();
+    let mut candidates = vec![preferred];
+    candidates.extend(FALLBACK_PORTS.iter().copied().filter(|p| *p != preferred));
+    for p in candidates {
+        match Server::http(("127.0.0.1", p)) {
+            Ok(server) => {
+                if p != preferred {
+                    eprintln!("harness-view: port {preferred} was refused, using {p} instead");
+                }
+                return Ok((server, p));
+            }
+            Err(e) => tried.push(format!("{p} ({e})")),
+        }
+    }
+    Err(format!(
+        "no usable port. Tried: {}. On Windows, reserved ranges (Hyper-V/WSL) refuse a bind with          os error 10013 - `netsh interface ipv4 show excludedportrange protocol=tcp` lists them;          pass --port with one outside those ranges.",
+        tried.join(", ")
+    ))
+}
+
 pub fn serve(root: PathBuf, port: u16) -> Result<(), String> {
-    let server = Server::http(("127.0.0.1", port)).map_err(|e| e.to_string())?;
+    let (server, port) = bind(port)?;
+    serve_with(server, port, root)
+}
+
+pub fn serve_with(server: Server, port: u16, root: PathBuf) -> Result<(), String> {
     println!("harness-view: serving {} on http://127.0.0.1:{port}/", display_path(&root));
     // Starting here is legal (see main.rs), and the page says so too - but
     // someone who ran this from a terminal is looking at the terminal, and an

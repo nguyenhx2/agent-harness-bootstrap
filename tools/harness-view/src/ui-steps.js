@@ -1217,7 +1217,7 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepins-open .stepacts button { padding: 1px 6px; font-size: 11px; line-height: 1.5; gap: 4px; }
 .stepins-open .stepacts svg.ico { width: 12px; height: 12px; }
 .stepac { position: fixed; z-index: 60; min-width: 190px; max-width: 380px;
-  max-height: 208px; overflow-y: auto; background: var(--panel); color: var(--ink);
+  max-height: 248px; overflow-y: auto; background: var(--panel); color: var(--ink);
   border: 1px solid var(--line); border-radius: 7px; box-shadow: 0 6px 18px rgba(15,23,42,.18);
   font: inherit; font-size: 12px; padding: 3px; }
 .stepac-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 6px;
@@ -1227,6 +1227,15 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepac-row.on { background: #eef2ff; color: #1e1b4b; }
 .stepac-hint { padding: 3px 6px; font-size: 10px; color: var(--dim);
   border-top: 1px solid var(--line); margin-top: 2px; }
+/* sticky, so both hint rows stay on screen while the results scroll under them */
+.stepac-foot { position: sticky; bottom: -3px; background: var(--panel); margin: 0 -3px -3px;
+  padding: 0 3px 3px; }
+.stepac-foot .stepac-hint:first-child { margin-top: 0; }
+/* the second row says what OPENS the list; only the keys themselves are marked */
+.stepac-keys { margin-top: 0; padding-top: 3px; padding-bottom: 4px; }
+.stepac-key { font: 10px/1.4 ui-monospace, Consolas, monospace; font-weight: 700;
+  color: #1e1b4b; background: #eef2ff; border: 1px solid #c7d2fe;
+  border-radius: 4px; padding: 0 4px; }
 .stepac-row .k.k-agent { color: #4338ca; } .stepac-row .k.k-rule { color: #b45309; }
 .stepac-row .k.k-command { color: #047857; } .stepac-row .k.k-skill { color: #7e22ce; }
 .stepac-row .k.k-hook { color: #a16207; } .stepac-row .k.k-script { color: #0f766e; }
@@ -1495,10 +1504,33 @@ function paintAc() {
     row.addEventListener("mousedown", ev => { ev.preventDefault(); ac.at = i; acceptAc(); });
     ac.box.appendChild(row);
   });
+  // The hints are PINNED. They used to be ordinary last children of a box that
+  // scrolls as a whole, so the row explaining how to open the list was itself
+  // only reachable by scrolling past the list it explains.
+  const foot = doc.createElement("div");
+  foot.className = "stepac-foot";
   const hint = doc.createElement("div");
   hint.className = "stepac-hint";
   hint.textContent = "up/down to choose - enter or tab to insert - esc to dismiss";
-  ac.box.appendChild(hint);
+  foot.appendChild(hint);
+  // What OPENS this list, spelled out. The four openings are discoverable only
+  // by already knowing them: `@` fires on its own, but the other three ask the
+  // author to know the kind of thing they are citing before they can cite it -
+  // which is fine once you know the harness and useless before you do.
+  const keys = doc.createElement("div");
+  keys.className = "stepac-hint stepac-keys";
+  const opens = [["@", "anything"], ["`", "a rule or agent"],
+                 ["/", "a command"], ["docs/", "a file path"]];
+  opens.forEach(([k, what], idx) => {
+    if (idx) keys.appendChild(doc.createTextNode("  "));
+    const kbd = doc.createElement("b");
+    kbd.className = "stepac-key";
+    kbd.textContent = k;
+    keys.appendChild(kbd);
+    keys.appendChild(doc.createTextNode(" " + what));
+  });
+  foot.appendChild(keys);
+  ac.box.appendChild(foot);
 }
 
 /// Anchored to the textarea, not to the caret's pixel position: a mirror-div

@@ -616,7 +616,9 @@ const AG_KINDS = {
 };
 
 function agReferenceBody(reference, vendorId, ctx) {
-  const host = agEl("div");
+  const host = agEl("div", { display: "flex", flexDirection: "column",
+                             flex: "1 1 auto", minHeight: "0" });
+  host.className = "ag-refbody";
   const vendor = ((reference && reference.vendors) || {})[vendorId] ||
     { models: [], tools: [], efforts: [] };
 
@@ -648,7 +650,15 @@ function agReferenceBody(reference, vendorId, ctx) {
     h.append(agEl("span", { flex: "1 1 auto" }));
     h.append(agBtn("edit", "Add " + kind, () => agRowIntent(ctx, "add", { kind: kind })));
     host.append(h);
-    const list = agEl("div", { border: "1px solid var(--line)", borderRadius: "8px", maxHeight: "210px", overflowY: "auto" });
+    // A short bucket stays its own size; a long one takes the height the dialog
+    // has left, so `tools (44)` reaches the bottom edge instead of scrolling
+    // inside 210px with empty dialog underneath it.
+    const grow = entries.length > 8;
+    const list = agEl("div", { border: "1px solid var(--line)", borderRadius: "8px",
+                               overflowY: "auto",
+                               flex: grow ? "1 1 auto" : "0 0 auto",
+                               minHeight: grow ? "150px" : "0",
+                               maxHeight: grow ? "none" : "230px" });
     entries.forEach((e, i) => {
       const row = agEl("div", {
         display: "grid", gridTemplateColumns: "1fr auto", gap: "8px", alignItems: "start",
@@ -790,6 +800,7 @@ async function agOpenReference(root, vendorId) {
       title: "Models and tools",
       icon: "tools",
       wide: true,
+      fill: true,
       body: [
         "The shipped list is seed data. Your corrections are stored in this repository at " +
         "`.claude/state/references.json` and merged over it, so upgrading the skill will not lose " +
