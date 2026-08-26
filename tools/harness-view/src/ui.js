@@ -377,7 +377,10 @@ const ui = (() => {
       dlg.append(top);
 
       const bodyEl = document.createElement("div");
-      bodyEl.className = "ui-dlg-body";
+      // `fill`: the body becomes a flex column that hands its leftover height to the
+      // content, instead of one scrolling block that stops wherever its children end
+      // and leaves the rest of the dialog empty.
+      bodyEl.className = "ui-dlg-body" + (spec.fill ? " fill" : "");
       putBody(bodyEl, spec.body);
 
       // Field values are read straight off the inputs at resolve time. Nothing
@@ -711,11 +714,31 @@ function nodeLabel(n) {
 }
 function meta(n, k) { return (n.meta || {})[k]; }
 
+// Every type this viewer knows, in the order the legend reads best - not just
+// the ones this repository happens to have. A repo with no board simply has no
+// `task` nodes, and dropping the filter entirely made the harness look like it
+// had no such concept. Showing it DISABLED, with a reason on hover, says "this
+// exists, your project does not use it" instead of silently saying nothing.
+const LEGEND_ORDER = ["instruction", "agent", "rule", "command", "hook", "gate",
+                      "human", "settings", "script", "skill", "module", "task",
+                      "doc", "state"];
+
 function buildLegend() {
   const el = document.getElementById("legend"); el.textContent = "";
-  for (const t of types()) {
+  const present = new Set(types());
+  const known = new Set(LEGEND_ORDER);
+  // anything the scanner emits that this list has not heard of still gets a row
+  const order = LEGEND_ORDER.concat(types().filter(t => !known.has(t)));
+  for (const t of order) {
+    const here = present.has(t);
     const l = document.createElement("label");
-    const c = document.createElement("input"); c.type = "checkbox"; c.checked = !hidden.has(t);
+    if (!here) {
+      l.className = "off";
+      l.title = "not available for this project";
+    }
+    const c = document.createElement("input"); c.type = "checkbox";
+    c.checked = here && !hidden.has(t);
+    c.disabled = !here;
     c.onchange = () => { c.checked ? hidden.delete(t) : hidden.add(t); localStorage.setItem("hv-hidden", JSON.stringify([...hidden])); layout(); fitView(graph.nodes.filter(visible)); draw(); };
     const i = document.createElement("i"); i.style.background = COLORS[t] || "#94a3b8";
     l.append(c, i, t); el.append(l);
@@ -1598,69 +1621,168 @@ function fileEditDirty() {
   return !!fileEdit && fileEdit.ta && fileEdit.ta.value !== fileEdit.original;
 }
 
-function buildFileEditor(node) {
+// ONE box for reading AND editing a file.
+//
+// It used to be two: a preview box and a separate editor box, each claiming
+// `flex: 1 1 auto` with its own min-height. So an editor nobody had opened still
+// reserved 140px of the panel, and the content it was meant to sit beside got
+// pushed below a band of empty space. Clicking Edit then opened a SECOND framed
+// box under the first, showing the same file twice.
+//
+// Reading and editing are the same file, so they are the same box. The actions
+// float at its top right - a Preview/Code switch and Edit - and Edit swaps the
+// body in place instead of opening another frame.
+function buildFileView(n) {
   const box = document.createElement("div");
-  box.className = "editbox";
-  const bar = document.createElement("div");
-  bar.className = "md-bar";
-  const open = document.createElement("button");
-  open.className = "prev-btn";
-  setBtn(open, "edit", "Edit file");
-  bar.append(open);
-  box.append(bar);
-  const host = document.createElement("div");
-  box.append(host);
+  box.className = "fileview";
 
-  open.onclick = () => withBusy("reading file", open, async () => {
-    if (fileEdit && fileEdit.node === node.id) {
-      // closing: the unsaved-changes question belongs here too, because the
-      // buffer is the only place the edit exists
-      if (fileEditDirty()) {
-        const answer = await ui.modal({
-          title: "Close without saving?",
-          icon: "alert",
-          tone: "warn",
-          body: "There are unsaved changes to `" + fileEdit.rel + "`. Closing the editor loses them.",
-          actions: [
-            { id: "stay", label: "Keep editing", icon: "x", kind: "cancel", default: true },
-            { id: "go", label: "Discard and close", icon: "trash", kind: "danger" },
-          ],
-        });
-        if (!answer) return;
-      }
-      fileEdit = null;
-      host.textContent = "";
-      setBtn(open, "edit", "Edit file");
-      fit();
+  const bar = document.createElement("div");
+  bar.className = "fv-bar";
+  const name = document.createElement("span");
+  name.className = "fv-name";
+  name.textContent = n.file;
+  name.title = n.file;
+  const actions = document.createElement("div");
+  actions.className = "fv-actions";
+  bar.append(name, actions);
+
+  const body = document.createElement("div");
+  body.className = "fv-body";
+  box.append(bar, body);
+
+  let text = null, err = null, editing = false;
+
+  // Preview | Code as one switch, not two separate icon buttons: the choice is
+  // between two views of one file, and a segmented control shows which is on.
+  const seg = document.createElement("div");
+  seg.className = "fv-seg";
+  seg.setAttribute("role", "group");
+  seg.setAttribute("aria-label", "How to show this file");
+  const segBtns = {};
+  for (const mode of ["formatted", "raw"]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "fv-seg-btn";
+    b.textContent = mode === "formatted" ? "Preview" : "Code";
+    b.onclick = () => {
+      if (editing) return;
+      localStorage.setItem("hv-md-side", mode);
+      paintSeg(); paint();
+    };
+    segBtns[mode] = b;
+    seg.append(b);
+  }
+  const paintSeg = () => {
+    const raw = mdMode("hv-md-side") === "raw";
+    segBtns.formatted.classList.toggle("on", !raw);
+    segBtns.raw.classList.toggle("on", raw);
+    segBtns.formatted.setAttribute("aria-pressed", String(!raw));
+    segBtns.raw.setAttribute("aria-pressed", String(raw));
+    const what = { json: "JSON", yaml: "YAML", md: "markdown" }[fileKind(n.file)] || "file";
+    segBtns.formatted.title = "Show formatted " + what;
+    segBtns.raw.title = "Show the raw file, exactly as it is on disk";
+    // While editing, the buffer IS the raw file; switching views under an unsaved
+    // edit would either discard it or show something that is not what is loaded.
+    for (const k of Object.keys(segBtns)) {
+      segBtns[k].disabled = editing;
+      segBtns[k].title = editing ? "Close the editor to switch views" : segBtns[k].title;
+    }
+  };
+
+  const paint = () => {
+    if (editing) return;
+    body.textContent = "";
+    if (err !== null) {
+      body.className = "fv-body";
+      const pre = document.createElement("pre");
+      pre.className = "preview";
+      pre.textContent = err;
+      body.append(pre);
       return;
     }
-    let text = null, err = null;
+    if (text === null) return;
+    if (mdMode("hv-md-side") === "raw") { body.className = "fv-body"; renderRaw(body, text); }
+    else {
+      // JSON and YAML bring their own frame (.code), so only markdown wants the
+      // .md box - nesting a dark code block inside it reads as a box in a box.
+      const kind = renderFormatted(body, text, n.file);
+      body.className = kind === "md" ? "fv-body md" : "fv-body";
+    }
+  };
+
+  const loadText = async () => {
+    if (text !== null || err !== null) return;
     try {
-      const u = "file?path=" + encodeURIComponent(node.file) +
+      const u = "file?path=" + encodeURIComponent(n.file) +
         (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
       const r = await fetch(u);
       const t = await r.text();
-      if (r.ok) text = t; else err = "could not read " + node.file + ": " + t;
-    } catch (e) { err = "could not read " + node.file + ": " + e; }
-    host.textContent = "";
-    if (err !== null) {
-      const p = document.createElement("div");
-      p.className = "lbl"; p.textContent = err; host.append(p);
-      return;
-    }
-    // `original` is kept in the form the TEXTAREA will hold it, which is LF:
-    // assigning to .value normalizes every CRLF away, so keeping the file's own
-    // bytes here would make a CRLF file compare unequal to itself and report
-    // itself unsaved forever, with Save enabled before anyone typed anything.
-    // Losing the line endings costs nothing, because the server re-applies the
-    // file's own on write - that is what match_eol is for.
-    fileEdit = { node: node.id, key: node.edit.key, name: node.edit.name || "",
-                 rel: node.file, original: text.replace(/\r\n/g, "\n"), ta: null };
-    paintFileEditor(host);
-    setBtn(open, "eyeoff", "Close editor");
-    fit();
-  });
-  if (reopenEdit === node.id) { reopenEdit = null; setTimeout(() => open.click(), 0); }
+      if (r.ok) text = t; else err = "could not read file: " + t;
+    } catch (e) { err = "could not read file: " + e; }
+  };
+
+  actions.append(seg);
+
+  // Editable only when the scanner said so, which it says only for the fixed set
+  // in instruction::FILES. The node carries the key and the bare name the write
+  // path takes; the page never composes a path and could not send one if it
+  // tried, because POST /instruction does not read one.
+  if (n.edit && n.edit.key) {
+    const edit = document.createElement("button");
+    edit.className = "fv-edit";
+    setBtn(edit, "edit", "Edit");
+    edit.onclick = () => withBusy("reading file", edit, async () => {
+      if (editing) {
+        // the unsaved-changes question belongs here: the buffer is the only
+        // place the edit exists
+        if (fileEditDirty()) {
+          const answer = await ui.modal({
+            title: "Close without saving?",
+            icon: "alert",
+            tone: "warn",
+            body: "There are unsaved changes to `" + fileEdit.rel + "`. Closing the editor loses them.",
+            actions: [
+              { id: "stay", label: "Keep editing", icon: "x", kind: "cancel", default: true },
+              { id: "go", label: "Discard and close", icon: "trash", kind: "danger" },
+            ],
+          });
+          if (!answer) return;
+        }
+        fileEdit = null;
+        editing = false;
+        setBtn(edit, "edit", "Edit");
+        paintSeg();
+        paint();
+        fit();
+        return;
+      }
+      await loadText();
+      if (err !== null) { paint(); return; }
+      // `original` is kept in the form the TEXTAREA will hold it, which is LF:
+      // assigning to .value normalizes every CRLF away, so keeping the file's own
+      // bytes here would make a CRLF file compare unequal to itself and report
+      // itself unsaved forever, with Save enabled before anyone typed anything.
+      fileEdit = { node: n.id, key: n.edit.key, name: n.edit.name || "",
+                   rel: n.file, original: text.replace(/\r\n/g, "\n"), ta: null };
+      editing = true;
+      body.className = "fv-body editing";
+      paintFileEditor(body);
+      setBtn(edit, "eyeoff", "Close editor");
+      paintSeg();
+      fit();
+    });
+    actions.append(edit);
+    // A save reloads the graph, which rebuilds the panel and so closes the
+    // editor. This puts the reader back where they were.
+    if (reopenEdit === n.id) { reopenEdit = null; setTimeout(() => edit.click(), 0); }
+  }
+
+  paintSeg();
+  // Show the file straight away. Making the reader click "Preview file" first
+  // bought nothing: they opened the node to see it, and the unopened box was the
+  // empty space this layout was complained about for.
+  withBusy("reading file", null, async () => { await loadText(); paint(); fit(); });
+
   return box;
 }
 
@@ -1942,61 +2064,7 @@ function select(n, force) {
   // instruction::FILES. The node carries the key and the bare name the write
   // path takes; the page never composes a path and could not send one if it
   // tried, because POST /instruction does not read one.
-  if (n.edit && n.edit.key && n.file) d.append(buildFileEditor(n));
-
-  if (n.file) {
-    const bar = document.createElement("div");
-    bar.className = "md-bar";
-    const btn = document.createElement("button");
-    btn.className = "prev-btn";
-    setBtn(btn, "eye", "Preview file");
-    const host = document.createElement("div");
-    host.className = "filehost";
-    host.style.display = "none";
-    let text = null, err = null;
-    const paint = () => {
-      host.textContent = "";
-      if (err !== null) { host.className = "filehost"; const p = document.createElement("pre"); p.className = "preview"; p.textContent = err; host.append(p); return; }
-      if (text === null) return;
-      // the .md frame belongs to formatted output only; raw already ships its
-      // own <pre> and would otherwise sit in a box inside a box
-      // keep `filehost`: it is what makes the preview claim the rest of the
-      // panel. Overwriting className here silently dropped that, and the box
-      // only looked right because the file happened to be long enough.
-      if (mdMode("hv-md-side") === "raw") { host.className = "filehost"; renderRaw(host, text); }
-      else {
-        // JSON and YAML bring their own frame (.code), so only the markdown
-        // path wants the .md box: nesting a dark code block inside it reads as
-        // a box in a box.
-        const kind = renderFormatted(host, text, n.file);
-        host.className = kind === "md" ? "filehost md" : "filehost";
-      }
-    };
-    const modeBtn = makeModeButton("hv-md-side", paint, n.file);
-    modeBtn.style.display = "none";
-    btn.onclick = () => withBusy("reading file", btn, async () => {
-      if (host.style.display === "block") {
-        host.style.display = "none"; modeBtn.style.display = "none";
-        setBtn(btn, "eye", "Preview file"); return;
-      }
-      if (text === null && err === null) {
-        try {
-          const u = "file?path=" + encodeURIComponent(n.file) + (currentRoot ? "&root=" + encodeURIComponent(currentRoot) : "");
-          const r = await fetch(u);
-          const t = await r.text();
-          if (r.ok) text = t; else err = "could not read file: " + t;
-        } catch (e) { err = "could not read file: " + e; }
-      }
-      paint();
-      host.style.display = "block";
-      if (err === null) modeBtn.style.display = "";
-      setBtn(btn, "eyeoff", "Hide file");
-    });
-    bar.append(btn, modeBtn);
-    head.append(bar);
-    d.append(host);
-  }
-
+  if (n.file) d.append(buildFileView(n));
   // Agents are in this list now. Parking a seat quarantines its file exactly
   // like a rule's, and the seats the harness structurally assumes - the sole
   // spawner, the review gates - are HARD-protected server-side rather than
@@ -2104,7 +2172,13 @@ async function checkPlan() {
     });
   } catch (e) { planText = null; }
   const btn = document.getElementById("btn-plan");
-  btn.style.display = planText === null ? "none" : "";
+  // Disabled with a reason rather than hidden: a control that vanishes teaches
+  // nobody that the harness HAS a master plan, it just leaves a gap where one
+  // repo shows a button and another does not.
+  const none = planText === null;
+  btn.disabled = none;
+  btn.title = none ? "not available for this project - no docs/tasks/master-plan.md"
+                   : "The board, as the master plan file states it";
   if (planText === null && view === "plan") { view = "flow"; localStorage.setItem("hv-view", view); }
 }
 // Raw mode: the file exactly as it sits on disk, frontmatter included, placed

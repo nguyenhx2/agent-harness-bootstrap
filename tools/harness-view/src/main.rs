@@ -99,15 +99,29 @@ fn main() {
             Err(e) => { eprintln!("harness-view: {e}"); std::process::exit(2); }
         },
         "serve" => {
-            if launched_bare {
-                open_browser(port);
-            }
-            if let Err(e) = serve::serve(path, port) {
-                eprintln!("harness-view: serve failed: {e}");
-                if launched_bare {
-                    pause("Press Enter to close");
+            // Bind BEFORE opening the browser. The port asked for is not always the port bound -
+            // a reserved or busy port falls back to the next candidate - and opening the browser
+            // first pointed it at a URL nothing was ever going to answer.
+            match serve::bind(port) {
+                Ok((server, bound)) => {
+                    if launched_bare {
+                        open_browser(bound);
+                    }
+                    if let Err(e) = serve::serve_with(server, bound, path) {
+                        eprintln!("harness-view: serve failed: {e}");
+                        if launched_bare {
+                            pause("Press Enter to close");
+                        }
+                        exit(1);
+                    }
                 }
-                exit(1);
+                Err(e) => {
+                    eprintln!("harness-view: serve failed: {e}");
+                    if launched_bare {
+                        pause("Press Enter to close");
+                    }
+                    exit(1);
+                }
             }
         }
         "watch" => {
