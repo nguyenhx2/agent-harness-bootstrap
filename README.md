@@ -574,7 +574,7 @@ public institutions.
 **Commercial use requires a paid license.** That includes using this software in the
 development or operation of a product or service you sell, use inside a for-profit
 company, consultancy work for a client, and redistribution as part of a commercial
-offering. To obtain one, contact **nguyenhx1@gmail.com**.
+offering. To obtain one, contact **Hoàng Xuân Nguyên** (`nguyenhx2`) at **nguyenhx1@gmail.com**.
 
 The harness files scaffolded into *your* repository are yours - what needs a commercial
 license is running or redistributing *this software* commercially. Full terms and the

@@ -1,6 +1,6 @@
 # PolyForm Noncommercial License 1.0.0
 
-Required Notice: Copyright (c) 2026 nguyenhx2 (https://github.com/nguyenhx2)
+Required Notice: Copyright (c) 2026 Hoàng Xuân Nguyên (nguyenhx2, https://github.com/nguyenhx2)
 
 <https://polyformproject.org/licenses/noncommercial/1.0.0>
 
