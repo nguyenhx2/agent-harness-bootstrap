@@ -1,5 +1,6 @@
 # guard-main-commit.ps1
 # Event: PreToolUse   Matcher: Bash
+# Enforces: .claude/rules/conventional-commits.md
 # Blocks `git commit` / `git push` while the EFFECTIVE branch is {{DEFAULT_BRANCH}} or master.
 # The effective branch is resolved from the command's actual target dir (a leading `cd <dir>` or
 # `git -C <dir>`), falling back to the payload's `cwd`, so the hook does not misfire on git

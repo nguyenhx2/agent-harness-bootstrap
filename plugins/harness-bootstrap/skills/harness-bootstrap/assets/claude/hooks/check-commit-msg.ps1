@@ -1,5 +1,6 @@
 # check-commit-msg.ps1
 # Event: PreToolUse   Matcher: Bash
+# Enforces: .claude/rules/conventional-commits.md
 # Validates the subject line of `git commit -m "..."` against .claude/rules/conventional-commits.md.
 # Skips editor-flow commits (no -m), `--amend --no-edit`, and Merge/Revert subjects.
 #

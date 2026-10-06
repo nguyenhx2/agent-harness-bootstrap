@@ -43,7 +43,9 @@ extra keys; anything that writes it must preserve the guarantees below.
   unquoted - surrounding single/double quotes from the frontmatter are stripped), `description`?
 - `command`: `description`? only (same rule as the agent one)
 - `hook`: `registered` (bool - appears in settings.json hook arrays), `event`?, `matcher`?,
-  `blocking`? (true when `event == "PreToolUse"`)
+  `blocking`? (true when `event == "PreToolUse"`), `library`? (true when the hook is not
+  registered but a registered hook sources it, like a shared `_lib.sh`; it is a helper, not a
+  hook that was switched off)
 - `task`: `title`? `status`? `fr`? `owner`? `deps`? `priority`? `phase`? - the board fields from
   the task frontmatter. A trailing YAML comment is stripped, so the template's
   `status: Done # Active | Blocked | Pending | Done` reads as `Done`.
@@ -53,20 +55,59 @@ extra keys; anything that writes it must preserve the guarantees below.
 
 Inventory rules:
 
-- **Scripts**: EVERY `*.py` under `.claude/scripts/` is a node, referenced by a command or not.
+- **Scripts**: EVERY `*.py`, `*.sh` and `*.ps1` under `.claude/scripts/` is a node, referenced
+  or not. One node per name; when two flavors share a name the `.py` wins, then the `.sh`. The
+  label is the file name.
   Nodes are strictly the on-disk inventory: a script referenced by a command but missing on
   disk gets NO node - the `runs` edge is kept dangling on purpose, and the HTML viewer renders
   the missing endpoint as a greyed "(missing)" stub so the broken reference is diagnosable.
-- **Skills**: EVERY `.claude/skills/<slug>/SKILL.md` is a node. A `uses` edge is drawn only
-  from a DECLARATION LINE in a seat's body (a line naming skills, such as `Skills available:`
-  or `Skills to load when relevant:`), never from a bare mention of the skill's name. That
-  distinction is load-bearing: five agents in one real harness contain the word
-  "performance" ("performance budgets") while the skill of that name is wired to no seat,
-  so substring matching would invent five wires. Only INSTALLED skills get an edge; a seat
-  declaring a skill that is not installed is reported by `harness-view assess`
+- **Skills**: EVERY `.claude/skills/<slug>/SKILL.md` is a node. Only INSTALLED skills get an
+  edge; a seat declaring a skill that is not installed is reported by `harness-view assess`
   (`skill-wire-missing`), which reads the seat files directly.
 - **Tasks**: EVERY `TASK-*.md` under `docs/tasks/**` is a node; `references` edges are added
   only where the task body names a module path.
+
+## Content references
+
+Most edges are read out of the files themselves. Every agent, rule, command, hook, skill
+(`SKILL.md`) and instruction file is scanned for references to the other harness items, and
+each reference becomes an edge. There is no table of hook or rule names inside the scanner:
+a hook enforces the rule its own text names, not the rule a list says it should.
+
+A name counts only when it is written as a name on purpose:
+
+| Form | Example | Resolves to |
+|---|---|---|
+| a harness path | `.claude/rules/layering.md`, `.claude/skills/docs-sync/SKILL.md`, `.claude/scripts/check-env.sh` | that rule, skill, script, agent, command or hook |
+| a bare file name, as the whole word | `. "$(dirname "$0")/_lib.sh"` | a hook or script of that name |
+| a slash form | `/review` | a command |
+| a code or bold span, exact | `` `endpoint-scaffold` ``, `**docs-sync**` | an agent, skill, hook or rule |
+| a bare hyphenated slug | `security-privacy-reviewer` | an agent, skill or hook |
+| frontmatter `skills:` | `skills: [pdf, docx]` on an agent | each listed skill |
+
+A single dictionary word in prose never counts. That rule is load-bearing: five agents in
+one real harness contain the word "performance" ("performance budgets") while the skill of
+that name is wired to no seat, so word matching would invent five wires. A path is a harness
+path only when its directory sits right after `.claude/` or opens the word, so
+`.cursor/rules/x.md` and a skill's private `scripts/` folder resolve to nothing. A bare name
+resolves to one kind, agent before skill before hook (before rule, in a span); commands are
+reached only by `/name` or a path, because a skill-backed command often shares its skill's
+name. A reference resolves only to a node that exists, and a file never references itself.
+
+The edge type is named by what the two ends are:
+
+| From | To | Edge |
+|---|---|---|
+| hook | rule | `enforces` |
+| hook | hook | `sources` |
+| any | script | `runs` |
+| hook | agent, skill, command | `refers` |
+| instruction | agent | `briefs` |
+| any | rule | `cites` |
+| any | skill | `uses` |
+| rule | agent | `refers` |
+| command, agent, skill | agent | `delegates` |
+| any | command | `invokes` |
 
 ## Edges
 
@@ -80,15 +121,22 @@ Inventory rules:
 |---|---|---|
 | `gates` | an unconditional rule constrains an agent | rule -> agent |
 | `triggers` | settings.json registration fires a hook | settings -> hook |
-| `enforces` | a hook mechanically enforces a rule | hook -> rule |
+| `enforces` | a hook names the rule it enforces | hook -> rule |
 | `reviews` | a review seat gates the merge request | agent -> gate:merge-request |
 | `escalates` | the gate hands the decision to a person | gate:merge-request -> human |
-| `invokes` | a human runs a slash command | human -> command |
-| `runs` | a command executes a script - one edge per distinct `.claude/scripts/<name>.py` referenced in the command body | command -> script |
+| `invokes` | a human runs a slash command, or a file points at one | human -> command, any -> command |
+| `runs` | a file executes a script; from a command, every `.claude/scripts/<name>.py` it references counts even when the file is missing | any -> script |
 | `spawns` | the orchestrator can dispatch a seat | agent:orchestrator -> agent |
 | `owns` | a dev agent owns a code module, or owns a task (its `owner:` frontmatter) | agent -> module, agent -> task |
 | `references` | module imports module, or a task names a module | module -> module, task -> module |
-| `uses` | a seat declares a wired skill, per `/skill-wire` | agent -> skill |
+| `uses` | a file names a skill it reaches for | agent, command, rule, skill, instruction -> skill |
+| `cites` | a file points at a rule | any -> rule |
+| `briefs` | an instruction file names a seat | instruction -> agent |
+| `imports` | an instruction file `@`-imports another | instruction -> instruction |
+| `routes` | a routing-tier row names the seat that runs it | instruction -> agent |
+| `delegates` | a file hands work to a seat (a command starts it, an agent passes to it) | command, agent, skill -> agent |
+| `sources` | a hook loads a shared helper | hook -> hook |
+| `refers` | any other named reference | hook -> any, rule -> agent |
 
 ## Inputs the scanner merges
 

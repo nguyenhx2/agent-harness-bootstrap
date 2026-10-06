@@ -137,3 +137,84 @@ fn scan_is_deterministic() {
     assert_eq!(a, b, "two scans of the same tree must be byte-identical");
     assert!(!a.contains("generated"), "no timestamps or run metadata allowed");
 }
+
+// ------------------------------------------------- references read from content
+
+fn node<'a>(g: &'a Value, id: &str) -> &'a Value {
+    g["nodes"].as_array().unwrap().iter().find(|n| n["id"] == id).unwrap()
+}
+
+#[test]
+fn references_written_in_the_files_become_edges() {
+    let g = scan::scan(&fixture());
+    // an agent's table: a rule by path, a command by its slash form
+    assert!(has_edge(&g, "agent:app-dev", "rule:testing", "cites"));
+    assert!(has_edge(&g, "agent:app-dev", "cmd:review-changes", "invokes"));
+    // a hyphenated seat name in prose is a name
+    assert!(has_edge(&g, "agent:app-dev", "agent:code-reviewer", "delegates"));
+    // a command naming a command and a seat; a seat naming a non-Python script
+    assert!(has_edge(&g, "cmd:deploy", "cmd:review-changes", "invokes"));
+    assert!(has_edge(&g, "cmd:deploy", "agent:code-reviewer", "delegates"));
+    assert!(has_edge(&g, "agent:app-dev", "script:check-env", "runs"));
+    assert!(has_edge(&g, "cmd:deploy", "rule:agent-guardrails", "cites"));
+    // a hook citing its rule in its header, and sourcing the shared helper
+    assert!(has_edge(&g, "hook:protect-secrets", "rule:agent-guardrails", "enforces"));
+    assert!(has_edge(&g, "hook:protect-secrets", "hook:_lib", "sources"));
+}
+
+#[test]
+fn a_single_word_in_prose_is_not_a_reference() {
+    // app-dev says "the testing rule" and "the word testing" in prose. Only the
+    // backticked path is a reference, and it is counted once, as one edge.
+    let g = scan::scan(&fixture());
+    let n = g["edges"].as_array().unwrap().iter()
+        .filter(|e| e["from"] == "agent:app-dev" && e["to"] == "rule:testing").count();
+    assert_eq!(n, 1);
+    // no static table: a hook that names no rule enforces none
+    assert!(!g["edges"].as_array().unwrap().iter()
+        .any(|e| e["from"] == "hook:specs-reminder" && e["type"] == "enforces"));
+}
+
+#[test]
+fn a_sourced_unregistered_hook_is_a_library() {
+    let g = scan::scan(&fixture());
+    let lib = node(&g, "hook:_lib");
+    assert_eq!(lib["meta"]["registered"], false);
+    assert_eq!(lib["meta"]["library"], true);
+    // a registered hook is never a library, even when something sources it
+    assert!(node(&g, "hook:protect-secrets")["meta"].get("library").is_none());
+}
+
+#[test]
+fn shell_scripts_are_script_nodes() {
+    let g = scan::scan(&fixture());
+    assert_eq!(node(&g, "script:check-env")["label"], "check-env.sh");
+    assert_eq!(node(&g, "script:check-env")["file"], ".claude/scripts/check-env.sh");
+}
+
+#[test]
+fn paths_outside_the_harness_tree_are_not_harness_references() {
+    let d = std::env::temp_dir().join(format!("hv-refs-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    for (p, body) in [
+        (".claude/rules/style.md", "---\ndescription: x\n---\nx\n"),
+        (".claude/skills/lint/SKILL.md", "---\nname: lint\n---\nx\n"),
+        (".claude/scripts/build.py", "print()\n"),
+        (".claude/agents/dev.md",
+         "---\nname: dev\n---\nSee .cursor/rules/style.md and .claude/skills/other/scripts/build.py.\n\
+          Run the lint step, then **lint**.\n"),
+    ] {
+        let f = d.join(p);
+        std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+        std::fs::write(f, body).unwrap();
+    }
+    let g = scan::scan(&d);
+    let from_dev: Vec<_> = g["edges"].as_array().unwrap().iter()
+        .filter(|e| e["from"] == "agent:dev")
+        .map(|e| (e["to"].as_str().unwrap().to_string(), e["type"].as_str().unwrap().to_string()))
+        .collect();
+    // only the bold span names the skill; the other tree's style.md and the
+    // skill-private build.py are not this harness's rule and script
+    assert_eq!(from_dev, vec![("skill:lint".to_string(), "uses".to_string())], "{from_dev:?}");
+    let _ = std::fs::remove_dir_all(&d);
+}

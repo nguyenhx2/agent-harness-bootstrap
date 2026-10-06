@@ -1154,6 +1154,9 @@ function draw() {
 function nodeBadge(n) {
   if (n.type === "hook") {
     const ev = meta(n, "event");
+    // Unregistered but sourced by a hook that is: a shared helper such as
+    // _lib.sh. Badging it OFF said a working part of the harness was switched off.
+    if (!ev && meta(n, "library")) return { text: "LIB", bg: "#e0e7ff", fg: "#3730a3" };
     if (!ev) return { text: "OFF", bg: "#fecaca", fg: "#7f1d1d" };
     const text = EVENT_BADGE[ev] || ev.slice(0, 5).toUpperCase();
     return meta(n, "blocking")

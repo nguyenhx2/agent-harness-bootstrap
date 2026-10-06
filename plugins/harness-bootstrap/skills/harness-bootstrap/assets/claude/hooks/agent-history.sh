@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # agent-history.sh
 # Event: SubagentStop   Matcher: * (every subagent)
+# Enforces: .claude/rules/task-tracking.md
 #
 # WHY SubagentStop AND NOT PostToolUse: an earlier version of this hook was registered as
 # PostToolUse with matcher "Task|Agent" and read .tool_input / .tool_response. That was wrong.

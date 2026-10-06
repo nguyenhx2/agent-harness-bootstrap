@@ -10,23 +10,11 @@
 //! of the thing being enforced.
 
 use serde_json::{json, Map, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
-/// hook name -> rule it enforces. This relationship exists only in prose inside
-/// the harness assets, so the graph carries it as a static table.
-const ENFORCES: &[(&str, &str)] = &[
-    ("agent-history", "task-tracking"),
-    ("check-commit-msg", "conventional-commits"),
-    ("guard-agent-scope", "agent-guardrails"),
-    ("guard-agent-spawn", "agent-guardrails"),
-    ("guard-main-commit", "conventional-commits"),
-    ("protect-adr", "docs-workflow"),
-    ("protect-repos", "security-privacy"),
-    ("protect-secrets", "security-privacy"),
-    ("specs-reminder", "docs-workflow"),
-];
+use crate::refs;
 
 const REVIEWERS: &[&str] = &[
     "code-reviewer",
@@ -258,6 +246,85 @@ fn disabled_entries(claude: &Path) -> std::collections::BTreeSet<String> {
         }
     }
     out
+}
+
+/// Edges read out of the files themselves: what each agent, rule, command,
+/// hook, skill and instruction file names. See `refs.rs` for what counts as a
+/// reference. Runs once every node exists, so a reference can only resolve to a
+/// node that is really there.
+fn content_edges(
+    root: &Path,
+    nodes: &mut BTreeMap<String, Value>,
+    edges: &mut Vec<(String, String, String, i64)>,
+) {
+    let mut inv = refs::Inventory::default();
+    for (id, n) in nodes.iter() {
+        let ty = n.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        let name = match id.split_once(':') {
+            Some((_, rest)) => rest.to_string(),
+            None => continue,
+        };
+        match ty {
+            "agent" => inv.agent.insert(name),
+            "skill" => inv.skill.insert(name),
+            "rule" => inv.rule.insert(name),
+            "command" => inv.command.insert(name),
+            "hook" => inv.hook.insert(name),
+            "script" => inv.script.insert(name),
+            _ => false,
+        };
+    }
+    let sources: Vec<(String, String, String)> = nodes
+        .values()
+        .filter_map(|n| {
+            let ty = n.get("type")?.as_str()?;
+            if !matches!(ty, "agent" | "rule" | "command" | "hook" | "skill" | "instruction") {
+                return None;
+            }
+            Some((
+                n.get("id")?.as_str()?.to_string(),
+                ty.to_string(),
+                n.get("file")?.as_str()?.to_string(),
+            ))
+        })
+        .collect();
+    for (id, kind, file) in &sources {
+        let text = fs::read_to_string(root.join(file)).unwrap_or_default();
+        for (to_kind, name) in refs::references(&text, &inv) {
+            let to = refs::id_for(to_kind, &name);
+            if &to == id {
+                continue;
+            }
+            edges.push((id.clone(), to, refs::edge_type(kind, to_kind).into(), 0));
+        }
+        // Claude Code's own subagent field: `skills:` in the frontmatter preloads
+        // those skills into the seat, which is a wire whatever the names look like.
+        if kind == "agent" {
+            if let Some(v) = frontmatter(&text).get("skills") {
+                for s in as_list(v) {
+                    if inv.skill.contains(&s) {
+                        edges.push((id.clone(), format!("skill:{s}"), "uses".into(), 0));
+                    }
+                }
+            }
+        }
+    }
+    // A hook nothing registers but another hook sources is a library, not a hook
+    // that was switched off. Say so, or the viewer badges a shared helper OFF.
+    let sourced: BTreeSet<String> = edges
+        .iter()
+        .filter(|e| e.2 == "sources")
+        .map(|e| e.1.clone())
+        .collect();
+    for id in sourced {
+        if let Some(Value::Object(n)) = nodes.get_mut(&id) {
+            if let Some(Value::Object(m)) = n.get_mut("meta") {
+                if m.get("registered") == Some(&Value::Bool(false)) {
+                    m.insert("library".into(), Value::Bool(true));
+                }
+            }
+        }
+    }
 }
 
 pub fn scan(root: &Path) -> Value {
@@ -493,29 +560,32 @@ pub fn scan(root: &Path) -> Value {
         }
     }
 
-    // --- scripts ---
-    let mut _script_count = 0usize;
+    // --- scripts: every .py, .sh and .ps1 under .claude/scripts/. One node per
+    // name; when two flavors share a name the .py wins, then the .sh. ---
     if let Ok(rd) = fs::read_dir(claude.join("scripts")) {
-        let mut names: Vec<String> = rd
+        let mut files: Vec<String> = rd
             .flatten()
-            .filter_map(|e| {
-                let p = e.path();
-                if p.extension().and_then(|x| x.to_str()) == Some("py") {
-                    p.file_stem().and_then(|x| x.to_str()).map(|s| s.to_string())
-                } else {
-                    None
-                }
-            })
+            .filter(|e| e.path().is_file())
+            .filter_map(|e| e.file_name().to_str().map(|s| s.to_string()))
             .collect();
-        names.sort();
-        for name in names {
+        files.sort();
+        let mut by_stem: BTreeMap<String, String> = BTreeMap::new();
+        for ext in ["py", "sh", "ps1"] {
+            for f in &files {
+                if let Some(stem) = f.strip_suffix(&format!(".{ext}")) {
+                    if !stem.is_empty() {
+                        by_stem.entry(stem.to_string()).or_insert_with(|| f.clone());
+                    }
+                }
+            }
+        }
+        for (name, fname) in by_stem {
             nodes.insert(
                 format!("script:{name}"),
                 json!({"id": format!("script:{name}"), "type": "script",
-                       "label": format!("{name}.py"), "disabled": false,
-                       "file": rel(root, &format!(".claude/scripts/{name}.py"))}),
+                       "label": fname, "disabled": false,
+                       "file": rel(root, &format!(".claude/scripts/{fname}"))}),
             );
-            _script_count += 1;
         }
     }
 
@@ -674,12 +744,6 @@ pub fn scan(root: &Path) -> Value {
     }
 
     // --- relationship edges over the collected nodes ---
-    for (hook, rule) in ENFORCES {
-        if nodes.contains_key(&format!("hook:{hook}")) && nodes.contains_key(&format!("rule:{rule}"))
-        {
-            edges.push((format!("hook:{hook}"), format!("rule:{rule}"), "enforces".into(), 0));
-        }
-    }
     for rule_id in &gating_rules {
         for agent in &agent_names {
             edges.push((rule_id.clone(), format!("agent:{agent}"), "gates".into(), 0));
@@ -855,6 +919,8 @@ pub fn scan(root: &Path) -> Value {
             }
         }
     }
+
+    content_edges(root, &mut nodes, &mut edges);
 
     if agent_names.iter().any(|a| a == "orchestrator") {
         for agent in &agent_names {

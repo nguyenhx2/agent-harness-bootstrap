@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # protect-secrets.sh
 # Event: PreToolUse   Matcher: Read|Edit|Write|Bash
+# Enforces: .claude/rules/security-privacy.md
 # Blocks three things:
 #   1. file access (Read/Edit/Write) to secret-bearing paths: .env* (except .env.example), key
 #      material (*.pem/*.key/*.pfx/*.p12), secrets?/ + credentials? dirs, service-account JSON, .npmrc/.pypirc/.netrc

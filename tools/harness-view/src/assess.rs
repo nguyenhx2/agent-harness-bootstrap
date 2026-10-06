@@ -343,7 +343,10 @@ fn check_hook_wiring(c: &Ctx, out: &mut Vec<Finding>) {
         let on_disk = ["sh", "ps1"]
             .iter()
             .any(|e| hooks_dir.join(format!("{name}.{e}")).is_file());
-        if !registered && on_disk && !Ctx::disabled(n) {
+        // A helper that registered hooks source (`_lib.sh`) is not meant to be
+        // registered; the scan marks it `library`.
+        let library = Ctx::meta(n, "library").and_then(|v| v.as_bool()) == Some(true);
+        if !registered && on_disk && !library && !Ctx::disabled(n) {
             out.push(Finding {
                 check: "hook-unregistered",
                 category: "Safety",
@@ -599,7 +602,7 @@ fn check_skill_wiring(c: &Ctx, out: &mut Vec<Finding>) {
             check: "skill-not-wired",
             category: "Traceability",
             sev: Sev::Low,
-            title: format!("skill `{label}` is installed but wired to no seat"),
+            title: format!("skill `{label}` is installed but nothing in the harness names it"),
             why: "An unwired skill still costs review and update attention while changing \
                   nothing about how the harness behaves.",
             node: Some(id.to_string()),

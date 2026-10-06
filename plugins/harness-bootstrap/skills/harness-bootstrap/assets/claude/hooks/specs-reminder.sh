@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # specs-reminder.sh
 # Event: PostToolUse   Matcher: Edit|Write
+# Enforces: .claude/rules/docs-workflow.md
 # Non-blocking. When a file under docs/specs/ (other than the revision-history file itself) is
 # edited, emits hookSpecificOutput.additionalContext reminding Claude to update the revision
 # history and sync the related PRD. Never blocks: always exit 0.
