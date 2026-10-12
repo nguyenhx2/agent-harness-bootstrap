@@ -18,7 +18,8 @@ Ask which dial to turn (AskUserQuestion, one batch), then apply only what was ch
 3. **Spawn allowlist** - add or remove types in `.claude/hooks/spawn-allowlist`. Warn before adding
    any write-capable type: it runs outside every roster budget.
 4. **Attempt cap and turn caps** - raise or lower `maxTurns` per seat and the attempt cap in
-   `task-control.md`. Lowering is free; raising gets a cost warning per `cost-model.md`.
+   `.claude/agents/orchestrator.md` (Supervise). Lowering is free; raising gets a cost warning: every
+   extra turn or attempt is billed in full.
 5. **Review gates** - {{#IF_SOLO_REVIEW}}tune how deep the merged `reviewer` pass goes on tasks that do not touch
    `{{PII_OR_DATA}}` paths{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}toggle whether `security-reviewer` runs on every task or only on tasks touching
    `{{PII_OR_DATA}}` paths{{/IF_SOLO_REVIEW}}. Removing the code-review gate entirely is refused; that is a different

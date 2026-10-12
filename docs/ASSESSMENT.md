@@ -8,7 +8,7 @@ backed by a file or a runnable script in this repo is marked as not delivered.
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
-| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 112 payloads (44 must-block, 68 must-allow) at it: 112/112 correct, 224/224 when both hook flavors (`sh` and `ps1`) run. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
+| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 122 payloads (50 must-block, 72 must-allow) at it: 122/122 correct, 244/244 when both hook flavors (`sh` and `ps1`) run. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
 | ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -45%, write path -80%). The read-path number moved from -54% to -45% this cycle because the skill grew real capability (tech-presets catalogue, wider skill sourcing, more intake coverage) faster than compression could claw it back - see `benchmark/RESULTS.md` Goal 2 for the trade. Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
 | Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
@@ -83,10 +83,12 @@ Two things partially mitigate it, and neither is sufficient:
   coding agents that read `AGENTS.md` get the rules. They do not get the hooks, the settings deny
   rules, or the permission model, so they get the advice and none of the enforcement. The file says
   so.
-- The seat-tier table in `model-policy.md` (judgment / implementation / mechanical -> model) is the
+- The seat-tier table in `model-tiers.md` (judgment / implementation / mechanical -> model) is the
   right shape for portability: it is the one file a provider swap would edit, instead of a sweep
-  across sixteen agent files. But it currently maps to Anthropic aliases, and nothing consumes it as
-  an abstraction - the agent files still name the model directly.
+  across sixteen agent files. But it currently maps to Anthropic aliases, and nothing generates from
+  it - the agent files still name the model directly. The scaffolder does now check that the two
+  agree (`seat_problems` in `scaffold.py` fails a seat whose `model:` contradicts its row), so a
+  half-done sweep is caught, but that is a consistency check, not an abstraction.
 
 What would close it: make the tier the thing the agent declares, and generate the concrete `model:`
 value from the tier table at scaffold time. The scaffolder already does this kind of substitution. A
@@ -222,7 +224,7 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
    (224/224 across both hook flavors).
 2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
    Measured: 45% less to read (down from 54% - the skill grew capability faster than compression
-   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 62% of rule content kept out
+   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 68% of rule content kept out
    of the default session, ~0.2s to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the
@@ -236,8 +238,9 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
    hooks.
 6. **The spawn boundary and anti-loop discipline are gates, not advice.** `guard-agent-spawn` blocks
    spawning a type outside the roster, overriding a roster seat's model at spawn time, and dispatching
-   a write-capable seat with no registered `TASK-NNN` - three of the eval's must-block cases, with a
-   matching allow case each. An `attempts:` cap (3, then `Blocked`) and `maxTurns` on every seat bound
+   a write-capable seat that names neither a registered `TASK-NNN` nor a `TIER: direct` / `TIER: standard`
+   marker (Direct and Standard work has no task file by design; Guarded work still needs a registered
+   task) - three of the eval's must-block cases, with a matching allow case each. An `attempts:` cap (3, then `Blocked`) and `maxTurns` on every seat bound
    how long a stuck agent can run before a human has to look. `/board-audit` sweeps for the failure
    modes those controls don't catch by construction: orphaned Active tasks, unlogged completions, and
    worktrees the board never registered. `guard-agent-scope` is the honest sibling of the spawn

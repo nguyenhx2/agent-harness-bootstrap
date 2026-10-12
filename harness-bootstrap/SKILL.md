@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.19.2
+version: 1.19.3
 description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
@@ -156,9 +156,12 @@ regenerating them - but say so, and fix Python.
 
 **6. Wire up orchestration.** This is what makes the base *run*, not just exist:
 - `docs/tasks/master-plan.md` gets the index table. In brownfield, seed Phase 1 from the analysis gap
-  list - one registered task per gap - so the orchestrator finds real work on its first session.
-- `AGENTS.md` carries the tier table (Direct / Standard / Guarded), names the orchestrator as the
-  owner of Guarded work only, and states the Guarded flow. `CLAUDE.md` is a thin `@AGENTS.md` import
+  list, grouped into a few large tasks the user approves (`task-tracking.md`: few and large) - not
+  one row per gap - so the orchestrator finds real, agreed work on its first session.
+- `AGENTS.md` carries the tier table (Inline / Direct / Standard / Guarded), names the orchestrator
+  as the owner of Guarded work only, and states the Guarded flow and the verify-per-feature rule.
+  Inline work is the main session's own; Direct and Standard dispatches carry `TIER: direct` or
+  `TIER: standard`, which `guard-agent-spawn` accepts in place of a task. `CLAUDE.md` is a thin `@AGENTS.md` import
   plus the Claude-specific bits - do not maintain two copies.
 - Task lifecycle: [`reference/task-control.md`](reference/task-control.md). The orchestrator cites
   it for the attempt and escalation discipline; `task-tracking.md` carries only the session-log
@@ -210,8 +213,8 @@ guards port exactly. `AGENTS.md` is already read natively by both tools.
       including every MCP server, at full schema cost on every request.
 - [ ] **Reviewers have no `Edit` or `Write`.** Not "usually" - none.
 - [ ] Every rule that can be path-scoped **carries `paths:` frontmatter**. Only `00-overview`,
-      `agent-guardrails`, `model-policy`, `ai-governance`, `task-tracking`, and `conventional-commits`
-      load unconditionally. A rule without `paths:` is a permanent context tax on every agent in every
+      `agent-guardrails`, `model-policy`, `task-tracking`, `conventional-commits`, and - with the
+      `ai` flag - `ai-governance` load unconditionally. Seat tiers live in path-scoped `model-tiers`. A rule without `paths:` is a permanent context tax on every agent in every
       session.
 - [ ] **No generated file contains a timestamp, a generation date, or a run ID.** These files are
       prompt-cache prefix content; one volatile byte cold-misses the cache on every future run.

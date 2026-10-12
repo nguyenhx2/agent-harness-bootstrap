@@ -23,19 +23,17 @@ implement. Do not guess.
 
 {{ROUTING_TABLE}}
 
-{{^IF_TDD}}
-5. Design before code. Before the first line is written, state in the task file: the modules and
+5. Design before code. Before the first line{{#IF_TDD}} or the first test{{/IF_TDD}} is written, state in the task file: the modules and
    types this change introduces or alters, the contract of each new interface, the edge cases the
    acceptance criteria imply, and the failure modes. One revisable pass, not a document.
 
    This step is why the order is what it is. A design that emerges from the sum of many locally
    minimal decisions is rarely revisited, and the result is a feature shaped by whatever was
    convenient at each step instead of by its domain.
-{{/IF_TDD}}
 
 {{#IF_TESTS}}
 {{#IF_TDD}}
-5. Implement test-first: {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the
+6. Implement test-first: {{#IF_UNIT}}{{UNIT_FRAMEWORK}} for the business rules{{/IF_UNIT}}{{#IF_E2E}}{{#IF_UNIT}}, {{/IF_UNIT}}{{E2E_FRAMEWORK}} for the
    user-visible flow{{/IF_E2E}}. The test names the acceptance criterion it proves and fails before the
    implementation exists.
 {{/IF_TDD}}
@@ -46,7 +44,7 @@ implement. Do not guess.
 {{/IF_TDD}}
 {{/IF_TESTS}}
 {{^IF_TESTS}}
-5. Implement against the locked acceptance criteria. This project runs no automated test suite:
+6. Implement against the locked acceptance criteria. This project runs no automated test suite:
    record in the session log how each criterion was verified by hand, and name the command or
    screen used to prove it.
 {{/IF_TESTS}}
@@ -58,7 +56,9 @@ implement. Do not guess.
    Lightweight mode: no methodology ceremony beyond the acceptance criteria. Small commits,
    working software first - but the review gate below is never skipped.
 {{/IF_LIGHT}}
-6. Comply with `.claude/rules/`. The change is a proposal: a human reviews and decides.
-7. Run {{#IF_TESTS}}`/test`, then {{/IF_TESTS}}`/review-changes`.
-8. Do not deploy. Append the session-log rows to the task file and report which acceptance
+7. Comply with `.claude/rules/`. The change is a proposal: a human reviews and decides.
+8. When the whole FR is implemented - not after each step - run `/review-changes` once. It runs
+   {{#IF_TESTS}}the suites, {{/IF_TESTS}}the reviews and the secret scan over the branch; do not run {{#IF_TESTS}}`/test` or {{/IF_TESTS}}a
+   reviewer separately first.
+9. Do not deploy. Append the session-log rows to the task file and report which acceptance
    criteria are now met and which are not.

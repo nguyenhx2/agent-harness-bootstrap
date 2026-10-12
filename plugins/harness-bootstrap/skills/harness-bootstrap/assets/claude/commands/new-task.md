@@ -56,8 +56,9 @@ the claim is written down.
    touched. If the graph does not exist yet, skip this step silently - a task file with no seeded
    line is not an error, just ungraphed.
 
-One task is one independently executable and verifiable unit of work. If two sub-goals need
-different owner agents or produce different artifacts, they are two tasks.
+One task is one independently shippable and verifiable unit of work. Needing two seats does not
+make it two tasks: name a lead `owner:` and list the other seats as steps in its plan. Split only
+when the parts can ship, and be verified, on their own.
 
 That rule splits; it does not multiply. It applies to work that already earned a task, and is not a
 reason to turn one agreed piece of work into six registered ones. Fewer, real tasks beat a board

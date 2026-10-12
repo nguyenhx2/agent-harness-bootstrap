@@ -99,7 +99,7 @@ control that quietly did not travel is worse than one the team knowingly gave up
 - Per-seat `tools:` allowlists have **none either**. Cursor offers `readonly`, which covers the
   reviewer case and nothing finer; Codex offers nothing.
 - Codex has **no path-scoped rule mechanism at all** - its only scoping is nested `AGENTS.md`
-  files. The 7 unconditional rules survive as prose there; the 9 path-scoped ones become advice
+  files. The 7 unconditional rules survive as prose there; the 10 path-scoped ones become advice
   someone has to ask for, which is also the harness's main recurring token saving gone.
 - `guard-agent-spawn` ports to neither: the spawn boundary is a Claude-Code-only gate, and in
   the other two the roster is rules text rather than an enforced control.

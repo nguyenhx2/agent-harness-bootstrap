@@ -45,11 +45,11 @@ import tempfile
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 112
+CASES_PER_FLAVOR = 122
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
-MUST_BLOCK_PER_FLAVOR = 44
-MUST_ALLOW_PER_FLAVOR = 68
+MUST_BLOCK_PER_FLAVOR = 50
+MUST_ALLOW_PER_FLAVOR = 72
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -189,6 +189,9 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("spawn: type outside the roster",   "guard-agent-spawn", 2, p("Agent", subagent_type="general-purpose", prompt="explore the repo")),
         ("spawn: model escalation on a seat","guard-agent-spawn", 2, p("Agent", subagent_type="history-tracker", model="opus", prompt="summarize TASK-001")),
         ("spawn: write seat with no task",   "guard-agent-spawn", 2, p("Agent", subagent_type="qa-test", prompt="run the suite and fix flakes")),
+        ("spawn: write seat, TIER: guarded", "guard-agent-spawn", 2, p("Agent", subagent_type="qa-test", prompt="TIER: guarded - migrate the schema")),
+        ("spawn: 'direct' only in prose",    "guard-agent-spawn", 2, p("Agent", subagent_type="qa-test", prompt="a direct fix, no task needed")),
+        ("spawn: tier plus unknown task",    "guard-agent-spawn", 2, p("Agent", subagent_type="qa-test", prompt="TIER: direct for TASK-999")),
 
         # --- and the things it must NOT block, or the harness is unusable ---
         # guard-main-commit only had a MUST-BLOCK case (straight-to-main); without this, a broken
@@ -203,6 +206,9 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("allow: spawn a roster seat",       "guard-agent-spawn", 0, p("Agent", subagent_type="code-reviewer", prompt="review the diff for TASK-001")),
         ("allow: write seat with a task",    "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TASK-001: run the suite, log results")),
         ("allow: allowlisted Explore",       "guard-agent-spawn", 0, p("Agent", subagent_type="Explore", prompt="find the auth module")),
+        # The tier table's Direct and Standard rows have no task file; the dispatch says so instead.
+        ("allow: write seat, TIER: direct",  "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TIER: direct - pin the date-parser criterion with one test")),
+        ("allow: write seat, tier: standard","guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="Tier: Standard. Extend the suite for the billing module")),
         ("allow: graph-stale never blocks",  "graph-stale",       0, p("Edit", file_path="src/core/auth.py")),
 
         # --- guard-agent-scope: advisory, never blocks, proven by CONTENT not just exit code ---
@@ -214,6 +220,10 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         # --- graph-stale: past 20 accumulated edits it also nudges /code-graph ---
         ("advisory: graph-stale nudges past 20 edits", "graph-stale", 0,
          p("Edit", file_path="src/other/thing.py"), {"contains": "/code-graph"}),
+        # A re-edit of a file already recorded is silent: the reminder fires per new file, not per
+        # keystroke, or one file edited twenty times re-injects it twenty times.
+        ("advisory: graph-stale re-edit stays quiet", "graph-stale", 0,
+         p("Edit", file_path="src/other/thing.py"), {"not_contains": "additionalContext"}),
 
         # --- graph-stale tier 1/2 (v1.8.0): harness edits regenerate the harness graph
         #     immediately; docs edits refresh the docs graph. Neither may ever block. ---
@@ -481,6 +491,7 @@ def run_flavor(workdir: pathlib.Path, flavor: str, ps_bin: str | None = None) ->
     results += run_ledger_security_suite(workdir, flavor, repo)
     results += run_graph_resilience_suite(repo, flavor)
     results += run_wiring_suite(repo, flavor)
+    results += run_seat_suite(repo, flavor)
     results += run_rtk_suite(repo, flavor, ps_bin)
     return results
 
@@ -918,6 +929,50 @@ def run_wiring_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
     missing = [d for d in ("docs/tasks/active", "docs/tasks/pending") if not (repo / d).is_dir()]
     rec("wiring: the board directories a shipped hook keys off exist"
         + (" (missing: " + ", ".join(missing) + ")" if missing else ""), not missing)
+    return results
+
+
+def run_seat_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
+    """scaffold.seat_problems, proven able to fire. A seat's tools, its model and the files it
+    cites were prose nothing checked: five shipped files cited a task-control.md no harness ever
+    contained. Each case tampers a COPY of the scaffolded repo in the one way the check exists to
+    catch, and the clean copy must stay clean - a check that flags everything gets switched off."""
+    import shutil
+    sys.path.insert(0, str(ROOT / "harness-bootstrap" / "scripts"))
+    import scaffold as sc
+    results: list[dict] = []
+
+    def rec(name: str, want: int, problems: list[str]) -> None:
+        got = 1 if problems else 0
+        results.append({"name": name, "hook": "seat-wiring", "flavor": flavor,
+                        "want": want, "got": got,
+                        "status": "pass" if got == want else "FAIL"})
+
+    def copy(tag: str) -> pathlib.Path:
+        dst = repo.parent / f"seat-{tag}-{flavor}"
+        shutil.rmtree(dst, ignore_errors=True)
+        shutil.copytree(repo, dst, ignore=shutil.ignore_patterns(".git"))
+        return dst
+
+    def edit(f: pathlib.Path, old: str, new: str) -> None:
+        t = f.read_text(encoding="utf-8")
+        assert old in t, f"{f.name}: {old!r} not found - the tamper would test nothing"
+        f.write_text(t.replace(old, new, 1), encoding="utf-8")
+
+    rec("seat: a clean roster has no seat problems", 0, sc.seat_problems(copy("clean")))
+
+    r = copy("rw")
+    edit(r / ".claude/agents/code-reviewer.md", "tools: Read,", "tools: Read, Edit,")
+    rec("seat: a review seat granted Edit", 1, sc.seat_problems(r))
+
+    r = copy("model")
+    edit(r / ".claude/agents/orchestrator.md", "model: opus", "model: haiku")
+    rec("seat: a model that contradicts its tier", 1, sc.seat_problems(r))
+
+    r = copy("cite")
+    edit(r / ".claude/agents/orchestrator.md", "Obey `.claude/rules/00-overview.md`",
+         "Obey `.claude/rules/task-control.md`, `.claude/rules/00-overview.md`")
+    rec("seat: a rule cited but not installed", 1, sc.seat_problems(r))
     return results
 
 

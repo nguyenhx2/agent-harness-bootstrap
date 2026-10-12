@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import os
 import pathlib
 import shutil
@@ -478,6 +479,69 @@ def measure_scaffold_time(new_root: pathlib.Path) -> dict:
     }
 
 
+# ------------------------------------------------------------ process: what one change costs
+
+# Two project shapes, so a flag-conditional file shows up as the difference it makes. FULL is the
+# vars payload every other measurement here uses; LEAN is a service with tests and nothing else.
+PROCESS_PROFILES = {
+    "full (ui, db, ai, ddd, tests)": None,
+    "lean (tests only)": ["posix", "tests", "unit"],
+}
+# A step in the shipped Guarded flow that runs the full suite: the /test command, or the review
+# gate confirming the test command passes. Counted, not asserted, so a regression shows as a number.
+SUITE_STEP = re.compile(r"^\s*\d+\. Run `/test`|and `?x`? pass locally", re.MULTILINE)
+DISPATCH = re.compile(r"Dispatch `([a-z0-9-]+)`")
+
+
+def scaffold_profile(new_root: pathlib.Path, dest: pathlib.Path, flags: list[str] | None) -> pathlib.Path:
+    payload = scaffold_vars()
+    if flags is not None:
+        payload["flags"] = flags
+    dest.mkdir(parents=True, exist_ok=True)
+    vf = dest / "vars.json"
+    vf.write_text(json.dumps(payload), encoding="utf-8")
+    r = subprocess.run([sys.executable, str(new_root / "scripts/scaffold.py"),
+                        "--target", str(dest / "repo"), "--vars", str(vf)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit("benchmark: a process-profile scaffold failed, so its numbers would be "
+                         "wrong rather than small.\n  " + (r.stdout or r.stderr)[-600:])
+    return dest / "repo"
+
+
+def measure_process(new_root: pathlib.Path, c: Counter) -> dict:
+    """What a session carries, and what one change costs, read from the RENDERED harness.
+
+    measure_session_cost reads the raw templates, which cannot see a flag-conditional file or the
+    two instruction files every session also loads. This renders real profiles instead. The
+    tier rows and the Guarded flow's dispatch and suite-run counts are read from the shipped text,
+    so a change that adds a review round or a /test step moves a number here.
+    """
+    out: dict = {"profiles": {}}
+    with tempfile.TemporaryDirectory() as td:
+        for i, (label, flags) in enumerate(PROCESS_PROFILES.items()):
+            repo = scaffold_profile(new_root, pathlib.Path(td) / f"p{i}", flags)
+            always, _ = unconditional_rules(repo / ".claude/rules")
+            loaded = [repo / "AGENTS.md", repo / "CLAUDE.md"] + always
+            text = read_all(loaded)
+            out["profiles"][label] = {"files": len(loaded), "bytes": len(text),
+                                      "tokens": c.tokens(text)}
+            if i:
+                continue
+            agents_md = (repo / "AGENTS.md").read_text(encoding="utf-8")
+            tiers = []
+            for row in agents_md.splitlines():
+                cells = [x.strip() for x in row.strip().strip("|").split("|")]
+                if len(cells) == 4 and cells[0].startswith("**") and cells[0].endswith("**"):
+                    tiers.append((cells[0].strip("*"), cells[2]))
+            out["tiers"] = tiers
+            flow = read_all([repo / ".claude/commands/implement-fr.md",
+                             repo / ".claude/commands/review-changes.md"])
+            out["guarded_dispatches"] = DISPATCH.findall(flow)
+            out["guarded_suite_steps"] = len(SUITE_STEP.findall(flow))
+    return out
+
+
 # ---------------------------------------------------------- legacy: the predecessor comparison
 
 def compat_old(old_root: pathlib.Path, c: Counter) -> dict | None:
@@ -592,10 +656,11 @@ def main() -> int:
     authoring = measure_authoring(a.new, c)
     session = measure_session_cost(a.new, c)
     speed = measure_scaffold_time(a.new)
+    process = measure_process(a.new, c)
     legacy = measure_legacy(a.old, a.new, c)
 
     result = {"token_source": c.label, "guardrails": guard, "authoring": authoring,
-              "session": session, "scaffold": speed, "legacy": legacy}
+              "session": session, "process": process, "scaffold": speed, "legacy": legacy}
     # Backward-compatible keys: scripts/check_numbers.py reads these to police published figures.
     result["old"] = compat_old(a.old, c)
     result["new"] = compat_new(a.new, c)
@@ -664,6 +729,19 @@ def main() -> int:
               f"of the default session.")
     print("    The harness is the MORE expensive option here. That is the trade: a bare agent")
     print("    carries no rules because there are none to enforce.")
+
+    # ---- process
+    print("\n  PROCESS - what a session carries and what one change costs (rendered harness)")
+    print("  Loaded into every session and every subagent: AGENTS.md, CLAUDE.md, unconditional rules.")
+    for label, e in process["profiles"].items():
+        print(f"    {label:<34} {e['bytes']:>9,} bytes  ({e['files']} files, ~{e['tokens']:,} tokens)")
+    print("  Who runs each tier (AGENTS.md):")
+    for name, who in process["tiers"]:
+        print(f"    {name:<10} {who[:72]}")
+    print(f"  Guarded flow (/implement-fr + /review-changes): "
+          f"{len(process['guarded_dispatches'])} subagent dispatches "
+          f"({', '.join(process['guarded_dispatches'])}) plus the implementing seat;")
+    print(f"    {process['guarded_suite_steps']} step(s) that run the full suite.")
 
     # ---- scaffold
     print("\n  SCAFFOLD - the deterministic path that replaces model generation")

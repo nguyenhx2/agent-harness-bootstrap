@@ -641,9 +641,11 @@ def main() -> int:
         # A CHANGELOG entry records what a PAST release captured. Re-pointing the camera at
         # another project moves today's figures, and rewriting the history to match would
         # falsify what that release actually shipped. The pair rules below already carry this
-        # exemption; the caption checks need it for the same reason.
+        # exemption; the caption checks need it for the same reason, and so does the
+        # path-scoped rule count, which v1.0.0 recorded as 9 and was still 9 until v1.19.3.
         checks = [c for c in CHECKS
-                  if not (historical and c[0].startswith("captured"))]
+                  if not (historical and (c[0].startswith("captured")
+                                          or c[0] == "path-scoped rules"))]
         active = (checks
                   + (COUNT_CHECKS if rel in COUNT_FILES else [])
                   + (SPLIT_CHECKS if rel in SPLIT_FILES else [])

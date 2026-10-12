@@ -71,7 +71,7 @@ if ($override -and (Test-Path $seatFile)) {
         if ($inFm -and $line -match '^model:\s*(\S+)') { $pinned = $Matches[1]; break }
     }
     if ($pinned -and $override -ne $pinned) {
-        [Console]::Error.WriteLine("BLOCKED: spawn overrides '$stype' from its roster model '$pinned' to '$override'. The roster is where cost and capability are decided (.claude/rules/model-policy.md). Edit .claude/agents/$stype.md if the seat's model should change.")
+        [Console]::Error.WriteLine("BLOCKED: spawn overrides '$stype' from its roster model '$pinned' to '$override'. The roster is where cost and capability are decided (.claude/rules/model-tiers.md). Edit .claude/agents/$stype.md if the seat's model should change.")
         exit 2
     }
 }
@@ -87,6 +87,11 @@ if (Test-Path $seatFile) {
         if ($inFm2 -and $line -match '^tools:\s*(.+)$') { $toolsLine = $Matches[1]; break }
     }
     if ($toolsLine -and $toolsLine -match '(^|[,\s])(Edit|Write)(,|\s|$)') {
+        # Direct and Standard work has no task file by design (the tier table in AGENTS.md).
+        # A dispatch that says "TIER: direct" or "TIER: standard" and names no task passes;
+        # see guard-agent-spawn.sh for why the marker is a visible claim rather than a hole.
+        $prompt = [string]$payload.tool_input.prompt
+        if ($prompt -notmatch 'TASK-\d{1,5}' -and $prompt -match '(?i)(^|[^A-Za-z])TIER:\s*(direct|standard)([^A-Za-z]|$)') { exit 0 }
         $activeDir = Join-Path $baseCwd 'docs/tasks/active'
         # Parity with the .sh flavor: a missing board is a refusal, not a skip. The old
         # Test-Path gate made this arm inert on every fresh bootstrap, because the scaffolder
@@ -97,13 +102,13 @@ if (Test-Path $seatFile) {
         }
         if ($true) {
             $taskId = $null
-            if ($payload.tool_input.prompt -match 'TASK-\d{1,5}') { $taskId = $Matches[0] }
+            if ($prompt -match 'TASK-\d{1,5}') { $taskId = $Matches[0] }
             if (-not $taskId) {
-                [Console]::Error.WriteLine("BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN. Work with no registered task is invisible to the board and becomes an orphan. Register the task (see /new-task), put its code in the dispatch prompt, and dispatch again.")
+                [Console]::Error.WriteLine("BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. If this is Direct or Standard work (one module or one domain, off the Guarded list in AGENTS.md), say so: put 'TIER: direct' or 'TIER: standard' in the prompt. Guarded work needs a registered task: register it (see /new-task), put its code in the prompt, and dispatch again.")
                 exit 2
             }
             if (-not (Get-ChildItem -Path $activeDir -Filter "*$taskId*" -ErrorAction SilentlyContinue)) {
-                [Console]::Error.WriteLine("BLOCKED: this dispatch names $taskId but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-control.md). Register it first, then dispatch.")
+                [Console]::Error.WriteLine("BLOCKED: this dispatch names $taskId but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-tracking.md). Register it first, then dispatch.")
                 exit 2
             }
         }

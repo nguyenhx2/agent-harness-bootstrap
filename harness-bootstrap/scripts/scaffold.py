@@ -454,6 +454,72 @@ def wiring_problems(target: pathlib.Path) -> list[str]:
     for rel in ("docs/tasks/active", "docs/tasks/pending"):
         if not (target / rel).is_dir():
             out.append(f"{rel}/ is missing, and a shipped hook keys off it")
+    out.extend(seat_problems(target))
+    return out
+
+
+# Seats whose whole value is that they do not change what they judge.
+REVIEW_SEATS = ("reviewer", "code-reviewer", "security-reviewer", "spec-guardian")
+# Markdown names the harness may cite before they exist: rules the bootstrap run authors for this
+# repo, the spec file written later, the run-archive index written at runtime, and the dev-agent
+# template's own name.
+AUTHORED_LATER = {"coding-standards.md", "tech-stack.md", "git-workflow.md",
+                  "13-revision-history.md", "index.md", "dev-agent.md"}
+
+
+def seat_problems(target: pathlib.Path) -> list[str]:
+    """-> problems in how the seats are wired to their tools, models and the files they cite.
+
+    Each one shipped before as prose that nothing checked: a rule named by an agent that was never
+    installed (`task-control.md` was cited by five shipped files and existed only inside the
+    skill), a model edited in one agent file but not in the tier table that is supposed to decide
+    it, and a review seat granted the tools to change what it reviews.
+    """
+    import re as _re
+    out: list[str] = []
+    claude = target / ".claude"
+    agents = claude / "agents"
+    if not agents.is_dir():
+        return out
+
+    def head(f: pathlib.Path) -> str:
+        return f.read_text(encoding="utf-8", errors="replace")[:2000]
+
+    for seat in REVIEW_SEATS:
+        f = agents / f"{seat}.md"
+        if f.is_file() and _re.search(r"(^|[,\s])(Edit|Write)([,\s]|$)", tools_value(head(f))):
+            out.append(f"review seat {seat} holds Edit or Write - a reviewer that can edit has "
+                       "stopped being a reviewer")
+
+    tiers = claude / "rules" / "model-tiers.md"
+    if tiers.is_file():
+        for row in tiers.read_text(encoding="utf-8", errors="replace").splitlines():
+            cells = [c.strip() for c in row.strip().strip("|").split("|")]
+            if len(cells) != 4 or not _re.fullmatch(r"`(opus|sonnet|haiku|fable)`", cells[3]):
+                continue
+            want = cells[3].strip("`")
+            for seat in _re.findall(r"`([a-z0-9-]+)`", cells[2]):
+                f = agents / f"{seat}.md"
+                if not f.is_file():
+                    continue
+                m = _re.search(r"^model:\s*(\S+)", head(f), _re.MULTILINE)
+                if m and m.group(1) != want:
+                    out.append(f"{seat} runs on {m.group(1)} but model-tiers.md puts it in the "
+                               f"{cells[0]} tier ({want}) - change the table first, then the seat")
+
+    present = {p.name for p in target.rglob("*.md")}
+    cited: dict[str, str] = {}
+    files = [p for p in claude.rglob("*") if p.is_file() and p.suffix in (".md", ".sh", ".ps1")]
+    files += [p for p in (target / "AGENTS.md", target / "CLAUDE.md") if p.is_file()]
+    for f in files:
+        text = f.read_text(encoding="utf-8", errors="replace")
+        for m in _re.finditer(r"(?<![\w/.${-])(?:\.claude/rules/)?([a-z0-9][a-z0-9-]*\.md)\b", text):
+            name = m.group(1)
+            if name not in present and name not in AUTHORED_LATER:
+                cited.setdefault(name, f.relative_to(target).as_posix())
+    for name, where in sorted(cited.items()):
+        out.append(f"{where} cites {name}, which this harness does not contain - an agent told "
+                   "to obey a file that is not there obeys nothing")
     return out
 
 

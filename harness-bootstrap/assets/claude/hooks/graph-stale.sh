@@ -11,8 +11,10 @@
 #   3. SOURCE edits: record the path in .claude/state/code-graph.stale so agents (and
 #      /code-graph --check) know the graph lags the code. The rebuild itself stays deliberate
 #      (/code-graph): a full source scan on every write would tax every session for a map most
-#      turns never read. Past 20 accumulated edits this ALSO emits
-#      hookSpecificOutput.additionalContext nudging /code-graph.
+#      turns never read. Each path is recorded once. Past 20 distinct files this ALSO emits
+#      hookSpecificOutput.additionalContext nudging /code-graph - on a NEWLY recorded file only,
+#      never on a re-edit of one already listed, or editing one file twenty times would re-inject
+#      the same reminder twenty times.
 # Never blocks: always exit 0.
 #
 # Contract: reads the PostToolUse JSON payload on stdin. Exit 0 = allow, always.
@@ -137,6 +139,8 @@ esac
 
 mkdir -p "$base_cwd/.claude/state" 2>/dev/null
 stale_file="$base_cwd/.claude/state/code-graph.stale"
+# Already recorded: the graph is no staler than it was a moment ago, so say nothing.
+grep -qxF -- "$norm" "$stale_file" 2>/dev/null && exit 0
 printf '%s\n' "$norm" >> "$stale_file" 2>/dev/null
 
 lines=$(wc -l < "$stale_file" 2>/dev/null | tr -d '[:space:]')

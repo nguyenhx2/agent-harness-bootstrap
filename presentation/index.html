@@ -903,11 +903,14 @@ const S = [
 /* 11 - how much process a change gets, decided before anything is dispatched */
 {icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
  title:{en:"Process proportional to the change", vi:"Quy trình tương xứng với thay đổi", ja:"変更の大きさに見合ったプロセス"},
- sub:{en:"The tier is decided before anything is dispatched, and <mark>most changes are Direct</mark>. Choosing a heavier tier than the change needs is a defect, not caution.",
-      vi:"Bậc được chọn trước khi điều phối bất cứ thứ gì, và <mark>phần lớn thay đổi là Direct</mark>. Chọn bậc nặng hơn mức thay đổi cần là một lỗi, không phải sự thận trọng.",
-      ja:"ティアはディスパッチの前に決まり、<mark>大半の変更は Direct</mark> です。必要より重いティアを選ぶのは慎重さではなく欠陥です。"},
+ sub:{en:"The tier is decided before anything is dispatched, and <mark>most changes are Inline or Direct</mark>. Choosing a heavier tier than the change needs is a defect, not caution.",
+      vi:"Bậc được chọn trước khi điều phối bất cứ thứ gì, và <mark>phần lớn thay đổi là Inline hoặc Direct</mark>. Chọn bậc nặng hơn mức thay đổi cần là một lỗi, không phải sự thận trọng.",
+      ja:"ティアはディスパッチの前に決まり、<mark>大半の変更は Inline か Direct</mark> です。必要より重いティアを選ぶのは慎重さではなく欠陥です。"},
  cols:{en:["Tier","The change","Who runs it"], vi:["Bậc","Thay đổi","Ai chạy"], ja:["ティア","対象の変更","誰が実行するか"]},
  rows:[
+  {en:["<strong><mark>Inline</mark></strong>","A question, a lookup, a doc or config edit, a fix you can see whole in a file or two","The main session itself. <strong>No subagent at all</strong>"],
+   vi:["<strong><mark>Inline</mark></strong>","Một câu hỏi, một tra cứu, sửa tài liệu hay cấu hình, một lỗi nhìn trọn trong một hai file","Chính phiên chính tự làm. <strong>Không subagent nào</strong>"],
+   ja:["<strong><mark>Inline</mark></strong>","質問、調べもの、ドキュメントや設定の修正、1〜2ファイルで全体が見える修正","メインセッション自身。<strong>サブエージェントは使わない</strong>"]},
   {en:["<strong><mark class='m2'>Direct</mark></strong>","One module, reversible, touching no contract, schema, auth, payment or infrastructure","The owning agent, called straight. <strong>No orchestrator, no task file</strong>"],
    vi:["<strong><mark class='m2'>Direct</mark></strong>","Một module, có thể hoàn tác, không chạm hợp đồng, schema, auth, thanh toán hay hạ tầng","Gọi thẳng agent sở hữu. <strong>Không orchestrator, không task file</strong>"],
    ja:["<strong><mark class='m2'>Direct</mark></strong>","単一モジュール、可逆、契約・スキーマ・認証・決済・インフラに触れない","担当エージェントを直接呼ぶ。<strong>オーケストレーターもタスクファイルも無し</strong>"]},
@@ -996,14 +999,14 @@ const S = [
       vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
       ja:"これは課題06への答えであり、主張ではなく実測です。"},
  stats:[
-  {v:"112/112", cls:"g", l:{en:"<b>Does the floor hold?</b> 44 forbidden actions blocked, 68 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 44 hành động bị cấm đều chặn, 68 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止44件を遮断、許可と配線検査68件を維持"}},
+  {v:"122/122", cls:"g", l:{en:"<b>Does the floor hold?</b> 44 forbidden actions blocked, 68 permitted actions and wiring checks upheld", vi:"<b>Sàn có giữ được không?</b> 44 hành động bị cấm đều chặn, 68 hành động được phép và kiểm tra nối dây đều đạt", ja:"<b>下限は保たれるか</b> 禁止44件を遮断、許可と配線検査68件を維持"}},
   {v:"Opus = Haiku", cls:"g", l:{en:"<b>Does it depend on the model?</b> Re-run on the cheapest tier, the result is byte-identical", vi:"<b>Có phụ thuộc model không?</b> Chạy lại trên tier rẻ nhất, kết quả giống hệt từng byte", ja:"<b>モデルに依存するか</b> 最安ティアで再実行しても結果はバイト単位で同一"}},
   {v:"112/112", cls:"g", l:{en:"<b>Does it hold on Windows too?</b> The same suite re-run through the Windows (PowerShell) hook flavor, byte-identical verdicts", vi:"<b>Có giữ được trên Windows không?</b> Chạy lại đúng bộ đó qua flavor hook PowerShell của Windows, phán quyết giống hệt từng byte", ja:"<b>Windowsでも保たれるか</b> 同じ一式をWindows（PowerShell）のフックで再実行、判定はバイト単位で同一"}},
   {v:"32/32", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter blocks the same actions, both hook flavors", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex chặn đúng những hành động đó, cả hai flavor hook", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタも同じ行為を遮断、両方のフック形式で"}}],
  note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
        vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
        ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
- nav:{en:"112/112 proof", vi:"Bằng chứng 112/112", ja:"112/112 の証明"}},
+ nav:{en:"122/122 proof", vi:"Bằng chứng 122/122", ja:"122/122 の証明"}},
 
 /* 16 */
 {icon:"i-coins", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},

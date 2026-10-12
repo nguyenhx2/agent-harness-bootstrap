@@ -123,8 +123,10 @@ The diagram carries the caveat from `docs/ASSESSMENT.md` Gap 2: **model tier is 
 vendor is not.** `model:` accepts `opus | sonnet | haiku | fable` and nothing else, so re-pointing
 the roster at a self-hosted or third-party model is a **port**, not a config change - there is no
 execution adapter here. Nor is the tier table a *generator*: each agent file still names its own
-`model:`, so a tier swap today is a table edit AND a frontmatter sweep. Generating `model:` from the
-tier at scaffold time is listed as outstanding work, and it is not done.
+`model:`, so a tier swap is a table edit AND a frontmatter sweep. What is enforced is that the two
+agree: `scaffold.py` refuses a harness in which a seat's `model:` contradicts its row in
+`model-tiers.md`, so the sweep cannot be left half done. Generating `model:` from the tier is still
+not done.
 
 ## Sources
 

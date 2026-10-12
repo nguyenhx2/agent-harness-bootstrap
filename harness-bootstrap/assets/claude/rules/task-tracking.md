@@ -4,6 +4,10 @@ Loaded in every session, deliberately: an agent that forgets where state lives w
 
 ## Task files are the source of truth
 
+This covers registered work - Guarded changes, and anything the user asked to track. Inline, Direct
+and Standard work in the `AGENTS.md` tier table has no task file by design: its record is the
+commit and the report, and nothing below requires one for it.
+
 The conversation is not the record. Context gets compacted, sessions end, agents are replaced
 mid-flight. What survives is what is written down:
 
@@ -34,69 +38,40 @@ yet"; Pending means "we consciously decided to stop working on this". A Planned 
 
 ## What earns a task, and who decides
 
-A task is work the USER asked for, and tasks are FEW AND LARGE. A feature to build, an
-investigation to run, a migration to carry out - that scale. Ten rows for one agreed piece of work
-is not a plan, it is noise with IDs on it.
+A task is work the USER asked for, and tasks are FEW AND LARGE: a feature, an investigation, a
+migration. Ten rows for one agreed piece of work is noise with IDs on it.
 
-**Executing a task never creates more tasks.** If carrying out TASK-014 leaves you wanting six new
-rows, the answer is that those are steps in TASK-014, and the task file has a plan section for
-steps. Splitting them out does not make the work more tracked, it makes the board unreadable and
-hides what the user actually approved.
+- **Executing a task never creates more tasks.** Steps belong in the task file's plan section.
+- **The user agrees, directly.** If their own message did not ask for it, `/new-task` asks with
+  `AskUserQuestion` and waits for an explicit yes - from the person, not an agent guessing and not
+  a subagent telling its dispatcher.
+- **The file records it.** `requested_by:` carries their words or the issue. A bare `user` is a
+  label, and an agent name is refused: an agent cannot approve its own task. `guard-task-scope`
+  blocks a file without it, or with fewer than two real acceptance criteria. The hook cannot prove
+  the user agreed; it makes a fabricated answer a visible lie instead of an invisible omission.
+- **No agent opens a task on its own, subagents included.** What you discover - a bug elsewhere, a
+  stale doc, a rule that could be tighter - goes in your report. The user decides.
 
-**A task needs the user's agreement, and it is asked for directly.** If the user's own message did
-not ask for this task, `/new-task` puts it to them with `AskUserQuestion` and waits for an explicit
-yes before anything is written. Not an agent deciding they would probably approve, and not a
-subagent telling its dispatcher - the person. This is the same rule `/harness-toggle` applies to a
-protected control: a confirmation counts only when the user gave it themselves, in this
-conversation.
-
-That step is the real gate, and it is worth being clear why: a hook cannot tell a fabricated
-`requested_by` from a true one. What the hook does is make the claim exist in writing.
-
-**The file records the agreement.** Every task file carries
-`requested_by:` naming what was asked for - their words, or the issue it came from. `user` on its
-own is a label, not a record, and an agent name is refused outright: an agent cannot approve its
-own task. `guard-task-scope` blocks a task file without it, and one with fewer than two real
-acceptance criteria. The hook cannot prove the user actually agreed - nothing can - but it makes
-the claim explicit in the file that outlives the session, so a fabricated answer is a visible lie
-rather than an invisible omission.
-
-**No agent opens a task on its own - and that includes every subagent.** Only work the user agreed
-to becomes a row. A subagent that finds something reports it to whoever dispatched it; it does not
-register it, and the dispatcher does not register it either without asking. The board records agreed
-work; it is not a notebook of everything an agent noticed on the way past.
-
-**Work you discover does not register itself.** Find a bug in another module, a stale doc, a rule
-that should be tighter - finish the task you have and REPORT it. The user decides whether it becomes
-a task. A board that fills with work nobody asked for stops being a plan, and the agreed work gets
-lost in it.
-
-**Below the bar it is not a task.** Do it, or say it in the report:
-
-| Not a task | What to do with it |
+| Below the bar, so not a task | What to do with it |
 |---|---|
-| Smaller than the paperwork - a typo, a rename, a one-line fix | Make it, in the change you are already writing |
+| A typo, a rename, a one-line fix | Make it in the change you are already writing |
 | A "we should probably also..." | One line in the report, or `docs/context/known-issues.md` |
-| A step INSIDE work already registered | It is a step. The task file has a plan section for it |
-| Something you can finish before the task file would be read | Finish it |
+| A step inside registered work | A step in that task's plan |
 | A refactor nobody asked for | Say what you would change and why, and stop |
 
-**Above the bar**: it needs its own acceptance criteria, it outlives this session and someone picks
-it up cold, or it must be scheduled against other work.
-
-**One exception**, narrow: a discovery that BLOCKS the task in hand. Set that task `Blocked`, name
-what would unblock it, escalate. That is reporting agreed work cannot proceed, not opening new work.
-
-If you are unsure whether something earns a task, it does not. Ask.
+Above the bar: it needs its own acceptance criteria, outlives this session, or must be scheduled
+against other work. The one exception is a discovery that BLOCKS the task in hand: set it
+`Blocked`, name what would unblock it, escalate. Unsure whether it earns a task? It does not. Ask.
 
 ## Workflow
 
 - **At registration**: create the task file from the template in `active/` with `status: Planned`, and
-  add its row to the board. No work begins before the task file exists.
+  add its row to the board. Registered work does not begin before its task file exists.
 - **At task start**: flip the file and the board row to `Active`, and name the owner and the branch.
-- **During work**: append a row to the task file's session log after every tool-call batch that
-  changed files, not at the end of the session - what was done, what was decided, what ran and what
-  it returned. Concise. The log is the evidence a gate ran.
+- **During work**: append one row per completed unit - a dispatch's verified outcome, a gate run, a
+  decision, a status change - as it happens, not at the end of the session. Not per tool call and
+  not per edit: a row nobody will read is tokens spent twice, once to write and once to load. The
+  log is the evidence a gate ran.
 - **A gate counts as passed only when the task file's session log records the run.** A claim in a
   chat message, a PR description, or an agent's final report is a claim, not a fact. Verify against
   git state and the log.

@@ -61,8 +61,8 @@ The five task states are defined once, in the frontmatter of `docs/templates/TAS
 `Planned | Active | Blocked | Pending | Done`.
 
 - Run `/task-resume TASK-NNN` before continuing any task in a new or compacted session.
-- Append a session-log row to the task file after every meaningful unit of work. A quality gate
-  counts as passed only when the log records the run.
+- Append a session-log row per completed unit of work (`.claude/rules/task-tracking.md` defines
+  it). A quality gate counts as passed only when the log records the run.
 - Write every status change in the task file frontmatter AND the `docs/tasks/master-plan.md` row,
   in the same change. The two must never disagree.
 - **A task is work the user agreed to.** What you notice while executing is a finding: report it,
@@ -78,16 +78,19 @@ Routing:
 
 ### How much process a change gets
 
-Decide the tier before dispatching anything. Most changes are Direct.
+Decide the tier before dispatching anything. Most requests are Inline or Direct.
 
 | Tier | The change | Who runs it | What it adds |
 |------|------------|-------------|--------------|
+| **Inline** | a question, a lookup, a doc or config edit, a fix you can see whole in one or two files | the main session itself - no subagent, no orchestrator, no task file | one check of the thing changed; no suite run for a change with no behavior |
 | **Direct** | one module, reversible, touches no contract, schema, auth, payment, or infrastructure | the owning agent, called straight - no orchestrator, no task file | the agent proves each criterion itself and reports how |
 | **Standard** | one domain, several files, or an FR behind it | the owning agent; register a task file when the work must survive a compacted session | {{#IF_TESTS}}`{{TEST_CMD}}` over what changed{{/IF_TESTS}}{{^IF_TESTS}}a hand check of every criterion{{/IF_TESTS}} |
 | **Guarded** | two or more domains, OR it touches schema, auth, money, a public contract, a migration, a deploy, or {{PII_OR_DATA}} | `orchestrator` - one at a time, never two on the same board | the full flow below |
 
-Choosing a heavier tier than the change needs is a defect, not caution: a one-line fix that pays for
-a planning pass, a task file and three reviews spends real time to learn nothing. Choosing a lighter
+A subagent starts with an empty context and re-reads what the caller already had, so delegating is
+a cost, paid only when the work is big enough or specialised enough to earn it. Choosing a heavier
+tier than the change needs is a defect, not caution: a one-line fix that pays for a planning pass, a
+task file and three reviews spends real time to learn nothing. Choosing a lighter
 one for a change on the Guarded list is the failure that list exists to prevent. When two look
 equally right, name the one you picked and why.
 
@@ -95,11 +98,17 @@ The Guarded flow, none of it optional: `spec-guardian` locks the scope, the spec
 against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}), and the branch gate below runs before the
 {{PR_OR_MR}} is opened. Run it with `/implement-fr FR-NN`.
 
-**The gate runs once, on the branch, not after each agent.** `/review-changes` is that boundary:
-{{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, and `/secret-scan`, over the whole
+**The gate runs once, on the branch, not after each agent or each step.** `/review-changes` is that
+boundary: {{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, and `/secret-scan`, over the whole
 branch diff. Reviewing after every agent reads the same files again for each one and reports the
 same findings each time. Security review belongs to that boundary and to any moment the user asks
 for it - not to every change.
+
+**Verify per feature, not per step.** While building, run at most the tests that touch what you
+just changed, and only when you need the signal to continue. The full suite runs once, when the
+feature is complete. A green run recorded at the current commit is not repeated: nothing changed,
+so a second run learns nothing. A fix loop is bounded - two rounds of review-fix-review, then the
+remaining findings go to the user instead of a third round.
 
 ## Commands
 

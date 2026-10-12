@@ -21,7 +21,7 @@ Invariants (refusals, not warnings):
 - **Only the orchestrator holds `Agent`.** A second spawner is a second uncontrolled dispatch point;
   the scaffolder itself fails the build on it.
 - **`model:` and `effort:` are not permissions.** Changing them is a roster/cost decision - point
-  the user at the roster file and `reference/cost-model.md`, and require the change to be recorded.
+  the user at the roster file and `.claude/rules/model-tiers.md`, and require the change to be recorded.
 - **No wildcard grants.** A seat lists exact tools; "give it everything" recreates the default-agent
   problem the roster exists to prevent.
 

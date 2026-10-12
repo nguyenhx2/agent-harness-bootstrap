@@ -14,7 +14,7 @@ python benchmark/benchmark.py
 |---|---:|---:|
 | Known-bad actions blocked (15 hook payloads) | **0** | **15** |
 | Bytes of harness you author yourself | **326,087** | **0** |
-| Rule bytes loaded into every agent session | **0** | **30,643** |
+| Rule bytes loaded into every agent session | **0** | **28,821** |
 | Time to stand it up | - | ~0.2s |
 
 The third row is not a typo and it is not in our favour. A bare agent carries no rules because
@@ -105,15 +105,17 @@ xychart-beta
 | | Rules | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | Bare agent, no harness | 0 | 0 | 0 |
-| Unconditional, always loaded | 7 | 30,643 | ~8,500 |
-| Path-scoped, loaded on demand | 9 | 52,113 | ~14,500 |
+| Unconditional, always loaded | 7 | 28,821 | ~8,006 |
+| Path-scoped, loaded on demand | 10 | 60,290 | ~16,747 |
 
-62% of rule content stays out of the default session. The seven that cannot be scoped are the ones
+68% of rule content stays out of the default session. The seven that cannot be scoped are the ones
 no glob can match: `00-overview`, `agent-guardrails`, `task-tracking`, `conventional-commits` (it
 governs commit *messages*, not files, which is why it is kept under 25 lines on purpose),
 `output-style` (it governs how the agent writes, which no path predicts), and the two governance
 rules `model-policy` and `ai-governance`, which decide what may be sent where before any file is
-touched.
+touched. The table counts the full set with every flag on: `ai-governance` ships only with the `ai`
+flag and `output-style` only with `terse`, so a default install loads fewer. Seat tiers are not in
+`model-policy`: they live in the path-scoped `model-tiers`.
 
 **What is not measurable here, and is not claimed:** whether the code an agent produces is better
 with a harness than without. Output quality, task success rate, time to a correct change and review
@@ -149,8 +151,8 @@ capability landed. A benchmark that only ever improves is a marketing document.
 - **Baseline A imports the eval's own payload suite** rather than re-declaring it, so the safety
   number cannot drift from the suite it claims to represent. It runs the `.sh` hook flavor and is
   skipped with a message if `bash` is unavailable.
-- **Baseline A counts only the 26 must-block payloads** in the eval's hook suite. The eval's full
-  112 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
+- **Baseline A counts only the 29 must-block payloads** in the eval's hook suite. The eval's full
+  122 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
   measure different properties and are not safety wins.
 - **The bare repo is built from the same fixtures** as the harnessed one, then has `.claude/`
   removed. If it lacked the `.env` or the ADR, "nothing was blocked" would be trivially true.
