@@ -6,7 +6,7 @@
 
 <p align="center"><a href="README.md">English</a> · <b>日本語</b></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 112/112](https://img.shields.io/badge/guardrail%20eval-112%2F112-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [スライド資料](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja) · 🎥 [動画ギャラリー](https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja) · 📦 [最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [ドキュメント一覧](#-ドキュメント一覧)
@@ -129,11 +129,11 @@ ID を持ちます。
 </p>
 
 <p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view の Assess タブ: 実際のハーネスを 100 点満点中 79 点と採点し、ボード健全性・コスト管理・ドキュメント品質・安全性・トレーサビリティのカテゴリ別バーと、問題を名指しする検出結果一覧を表示" width="900">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view の Assess タブ: 実際のハーネスを 100 点満点中 100 点と採点し、ボード健全性・コスト管理・ドキュメント品質・安全性・トレーサビリティのカテゴリ別バーと、空の検出結果一覧を表示" width="900">
 </p>
 
-いずれもモックではなく実在のハーネスです。ノード 111、エッジ 162、決定的な assess エンジンに
-よる採点は 79/100。この採点にモデルは一切関与しないため、ブラウザと CI が食い違うことは
+いずれもモックではなく実在のハーネスです。ノード 219、エッジ 655、決定的な assess エンジンに
+よる採点は 100/100。この採点にモデルは一切関与しないため、ブラウザと CI が食い違うことは
 ありません。
 
 ---
@@ -554,14 +554,10 @@ py -3.13 scripts/check_numbers.py    # 公開されたすべての数値がス�
 
 ## 📄 ライセンス
 
-**[PolyForm Noncommercial 1.0.0](LICENSE.md)** - 非商用目的であれば無償で利用できます。
-個人プロジェクト、学習、研究、趣味での利用、および慈善団体・教育機関・公的機関による
-利用が含まれます。
+**[GNU AGPL-3.0](LICENSE.md)** - 商用を含め、あらゆる目的で無償で利用できます。本ソフトウェアを
+改変して配布する場合、または改変版をネットワーク経由で利用させる場合は、変更部分のソースコードを
+同じライセンスで公開する必要があります。ライセンサー: **Hoàng Xuân Nguyên**（`nguyenhx2`）。
 
-**商用利用には有償ライセンスが必要です。** 販売・提供する製品やサービスの開発・運用への
-利用、営利企業内での利用、クライアント向けの受託開発、商用提供物への再配布などが該当し
-ます。取得については **Hoàng Xuân Nguyên**（`nguyenhx2`）**nguyenhx1@gmail.com** までご連絡ください。
-
-*お客様の*リポジトリに生成されたハーネスのファイルはお客様のものです。商用ライセンスが
-必要になるのは、*本ソフトウェア自体*を商用目的で実行または再配布する場合です。全条項と
-商用ライセンスの詳細は [LICENSE](LICENSE.md) を参照してください。
+*お客様の*リポジトリに生成されたハーネスのファイルはお客様のものであり、自由な条件で利用できます。
+[NOTICE](NOTICE.md) の追加許可により、これらは AGPL の対象外です。コピーレフトが及ぶのは
+*本ソフトウェア自体*(スキル、スクリプト、ツール)であり、生成物には及びません。

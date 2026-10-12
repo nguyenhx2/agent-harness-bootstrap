@@ -28,6 +28,15 @@ catalogue by category. The landing page stops breaking lines with room to spare,
 list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
 and gains Claude Code, Codex and Cursor marks.
 
+## v1.19.2
+
+harness-view and the bootstrapped scanner read a harness's wiring out of its files instead of a
+fixed table, so agents, hooks, commands and skills that name each other are drawn connected. The
+two scanners now agree byte-for-byte on non-ASCII repositories. The licence moves from PolyForm
+Noncommercial to AGPL-3.0-only: free for any use, commercial included, with modified versions that
+are distributed or served required to publish their source. The harness scaffolded into your
+repository stays yours under a section 7 permission in `NOTICE.md`.
+
 ## v1.19.1
 
 `harness-view serve` now starts on Windows machines whose default port sits in a Hyper-V/WSL

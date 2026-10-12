@@ -7,6 +7,23 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.19.2] - 2026-10-13
+
+### Fixed
+
+- **A harness whose files plainly name each other rendered as unconnected boxes.** References are
+  now read from the files: a `.claude/` path, a bare file name, a `/command`, an exact code or bold
+  span, a hyphenated slug, or frontmatter `skills:`. A single word in prose still never counts.
+- **A sourced helper script showed as an unregistered hook.** A `.sh`/`.ps1` that another hook
+  sources is now a `library` (badge LIB), not OFF, and no longer raises a `hook-unregistered` finding.
+
+### Changed
+
+- **Licence: PolyForm Noncommercial 1.0.0 to [AGPL-3.0-only](../../LICENSE.md).** Free for any use;
+  a modified build that is distributed or served over a network must publish its source.
+- Edges are typed by their two ends: `enforces`, `sources`, `runs`, `cites`, `uses`, `delegates`,
+  `invokes`, `refers`. See `docs/HARNESS-GRAPH-SCHEMA.md`.
+
 ## [1.19.1] - 2026-08-24
 
 ### Fixed

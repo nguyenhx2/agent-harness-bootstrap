@@ -85,7 +85,7 @@ SKIP_SUFFIX = {".pyc"}
 REPO_URL = "https://github.com/nguyenhx2/agent-harness-bootstrap"
 # SPDX id for the licence in LICENSE.md. Written into every plugin manifest, because a
 # manifest that misstates the licence is the copy a user actually installs.
-LICENSE_ID = "PolyForm-Noncommercial-1.0.0"
+LICENSE_ID = "AGPL-3.0-only"
 
 # Codex's plugin browser shows a short line beside the name; the full blurb is too long for it.
 SHORT = {
