@@ -94,6 +94,7 @@ def add_skill(zf: zipfile.ZipFile, skill: str, version: str) -> None:
         zf.write(f, f.relative_to(ROOT).as_posix())
     zf.writestr(f"{skill}/VERSION", f"{version}\n")
     zf.write(ROOT / "LICENSE.md", f"{skill}/LICENSE.md")
+    zf.write(ROOT / "NOTICE.md", f"{skill}/NOTICE.md")
 
 
 def build(version: str) -> list[pathlib.Path]:

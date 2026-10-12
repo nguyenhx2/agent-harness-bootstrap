@@ -63,7 +63,7 @@ explainer clips are played in the landing page itself rather than only on the `v
 
 ## Brand Commitments
 
-Name: Agent Harness Bootstrap. Mark: `docs/assets/logo-mark.svg`. Licence: PolyForm Noncommercial 1.0.0. Voice: plain,
+Name: Agent Harness Bootstrap. Mark: `docs/assets/logo-mark.svg`. Licence: AGPL-3.0-only. Voice: plain,
 measured, evidence-first, allergic to adjectives; the existing pages say "Proof, not adjectives"
 and mean it. Every claim on the surface is answered by a script in the repository.
 
@@ -77,8 +77,8 @@ Real, derived, and re-runnable by the visitor:
 - a bare repository blocks 0/22 benchmark payloads; the same repository, harnessed, blocks all 22
 - 62% of rule content stays out of the default session, because 9 of 16 rules are path-scoped
 - a run installs 7 to 15 of 16 seats
-- `harness-view` scored 79/100 on a real harness, over 109 nodes and 112 edges, naming each
-  finding (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
+- `harness-view` scored 100/100 on a real harness, over 219 nodes and 655 edges, with an empty
+  findings list (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
 - the delivery pipeline, the tailoring step and the five control layers, each of which the page
   draws itself as a live diagram rather than importing as a picture
 - outbound proof surfaces: `presentation/`, `video/`, the GitHub repository, the releases page

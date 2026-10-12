@@ -1,13 +1,13 @@
 {
   "name": "spec-builder",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
   "author": {
     "name": "nguyenhx2"
   },
   "homepage": "https://github.com/nguyenhx2/agent-harness-bootstrap",
   "repository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "license": "AGPL-3.0-only",
   "skills": "./skills/",
   "interface": {
     "displayName": "spec-builder",

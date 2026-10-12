@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.19.2] - 2026-10-13
+
+### Fixed
+
+- **The bootstrapped graph scanner drew a harness as disconnected columns.** It found a skill only
+  from one phrasing and a hook's rule only from a static table, two entries of which were wrong. It
+  now reads references from every agent, rule, command, hook and skill file, the same way
+  `harness-view` does, and names each edge by its two ends.
+- **`harness-graph.py` and `harness-view` disagreed on every non-ASCII repository.** The script
+  wrote ASCII escapes, the tool wrote UTF-8. Both now write UTF-8, and the parity fixture carries
+  Japanese text so the gate can see it.
+
+### Changed
+
+- **Licence: PolyForm Noncommercial 1.0.0 to [AGPL-3.0-only](../LICENSE.md).** Any use is now
+  free, commercial included; distributing or serving a modified version means publishing the source
+  of the changes. A section 7 permission in [NOTICE](../NOTICE.md) keeps the harness scaffolded into
+  your repository yours, outside the AGPL.
+- Every shipped hook states the rule it enforces in its own header (`# Enforces: .claude/rules/...`),
+  replacing the table the scanner used to keep.
+
 ## [1.19.1] - 2026-08-24
 
 No change to the skill. The version moves with `harness-view`, which fixes a `serve` that could not

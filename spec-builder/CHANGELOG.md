@@ -6,6 +6,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.19.2] - 2026-10-13
+
+### Changed
+
+- **Licence: PolyForm Noncommercial 1.0.0 to [AGPL-3.0-only](../LICENSE.md).** Any use is now
+  free, commercial included; distributing or serving a modified version means publishing the source
+  of the changes. A section 7 permission in [NOTICE](../NOTICE.md) keeps the harness scaffolded into
+  your repository yours, outside the AGPL.
+
 ## [1.19.1] - 2026-08-24
 
 No functional change. The version moves with `harness-bootstrap`.

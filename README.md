@@ -6,7 +6,7 @@
 
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
+[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
 [![Guardrail eval: 112/112](https://img.shields.io/badge/guardrail%20eval-112%2F112-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
 
 📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
@@ -131,10 +131,10 @@ The harness is not a diagram you take on trust. `harness-view` renders the real 
 </p>
 
 <p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 79 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and a findings list naming each problem" width="900">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 100 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and an empty findings list" width="900">
 </p>
 
-Both are a real harness, not a mock-up: 111 nodes, 162 edges, scored 79/100 by the deterministic
+Both are a real harness, not a mock-up: 219 nodes, 655 edges, scored 100/100 by the deterministic
 assess engine. No model is involved in that score, so a browser and a CI run cannot disagree
 about it.
 
@@ -567,15 +567,11 @@ py -3.13 scripts/check_numbers.py    # every published figure must match its scr
 
 ## 📄 License
 
-**[PolyForm Noncommercial 1.0.0](LICENSE.md)** - free for any noncommercial purpose:
-personal projects, study, research, hobby work, and use by charities, schools, and
-public institutions.
+**[GNU AGPL-3.0](LICENSE.md)** - free to use for any purpose, commercial included. If you
+distribute a modified version of this software, or let people use a modified version over a
+network, you must publish the source of your changes under the same licence. Licensor:
+**Hoàng Xuân Nguyên** (`nguyenhx2`).
 
-**Commercial use requires a paid license.** That includes using this software in the
-development or operation of a product or service you sell, use inside a for-profit
-company, consultancy work for a client, and redistribution as part of a commercial
-offering. To obtain one, contact **Hoàng Xuân Nguyên** (`nguyenhx2`) at **nguyenhx1@gmail.com**.
-
-The harness files scaffolded into *your* repository are yours - what needs a commercial
-license is running or redistributing *this software* commercially. Full terms and the
-commercial-licensing section: [LICENSE](LICENSE.md).
+The harness files scaffolded into *your* repository are yours, under terms of your choice: an
+additional permission in [NOTICE](NOTICE.md) keeps them outside the AGPL. The copyleft applies to
+*this software* - its skills, scripts and tools - not to what it generates for you.

@@ -217,7 +217,8 @@ def main() -> int:
     lic = ROOT / "LICENSE.md"
     if lic.is_file():
         head = lic.read_text(encoding="utf-8", errors="replace")[:400]
-        expected = ("PolyForm-Noncommercial-1.0.0" if "PolyForm Noncommercial" in head
+        expected = ("AGPL-3.0-only" if "GNU AFFERO GENERAL PUBLIC LICENSE" in head
+                    else "PolyForm-Noncommercial-1.0.0" if "PolyForm Noncommercial" in head
                     else "MIT" if "MIT License" in head else None)
         if expected is None:
             errs.append("LICENSE does not name a licence this check knows - teach it the new one "
