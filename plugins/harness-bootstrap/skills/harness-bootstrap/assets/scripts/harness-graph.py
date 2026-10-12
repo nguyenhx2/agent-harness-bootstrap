@@ -12,7 +12,8 @@ Node types (closed set):  agent | rule | command | hook | settings | script |
                           module | task | gate | human | skill | instruction
 Edge types (closed enum): gates | triggers | enforces | reviews | owns | spawns |
                           runs | invokes | escalates | references | uses |
-                          briefs | cites | imports | routes
+                          briefs | cites | imports | routes | delegates |
+                          sources | refers
 
 The file is DETERMINISTIC: nodes and edges are sorted, keys are sorted, and it
 carries no timestamp - two runs over the same tree are byte-identical, so the
@@ -44,7 +45,8 @@ NODE_TYPES = ("agent", "rule", "command", "hook", "settings", "script",
               "module", "task", "gate", "human", "skill", "instruction")
 EDGE_TYPES = ("gates", "triggers", "enforces", "reviews", "owns", "spawns",
               "runs", "invokes", "escalates", "references", "uses",
-              "briefs", "cites", "imports", "routes")
+              "briefs", "cites", "imports", "routes", "delegates",
+              "sources", "refers")
 
 # The instruction files: the contract each AI coding tool reads, and the only
 # nodes that live OUTSIDE .claude/. This table is the twin of
@@ -106,24 +108,158 @@ SKILL_DECL_RE = re.compile(
     re.I | re.M)
 SKILL_TOKEN_RE = re.compile(r"[A-Za-z0-9][\w.-]*[A-Za-z0-9]|[A-Za-z0-9]")
 
-# Which rule each hook exists to enforce. This relationship lives in prose
-# (hooks/README.md, the rules themselves); the table makes it machine-readable.
-# graph-stale is informational and enforces nothing.
-ENFORCES = {
-    "protect-secrets": "security-privacy",
-    "check-commit-msg": "conventional-commits",
-    "guard-main-commit": "conventional-commits",
-    "protect-adr": "docs-workflow",
-    "specs-reminder": "docs-workflow",
-    "guard-agent-scope": "agent-guardrails",
-    "guard-agent-spawn": "agent-guardrails",
-    "agent-history": "task-tracking",
-    "protect-repos": "security-privacy",
-}
-
 # Seats that gate the merge request (edge agent -reviews-> gate:merge-request).
 REVIEW_SEATS = {"code-reviewer", "security-reviewer", "spec-guardian",
                 "reviewer", "merge-manager"}
+
+
+# ---------------------------------------------------------------- content refs
+# Twin of tools/harness-view/src/refs.rs; read that file's header for the why.
+# A name counts only when it is written as a name on purpose: a `.claude/...`
+# path or a bare file name, a `/command`, an exact `code span` or **bold** span,
+# or a bare HYPHENATED slug. A single dictionary word in prose never counts.
+# Written as character loops rather than regexes so it matches the Rust
+# tokenizer exactly; the parity check compares the two byte for byte.
+
+def _ascii_alnum(c: str) -> bool:
+    return c.isascii() and c.isalnum()
+
+
+def _word_char(c: str) -> bool:
+    return _ascii_alnum(c) or c in "_-./"
+
+
+def _slug_char(c: str) -> bool:
+    return _ascii_alnum(c) or c in "_-"
+
+
+def _strip_ext(s: str, exts) -> str | None:
+    for e in exts:
+        if s.endswith(e) and len(s) > len(e):
+            return s[:-len(e)]
+    return None
+
+
+def _runs(text: str, keep) -> list[str]:
+    out, cur = [], []
+    for c in text + " ":
+        if keep(c):
+            cur.append(c)
+        elif cur:
+            out.append("".join(cur))
+            cur = []
+    return out
+
+
+def _by_name(inv: dict, name: str, with_rules: bool) -> str | None:
+    # Commands are left out: a command is written /name, and a skill-backed
+    # command often shares its skill's name, so the bare word means the skill.
+    for kind in ("agent", "skill", "hook"):
+        if name in inv[kind]:
+            return kind
+    if with_rules and name in inv["rule"]:
+        return "rule"
+    return None
+
+
+_PATH_DIRS = {"agents": ("agent", (".md",)), "rules": ("rule", (".md",)),
+              "commands": ("command", (".md",)), "skills": ("skill", None),
+              "hooks": ("hook", (".sh", ".ps1")),
+              "scripts": ("script", (".py", ".sh", ".ps1"))}
+
+
+def _path_refs(word: str, inv: dict, out: set) -> None:
+    segs = word.split("/")
+    for i in range(len(segs) - 1):
+        # Anchored at .claude/ or at the start of the word: .cursor/rules/x.md
+        # and a skill's private scripts/ folder are other trees.
+        if i != 0 and segs[i - 1] != ".claude":
+            continue
+        spec = _PATH_DIRS.get(segs[i])
+        if not spec:
+            continue
+        kind, exts = spec
+        name = segs[i + 1] if exts is None else _strip_ext(segs[i + 1], exts)
+        if name and name in inv[kind]:
+            out.add((kind, name))
+    # A word that is ONE file name, possibly behind a leading slash
+    # ($(dirname "$0")/_lib.sh tokenizes to /_lib.sh), or a /command.
+    parts = [x for x in segs if x]
+    if len(parts) == 1:
+        f = parts[0]
+        n = _strip_ext(f, (".sh", ".ps1"))
+        if n and n in inv["hook"]:
+            out.add(("hook", n))
+        n = _strip_ext(f, (".py", ".sh", ".ps1"))
+        if n and n in inv["script"]:
+            out.add(("script", n))
+        if len(segs) == 2 and segs[0] == "" and f in inv["command"]:
+            out.add(("command", f))
+
+
+def _marked_spans(line: str) -> list[str]:
+    out = []
+    for delim in ("`", "**"):
+        rest = line
+        while True:
+            a = rest.find(delim)
+            if a < 0:
+                break
+            after = rest[a + len(delim):]
+            b = after.find(delim)
+            if b < 0:
+                break
+            out.append(after[:b].strip())
+            rest = after[b + len(delim):]
+    return out
+
+
+def references(text: str, inv: dict) -> set:
+    """Every harness item `text` references, as (kind, name)."""
+    norm = text.replace("\\", "/")
+    out: set = set()
+    for w in _runs(norm, _word_char):
+        _path_refs(w.rstrip("."), inv, out)
+    for line in norm.split("\n"):
+        for span in _marked_spans(line.removesuffix("\r")):
+            kind = _by_name(inv, span, True)
+            if kind:
+                out.add((kind, span))
+    for w in _runs(norm, _slug_char):
+        w = w.strip("-")
+        if "-" in w:
+            kind = _by_name(inv, w, False)
+            if kind:
+                out.add((kind, w))
+    return out
+
+
+def edge_type(frm: str, to: str) -> str:
+    """The edge a reference becomes, named by what the two ends are."""
+    if frm == "hook" and to == "rule":
+        return "enforces"
+    if frm == "hook" and to == "hook":
+        return "sources"
+    if to == "script":
+        return "runs"
+    if frm == "hook":
+        return "refers"
+    if frm == "instruction" and to == "agent":
+        return "briefs"
+    if to == "rule":
+        return "cites"
+    if to == "skill":
+        return "uses"
+    if frm == "rule" and to == "agent":
+        return "refers"
+    if to == "agent":
+        return "delegates"
+    if to == "command":
+        return "invokes"
+    return "refers"
+
+
+_PREFIX = {"command": "cmd"}
 
 
 def read_text(p: pathlib.Path, limit: int | None = None) -> str:
@@ -523,11 +659,17 @@ def build(root: pathlib.Path) -> dict:
                 for name in agents:
                     add_edge(f"rule:{rl.stem}", f"agent:{name}", "gates")
 
-    # scripts: complete inventory of .claude/scripts/*.py by contract, whether or
-    # not any command references them
+    # scripts: complete inventory of .claude/scripts/*.{py,sh,ps1}, whether or
+    # not anything references them. One node per name: .py, then .sh, then .ps1.
     scripts_dir = claude / "scripts"
-    for sp in sorted(scripts_dir.glob("*.py")) if scripts_dir.is_dir() else []:
-        add_node(f"script:{sp.stem}", "script", sp.name, file=rel(sp))
+    script_files: dict[str, pathlib.Path] = {}
+    for ext in (".py", ".sh", ".ps1"):
+        for sp in sorted(scripts_dir.glob("*" + ext)) if scripts_dir.is_dir() else []:
+            if sp.is_file() and sp.name[:-len(ext)]:
+                script_files.setdefault(sp.name[:-len(ext)], sp)
+    for stem in sorted(script_files):
+        add_node(f"script:{stem}", "script", script_files[stem].name,
+                 file=rel(script_files[stem]))
 
     # commands (+ a runs edge for EVERY .claude/scripts/<name>.py reference)
     for d, dis in [(claude / "commands", False), (claude / "disabled" / "commands", True)]:
@@ -572,9 +714,6 @@ def build(root: pathlib.Path) -> dict:
                  disabled=dis or bool(entry), meta=meta)
         if r and "settings" in nodes:
             add_edge("settings", f"hook:{stem}", "triggers")
-        target_rule = ENFORCES.get(stem)
-        if target_rule and f"rule:{target_rule}" in nodes:
-            add_edge(f"hook:{stem}", f"rule:{target_rule}", "enforces")
 
     # synthetic flow nodes
     add_node("gate:merge-request", "gate", "Merge request", synthetic=True)
@@ -741,6 +880,37 @@ def build(root: pathlib.Path) -> dict:
         if n is not None:
             n.setdefault("meta", {})["tier"] = tier
 
+    # Edges read out of the files themselves - what each agent, rule, command,
+    # hook, skill and instruction file names. Twin of content_edges() in scan.rs.
+    inv: dict[str, set] = {k: set() for k in ("agent", "skill", "rule", "command",
+                                              "hook", "script")}
+    for nid, n in nodes.items():
+        if n["type"] in inv and ":" in nid:
+            inv[n["type"]].add(nid.split(":", 1)[1])
+    for nid, n in list(nodes.items()):
+        kind = n["type"]
+        if kind not in ("agent", "rule", "command", "hook", "skill", "instruction") \
+                or not n.get("file"):
+            continue
+        text = read_text(root / n["file"])
+        for to_kind, name in references(text, inv):
+            to = f"{_PREFIX.get(to_kind, to_kind)}:{name}"
+            if to != nid:
+                add_edge(nid, to, edge_type(kind, to_kind))
+        # Claude Code's own subagent field: `skills:` preloads those skills
+        # into the seat, which is a wire whatever the names look like.
+        if kind == "agent":
+            for sk in frontmatter_list(frontmatter_block(text), "skills"):
+                if sk in inv["skill"]:
+                    add_edge(nid, f"skill:{sk}", "uses")
+    # A hook nothing registers but another hook sources is a library, not a
+    # hook that was switched off.
+    for (_f, t, ty, _r) in list(edges):
+        if ty == "sources":
+            m = nodes.get(t, {}).get("meta")
+            if m is not None and m.get("registered") is False:
+                m["library"] = True
+
     edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r else {})}
                  for (f, t, ty, r) in edges
                  if f in nodes and (t in nodes or ty == "runs")]
@@ -768,7 +938,10 @@ def main() -> int:
     # so this scanner emitted CRLF on Windows while harness-view emitted LF for the same repo -
     # identical content, different bytes, and the schema's promise is that the two agree BYTE
     # for byte. It also stops a generated JSON file from churning every diff on a mixed team.
-    out.write_text(json.dumps(graph, indent=2, sort_keys=True) + "\n",
+    # ensure_ascii=False for the same reason: harness-view writes UTF-8 as is, so escaping a
+    # Japanese description here made the two scanners disagree on every non-ASCII repo while
+    # the ASCII-only fixture kept passing.
+    out.write_text(json.dumps(graph, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
                    encoding="utf-8", newline="\n")
     if not quiet:
         print(f"harness-graph: {len(graph['nodes'])} nodes, "

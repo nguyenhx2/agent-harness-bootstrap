@@ -29,10 +29,10 @@ the human node is `Human`, settings is `settings.json`, scripts are
 | agent | `agent:code-reviewer` | `file`, `meta` (`model`, `effort`, `maxTurns`, `tools`, `description`) |
 | rule | `rule:testing` | `file`, `meta` (`scoped`, `paths` when scoped and unquoted, `description`) |
 | command | `cmd:deploy` | `file` |
-| hook | `hook:protect-secrets` | `file` (the .sh flavor when both exist, else the .ps1), `meta` (`registered`, `event`, `matcher`, `blocking`) |
+| hook | `hook:protect-secrets` | `file` (the .sh flavor when both exist, else the .ps1), `meta` (`registered`, `event`, `matcher`, `blocking`, `library` when unregistered and sourced by another hook) |
 | settings | `settings` | `file`, `edit`; no meta (present only when settings.json exists) |
 | instruction | `instr:agents`, `instr:cursor-rules/testing` | `file`, `edit`, `meta` (`tools`, `source`, `verified`, `note`), `tiers` when the file carries a routing table |
-| script | `script:code-graph` | `file` (every `*.py` under `.claude/scripts/`) |
+| script | `script:code-graph` | `file` (every `*.py`, `*.sh`, `*.ps1` under `.claude/scripts/`; label is the file name) |
 | module | `mod:src/app` | `meta` with BOTH `files` (count) and `owner` (agent name or `-`) |
 | task | `task:TASK-042` | `file` (every `TASK-*.md` under `docs/tasks/**`), `meta` (`title`, `status`, `fr`, `owner`, `deps`, `priority`, `phase` when the frontmatter carries them) |
 | gate | `gate:merge-request` | `synthetic: true` |
@@ -89,19 +89,29 @@ code-graph.json. The type enum is closed:
 | type | meaning |
 |---|---|
 | `triggers` | settings.json registration fires the hook |
-| `enforces` | the hook mechanically enforces the rule (static table) |
+| `enforces` | the hook's own text names the rule |
 | `gates` | an unconditional (non-path-scoped) rule applies to the agent |
 | `spawns` | the orchestrator dispatches the agent |
 | `reviews` | a reviewer seat gates the merge request |
 | `escalates` | the merge-request gate ends at the human |
 | `invokes` | commands are human entry points |
-| `runs` | the command references the script; one edge per referenced `.claude/scripts/*.py`, so a command may run several |
+| `runs` | a file references the script; from a command, every `.claude/scripts/<name>.py` counts even when missing, so the dangling edge is the finding |
 | `owns` | the agent owns the module (code-graph owner), or owns the task (its `owner:` frontmatter). A co-owned task written `a+b` emits one edge per named seat; a seat that has no agent node emits none. |
 | `references` | module imports module; task mentions module |
 | `briefs` | an instruction file names the agent |
 | `cites` | an instruction file points at the rule by its `.claude/rules/<name>.md` path |
 | `imports` | an instruction file `@`-imports another (`CLAUDE.md` -> `AGENTS.md`) |
 | `routes` | a routing-tier row names the agent that runs that tier |
+| `uses` | a file names a skill |
+| `delegates` | a command, agent or skill hands work to an agent |
+| `sources` | a hook loads a shared helper hook (`_lib.sh`) |
+| `refers` | any other named reference (hook -> agent/skill/command, rule -> agent) |
+
+`invokes`, `cites` and `runs` are also emitted from any file that names a command, rule or
+script. Everything content-derived follows the rules in `docs/HARNESS-GRAPH-SCHEMA.md`
+("Content references"), implemented by `src/refs.rs` and its twin `references()` in
+`harness-graph.py`: a path, a `/command`, an exact code or bold span, or a hyphenated slug
+counts; a single word in prose never does.
 
 ## disabled.json (toggle record)
 

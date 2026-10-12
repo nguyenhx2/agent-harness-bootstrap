@@ -1,5 +1,6 @@
 # guard-agent-spawn.ps1
 # Event: PreToolUse   Matcher: Agent|Task
+# Enforces: .claude/rules/agent-guardrails.md
 # The spawn boundary of the harness. Blocks two escapes:
 #   1. Spawning an agent type that is not a roster seat (no .claude/agents/<type>.md) and not on
 #      the explicit allowlist. An agent the roster does not define runs with no scope, no model

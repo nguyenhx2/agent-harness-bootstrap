@@ -1,5 +1,6 @@
 # protect-adr.ps1
 # Event: PreToolUse   Matcher: Edit|Write
+# Enforces: .claude/rules/docs-workflow.md
 # Blocks edits to ADRs whose on-disk status is "Accepted" (ADRs are immutable; a change means a
 # NEW ADR that supersedes the old one).
 #

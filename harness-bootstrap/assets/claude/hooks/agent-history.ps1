@@ -1,5 +1,6 @@
 # agent-history.ps1
 # Event: SubagentStop   Matcher: * (every subagent)
+# Enforces: .claude/rules/task-tracking.md
 #
 # WHY SubagentStop AND NOT PostToolUse: an earlier version of this hook was registered as
 # PostToolUse with matcher "Task|Agent" and read $payload.tool_input / $payload.tool_response.

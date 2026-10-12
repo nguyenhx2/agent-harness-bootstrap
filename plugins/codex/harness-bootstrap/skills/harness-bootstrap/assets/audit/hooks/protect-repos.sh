@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # protect-repos.sh
 # Event: PreToolUse   Matcher: Edit|Write
+# Enforces: .claude/rules/security-privacy.md
 # Layer 2 of the separation-of-duties enforcement for AUDIT workspaces: resolves the target path
 # (relative paths against the payload's cwd, `..` collapsed, separators normalized) and blocks any
 # Edit/Write inside a product repo dir. Audit agents are READ-ONLY on product source: they record

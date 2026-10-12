@@ -1,5 +1,6 @@
 # guard-agent-scope.ps1
 # Event: PreToolUse   Matcher: Edit|Write
+# Enforces: .claude/rules/agent-guardrails.md
 #
 # ADVISORY, NOT ENFORCED - and that is a deliberate finding, not a shortcut. Before writing this
 # hook we checked whether a PreToolUse payload for Edit|Write identifies the calling subagent, the
