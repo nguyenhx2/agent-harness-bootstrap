@@ -60,8 +60,8 @@ of the work actually lives.
 
 | Tier | What lives there | When it loads | What it costs | What compaction does to it |
 |---|---|---|---|---|
-| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 7 unconditional files (7 with `terse`) in `.claude/rules/`, the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
-| **Lazy-RAM** | The 9 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~51,800 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
+| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 7 unconditional files in `.claude/rules/` (with every flag on: `ai-governance.md` ships only with `ai`, `output-style.md` only with `terse`), the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
+| **Lazy-RAM** | The 10 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~51,800 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
 | **Disk** (the state of the work) | `docs/tasks/master-plan.md` (the board) and `docs/tasks/active/TASK-NNN.md` (goal, scope, acceptance criteria, decisions and blockers, session log) | On demand, by an explicit `Read` | A few hundred bytes read once per session | **Nothing.** It is committed markdown in git. This is the tier that survives everything |
 | **Archive** (append-only) | `.claude/state/history/` - one markdown file per finished subagent run, holding the prompt it was given and its final response | Never, unless read | Zero, until someone asks | Nothing. It is written by a hook after the fact, so no amount of context loss can erase it |
 
@@ -69,17 +69,24 @@ of the work actually lives.
 
 `.claude/rules/00-overview.md` states the loading contract:
 
-> `No paths: frontmatter means the file loads into EVERY session, at CLAUDE.md priority. Only the six
-> files listed below earn that: they either bind the agent's behavior or decide what may be sent where,
-> and both questions arise before any file is touched. Keep them short.`
+> `No paths: frontmatter means the file loads into EVERY session, at CLAUDE.md priority. Only this
+> file and the ones listed as always loaded below earn that: they either bind the agent's behavior or
+> decide what may be sent where, and both questions arise before any file is touched. Keep them short.`
 
-The six are `00-overview.md`, `agent-guardrails.md`, `model-policy.md`, `ai-governance.md`,
-`task-tracking.md`, and `conventional-commits.md`. A seventh, `output-style.md`, joins them only when the `terse` flag is set: it shapes every answer, so it cannot be path-scoped, and it is off by default precisely because an always-loaded rule is a permanent context cost. None of them can be path-scoped even in principle:
+The always-loaded files are `00-overview.md`, `agent-guardrails.md`, `model-policy.md`,
+`task-tracking.md`, and `conventional-commits.md`. Two more join them only when a flag asks:
+`ai-governance.md` ships only with the `ai` flag, since a project that ships no AI feature has no use
+for it, and `output-style.md` only when the `terse` flag is set - it shapes every answer, so it cannot
+be path-scoped, and it is off by default precisely because an always-loaded rule is a permanent context
+cost. `model-policy.md` keeps only what every session needs (the data classification and the STOP
+rule); the seat tiers, the model-swap procedure and the deny-list enforcement moved to the
+path-scoped `model-tiers.md`, which loads only when an agent file or `settings.json` is being changed.
+None of the always-loaded files can be path-scoped even in principle:
 
 - `conventional-commits.md` governs commit *messages*, and a message is not a file, so no glob can
   ever match it. That is why the file is deliberately kept under 25 lines.
-- `model-policy.md` and `ai-governance.md` decide what may be sent to which model *before* any file
-  is opened, so scoping them to a file that has not been read yet is incoherent.
+- `model-policy.md` (and `ai-governance.md`, where it ships) decide what may be sent to which model
+  *before* any file is opened, so scoping them to a file that has not been read yet is incoherent.
 - `task-tracking.md` earns its slot for the reason stated in its own first line: *"Loaded in every
   session, deliberately: an agent that forgets where state lives will invent it."* The tier that
   tells the agent where disk is has to live in RAM.
@@ -96,8 +103,8 @@ paths:
 # Frontend
 ```
 
-`benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 30,643 bytes against 9
-path-scoped rules at 55,062 bytes. **62% of the rule content is kept out of the default session.** The
+`benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 28,821 bytes against 10
+path-scoped rules at 60,290 bytes. **68% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,
@@ -405,7 +412,7 @@ Every claim above traces to a file in this repository:
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`, `hooks/README.md` - the SubagentStop archive.
 - `harness-bootstrap/reference/cost-model.md` - path-scoped rules, byte-stability, `maxTurns`.
 - `benchmark/RESULTS.md` - the 67% figure.
-- `eval/guardrail_eval.py` - 112/112.
+- `eval/guardrail_eval.py` - 122/122.
 - `docs/ASSESSMENT.md` - what is enforced, what is advisory, and why routing cannot be hooked.
 
 External:

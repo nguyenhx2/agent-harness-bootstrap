@@ -7,7 +7,8 @@
 #   2. DOCS edits (docs/**/*.md, only when a docs graph was already built): regenerate the docs
 #      graph + HTML immediately - docs trees are small too.
 #   3. SOURCE edits: record the path in .claude/state/code-graph.stale; the rebuild stays
-#      deliberate (/code-graph). Past 20 accumulated edits this ALSO emits
+#      deliberate (/code-graph). Each path is recorded once; a re-edit of a recorded file is
+#      silent. Past 20 distinct files this ALSO emits
 #      hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
 #      specs-reminder.ps1's fixed-literal JSON.
 # Never blocks: always exit 0.
@@ -68,6 +69,8 @@ if (-not (Test-Path $graph)) { exit 0 }
 $stateDir = Join-Path $base ".claude/state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Force $stateDir | Out-Null }
 $staleFile = Join-Path $stateDir "code-graph.stale"
+# Already recorded: the graph is no staler than it was a moment ago, so say nothing.
+if ((Test-Path $staleFile) -and ((Get-Content $staleFile) -contains $norm)) { exit 0 }
 Add-Content -Path $staleFile -Value $norm
 
 $lines = (Get-Content $staleFile | Measure-Object -Line).Lines

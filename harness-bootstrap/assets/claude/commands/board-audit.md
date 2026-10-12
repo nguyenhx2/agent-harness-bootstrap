@@ -22,7 +22,7 @@ Then run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTIO
 3. **Board drift.** Tasks whose frontmatter `status:` disagrees with their master-plan row, files in
    `active/` marked Done or Pending, files in `done/` not marked Done.
 4. **Attempt-cap breaches.** Any task with `attempts:` of 3 or more still marked `Active` - by
-   task-control.md it must be `Blocked` with an escalation note.
+   the attempt cap (`orchestrator.md`, Supervise) it must be `Blocked` with an escalation note.
 5. **Unknown worktrees and branches.** `git worktree list` and `git branch --list` entries no
    Active/Planned task references. Work is happening (or died) outside the board.
 6. **Blocked with no unblocker.** `status: Blocked` files whose notes name no owner or condition

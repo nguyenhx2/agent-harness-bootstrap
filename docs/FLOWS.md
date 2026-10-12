@@ -296,14 +296,24 @@ Re-running on an unchanged repo is idempotent: everything comes back `KEPT`, not
 
 This is the **Guarded** flow - what the generated `.claude/` folder runs when a change spans two or
 more domains, or touches schema, auth, money, a public contract, a migration, a deploy, or personal
-data. It is not what every change runs. A one-module, reversible change is **Direct**: it goes
-straight to the agent that owns that module, with no orchestrator, no task file and no review pass,
-because a planning pass costs more than the change. The tier table in the generated `AGENTS.md`
-decides which of the two a request is, before anything is dispatched.
+data. It is not what every change runs. The tier table in the generated `AGENTS.md` has four rows
+and decides which one a request is, before anything is dispatched: **Inline** (a question, a lookup,
+a small edit - the main session does it itself, with no subagent and no task file), **Direct** (one
+module, reversible - straight to the agent that owns it, no orchestrator, no task file), **Standard**
+(one domain or several files - the owning agent, with a task file only when the work must survive a
+compacted session) and **Guarded**, the flow below. Direct and Standard dispatches carry `TIER: direct`
+or `TIER: standard` in the prompt, which `guard-agent-spawn` accepts in place of a `TASK-NNN` for a
+write-capable seat; Guarded work still needs a registered task. A planning pass costs more than a
+small change, so a heavier tier than the change needs is a defect. For a long Guarded mission the
+session can be started as the orchestrator itself (`claude --agent orchestrator`) instead of
+dispatching it.
 
 Note where the gate sits below: **once, on the branch, at the pull-request boundary** - not after
 each agent. A reviewer dispatched per agent re-reads the same files once per agent and reports the
-same findings each time. In cost terms: the
+same findings each time. The same holds for tests: verification is per feature, not per step, so
+while building a dev agent runs only the tests that touch what it changed, and the full suite runs
+once at the gate (a green run already logged at the current commit is cited, not repeated). In cost
+terms: the
 orchestrator, the reviewers, and the debugger are Opus seats; the dev agents, `qa-test`, and
 `spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are Haiku at `low`
 effort. The hooks cost nothing, being shell scripts rather than a model, and they are the only
@@ -351,10 +361,11 @@ sequenceDiagram
     Note over Hooks: A hook that blocks you is a rule you were about to break.<br/>Never route around it with a shell equivalent.
     Dev->>Hooks: Bash: git checkout -b feat/... then git commit
     Hooks-->>Dev: check-commit-msg validates Conventional Commits - passes (exit 0)
-    Dev->>Board: Session-log row: what was done, result
+    Note over Dev: While building: only the tests touching what changed,<br/>never the full suite per step
+    Dev->>Board: Session-log row per completed unit: what was done, result
     Dev-->>Orch: Implementation complete (a CLAIM, not a fact)
 
-    Orch->>QA: Run the suite - tests map 1:1 to the acceptance criteria
+    Orch->>QA: Branch gate: run the full suite once - tests map 1:1 to the acceptance criteria<br/>skipped if a green run is already logged at this commit
     QA->>Board: Session-log row: tests green
     QA-->>Orch: Green
 
@@ -368,6 +379,7 @@ sequenceDiagram
         SR-->>Orch: Pass / findings
     end
     Note over CR,SR: Neither has Edit or Write. A reviewer that edits code<br/>has become a dev agent and lost its independence.
+    Note over Orch,SR: At most two rounds. The second covers only the fix delta and only<br/>blocker and should-fix findings, and what remains goes to the user.
 
     Orch->>Orch: /secret-scan on the diff
     Orch->>Board: Read back the session log
@@ -506,8 +518,8 @@ flowchart TD
     class TOUCH hum
 ```
 
-7 unconditional rules, nine path-scoped ones (the seventh, `output-style.md`, only with the `terse` flag). On the shipped asset set that is 30,643 bytes always
-loaded against 55,062 bytes loaded on demand: **62% of the rule content is kept out of the default
+7 unconditional rules, ten path-scoped ones (two of the seven are flag-gated: `ai-governance.md` ships only with the `ai` flag and `output-style.md` only with `terse`). On the shipped asset set that is 28,821 bytes always
+loaded against 60,290 bytes loaded on demand: **68% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 
@@ -600,8 +612,8 @@ observable acceptance criteria stops here and escalates rather than proceeding -
 via `/new-task`, flips it to `Active`, and assigns the specialist per the routing table. Implementation
 follows whichever methodology the project chose at intake: test-first under TDD, tests shipped in the
 same change under DDD/default, or a session-log note of how each criterion was verified by hand on a
-project with no automated suite. Then runs `/test` (if the project has one) followed by
-`/review-changes`.
+project with no automated suite. Once the whole FR is implemented - not after each step - it runs
+`/review-changes` a single time; that gate already runs the suites, so `/test` is not run first.
 
 **Writes:** task session-log rows, and the code itself via the dispatched dev agent (plus a glossary
 entry for any new domain term, under DDD). **Refuses:** deploying - that is always a separate,
@@ -662,7 +674,10 @@ secret is a blocker), then dispatches the review agents: the merged `reviewer` d
 `solo_review`, or `code-reviewer` plus `security-reviewer` separately on the default split roster.
 Either way, `spec-guardian` verifies the linked FR's and task's acceptance criteria are met, lint and
 tests are confirmed locally, and the CI pipeline must be green in a *terminal* state - pending never
-counts. Findings are aggregated by severity: blocker, should-fix, suggestion.
+counts; a green run already logged at the current commit is cited rather than repeated. Findings are
+aggregated by severity: blocker, should-fix, suggestion. The gate is capped at two rounds: after
+fixes the second round covers only the fix delta and only blocker and should-fix findings, and
+whatever remains is escalated to the user.
 
 **Writes:** a session-log row recording the review and its findings - "a gate counts as passed only
 when the log records the run." **Refuses:** merging or deploying - "reviewing is not approving."

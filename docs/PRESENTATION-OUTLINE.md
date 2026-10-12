@@ -161,8 +161,8 @@ Do not present this as two tiers. The insight is that there are four, and only t
 
 | Tier | What lives there | Cost | What compaction does |
 |---|---|---|---|
-| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | **30,643 bytes of rules**, re-sent every turn, forever | Survives, because it is re-injected |
-| **Lazy-RAM** | The 9 path-scoped rules (`paths:` frontmatter) | **55,062 bytes** that most sessions never pay for | Reloads when a matching file is touched |
+| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | **28,821 bytes of rules**, re-sent every turn, forever | Survives, because it is re-injected |
+| **Lazy-RAM** | The 10 path-scoped rules (`paths:` frontmatter) | **60,290 bytes** that most sessions never pay for | Reloads when a matching file is touched |
 | **Disk** | `docs/tasks/master-plan.md` (the board) + `docs/tasks/active/TASK-NNN.md` (goal, criteria, decisions, **session log**) | A few hundred bytes, read once | **Nothing. It is committed markdown in git** |
 | **Archive** | `.claude/state/history/` - one file per finished subagent run, written by a `SubagentStop` hook | Zero until read | Nothing. Written after the fact |
 
@@ -206,17 +206,23 @@ changes get almost none.
 
 | Tier | The change | Who runs it |
 |---|---|---|
+| **Inline** | A question, a lookup, a doc or config edit, a fix you can see whole in one or two files | The main session itself. **No subagent, no orchestrator, no task file** |
 | **Direct** | One module, reversible, touching no contract, schema, auth, payment or infrastructure | The owning agent, called straight. **No orchestrator, no task file** |
 | **Standard** | One domain, several files, or a numbered requirement behind it | The owning agent too. A task file only when the work must survive a compaction |
 | **Guarded** | Two or more domains, *or* schema, auth, money, a public contract, a migration, a deploy or personal data | The `orchestrator`, and the full flow below |
+
+Direct and Standard dispatches carry `TIER: direct` or `TIER: standard` in the prompt, and
+`guard-agent-spawn` accepts that marker in place of a `TASK-NNN`; Guarded work still needs a registered
+task. A long Guarded mission can be run by starting the session as the orchestrator
+(`claude --agent orchestrator`).
 
 **The line to land:** *"Choosing a heavier tier than the change needs is a defect, not caution. A
 one-line fix that pays for a planning pass, a task file and three reviews spends real time to learn
 nothing - and after a few of those, people stop reaching for the harness on small work. Small work is
 most work."*
 
-The rest of this section describes the **Guarded** flow. Direct and Standard work skips straight to
-the specialist.
+The rest of this section describes the **Guarded** flow. Inline work stays in the main session; Direct
+and Standard work skips straight to the specialist.
 
 ### The state machine - five states, defined exactly once
 
@@ -308,7 +314,7 @@ shape behaviour; they do not enforce it.
 ### The strongest claim in the talk
 
 `eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **44 must-block, 68 must-allow, 112/112 correct.**
+at it: **50 must-block, 72 must-allow, 122/122 correct.**
 
 > *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
 > accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
@@ -321,9 +327,10 @@ quality and review depth *do* degrade with a cheaper model. The eval does not me
 
 ### Governance layer (30 seconds)
 
-Three rules ship into every repo, and the skill **never invents a policy for your company**:
+Three governance rules ship, and the skill **never invents a policy for your company**:
 `model-policy` (data classification decides which model may process what), `ip-compliance`
-(dependency licence allow and deny lists), `ai-governance` (which actions require a human).
+(dependency licence allow and deny lists), `ai-governance` (which actions require a human - shipped
+only with the `ai` flag).
 
 ---
 
@@ -353,7 +360,7 @@ Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`)
 > **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
 > a team lands on by not choosing.**
 
-Context is the other lever: 9 of 16 rules are path-scoped, keeping **62% of rule content out of the
+Context is the other lever: 10 of 16 rules are path-scoped, keeping **68% of rule content out of the
 default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
 
 ---
@@ -434,7 +441,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Claim | Figure | Source |
 |---|---|---|
-| Known-bad and known-good payloads handled correctly | **112/112** (44 blocked, 68 allowed) | `eval/guardrail_eval.py` |
+| Known-bad and known-good payloads handled correctly | **122/122** (50 blocked, 72 allowed) | `eval/guardrail_eval.py` |
 | Result after swapping Opus for Haiku | **byte-identical** | same eval |
 | Cursor/Codex port adapter | **32/32** | `port.py --self-test` |
 
@@ -442,7 +449,7 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **155,597** | **-34%** |
+| Read path (bytes pulled into context) | 234,196 | **156,205** | **-33%** |
 | Read path (files read) | 24 | **10** | **-58%** |
 | Write path (bytes the model must author) | 95,064 | **9,439** | **-90%** |
 
@@ -450,8 +457,8 @@ Use a **real repository with existing code**. Brownfield is far more convincing 
 
 | | Rules | Bytes |
 |---|---:|---:|
-| Unconditional (always loaded) | 7 | 30,643 |
-| Path-scoped (on demand) | 9 | 55,062 |
+| Unconditional (always loaded) | 7 | 28,821 |
+| Path-scoped (on demand) | 10 | 60,290 |
 | **Kept out of the default session** | | **62%** |
 
 ### Cost per feature (modelled)
@@ -510,7 +517,7 @@ technical audience this is usually the moment they start trusting you.
 | *How much does it cost?* | $2.746 per feature modelled on the default roster, 31% below the not-choosing configuration. Three presets: Default / Economy / Thorough |
 | *Is this just a big CLAUDE.md?* | A CLAUDE.md is advice the model may forget after compaction. This is enforcement plus durable state |
 | *Who owns the policy decisions?* | You do. Governance rules ship as blanks. The skill never invents a licence policy or a classification table |
-| *Does this slow developers down?* | Not on small work: a one-module, reversible change is Direct - straight to the owning agent, no orchestrator, no task file. The full flow is reserved for changes that span domains or touch schema, auth, money, a contract, a migration, a deploy or personal data, and the gate runs once on the branch rather than after every agent |
+| *Does this slow developers down?* | Not on small work: a small edit is Inline (the main session does it itself) and a one-module, reversible change is Direct - straight to the owning agent, no orchestrator, no task file. The full flow is reserved for changes that span domains or touch schema, auth, money, a contract, a migration, a deploy or personal data, and the gate runs once on the branch rather than after every agent |
 
 ---
 
@@ -547,16 +554,16 @@ section. It is the visual for this script, not a second copy of it: if a claim c
 Enforced by `scripts/check_numbers.py`, so these will not drift:
 
 - **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
-- **7** rules unconditional, **9** path-scoped → **62%** of rule content stays out of session
-- Always-RAM rules **30,643 bytes**; path-scoped **55,062 bytes**
+- **7** rules unconditional, **9** path-scoped → **68%** of rule content stays out of session
+- Always-RAM rules **28,821 bytes**; path-scoped **60,290 bytes**
 - Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
 - Write path **-90%** (95,064 → 9,439 bytes)
-- Guardrail eval **112/112** (44 must-block, 68 must-allow), model-independent
+- Guardrail eval **112/112** (50 must-block, 72 must-allow), model-independent
 - Port adapter self-test **32/32**
 - Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh
 - Scaffold **~0.2s**, idempotent on re-run
 - Roster **7 to 15 of the 16 seats**, never all of them by default
-- Three tiers of process: Direct, Standard, Guarded - and the gate runs once, on the branch
+- Four tiers of process: Inline, Direct, Standard, Guarded - and the gate runs once, on the branch, with tests verified per feature rather than per step
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Three modes: Greenfield, Brownfield, Audit
 - `harness-view assess` on three real harnesses: **99**, **90** and **64** out of 100

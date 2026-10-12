@@ -4,8 +4,8 @@ Rules for {{PROJECT_NAME}}. Every agent and every code change complies with this
 
 ## How these rules load
 
-- No `paths:` frontmatter means the file loads into EVERY session, at CLAUDE.md priority. Only the six
-  files listed below earn that: they either bind the agent's behavior or decide what may be sent
+- No `paths:` frontmatter means the file loads into EVERY session, at CLAUDE.md priority. Only this
+  file and the ones listed as always loaded below earn that: they either bind the agent's behavior or decide what may be sent
   where, and both questions arise before any file is touched. Keep them short.
 - With `paths:` frontmatter, a rule loads only when a matching file is touched. Anything
   stack-specific or surface-specific belongs in a path-scoped rule, never here.
@@ -33,9 +33,10 @@ Rules for {{PROJECT_NAME}}. Every agent and every code change complies with this
 
 Always loaded:
 - agent-guardrails.md - the four enforcement layers and the behavior they encode.
-- model-policy.md - data classification, which model may process which class, seat tier to model.
-- ai-governance.md - shipping AI features: gates, evals, auditability, the incident path.
-- task-tracking.md - where task state lives and how it is written.
+- model-policy.md - data classification: which model may process which class.
+{{#IF_AI}}- ai-governance.md - shipping AI features: gates, evals, auditability, the incident path.
+{{/IF_AI}}{{#IF_TERSE}}- output-style.md - terse output.
+{{/IF_TERSE}}- task-tracking.md - where task state lives and how it is written.
 - conventional-commits.md - commit message format.
 
 Loaded only when a matching file is touched:
@@ -47,3 +48,4 @@ Loaded only when a matching file is touched:
 {{/IF_TESTS}}{{#IF_DB}}- data-model.md - schema and migration discipline.
 {{/IF_DB}}{{#IF_UI}}- frontend.md - UI conventions.
 {{/IF_UI}}- docs-workflow.md - where docs live and when they change.
+- model-tiers.md - seat tier to model, the swap procedure, the deny list as the control.

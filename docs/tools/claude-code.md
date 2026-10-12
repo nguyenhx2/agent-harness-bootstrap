@@ -23,8 +23,10 @@ everything below is written by `scripts/scaffold.py`, not by hand.
 
 Rules load lazily. A rule with no `paths:` loads every session; a rule with `paths: [glob]` attaches only
 when a matching file is touched. Only 6 of the 15 load unconditionally: `00-overview`, `agent-guardrails`,
-`model-policy`, `ai-governance`, `task-tracking`, `conventional-commits`. The other 9 stay off the default
-context.
+`model-policy`, `ai-governance`, `task-tracking`, `conventional-commits` (`ai-governance` ships only with
+the `ai` flag, so a default install loads one fewer). The other 9 stay off the default context; seat
+tiers live in the path-scoped `model-tiers`, which loads only when an agent file or `settings.json` is
+touched.
 
 ## What enforces vs. what is advice-only
 
@@ -61,7 +63,7 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo ships
-`python eval/guardrail_eval.py` (112 payloads at a real generated harness, expect 112/112). In the
+`python eval/guardrail_eval.py` (122 payloads at a real generated harness, expect 122/122). In the
 tool itself, try to read `.env` or commit to `main` and confirm each is blocked.
 
 ## See also

@@ -93,7 +93,21 @@ that a new case is a new fixture, and a behavior change shows up as a diff a hum
 than an assertion a human decodes. A fixture a human approved is never re-baselined to make a
 suite green - a changed approved output goes back to the human.
 
+## When to run what
+
+Tests are verification for a finished piece of work, not a ritual after every edit.
+
+- **While building**: run only the tests that touch the code you just changed, and only when you
+  need the answer to continue. Not after every edit, not the whole suite.
+- **When the feature is complete**: run the full suite once. That run is the evidence the gate
+  reads.
+- **Never twice on the same commit.** A green run recorded in the session log at the current commit
+  is cited, not repeated - nothing changed, so a second run learns nothing.
+- **A change with no behavior** (docs, comments, config that nothing reads at runtime) runs no
+  suite at all.
+
 ## Before opening a pull request
 
-Run the suite. Record the result in the task file's session log - a gate counts as passed only when
-the log records the run (task-tracking.md). A red suite is never merged and never skipped in CI.
+Run the suite once over the finished branch, unless a green run is already logged at its current
+commit. Record the result in the task file's session log - a gate counts as passed only when the log
+records the run (task-tracking.md). A red suite is never merged and never skipped in CI.

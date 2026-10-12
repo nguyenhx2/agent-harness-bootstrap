@@ -130,19 +130,30 @@ override="${JF[2]}"
 if [ -n "$override" ] && [ -f "$agents_dir/$stype.md" ]; then
   pinned=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^model:' | head -1 | sed -E 's/^model:[[:space:]]*//; s/[[:space:]]*$//')
   if [ -n "$pinned" ] && [ "$override" != "$pinned" ]; then
-    echo "BLOCKED: spawn overrides '$stype' from its roster model '$pinned' to '$override'. The roster is where cost and capability are decided (.claude/rules/model-policy.md). Edit .claude/agents/$stype.md if the seat's model should change." >&2
+    echo "BLOCKED: spawn overrides '$stype' from its roster model '$pinned' to '$override'. The roster is where cost and capability are decided (.claude/rules/model-tiers.md). Edit .claude/agents/$stype.md if the seat's model should change." >&2
     exit 2
   fi
 fi
 
 # --- 3. task linkage for write-capable seats ------------------------------
-# "No work begins before the task file exists" (task-tracking.md) is enforceable here: a dispatch
-# to a seat that can Edit or Write must name a registered task, or the work is an orphan the board
-# cannot see. Read-only seats (reviewers, researchers, spec-guardian) may be dispatched freely -
-# planning-phase consultation does not need a task yet.
+# Registered work is enforceable here: a dispatch to a seat that can Edit or Write names a
+# registered task, or the work is an orphan the board cannot see. Read-only seats (reviewers,
+# researchers, spec-guardian) may be dispatched freely - planning-phase consultation does not need
+# a task yet.
+#
+# The exception is the tier table in AGENTS.md: Direct and Standard work goes to the owning seat
+# with NO task file, by design. A dispatch says so in writing - "TIER: direct" or "TIER: standard"
+# in its prompt - and is let through. Without that marker this check made the Direct tier
+# impossible to dispatch, so every one-module fix paid for /new-task, a question to the user and a
+# board row. The marker is a claim, like requested_by:, but a visible one: agent-history archives
+# the prompt, and a Guarded change dispatched as "direct" is a lie on the record, not an omission.
 if [ -f "$agents_dir/$stype.md" ]; then
   seat_tools=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^tools:' | head -1)
   if printf '%s' "$seat_tools" | grep -Eq '(^|[,: ])(Edit|Write)(,| |$)'; then
+    if ! printf '%s' "${JF[3]}" | grep -qE 'TASK-[0-9]{1,5}' &&
+       printf '%s' "${JF[3]}" | grep -qiE '(^|[^A-Za-z])TIER:[[:space:]]*(direct|standard)([^A-Za-z]|$)'; then
+      exit 0
+    fi
     # No -d gate here. It used to skip the whole check when the board was missing, and the
     # scaffolder never created docs/tasks/active/, so this arm was inert on every fresh
     # bootstrap. A missing board means no task can be registered, which is precisely when a
@@ -153,11 +164,11 @@ if [ -f "$agents_dir/$stype.md" ]; then
     fi
     task_id=$(printf '%s' "${JF[3]}" | grep -oE 'TASK-[0-9]{1,5}' | head -1)
     if [ -z "$task_id" ]; then
-      echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN. Work with no registered task is invisible to the board and becomes an orphan. Register the task (see /new-task), put its code in the dispatch prompt, and dispatch again." >&2
+      echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. If this is Direct or Standard work (one module or one domain, off the Guarded list in AGENTS.md), say so: put 'TIER: direct' or 'TIER: standard' in the prompt. Guarded work needs a registered task: register it (see /new-task), put its code in the prompt, and dispatch again." >&2
       exit 2
     fi
     if ! ls "$base_cwd/docs/tasks/active/"*"$task_id"* >/dev/null 2>&1; then
-      echo "BLOCKED: this dispatch names $task_id but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-control.md). Register it first, then dispatch." >&2
+      echo "BLOCKED: this dispatch names $task_id but docs/tasks/active/ holds no such task file. A Planned or Active task lives in active/ (task-tracking.md). Register it first, then dispatch." >&2
       exit 2
     fi
   fi

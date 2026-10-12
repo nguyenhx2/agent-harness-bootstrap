@@ -20,14 +20,13 @@ requested_by: <what the user asked for, or the issue/PR this came from>
 owner: <agent>
 deps: <TASK-NNN, TASK-NNN, or "-">
 # Optional. Set only when status: Blocked AND the blocker needs a human DECISION rather than more
-# agent work - a policy call, a requirement trade-off, an owner-only trigger (task-control.md
-# Phase 1). Value is the reason. board-check.py rejects human_gate on any status other than
+# agent work - a policy call, a requirement trade-off, an owner-only trigger. Value is the reason. board-check.py rejects human_gate on any status other than
 # Blocked, and the orchestrator's session-start scan lists human_gate rows before ordinary
 # Active/Blocked ones. Omit the field entirely on a task that has never needed it.
 # human_gate: <reason>
 # Dispatch attempts so far. The orchestrator increments this on every dispatch of this task and
 # stops at 3: after two failed re-dispatches the task goes Blocked and escalates to the user
-# (task-control.md). This is the counter that makes "retry forever" impossible to do silently.
+# (orchestrator.md, Supervise). This is the counter that makes "retry forever" impossible to do silently.
 attempts: 0
 priority: <P0 | P1 | P2>
 phase: <phase number in docs/tasks/master-plan.md, or "-">

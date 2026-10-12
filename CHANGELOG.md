@@ -28,6 +28,14 @@ catalogue by category. The landing page stops breaking lines with room to spare,
 list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
 and gains Claude Code, Codex and Cursor marks.
 
+## v1.19.3
+
+Process proportional to the work, enforced rather than described. A new Inline tier lets the main
+session do small work itself, and Direct dispatches no longer need a task file to get past the
+spawn hook. Tests run once per feature, the review loop is bounded at two rounds, and the context
+every session carries drops by 9 to 18 percent depending on the project's flags. The scaffolder now
+refuses a roster whose tools, models or cited files do not line up.
+
 ## v1.19.2
 
 harness-view and the bootstrapped scanner read a harness's wiring out of its files instead of a

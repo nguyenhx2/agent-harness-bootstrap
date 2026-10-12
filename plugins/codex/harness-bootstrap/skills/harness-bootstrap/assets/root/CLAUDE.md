@@ -8,33 +8,27 @@ adds the Claude Code specific surface. It never restates or contradicts the cont
 
 ## Claude Code specifics
 
-### Agents
+### Routing: who does the work
 
-Subagents are defined in `.claude/agents/` and rostered in `AGENTS.md`. How much process a change
-gets is decided by the tier table there, before anything is dispatched. The `orchestrator` is for
-Guarded work - two or more domains, or a change touching schema, auth, money, a public contract, a
-migration or a deploy - where decomposition into tasks and a durable history are worth their cost.
-Single-domain work goes straight to the seat that owns it.
+Subagents are defined in `.claude/agents/` and rostered in `AGENTS.md`. Decide the tier from the
+table there before dispatching anything, then:
 
-### Hooks
+- **Inline** - you, the main session, do it. Answer the question, make the edit, check the one
+  thing you changed. No subagent: briefing one costs more than the work.
+- **Direct / Standard** - dispatch the owning seat once, with `TIER: direct` or `TIER: standard`
+  in the prompt and no task file (`guard-agent-spawn` accepts the marker in place of a TASK-NNN).
+  Read its report, check `git diff --stat`, done.
+- **Guarded** - the `orchestrator`. For a long mission, start the session as it
+  (`claude --agent orchestrator`) rather than dispatching it, so the plan and the dispatches share
+  one context instead of two.
 
-`.claude/hooks/`, registered in `.claude/settings.json`, enforce automatically what the rules
-otherwise only state: edits to Accepted ADRs are blocked, commits and pushes directly to
-`{{DEFAULT_BRANCH}}` are blocked, commit messages are validated against Conventional Commits, reads
-of secret files are blocked, and destructive database commands are blocked. See
-`.claude/hooks/README.md`.
+Never dispatch the orchestrator to route single-domain work: it hands it back, and both of you
+have paid to read the same files.
 
-A hook that blocks you is a rule you were about to break. Fix the action, and never route around
-the hook, disable it, or reach for a shell equivalent of the blocked tool call.
+### Hooks, settings, commands
 
-### Settings
-
-`.claude/settings.json` holds the permission rules (allow, ask, deny) and the hook registrations.
-Changing it, or changing the rules, agents, or hooks, is a self-governing change: it needs the
-owner's approval and never happens on an agent's own initiative.
-
-### Commands
-
-`.claude/commands/` holds the slash commands; the main ones are tabled in `AGENTS.md`. `/deploy` is gated: it is
-excluded from model invocation, so it runs only when the user invokes it directly, never as a step
-an agent decides to take on its own.
+The hooks in `.claude/hooks/` (listed in `.claude/hooks/README.md`) enforce what `AGENTS.md`
+states. A hook that blocks you is a rule you were about to break: fix the action, never route
+around it, disable it, or reach for a shell equivalent. Changing `.claude/settings.json`, a rule,
+an agent or a hook needs the owner's approval, never an agent's own initiative. `/deploy` is
+excluded from model invocation: it runs only when the user types it.

@@ -115,7 +115,10 @@
     },
     {
       "src": "claude/rules/ai-governance.md",
-      "dest": ".claude/rules/ai-governance.md"
+      "dest": ".claude/rules/ai-governance.md",
+      "when": [
+        "ai"
+      ]
     },
     {
       "src": "claude/rules/code-quality.md",
@@ -157,6 +160,10 @@
     {
       "src": "claude/rules/model-policy.md",
       "dest": ".claude/rules/model-policy.md"
+    },
+    {
+      "src": "claude/rules/model-tiers.md",
+      "dest": ".claude/rules/model-tiers.md"
     },
     {
       "src": "claude/rules/performance.md",

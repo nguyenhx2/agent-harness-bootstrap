@@ -6,6 +6,45 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.19.3] - 2026-10-13
+
+Less process for small work, one test run per feature, and fewer tokens in every session. Measured
+by the new PROCESS section of `benchmark/benchmark.py`, run on v1.19.2 and on this release.
+
+### Added
+
+- **An Inline tier: the main session does the work itself.** A question, a lookup, a doc or config
+  edit, a fix you can see whole in a file or two - no subagent, no orchestrator, no task file.
+  `CLAUDE.md` now carries a short routing section: Inline, dispatch the owner, or the orchestrator.
+- **Seat wiring is checked, not hoped.** `scaffold.py` refuses a harness where a review seat holds
+  `Edit`/`Write`, a seat's `model:` contradicts its row in `model-tiers.md`, or a shipped file cites
+  a `.md` the harness does not contain. Four eval cases prove each check fires and stays quiet on a
+  clean roster.
+
+### Changed
+
+- **Verify per feature, not per step.** While building, run only the tests touching what changed;
+  the full suite runs once, at the branch gate, and a green run logged at the current commit is
+  cited rather than repeated. Guarded flow full-suite steps: 2 -> 1.
+- **`/review-changes` stops after two rounds.** The second covers only the fix, blockers and
+  should-fix only; what remains goes to the user. A reviewer told to report everything always finds
+  something smaller, so without a bound the loop did not end.
+- **Always-loaded context: 41,296 -> 37,421 bytes** with every flag on, **41,102 -> 33,585** for a
+  tests-only project. Seat tiers moved to path-scoped `model-tiers.md`; `ai-governance.md` ships
+  only with the `ai` flag; the task-bar and enforcement sections lost their repetition.
+- One session-log cadence - a row per completed unit - instead of three different ones.
+
+### Fixed
+
+- **The Direct tier could not be dispatched.** `guard-agent-spawn` refused any write-capable seat
+  without a TASK-NNN, so every one-module fix paid for `/new-task`, a question and a board row. A
+  dispatch now says `TIER: direct` or `TIER: standard` instead; Guarded work still needs a task.
+- **`graph-stale` re-injected its reminder on every edit** past 20 files, including twenty edits of
+  the same file. Each path is recorded once now, and a re-edit is silent.
+- Five shipped files cited `task-control.md` or `cost-model.md`, which exist only inside the skill;
+  brownfield setup seeded one task per gap against the few-and-large rule; `/implement-fr` and
+  `/test` had duplicate or skipped step numbers, which agents follow literally.
+
 ## [1.19.2] - 2026-10-13
 
 ### Fixed

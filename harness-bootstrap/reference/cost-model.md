@@ -72,8 +72,9 @@ paths:
 
 Only genuinely universal rules stay unconditional - in the generated roster that is `00-overview.md`,
 `agent-guardrails.md`, `task-tracking.md`, `conventional-commits.md`, and the two governance rules
-(`model-policy.md`, `ai-governance.md`), which decide what may be sent where *before* any file is
-touched and so cannot be path-scoped. Everything else gets a `paths:` block - the single largest
+(`model-policy.md`, and `ai-governance.md` when the `ai` flag is set), which decide what may be sent
+where *before* any file is touched and so cannot be path-scoped. The seat-tier table is not among
+them: it lives in the path-scoped `model-tiers.md`. Everything else gets a `paths:` block - the single largest
 recurring saving, costing nothing but frontmatter.
 
 **Grant tools narrowly.** Every tool in `tools:` ships its JSON schema on every request. Reviewers
