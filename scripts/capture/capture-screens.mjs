@@ -15,7 +15,7 @@
 
 import { spawn, execFileSync } from "node:child_process";
 import { writeFileSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, basename } from "node:path";
 import puppeteer from "puppeteer-core";
 
 const args = process.argv.slice(2);
@@ -125,7 +125,15 @@ try {
   // first - a per-category bar reading 100/100, say - so the same harness recorded 99 on
   // one run and 79 on the next. `assess` prints one authoritative line; parse that, and
   // let the caption and the picture come from the same answer.
-  const assessOut = execFileSync(binary, ["assess", resolve(target)]).toString();
+  // `assess` exits 1 when it has high findings. That is its verdict, not a failure to run, and
+  // the score is still on stdout, so read it either way; anything else still throws.
+  let assessOut;
+  try {
+    assessOut = execFileSync(binary, ["assess", resolve(target)]).toString();
+  } catch (e) {
+    if (e.status !== 1 || !e.stdout) throw e;
+    assessOut = e.stdout.toString();
+  }
   const sm = assessOut.match(/overall\s+(\d+)\s*\/\s*100/);
   if (!sm) throw new Error(`cannot read the overall score from assess: ${assessOut.slice(0, 200)}`);
   const score = Number(sm[1]);
@@ -140,6 +148,8 @@ try {
              "(tool_version == release) and check_numbers.py (caption figures == these).",
     version: 1,
     tool_version: version,
+    // Which harness was photographed (its folder name), so the next retake serves the same one.
+    target: basename(resolve(target)),
     nodes: Number(m[1]),
     edges: Number(m[2]),
     score: score,
