@@ -4,35 +4,99 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/protect-adr.sh" },
-          { "type": "command", "command": "bash .claude/hooks/guard-agent-scope.sh" },
-          { "type": "command", "command": "bash .claude/hooks/guard-task-scope.sh" },
-          { "type": "command", "command": "bash .claude/hooks/guard-board.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/protect-adr.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-agent-scope.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-task-scope.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-board.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
         ]
       },
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/guard-main-commit.sh" },
-          { "type": "command", "command": "bash .claude/hooks/check-commit-msg.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-main-commit.sh",
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-commit-msg.sh",
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          }
         ]
       },
       {
-        "matcher": "Read|Edit|Write|Bash",
+        "matcher": "PowerShell",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-main-commit.sh",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-commit-msg.sh",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/protect-secrets.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
         ]
       },
       {
         "matcher": "Bash|PowerShell",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/guard-destructive.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-destructive.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
         ]
       },
       {
         "matcher": "Agent|Task",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/guard-agent-spawn.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-agent-spawn.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
         ]
       }
     ],
@@ -40,8 +104,14 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/specs-reminder.sh" },
-          { "type": "command", "command": "bash .claude/hooks/graph-stale.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/specs-reminder.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/graph-stale.sh"
+          }
         ]
       }
     ],
@@ -49,7 +119,10 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/agent-history.sh" }
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/agent-history.sh"
+          }
         ]
       }
     ]

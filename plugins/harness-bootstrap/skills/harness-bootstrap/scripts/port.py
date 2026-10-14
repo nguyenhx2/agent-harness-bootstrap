@@ -205,7 +205,8 @@ def resolve_runner():
 
 event = sys.argv[1] if len(sys.argv) > 1 else ""
 try:
-    payload = json.load(sys.stdin)
+    # utf-8-sig: a payload piped through Windows PowerShell 5.1 arrives with a byte-order mark.
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))
 except Exception:
     print(json.dumps({"permission": "allow"})); sys.exit(0)
 

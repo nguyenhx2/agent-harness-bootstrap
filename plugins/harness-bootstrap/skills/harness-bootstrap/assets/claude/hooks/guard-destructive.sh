@@ -244,7 +244,7 @@ while IFS= read -r seg; do
           case "$a" in
             -C) k=$((k + 1)); d=$(unquote "${toks[k]}" | tr '\\' '/')
                 case "$d" in /*|[A-Za-z]:/*) gdir=$(norm_path "$d") ;; *) gdir="$gdir/$d" ;; esac ;;
-            -c) k=$((k + 1)) ;;
+            -c|--git-dir|--work-tree|--namespace|--config-env) k=$((k + 1)) ;;
             -*) ;;
             *) sub="$a"; break ;;
           esac

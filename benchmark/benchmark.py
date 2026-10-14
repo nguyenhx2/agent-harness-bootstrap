@@ -53,6 +53,36 @@ import sys
 import tempfile
 import time
 
+
+def find_bash() -> str | None:
+    """The bash that runs the .sh hooks, or None.
+
+    On Windows a bare "bash" handed to subprocess is resolved by CreateProcess, which
+    searches System32 BEFORE PATH - so it lands on WSL's launcher (System32/bash.exe)
+    even when Git Bash is first on PATH. WSL then runs the hook in a Linux userland
+    against a /mnt/c checkout: a different python3, a different git, and git status
+    slow enough on a large tree that a hook looks hung. Claude Code itself runs hooks
+    through Git Bash on Windows, so that is the bash the eval must use. Elsewhere the
+    PATH lookup is already right.
+    """
+    if os.name != "nt":
+        return shutil.which("bash")
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        cand = pathlib.Path(d) / "bash.exe"
+        parts = {x.lower() for x in cand.parts}
+        if cand.is_file() and "system32" not in parts and "windowsapps" not in parts:
+            return str(cand)
+    git = shutil.which("git")
+    if git:
+        for rel in ("../bin/bash.exe", "../usr/bin/bash.exe", "../../bin/bash.exe"):
+            cand = (pathlib.Path(git).parent / rel).resolve()
+            if cand.is_file():
+                return str(cand)
+    return None
+
+
+BASH = find_bash()
+
 # Rough divisor for English markdown under the current Claude tokenizer. Used ONLY when no API key
 # is available, and every number derived from it is labelled ESTIMATED. Do not treat it as measured.
 CHARS_PER_TOKEN = 3.6
@@ -245,7 +275,7 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
     ev = load_eval_module()
     if ev is None:
         return None
-    if shutil.which("bash") is None:
+    if BASH is None:
         print("  ! bash not found; skipping Baseline A (the .sh hooks cannot run)", file=sys.stderr)
         return None
 
@@ -293,7 +323,7 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
 
             hook_file = harnessed / ".claude/hooks" / f"{hook}.sh"
             if hook_file.is_file():
-                pr = subprocess.run(["bash", f".claude/hooks/{hook}.sh"], input=payload,
+                pr = subprocess.run([BASH, f".claude/hooks/{hook}.sh"], input=payload,
                                     capture_output=True, text=True, cwd=str(harnessed))
                 hb = pr.returncode == 2
             else:
@@ -305,7 +335,7 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
             # The bare repo: is there any hook at all that would receive this payload?
             bare_hook = bare / ".claude/hooks" / f"{hook}.sh"
             if bare_hook.is_file():
-                pr2 = subprocess.run(["bash", f".claude/hooks/{hook}.sh"], input=payload,
+                pr2 = subprocess.run([BASH, f".claude/hooks/{hook}.sh"], input=payload,
                                      capture_output=True, text=True, cwd=str(bare))
                 bb = pr2.returncode == 2
             else:

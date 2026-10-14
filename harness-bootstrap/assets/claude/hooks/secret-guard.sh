@@ -112,6 +112,8 @@ for k in sys.argv[1:]:
 sys.stdout.write("\0".join(o.replace("\0", "") for o in out) + "\0")
 ' "${keys[@]}" 2>/dev/null
     )
+  else
+    echo "secret-guard: no jq/perl/python3 available to parse the hook payload; allowing. Deliberate: a missing tool degrades this guard to a warning, never to blocking every call." >&2
   fi
   local i
   for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done

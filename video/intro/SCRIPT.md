@@ -92,7 +92,7 @@ hand: re-run the deriver, then re-render. Because this file is the scene source 
 
 [//]: # (figures:begin)
 - team scene: a run installs 3 to 17 of the 18 seats; purpose profiles code, research, strategy, docs
-- safe scene: 26 hooks; guardrail eval 250/250 per hook flavour, on a strict scaffold
+- safe scene: 26 hooks; guardrail eval 266/266 per hook flavour, on a strict scaffold
 - lean scene: review bounded at 2 rounds; spawn depth 2, at most 4 concurrent subagents
 - loop scene: tiers Inline (main session), Direct (owning agent), Standard (owning agent), Guarded (orchestrator)
 - spec scene: 6 core sections, up to 8 optional

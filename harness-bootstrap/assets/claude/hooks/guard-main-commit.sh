@@ -103,8 +103,21 @@ json_fields tool_input.command cwd
 cmd="${JF[0]}"
 [ -z "$cmd" ] && exit 0
 
+# git GLOBAL options may sit between `git` and the subcommand - `git -c k=v commit`,
+# `git -C . commit`, `git --no-pager commit`, `git --git-dir=.git commit`, `git --work-tree x push`.
+# A pattern that required `git\s+commit` let every one of those through, and a live session
+# committed to the default branch that way. GIT_PREFIX accepts any run of global options, with
+# values bare, quoted, or carrying a quoted part (-c user.name="A B"). Same shape in the .ps1 twin.
+SQ="'"
+GIT_VAL="([^[:space:]\"${SQ}]*(\"[^\"]*\"|${SQ}[^${SQ}]*${SQ}))+[^[:space:]\"${SQ}]*|[^[:space:]]+"
+GIT_OPT="-[cC][[:space:]]+(${GIT_VAL})|--(git-dir|work-tree|namespace|config-env)[[:space:]]+(${GIT_VAL})|--[a-z-]+=(${GIT_VAL})|-[^[:space:]]+"
+GIT_PREFIX="(^|[^a-zA-Z0-9_.-])git([[:space:]]+(${GIT_OPT}))*[[:space:]]+"
 # POSIX ERE has no portable \b (BSD grep on macOS), so the trailing boundary is hand-rolled.
-printf '%s' "$cmd" | grep -Eq '(^|[^a-zA-Z0-9_.-])git[[:space:]]+(commit|push)([^a-zA-Z0-9_-]|$)' || exit 0
+GIT_RE="${GIT_PREFIX}(commit|push)([^a-zA-Z0-9_-]|\$)"
+printf '%s' "$cmd" | grep -Eq -e "$GIT_RE" || exit 0
+# The global options of THAT git invocation - never the subcommand's own arguments, where `-C`
+# means something else (`git commit -C HEAD` reuses a message).
+git_head=$(printf '%s' "$cmd" | grep -oE -e "$GIT_RE" | head -1)
 
 base_cwd=$(norm_path "${JF[1]}")
 [ -z "$base_cwd" ] && base_cwd=$(pwd)
@@ -112,7 +125,8 @@ target_dir="$base_cwd"
 
 # A leading `cd <dir>` wins over `git -C <dir>` (parity with the PowerShell flavor).
 cd_dir=$(printf '%s' "$cmd" | grep -oE '(^|[;&|][[:space:]]*)cd[[:space:]]+("[^"]+"|'"'"'[^'"'"']+'"'"'|[^[:space:];&|]+)' | head -1 | sed -E 's/.*cd[[:space:]]+//; s/^["'"'"']//; s/["'"'"']$//')
-gc_dir=$(printf '%s' "$cmd" | grep -oE 'git[[:space:]]+-C[[:space:]]+("[^"]+"|'"'"'[^'"'"']+'"'"'|[^[:space:]]+)' | head -1 | sed -E 's/.*-C[[:space:]]+//; s/^["'"'"']//; s/["'"'"']$//')
+gc_dir=$(printf '%s' "$git_head" | grep -oE -e "[[:space:]]-C[[:space:]]+(${GIT_VAL})" | head -1 | sed -E 's/^[[:space:]]*-C[[:space:]]+//; s/^["'"'"']//; s/["'"'"']$//')
+git_dir=$(printf '%s' "$git_head" | grep -oE -e "--git-dir(=|[[:space:]]+)(${GIT_VAL})" | head -1 | sed -E 's/^--git-dir(=|[[:space:]]+)//; s/^["'"'"']//; s/["'"'"']$//')
 if [ -n "$cd_dir" ]; then
   target_dir="$cd_dir"
 elif [ -n "$gc_dir" ]; then
@@ -125,7 +139,11 @@ case "$target_dir" in
   *) target_dir="$base_cwd/$target_dir" ;;
 esac
 
-branch=$(git -C "$target_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ -n "$git_dir" ]; then
+  branch=$(git -C "$target_dir" --git-dir="$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+else
+  branch=$(git -C "$target_dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
+fi
 [ -z "$branch" ] && branch=$(git -C "$base_cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)
 [ -z "$branch" ] && exit 0   # not a git repo (or git missing): nothing to guard
 

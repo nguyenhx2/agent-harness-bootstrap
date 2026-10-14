@@ -72,7 +72,7 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo ships
-`python eval/guardrail_eval.py` (250 payloads at a real generated harness, expect 250/250; it measures a
+`python eval/guardrail_eval.py` (266 payloads at a real generated harness, expect 266/266; it measures a
 harness scaffolded with `hooks_strict`, `long` and `db` on, so a default install carries fewer
 hooks). No model is consulted: the guardrails are shell scripts, so the result cannot depend on
 the model. In the

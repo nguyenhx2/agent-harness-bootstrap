@@ -429,6 +429,26 @@ def brief_task(prompt: str) -> str | None:
     return f"TASK-{int(m.group(1)):03d}" if m else None
 
 
+def read_payload(raw: bytes) -> dict:
+    """A hook payload from stdin -> its JSON object. Tolerates a UTF-8 byte-order mark, which
+    Windows PowerShell 5.1 prepends to anything it pipes into a native process, and the CRLF it
+    appends. Raises ValueError on anything else that is not one JSON object - including empty
+    input, which is a payload that never arrived, not an empty one."""
+    try:
+        text = raw.decode("utf-8-sig").lstrip("\ufeff").strip()
+    except UnicodeDecodeError as e:
+        raise ValueError(f"not UTF-8: {e}") from None
+    if not text:
+        raise ValueError("empty input")
+    try:
+        obj = json.loads(text)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"not JSON: {e}") from None
+    if not isinstance(obj, dict):
+        raise ValueError("not a JSON object")
+    return obj
+
+
 def has_spec_tool(root: pathlib.Path) -> bool:
     return (root / ".claude" / "scripts" / "spec-check.py").is_file()
 
@@ -455,7 +475,7 @@ def read_ledger(root: pathlib.Path) -> list[tuple[int, dict]]:
     f = root / LEDGER
     out = []
     if f.is_file():
-        for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+        for n, line in enumerate(f.read_text(encoding="utf-8-sig").splitlines(), 1):
             try:
                 out.append((n, json.loads(line)))
             except json.JSONDecodeError:
@@ -732,6 +752,31 @@ def self_test() -> list[str]:
     for name, rem, add, want in edits:
         if claim_change(rem, add) != want:
             dead.append(f"claim_change on {name}: want {want}")
+    good = {"tool_input": {"subagent_type": "x"}}
+    for name, raw, ok in (
+            ("plain", json.dumps(good).encode(), True),
+            ("a UTF-8 BOM (Windows PowerShell 5.1)", b"\xef\xbb\xbf" + json.dumps(good).encode(), True),
+            ("a BOM and CRLF", b"\xef\xbb\xbf" + json.dumps(good).encode() + b"\r\n", True),
+            ("empty input", b"", False),
+            ("not JSON", b"\xef\xbb\xbfnot json", False),
+            ("not an object", b"[1, 2]", False)):
+        try:
+            read_payload(raw)
+            got = True
+        except ValueError:
+            got = False
+        if got != ok:
+            dead.append(f"read_payload on {name}: {'accepted' if got else 'refused'}")
+    # End to end: a BOM-prefixed payload is read, and an unreadable one BLOCKS rather than allows.
+    me = pathlib.Path(__file__).resolve()
+    for name, raw, want in (
+            ("a BOM-prefixed payload is read", b"\xef\xbb\xbf" + json.dumps(good).encode(), 0),
+            ("an unreadable payload blocks", b"\xef\xbb\xbf{oops", 2),
+            ("an empty payload blocks", b"", 2)):
+        r = subprocess.run([sys.executable, str(me), "--target", str(me.parent),
+                            "--dispatch-check"], input=raw, capture_output=True)
+        if r.returncode != want:
+            dead.append(f"--dispatch-check: {name} (want exit {want}, got {r.returncode})")
     return dead + ledger_self_test()
 
 
@@ -892,15 +937,22 @@ def main() -> int:
     vf = root / ".claude" / "verify-map.json"
     if vf.is_file():
         try:
-            vmap = json.loads(vf.read_text(encoding="utf-8"))
+            vmap = json.loads(vf.read_text(encoding="utf-8-sig"))
         except json.JSONDecodeError as e:
             print(f"verify-plan: .claude/verify-map.json is not valid JSON ({e}); ignoring it",
                   file=sys.stderr)
     if a.dispatch_check:
         try:
-            payload = json.loads(sys.stdin.read() or "{}")
-        except json.JSONDecodeError:
-            return 0  # the hook's own roster check handles an unreadable payload
+            payload = read_payload(sys.stdin.buffer.read())
+        except ValueError as e:
+            # Exit 2, not 1: both hook flavors relay only a 2 as a block and treat anything else
+            # as "the ledger had nothing to say". An unreadable payload is a dispatch nobody
+            # verified - it used to return 0 here, which is how a BOM switched the ledger off.
+            print(f"BLOCKED: verify-plan.py could not read this dispatch's payload ({e}), so it "
+                  "cannot check it against the verification ledger. This is a harness fault, not "
+                  "something the dispatch did: report it to the user rather than retrying.",
+                  file=sys.stderr)
+            return 2
         code, msg = dispatch_check(root, payload, vmap)
         if msg:
             print(msg, file=sys.stderr)

@@ -164,7 +164,7 @@ foreach ($seg in $segments) {
             while ($k -lt $n) {
                 $a = Unquote $toks[$k]
                 if ($a -ceq '-C') { $k++; if ($k -lt $n) { $gdir = Join-Dir $gdir (Unquote $toks[$k]) } }
-                elseif ($a -ceq '-c') { $k++ }
+                elseif (@('-c', '--git-dir', '--work-tree', '--namespace', '--config-env') -ccontains $a) { $k++ }
                 elseif ($a.StartsWith('-')) { }
                 else { $sub = $a; break }
                 $k++

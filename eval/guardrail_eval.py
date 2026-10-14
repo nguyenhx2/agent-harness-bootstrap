@@ -43,13 +43,43 @@ import subprocess
 import sys
 import tempfile
 
+
+def find_bash() -> str | None:
+    """The bash that runs the .sh hooks, or None.
+
+    On Windows a bare "bash" handed to subprocess is resolved by CreateProcess, which
+    searches System32 BEFORE PATH - so it lands on WSL's launcher (System32/bash.exe)
+    even when Git Bash is first on PATH. WSL then runs the hook in a Linux userland
+    against a /mnt/c checkout: a different python3, a different git, and git status
+    slow enough on a large tree that a hook looks hung. Claude Code itself runs hooks
+    through Git Bash on Windows, so that is the bash the eval must use. Elsewhere the
+    PATH lookup is already right.
+    """
+    if os.name != "nt":
+        return shutil.which("bash")
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        cand = pathlib.Path(d) / "bash.exe"
+        parts = {x.lower() for x in cand.parts}
+        if cand.is_file() and "system32" not in parts and "windowsapps" not in parts:
+            return str(cand)
+    git = shutil.which("git")
+    if git:
+        for rel in ("../bin/bash.exe", "../usr/bin/bash.exe", "../../bin/bash.exe"):
+            cand = (pathlib.Path(git).parent / rel).resolve()
+            if cand.is_file():
+                return str(cand)
+    return None
+
+
+BASH = find_bash()
+
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 250
+CASES_PER_FLAVOR = 266
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
-MUST_BLOCK_PER_FLAVOR = 101
-MUST_ALLOW_PER_FLAVOR = 149
+MUST_BLOCK_PER_FLAVOR = 110
+MUST_ALLOW_PER_FLAVOR = 156
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -616,6 +646,34 @@ def optin_hook_cases(repo: str, feature_repo: str) -> list[tuple]:
          ev("UserPromptSubmit", prompt="ci token " + "gl" + "pat-" + "abcdEFGH1234ijklMNOP")),
         ("allow: a short sk_ id is not a key", "secret-guard", 0,
          ev("UserPromptSubmit", prompt="the record id is sk_" + "0123456789abcdef" * 2)),
+
+        # --- v1.20.1: git GLOBAL options between `git` and the subcommand -------------------
+        # A live session committed to main with `git -c k=v commit`: the guards required
+        # `git\s+commit`. One case per option shape; the fixture repo is on main.
+        ("commit: -c k=v before commit, on main", "guard-main-commit", 2,
+         p("Bash", command='git -c k=v commit -m "feat(x): y"')),
+        ("commit: -C . before commit, on main", "guard-main-commit", 2,
+         p("Bash", command='git -C . commit -m "feat(x): y"')),
+        ("commit: --no-pager before commit, on main", "guard-main-commit", 2,
+         p("Bash", command='git --no-pager commit -m "feat(x): y"')),
+        ("commit: --git-dir= before commit, on main", "guard-main-commit", 2,
+         p("Bash", command='git --git-dir=.git commit -m "feat(x): y"')),
+        ("commit: --work-tree <dir> before push to main", "guard-main-commit", 2,
+         p("Bash", command="git --work-tree . push origin main")),
+        ("commit: quoted -c value before commit, on main", "guard-main-commit", 2,
+         p("Bash", command='git -c user.name="A B" commit -m "feat(x): y"')),
+        ("allow: -c k=v commit on a feature branch", "guard-main-commit", 0,
+         p("Bash", cwd=feature_repo, command='git -c k=v commit -m "feat(x): y"')),
+        ("allow: a -c value that names commit is not a commit", "guard-main-commit", 0,
+         p("Bash", command="git -c alias.ci=commit status")),
+        ("commit-msg: bad subject behind -c k=v", "check-commit-msg", 2,
+         p("Bash", command='git -c k=v commit -m "stuff"')),
+        ("commit-msg: bad subject behind --no-pager -C .", "check-commit-msg", 2,
+         p("Bash", command='git --no-pager -C . commit -m "stuff"')),
+        ("allow: conventional subject behind -c k=v", "check-commit-msg", 0,
+         p("Bash", command='git -c k=v commit -m "feat(api): add endpoint"')),
+        ("destructive: force push behind --git-dir <dir>", "guard-destructive", 2,
+         p("Bash", command="git --git-dir .git push --force origin main")),
     ]
 
 
@@ -783,7 +841,7 @@ def run_flavor(workdir: pathlib.Path, flavor: str, ps_bin: str | None = None) ->
             # Relative path, with cwd=repo: an absolute Windows path (C:\...) is not a path bash
             # can resolve, and it fails with exit 127 - which would silently look like a hook that
             # does not block. Keep it POSIX-relative.
-            argv = ["bash", f".claude/hooks/{hook}.sh"]
+            argv = [BASH, f".claude/hooks/{hook}.sh"]
         else:
             argv = [ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass",
                     "-File", f".claude/hooks/{hook}.ps1"]
@@ -838,6 +896,7 @@ def run_flavor(workdir: pathlib.Path, flavor: str, ps_bin: str | None = None) ->
     results += run_rtk_suite(repo, flavor, ps_bin)
     results += run_purpose_hook_suite(workdir, flavor, ps_bin)
     results += run_default_guard_suite(workdir, flavor, ps_bin)
+    results += run_hook_contract_suite(repo, flavor)
     return results
 
 
@@ -1561,6 +1620,126 @@ def run_profile_cases(workdir: pathlib.Path, flavor: str) -> list[dict]:
     return results
 
 
+# Guards whose job is to BLOCK: a timeout or crash must block too ("onFailure": "block", Claude
+# Code >= 2.1.295), with a 30 s budget. Everything else stays fail-open.
+BLOCKING_GUARDS = {
+    "PreToolUse": {"protect-adr", "guard-task-scope", "guard-board", "protect-secrets",
+                   "protect-repos", "guard-main-commit", "check-commit-msg", "guard-destructive",
+                   "guard-large-file", "guard-egress", "guard-deps", "guard-migration",
+                   "guard-agent-spawn"},
+    "UserPromptSubmit": {"secret-guard"},
+    "ConfigChange": {"guard-config"},
+}
+# Guards that must see EVERY command: an `if` filter on them would be a bypass.
+NO_IF_GUARDS = {"guard-destructive", "protect-secrets"}
+IF_EVENTS = {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest",
+             "PermissionDenied"}
+# Commands each `if`-filtered guard exists to catch (its live bypasses and wrapped forms).
+IF_MUST_MATCH = ["git commit -m x", "git -c k=v commit -m x", "git -C . commit",
+                 "git --no-pager commit", "env git commit -m x", "rtk git commit -m x",
+                 "cd sub && git commit -m x", "time git push origin main",
+                 "FOO=1 git push", "git add -A && git commit -m x"]
+IF_MUST_SKIP = ["ls", "npm test", "cat README.md"]
+
+
+def _if_matches(rule: str, tool: str, cmd: str) -> bool:
+    """The documented `if` semantics, modelled: the rule's tool must be the called tool; `*`
+    stands for any text; the command is split on shell separators and each subcommand is tried
+    after stripping VAR= assignments and the built-in wrappers (timeout, time, nice, nohup,
+    stdbuf, command, builtin, noglob). Claude Code itself is not in the loop here - this proves
+    the rule we ship matches what the guard needs, under the semantics the docs state."""
+    import re as _re
+    m = _re.fullmatch(r"(\w+)\((.*)\)", rule)
+    if not m or m.group(1) != tool:
+        return False
+    rx = "".join(".*" if c == "*" else _re.escape(c) for c in m.group(2))
+    wrappers = {"timeout", "time", "nice", "nohup", "stdbuf", "command", "builtin", "noglob"}
+    for part in _re.split(r"&&|\|\||;|\|&|\||&|\n", cmd):
+        toks = part.split()
+        while toks and (_re.match(r"[A-Za-z_]\w*=", toks[0]) or toks[0] in wrappers):
+            toks = toks[1:]
+        if toks and _re.fullmatch(rx, " ".join(toks), _re.S):
+            return True
+    return False
+
+
+def run_hook_contract_suite(repo: pathlib.Path, flavor: str) -> list[dict]:
+    """The registration contract the hooks rely on but no payload test can see, read from the
+    scaffolded settings.json:
+      1. every `if` is one valid permission rule, on an event that evaluates `if`, naming a tool
+         its group's matcher covers - a malformed or misplaced `if` makes the hook never run;
+      2. every `if` matches the forms its guard must catch (git global options, `env`/`rtk`
+         wrappers, compound commands) and skips an unrelated command, under the documented
+         matching rules - `Bash(git *)` would silently skip `env git commit`;
+      3. every blocking guard fails closed with a 30 s budget, and no other hook does;
+      4. guard-destructive and protect-secrets carry no `if` at all."""
+    import re as _re
+    results: list[dict] = []
+
+    def rec(name: str, problems: list[str]) -> None:
+        if problems:
+            print(f"    {name}: {'; '.join(problems[:4])}", file=sys.stderr)
+        results.append({"name": name, "hook": "hook-contract", "flavor": flavor, "want": 0,
+                        "got": 1 if problems else 0, "status": "FAIL" if problems else "pass"})
+
+    try:
+        cfg = json.loads((repo / ".claude/settings.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        for n in ("contract: if rules are valid", "contract: if rules catch every form",
+                  "contract: blocking guards fail closed", "contract: no if on all-command guards"):
+            rec(n, [f"settings.json unreadable: {e}"])
+        return results
+
+    handlers = []  # (event, matcher, hook name, handler)
+    for event, groups in cfg.get("hooks", {}).items():
+        for g in groups:
+            for h in g.get("hooks", []):
+                m = _re.search(r"hooks/([\w-]+)\.", h.get("command", ""))
+                handlers.append((event, g.get("matcher", ""), m.group(1) if m else "?", h))
+
+    bad = []
+    for event, matcher, name, h in handlers:
+        if "if" not in h:
+            continue
+        rule = h["if"]
+        m = _re.fullmatch(r"([A-Z]\w*)\(([^()]+)\)", rule) if isinstance(rule, str) else None
+        if not m:
+            bad.append(f"{name}: '{rule}' is not one Tool(pattern) rule")
+        elif event not in IF_EVENTS:
+            bad.append(f"{name}: `if` on {event} never runs")
+        elif matcher not in ("*", "") and not _re.fullmatch(matcher, m.group(1)):
+            bad.append(f"{name}: '{rule}' names {m.group(1)}, outside matcher {matcher}")
+    with_if = [x for x in handlers if "if" in x[3]]
+    if not with_if:
+        bad.append("no hook carries an `if` - the latency filter is gone")
+    rec("contract: if rules are valid", bad)
+
+    bad = []
+    for event, matcher, name, h in with_if:
+        tool = h["if"].split("(", 1)[0]
+        for c in IF_MUST_MATCH:
+            if not _if_matches(h["if"], tool, c):
+                bad.append(f"{name} {h['if']} skips `{c}`")
+        for c in IF_MUST_SKIP:
+            if _if_matches(h["if"], tool, c):
+                bad.append(f"{name} {h['if']} still runs on `{c}`")
+    rec("contract: if rules catch every form", bad)
+
+    bad = []
+    for event, matcher, name, h in handlers:
+        blocking = name in BLOCKING_GUARDS.get(event, set())
+        if blocking and (h.get("onFailure") != "block" or int(h.get("timeout", 0)) < 30):
+            bad.append(f"{event}/{name}: onFailure={h.get('onFailure')} timeout={h.get('timeout')}")
+        if not blocking and h.get("onFailure") == "block":
+            bad.append(f"{event}/{name} is advisory but fails closed")
+    rec("contract: blocking guards fail closed", bad)
+
+    bad = [f"{name} has if {h['if']}" for _e, _m, name, h in handlers
+           if name in NO_IF_GUARDS and "if" in h]
+    rec("contract: no if on all-command guards", bad)
+    return results
+
+
 def run_default_guard_suite(workdir: pathlib.Path, flavor: str,
                             ps_bin: str | None) -> list[dict]:
     """guard-destructive is baseline safety, not an opt-in: a harness scaffolded WITHOUT
@@ -1582,7 +1761,7 @@ def run_default_guard_suite(workdir: pathlib.Path, flavor: str,
     wired = (r.returncode == 0 and (target / hook_rel).is_file() and settings.is_file()
              and "hooks/guard-destructive." in settings.read_text(encoding="utf-8"))
     argv = ([ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hook_rel]
-            if flavor == "ps1" else ["bash", hook_rel])
+            if flavor == "ps1" else [BASH, hook_rel])
 
     def fire(command: str) -> int:
         if not wired:
@@ -1651,7 +1830,7 @@ def run_purpose_hook_suite(workdir: pathlib.Path, flavor: str,
             rec(name, hook, False, -1)
             continue
         argv = ([ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", hook_rel]
-                if flavor == "ps1" else ["bash", hook_rel])
+                if flavor == "ps1" else [BASH, hook_rel])
         payload = json.dumps({"cwd": target.as_posix(), "hook_event_name": "PostToolUse",
                               "tool_name": "Write", "tool_input": {"file_path": rel}})
         pr = subprocess.run(argv, input=payload, capture_output=True, text=True, cwd=str(target))
@@ -1702,7 +1881,7 @@ def run_rtk_suite(repo: pathlib.Path, flavor: str, ps_bin: str | None) -> list[d
         # trap is documented at the main hook runner above.
         rel = ".claude/hooks/rtk-rewrite." + ext
         argv = ([ps_bin, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", rel]
-                if flavor == "ps1" else ["bash", rel])
+                if flavor == "ps1" else [BASH, rel])
         pr = subprocess.run(argv, input=payload, capture_output=True, text=True,
                             env=env, cwd=str(repo))
         return pr.returncode, (pr.stdout or "")
@@ -1781,16 +1960,25 @@ def main() -> int:
                           "to the default .sh run. Skipped cleanly if no powershell/pwsh is found.")
     a = ap.parse_args()
 
-    if shutil.which("bash") is None:
+    if BASH is None:
         print("error: bash not found; this eval exercises the POSIX hook flavor.", file=sys.stderr)
         return 2
 
     ps_bin = None
     ps1_skip_reason = None
     if a.flavor == "ps1":
-        ps_bin = shutil.which("pwsh") or shutil.which("powershell")
+        # Run the hooks with the interpreter the harness registers them with. On Windows the
+        # generated settings call `powershell` - Windows PowerShell 5.1 - and 5.1 differs from pwsh
+        # 7 in ways that matter to a hook: it prepended a UTF-8 BOM to everything piped into a
+        # native process, which broke verify-plan.py's parse and switched the verification ledger
+        # off in every real Windows session while this eval, running pwsh, stayed green. pwsh is
+        # the fallback for Linux and macOS CI, where there is no 5.1.
+        order = ("powershell", "pwsh") if os.name == "nt" else ("pwsh", "powershell")
+        ps_bin = next((b for b in map(shutil.which, order) if b), None)
         if ps_bin is None:
             ps1_skip_reason = "no pwsh/powershell found on PATH"
+        else:
+            print(f"ps1 flavor runs under: {ps_bin}", file=sys.stderr)
 
     # Scaffold into a workdir NEXT TO the eval, not into the system temp dir.
     # Reason: on Windows the bash that runs the hooks may not share a filesystem view with the

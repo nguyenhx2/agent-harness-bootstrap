@@ -67,7 +67,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/protect-adr.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -77,22 +78,25 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-task-scope.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-board.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
       {
-        "matcher": "Read|Edit|Write|Bash",
+        "matcher": "Read|Edit|Write|Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/protect-secrets.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -102,7 +106,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/protect-repos.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -117,12 +122,35 @@
 {{/IF_RTK}}          {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-main-commit.{{HOOK_EXT}}",
-            "timeout": 10
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/check-commit-msg.{{HOOK_EXT}}",
-            "timeout": 10
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-main-commit.{{HOOK_EXT}}",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/check-commit-msg.{{HOOK_EXT}}",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -132,7 +160,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-destructive.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -142,7 +171,16 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-large-file.{{HOOK_EXT}}",
-            "timeout": 10
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-large-file.{{HOOK_EXT}}",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -152,7 +190,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-egress.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -162,7 +201,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-deps.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -172,7 +212,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-migration.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -192,7 +233,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-agent-spawn.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       }
@@ -342,7 +384,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/secret-guard.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       }
@@ -354,7 +397,8 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-config.{{HOOK_EXT}}",
-            "timeout": 10
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       }

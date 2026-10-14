@@ -73,7 +73,7 @@ and mean it. Every claim on the surface is answered by a script in the repositor
 
 Real, derived, and re-runnable by the visitor:
 
-- guardrail eval 250/250 per hook flavour, on both hook flavours, measured on a harness scaffolded with
+- guardrail eval 266/266 per hook flavour, on both hook flavours, measured on a harness scaffolded with
   the `hooks_strict`, `long` and `db` flags on (`VARS` in `eval/guardrail_eval.py` names the set)
 - the guardrail suite splits into 101 must-block and 149 must-allow cases
 - Cursor and Codex port adapter self-test 32/32

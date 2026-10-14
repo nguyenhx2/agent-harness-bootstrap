@@ -24,6 +24,16 @@
 # dispatch through is exactly what this hook exists to prevent. The .sh flavor reaches the same
 # outcome by extracting an empty subagent_type and blocking on it; this branch makes the two
 # flavors behaviorally identical, which the eval pins in both flavors.
+# UTF-8 with NO byte-order mark, both ways, before anything is read or piped. Windows PowerShell
+# 5.1 - the `powershell` the generated settings call - otherwise prepends EF BB BF to what it pipes
+# into a native process, and verify-plan.py's JSON parse failed on it: the ledger check silently
+# allowed every dispatch and recorded none. [Console]::InputEncoding is the setting that removes
+# the BOM on 5.1 ($OutputEncoding alone does not); both are set, and reading stdin after them
+# also decodes a non-ASCII prompt correctly whatever the console code page is.
+$noBom = New-Object System.Text.UTF8Encoding $false
+try { [Console]::InputEncoding = $noBom } catch { }
+$OutputEncoding = $noBom
+
 $payload = $null
 try {
     $raw = [Console]::In.ReadToEnd()
@@ -83,7 +93,8 @@ if ($override -and (Test-Path $seatFile)) {
 
 # --- ledger, rounds and budget (roster seats only) -------------------------
 # Runs last, on every allow path, so a refused dispatch is never recorded as run. No interpreter
-# or no script: allow - the other checks still hold.
+# or no script: allow - the other checks still hold. A payload verify-plan.py cannot read is a
+# BLOCK (exit 2), never an allow: an unparsed dispatch is one nobody verified.
 function Invoke-LedgerCheck {
     $vp = Join-Path $baseCwd '.claude/scripts/verify-plan.py'
     if (-not ((Test-Path $seatFile) -and (Test-Path $vp))) { return }
