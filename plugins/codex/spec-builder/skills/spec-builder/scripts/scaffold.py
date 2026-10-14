@@ -84,6 +84,25 @@ def resolve_blocks(text: str, flags: set[str]) -> str:
     return text
 
 
+def verbatim_payload(src: Path) -> bytes:
+    """-> the bytes a `"subst": false` asset is written with: its own, but always LF.
+
+    The templated path reads text, which already turns CRLF into LF. This one copies bytes, so
+    without this it shipped whatever line endings the skill's checkout holds - on Windows, with
+    `core.autocrlf`, that is CRLF for every asset `.gitattributes` does not pin to LF - and a
+    harness scaffolded there differed from one scaffolded anywhere else. Binary assets (not
+    UTF-8, or holding a NUL) are copied untouched.
+    """
+    data = src.read_bytes()
+    if b"\0" in data:
+        return data
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data
+    return data.replace(b"\r\n", b"\n")
+
+
 def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set[str]]:
     """Replace {{VAR}}. Returns (text, set of vars that were missing)."""
     missing: set[str] = set()
@@ -547,7 +566,7 @@ def main() -> int:
                     body = modularize(body, module_vars["MODULE_CODE"])
                 payload = body.encode("utf-8")
             else:
-                payload = src.read_bytes()
+                payload = verbatim_payload(src)
 
             if dest.exists():
                 existing = dest.read_bytes()

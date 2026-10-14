@@ -2,13 +2,60 @@
 
 [English](HARNESS-GRAPH-SCHEMA.md) · **日本語**
 
-`.claude/state/harness-graph.json` は、ハーネスを導入したリポジトリの制御面を機械可読な形で表した正本です。
-エージェント、ルール、コマンド、フック、スクリプト、コードモジュール、進行中のタスクのすべてと、それらの間の
-型付きの関係が入っています。書き出すのは `.claude/scripts/harness-graph.py`、または出力がバイト単位で同一の
-`harness-view scan` です (`scripts/check_graph_parity.py` が両者をそこに縛っています)。描画するのは
-`graph-html.py` で (`docs/context/harness-graph.html`、Flow ビューと Graph ビュー)、`harness-view` ネイティブ
-ビューアのような外部ツールが読み込みます。このファイルを読むものは未知の追加キーを許容しなければならず、
-書くものは下記の保証を守らなければなりません。
+`.claude/state/harness-graph.json` は、ハーネスを導入したリポジトリの制御面を機械可読な形で表した地図です。
+エージェント、ルール、コマンド、フック、スクリプト、スキル、指示ファイル、コードモジュール、タスクのすべてと、
+それらの間の型付きのエッジが入っています。
+
+```mermaid
+flowchart LR
+    HG["harness-graph.py"] --> J[/"harness-graph.json"/]
+    HV["harness-view scan"] --> J
+    J --> GH["graph-html.py"]
+    GH --> H[/"harness-graph.html"/]
+    J --> V["harness-view"]
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class HG,HV,GH det
+    class J,H art
+    class V hum
+```
+
+- **書くもの**: `.claude/scripts/harness-graph.py` と `harness-view scan`。出力はバイト単位で同一で、
+  `scripts/check_graph_parity.py` がそれを保証します。
+- **読むもの**: `graph-html.py` が `docs/context/harness-graph.html` (Flow ビューと Graph ビュー) を描画し、
+  `harness-view` ビューアが直接読み込みます。
+- **契約**: 読むものは未知の追加キーを許容し、書くものは下記の保証をすべて守ります。
+
+Flow ビューが描く、最も意味のあるエッジは次のとおりです。
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 35, "nodeSpacing": 25}}}%%
+flowchart TD
+    HU(["人間"]) -->|"invokes"| CM["コマンド"]
+    CM -->|"delegates"| AG["エージェント"]
+    ST["settings.json"] -->|"triggers"| HK["フック"]
+    HK -->|"enforces"| RU["ルール"]
+    RU -->|"gates"| AG
+    AG -->|"owns"| MO["モジュール"]
+    AG -->|"reviews"| GT["マージ要求"]
+    GT -->|"escalates"| HU
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class HU hum
+    class CM,AG mod
+    class ST,HK,RU,GT gate
+    class MO art
+```
+
+すべての種類は[ノード](#ノード)と[エッジ](#エッジ)の表にあります。
 
 ## 保証
 

@@ -16,8 +16,19 @@ type Ctx = {lang: Lang; tm: Timing; S: Strings};
 const LangCtx = createContext<Ctx>({lang: 'en', tm: timingEn, S: STRINGS.en});
 const useL = () => useContext(LangCtx);
 
-/** Start time (s) of the n-th cue of a scene. Every visual beat hangs off a spoken line. */
-const cueOf = (tm: Timing, scene: string, n: number) => tm.cues.filter((c) => c.scene === scene)[n];
+const isQuestion = (text: string) => /^["「]/.test(text);
+
+/**
+ * The n-th cue of a scene, counted from its question: n = 0 is the quoted question, 1 the first line
+ * of the answer. A question scene opens with a short lead-in line before the question; that line is
+ * n = -1. A scene with no question counts from its first cue. Every visual beat hangs off a spoken
+ * line.
+ */
+const cueOf = (tm: Timing, scene: string, n: number) => {
+  const cs = tm.cues.filter((c) => c.scene === scene);
+  const base = Math.max(0, cs.findIndex((c) => isQuestion(c.text)));
+  return cs[base + n];
+};
 const useCue = () => {
   const {tm} = useL();
   return (scene: string, n: number) => cueOf(tm, scene, n).start;
@@ -37,11 +48,14 @@ const useScene = () => {
 
 // ---------------------------------------------------------------- audio
 
-const DUCK_LOW = 0.07;
-const DUCK_HIGH = 0.26;
 const DUCK_RAMP = 0.3;
 
-/** Music gain at time t: low under every speech run, back up in real gaps, faded at both ends. */
+/**
+ * Music gain at time t. The two levels come from timing.<lang>.json, where the timing build derived
+ * them from the measured loudness of the voice and the bed: `musicLow` puts the music a fixed number
+ * of LU under the voice while it speaks, `musicHigh` brings it up in the gaps between scenes and at
+ * the open and close. It is never silent.
+ */
 const musicGain = (tm: Timing, t: number) => {
   let duck = 0;
   for (const [s, e] of tm.speech) {
@@ -51,8 +65,12 @@ const musicGain = (tm: Timing, t: number) => {
     );
     duck = Math.max(duck, k);
   }
-  const level = DUCK_HIGH + (DUCK_LOW - DUCK_HIGH) * duck;
-  const fadeIn = interpolate(t, [0, 1.2], [0, 1], {extrapolateRight: 'clamp'});
+  // The bed's own build and fall, flattened per second (linear between seconds).
+  const trim = tm.mix.musicTrim;
+  const i = Math.min(Math.floor(t), trim.length - 1);
+  const dB = i < 0 ? 0 : interpolate(t, [i, i + 1], [trim[i], trim[Math.min(i + 1, trim.length - 1)]], {extrapolateRight: 'clamp'});
+  const level = (tm.mix.musicHigh + (tm.mix.musicLow - tm.mix.musicHigh) * duck) * Math.pow(10, dB / 20);
+  const fadeIn = interpolate(t, [0, 0.8], [0.35, 1], {extrapolateRight: 'clamp'});
   const fadeOut = interpolate(t, [tm.total - 2.5, tm.total], [1, 0], {extrapolateLeft: 'clamp'});
   return level * fadeIn * fadeOut;
 };
@@ -68,24 +86,41 @@ const Sfx: React.FC<{at: number; src: string; volume: number}> = ({at, src, volu
 
 const QUESTIONS = ['team', 'safe', 'keys', 'loop', 'spec', 'control', 'assess'];
 
-const Soundtrack = () => {
+/** `stem` renders one layer alone, for the loudness check in scripts/measure-mix.mjs. */
+export type Stem = 'all' | 'voice' | 'music';
+
+const Soundtrack: React.FC<{stem: Stem}> = ({stem}) => {
   const {fps} = useVideoConfig();
   const {lang, tm} = useL();
   const cue = useCue();
   const scene = useScene();
-  // render.sh writes the tempo-adjusted copy; at tempo 1 the cached file plays as it is.
-  const voice = tm.tempo === 1 ? `narration.${lang}.mp3` : `narration.${lang}.paced.mp3`;
+  const voice = `narration.${lang}.mp3`;
   return (
     <>
-      <Audio src={staticFile('music.mp3')} volume={(f) => musicGain(tm, f / fps)} />
-      <Sequence from={Math.round(tm.leadIn * fps)} layout="none">
-        <Audio src={staticFile(voice)} volume={1} />
-      </Sequence>
-      {QUESTIONS.map((q) => (
-        <Sfx key={q} at={cue(q, 0) - 0.25} src="sfx-whoosh.mp3" volume={0.22} />
-      ))}
-      <Sfx at={cue('safe', 2) + 1.2} src="sfx-block.mp3" volume={0.55} />
-      <Sfx at={scene('close').start + 0.2} src="sfx-chime.mp3" volume={0.4} />
+      {stem !== 'voice' ? <Audio src={staticFile('music.mp3')} volume={(f) => musicGain(tm, f / fps)} /> : null}
+      {stem !== 'music'
+        ? tm.segments.map((g, i) => (
+            // The narration, piece by piece: each piece of the cached file plays at the time the
+            // timing build placed it, so trimmed pauses and scene gaps never touch a word.
+            <Sequence key={i} from={Math.round(g.at * fps)} layout="none">
+              <Audio
+                src={staticFile(voice)}
+                trimBefore={Math.round(g.from * fps)}
+                trimAfter={Math.round(g.to * fps)}
+                volume={tm.mix.voiceGain}
+              />
+            </Sequence>
+          ))
+        : null}
+      {stem === 'all' ? (
+        <>
+          {QUESTIONS.map((q) => (
+            <Sfx key={q} at={scene(q).start + 0.05} src="sfx-whoosh.mp3" volume={0.22} />
+          ))}
+          <Sfx at={cue('safe', 2) + 1.2} src="sfx-block.mp3" volume={0.55} />
+          <Sfx at={scene('close').start + 0.2} src="sfx-chime.mp3" volume={0.4} />
+        </>
+      ) : null}
     </>
   );
 };
@@ -229,6 +264,16 @@ const Kicker: React.FC<{t: number; at: number; id: string}> = ({t, at, id}) => {
 
 const stripQuotes = (s: string) => s.replace(/^["「]|["」]$/g, '');
 
+// Bubble geometry. The avatar column is AVATAR wide; the bubble's bottom edge sits level with the
+// avatar's, and the tail leaves the bubble's left edge at the avatar's centre height and ends on the
+// avatar's rim, so the two always meet whatever the text length.
+const AVATAR = 104;
+const TAIL_GAP = 30; // avatar rim to bubble edge
+const BORDER = 3;
+const LABEL_H = 30; // the "you" label under the avatar
+const LABEL_GAP = 8;
+const BUBBLE_MAX = 1240; // outer width cap, padding and border included
+
 /**
  * The pain point. It pops up centre-stage as a speech bubble from "you" while the question is
  * spoken, then docks to the top left and stays there while the answer plays under it.
@@ -241,6 +286,9 @@ const Bubble: React.FC<{t: number; text: string; at: number; dockAt: number; sti
   const left = interpolate(k, [0, 1], [960, 96]);
   const top = interpolate(k, [0, 1], [470, 40]);
   const tx = interpolate(k, [0, 1], [-50, 0]);
+  const q = stripQuotes(text);
+  const tailH = 44;
+  const tailW = TAIL_GAP + BORDER * 2;
   return (
     <div
       style={{
@@ -252,18 +300,19 @@ const Bubble: React.FC<{t: number; text: string; at: number; dockAt: number; sti
         opacity: pop,
         display: 'flex',
         alignItems: 'flex-end',
-        gap: 26,
-        width: 1500,
+        gap: TAIL_GAP,
+        width: 'max-content',
       }}
     >
-      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8}}>
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: LABEL_GAP, width: AVATAR, flexShrink: 0}}>
         <div
           style={{
-            width: 104,
-            height: 104,
+            width: AVATAR,
+            height: AVATAR,
+            boxSizing: 'border-box',
             borderRadius: '50%',
-            border: `3px solid ${C.blue}`,
-            background: `${C.blueDeep}`,
+            border: `${BORDER}px solid ${C.blue}`,
+            background: C.blueDeep,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -271,36 +320,83 @@ const Bubble: React.FC<{t: number; text: string; at: number; dockAt: number; sti
         >
           <Icon name="user" size={60} color={C.blue} />
         </div>
-        <div style={{fontSize: 24, color: C.blue}}>{S.you}</div>
+        <div style={{fontSize: 24, lineHeight: `${LABEL_H}px`, height: LABEL_H, color: C.blue, whiteSpace: 'nowrap'}}>{S.you}</div>
       </div>
       <div
         style={{
           position: 'relative',
-          background: `${C.blueDeep}cc`,
-          border: `3px solid ${C.blue}`,
+          boxSizing: 'border-box',
+          background: C.blueDeep,
+          border: `${BORDER}px solid ${C.blue}`,
           borderRadius: 34,
-          padding: '28px 44px',
+          padding: '30px 48px',
+          minHeight: AVATAR,
+          maxWidth: BUBBLE_MAX,
+          marginBottom: LABEL_H + LABEL_GAP,
           fontSize: lang === 'ja' ? 50 : 56,
-          lineHeight: 1.28,
+          lineHeight: 1.3,
           fontWeight: 600,
           color: C.text,
-          maxWidth: 1340,
-          marginBottom: 46,
+          overflowWrap: 'break-word',
+          lineBreak: 'strict',
         }}
       >
+        {/* Japanese breaks at a comma or stop where the halves come out even; if a half is still too
+            wide for the bubble, the browser wraps it again rather than letting it overflow. */}
         {lang === 'ja'
-          ? wrapJa(stripQuotes(text), 24, 25).map((l, i) => (
-              <div key={i} style={{whiteSpace: 'nowrap'}}>
-                {l}
-              </div>
-            ))
-          : stripQuotes(text)}
-        <svg width={40} height={36} style={{position: 'absolute', left: -3, bottom: -33}}>
-          <path d="M3 0 L3 33 L36 0" fill={C.blueDeep} stroke={C.blue} strokeWidth={3} strokeLinejoin="round" />
-          <rect x={4.5} y={-3} width={31} height={4.5} fill={C.blueDeep} />
+          ? wrapJa(q, 21, 22).map((l, i) => <div key={i}>{l}</div>)
+          : // A hyphenated word ("half-hearted", "AI-DLC") is kept whole on one line.
+            q.split(' ').map((w, i) => (
+              <React.Fragment key={i}>
+                {i ? ' ' : ''}
+                {w.includes('-') ? <span style={{whiteSpace: 'nowrap'}}>{w}</span> : w}
+              </React.Fragment>
+            ))}
+        <svg
+          width={tailW}
+          height={tailH}
+          style={{position: 'absolute', left: -BORDER - TAIL_GAP, bottom: AVATAR / 2 - BORDER - tailH / 2, overflow: 'visible'}}
+        >
+          {/* The fill reaches past the bubble's border so the border is open where the tail joins. */}
+          <path d={`M ${tailW} 3 L 1.5 ${tailH / 2} L ${tailW} ${tailH - 3} Z`} fill={C.blueDeep} />
+          <path
+            d={`M ${TAIL_GAP + BORDER / 2} 3 L 1.5 ${tailH / 2} L ${TAIL_GAP + BORDER / 2} ${tailH - 3}`}
+            fill="none"
+            stroke={C.blue}
+            strokeWidth={BORDER}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     </div>
+  );
+};
+
+/**
+ * The lead-in to a question: "Next, safety and cost." is spoken while this card says which question
+ * of how many is coming. It clears just before the bubble pops.
+ */
+const LeadIn: React.FC<{t: number; id: string}> = ({t, id}) => {
+  const {S, tm} = useL();
+  const lead = cueOf(tm, id, -1);
+  if (!lead) return null;
+  const qAt = cueOf(tm, id, 0).start;
+  const n = QUESTIONS.indexOf(id) + 1;
+  const k = Math.min(
+    ramp(t, lead.start - 0.25, 0.4),
+    interpolate(t, [qAt - 0.55, qAt - 0.2], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}),
+  );
+  if (k <= 0) return null;
+  return (
+    <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', paddingBottom: 150, opacity: k}}>
+      <div style={{textAlign: 'center', transform: `translateY(${(1 - k) * 14}px)`}}>
+        <div style={{fontFamily: MONO, fontSize: 30, letterSpacing: 4, color: C.dim, textTransform: 'uppercase'}}>
+          {S.questionOf(n, QUESTIONS.length)}
+        </div>
+        <div style={{fontSize: 78, fontWeight: 800, color: C.text, marginTop: 18}}>{S.topic[id]}</div>
+      </div>
+    </AbsoluteFill>
   );
 };
 
@@ -310,7 +406,12 @@ const Question: React.FC<{t: number; id: string; from?: string}> = ({t, id, from
   const cue = useCue();
   const q = from ?? id;
   const text = cueOf(tm, q, 0).text;
-  return <Bubble t={t} text={text} at={cue(q, 0)} dockAt={cue(q, 1) - 0.45} still={!!from} />;
+  return (
+    <>
+      {from ? null : <LeadIn t={t} id={id} />}
+      <Bubble t={t} text={text} at={cue(q, 0)} dockAt={cue(q, 1) - 0.45} still={!!from} />
+    </>
+  );
 };
 
 /** A row with an icon badge, a title and an optional line under it. */
@@ -370,6 +471,42 @@ const Open: React.FC<{t: number}> = ({t}) => {
           </div>
         </div>
       </div>
+    </AbsoluteFill>
+  );
+};
+
+/** The framing beat before the questions: every question that follows, listed once. */
+const Frame: React.FC<{t: number}> = ({t}) => {
+  const {S} = useL();
+  const cue = useCue();
+  const at = useAt();
+  return (
+    <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', paddingBottom: 170}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 22, ...enter(t, cue('frame', 0), 0.5)}}>
+        <Icon name="user-group" size={58} color={C.blue} />
+        <div style={{fontSize: 56, fontWeight: 800, color: C.text}}>{S.frameTitle}</div>
+      </div>
+      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 60px', marginTop: 48, width: 1400}}>
+        {QUESTIONS.map((q, i) => (
+          <div
+            key={q}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 20,
+              padding: '14px 24px',
+              border: `2px solid ${C.blue}`,
+              borderRadius: 16,
+              background: `${C.blueDeep}99`,
+              ...enter(t, at('frame', 0, 0.35 + i * 0.09), 0.4),
+            }}
+          >
+            <span style={{fontFamily: MONO, fontSize: 28, color: C.blue, width: 36}}>{i + 1}</span>
+            <span style={{fontSize: 34, fontWeight: 600, color: C.text}}>{S.topic[q]}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize: 30, color: C.green, marginTop: 40, ...enter(t, cue('frame', 1) + 0.3, 0.5)}}>{S.frameSub}</div>
     </AbsoluteFill>
   );
 };
@@ -1002,6 +1139,7 @@ const Close: React.FC<{t: number}> = ({t}) => {
 
 const SCENES: Record<string, React.FC<{t: number}>> = {
   open: Open,
+  frame: Frame,
   team: Team,
   safe: Safe,
   lean: Lean,
@@ -1047,7 +1185,8 @@ const wrapJa = (text: string, single = 31, max = 34): string[] => {
   let bestW = Infinity;
   for (let i = 1; i < chars.length; i++) {
     const prev = chars[i - 1];
-    const ok = /[、。」）]/.test(prev) || prev === ' ' || chars[i] === '「';
+    // A space breaks only before a Latin word ("AI-DLC は"), never before a particle ("AI が").
+    const ok = /[、。」）]/.test(prev) || (prev === ' ' && /[A-Za-z]/.test(chars[i])) || chars[i] === '「';
     if (!ok) continue;
     const w = Math.max(width(chars.slice(0, i).join('')), width(chars.slice(i).join('')));
     if (w < bestW) {
@@ -1100,7 +1239,7 @@ const Captions: React.FC<{t: number}> = ({t}) => {
 
 const FADE = 0.35;
 
-export const Intro: React.FC<{lang: Lang}> = ({lang}) => {
+export const Intro: React.FC<{lang: Lang; stem?: Stem}> = ({lang, stem = 'all'}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
@@ -1125,7 +1264,7 @@ export const Intro: React.FC<{lang: Lang}> = ({lang}) => {
           );
         })}
         <Captions t={t} />
-        <Soundtrack />
+        <Soundtrack stem={stem} />
       </AbsoluteFill>
     </LangCtx.Provider>
   );

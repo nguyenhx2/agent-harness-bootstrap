@@ -83,6 +83,13 @@ jobs:
       - name: Figures in the docs must match what the scripts print
         run: python scripts/check_numbers.py
 
+      # The live benchmark runs real Claude Code sessions, so CI cannot re-run it. What CI can
+      # check is that the README and the deck still quote the committed summary.json exactly.
+      - name: Live-benchmark figures must match the committed summary.json
+        run: |
+          python scripts/bench_block.py --self-test
+          python scripts/bench_block.py --check
+
       # Both viewers ship as one file with an inline <script>. Nothing executes that JavaScript in
       # CI, so a syntax error used to ship silently: the page rendered its chrome and the canvas
       # stayed blank. node --check is the parser, not a heuristic.

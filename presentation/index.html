@@ -93,7 +93,9 @@
   }
   /* the main block of a slide claims the height rather than leaving it blank */
   .body > .cards, .body > ul.big, .body > .stats, .body > .lay,
-  .body > .laywrap, .body > .pipe, .body > .coverwrap{flex:1 1 auto;min-height:0}
+  .body > .laywrap, .body > .pipe, .body > .coverwrap,
+  .body > .fig, .body > .stack, .body > .qmap, .body > .tiers, .body > .evts,
+  .body > .meas, .body > .bench{flex:1 1 auto;min-height:0}
   .cards, ul.big, .stats{align-content:stretch}
   .card{display:flex;flex-direction:column}
   .card p{margin-top:auto}
@@ -157,6 +159,7 @@
   ul.big li.amber{background:var(--amber-t)} ul.big li.amber .ic{color:var(--amber)}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13em,1fr));gap:.9em}
+  .cards[style*="--cols"]{grid-template-columns:repeat(var(--cols),minmax(0,1fr))}
   .card{background:#f6f6fd;border-radius:20px;padding:1.2em;position:relative;justify-content:center;overflow:hidden}
   /* the icon is the card's artwork: large, tilted, sitting behind the words */
   .card .bgart{
@@ -210,12 +213,115 @@
   .stat b{display:block;font-size:2.4em;line-height:1;color:var(--brand);letter-spacing:-.03em;
     font-variant-numeric:tabular-nums}
   .stat span{display:block;margin-top:.45em;color:var(--dim);font-size:.78em;line-height:1.45}
-  .stat span b{display:block;color:var(--ink);font-weight:750;margin-bottom:.15em}
+  .stat span b{display:block;color:var(--ink);font-weight:750;margin-bottom:.15em;font-size:1.05em;letter-spacing:0;line-height:1.3}
   .stat.g{background:var(--green-t)} .stat.g b{color:var(--green)}
   .stat.r{background:var(--red-t)} .stat.r b{color:var(--red)}
   .stat.a{background:var(--amber-t)} .stat.a b{color:var(--amber)}
 
   .note{margin-top:.8em;color:var(--faint);font-size:.8em;line-height:1.5}
+
+  /* ---------- card extras: a flag tag and seat chips ---------- */
+  .card .ctag{position:absolute;top:.85em;right:.9em;font-size:.68em;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;background:#fff;color:var(--dim);border-radius:999px;padding:.2em .7em}
+  .card.g .ctag{color:var(--green)} .card.a .ctag{color:var(--amber)}
+  .chips{display:flex;flex-wrap:wrap;gap:.3em;margin:.1em 0 .55em}
+  .chips code{font-size:.78em;background:#fff}
+
+  /* ---------- a figure, optionally with a side list ---------- */
+  .fig{display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);gap:1.1em;min-height:0}
+  .fig.withside{grid-template-columns:1.7fr 1fr;align-items:center}
+  .fig .shot{min-height:0;height:100%;display:flex;align-items:center;justify-content:center}
+  .fig .shot img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;
+    border-radius:14px;box-shadow:0 0 0 1px #e6e6f2, 0 10px 30px rgba(27,27,51,.08);background:#fff}
+  ul.big.side{gap:.45em;align-content:center}
+  ul.big.side li{padding:.6em .85em}
+  ul.big.side li span{font-size:.86em;line-height:1.4}
+
+  /* ---------- the layer stack: harness highlighted ---------- */
+  .stack{display:grid;gap:.5em;grid-auto-rows:1fr}
+  .stack .lyr{display:grid;grid-template-columns:10em 12em 1fr;align-items:center;gap:1em;padding:.6em 1.3em;
+    border-radius:16px;background:#f6f6fd;opacity:0;animation:pop .45s cubic-bezier(.22,1,.36,1) forwards}
+  .stack .lyr b{font-size:1.15em;color:var(--ink)}
+  .stack .lyr .an{color:var(--dim);font-size:.92em}
+  .stack .lyr .qq{color:var(--ink);font-size:.98em}
+  .stack .lyr.hi{background:var(--brand);box-shadow:0 10px 26px rgba(53,52,143,.28);margin:0 -.6em}
+  .stack .lyr.hi b,.stack .lyr.hi .qq{color:#fff} .stack .lyr.hi .an{color:var(--brand-xl)}
+
+  /* ---------- seven questions, each bound to its answer ---------- */
+  .qmap{list-style:none;margin:0;padding:0;display:grid;gap:.4em;grid-auto-rows:1fr}
+  .qmap .qi{display:grid;grid-template-columns:2.3em 1.35fr 2.4em 1fr;align-items:center;gap:.8em;
+    padding:.35em 1em;background:#f6f6fd;border-radius:14px}
+  .qmap .qn{position:relative;width:2.1em;height:2.1em;display:grid;place-items:center;font-weight:800;color:var(--brand)}
+  .qmap .qn .ring{position:absolute;inset:0;width:100%;height:100%;color:var(--brand-xl)}
+  .qmap .qq{font-size:.95em;color:var(--ink)}
+  .qmap .arr{width:2.2em;height:1.1em;color:var(--brand-xl)}
+  .qmap .qa{font-weight:700;color:var(--brand);font-size:.92em}
+
+  /* ---------- a left-to-right chain of steps ---------- */
+  .chain{display:flex;align-items:stretch;gap:.35em;flex:0 0 auto}
+  .chain .st{flex:1 1 0;min-width:0;background:#fff;border:2px solid var(--tint2);border-radius:16px;
+    padding:.75em .85em;display:flex;flex-direction:column;gap:.2em}
+  .chain .st:first-of-type{border-color:var(--brand-xl)}
+  .chain .st:last-of-type{background:var(--tint);border-color:var(--brand-l)}
+  .chain .st b{color:var(--brand);font-size:1.02em}
+  .chain .st span{color:var(--dim);font-size:.82em;line-height:1.4}
+  .chain .ar{flex:0 0 auto;align-self:center;width:1.2em;height:1.2em;color:var(--brand-xl)}
+  .back{display:flex;align-items:center;gap:.6em;padding:.45em .9em;border:2px dashed var(--brand-xl);
+    border-radius:14px;color:var(--dim);font-size:.85em;flex:0 0 auto}
+  .back svg{width:1.1em;height:1.1em;flex:0 0 auto;color:var(--brand)}
+  .chain ~ .cards{flex:1 1 auto;min-height:0;margin-top:.3em}
+
+  /* ---------- routing tiers: weight grows left to right ---------- */
+  .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:.8em;align-items:stretch}
+  .tier{position:relative;border-radius:20px;padding:1.1em;background:#f6f6fd;display:flex;flex-direction:column;
+    gap:.35em;opacity:0;animation:pop .45s cubic-bezier(.22,1,.36,1) forwards}
+  .tier.g{background:var(--green-t);color:var(--green)} .tier.a{background:var(--amber-t);color:var(--amber)}
+  .tier.r{background:var(--red-t);color:var(--red)}
+  .tier .pips{display:flex;gap:.3em}
+  .tier .pips i{display:block;width:1.7em;height:.5em;border-radius:99px;background:rgba(0,0,0,.08)}
+  .tier .pips i.on{background:currentColor}
+  .tier h3{margin:.25em 0 0;font-size:1.35em;color:currentColor}
+  .tier .most{align-self:flex-start;font-size:.7em;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+    background:#fff;border-radius:999px;padding:.15em .7em}
+  .tier p{margin:0;color:var(--dim);font-size:.9em}
+  .tier .who{margin-top:auto;color:var(--ink);font-weight:650;padding-top:.6em;border-top:2px dotted rgba(0,0,0,.1)}
+
+  /* ---------- hooks on the lifecycle ---------- */
+  .legend{display:flex;flex-wrap:wrap;gap:.5em;flex:0 0 auto}
+  .evts{display:grid;grid-template-columns:repeat(7,1fr);gap:.55em}
+  .ev{background:#f6f6fd;border-radius:16px;padding:.75em .65em;display:flex;flex-direction:column;gap:.3em;min-width:0}
+  .ev.wide{grid-column:span 2}
+  .ev h4{margin:0;font-size:.8em;color:var(--brand)}
+  .ev .when{font-size:.72em;color:var(--faint);line-height:1.35}
+  .ev .hks{display:flex;flex-direction:column;gap:.3em;margin-top:.3em}
+  .ev.wide .hks{display:grid;grid-template-columns:1fr 1fr}
+  .hk{display:block;font-size:.74em;padding:.28em .55em;border-radius:9px;background:#fff;border-left:4px solid;
+    color:var(--ink);overflow-wrap:anywhere;line-height:1.35}
+  .legend .hk{font-size:.78em;padding:.25em .7em}
+  .hk.b{border-color:var(--red)} .hk.w{border-color:#d9a21b} .hk.c{border-color:var(--green)}
+  .hk i{font-style:normal;color:var(--faint);font-size:.88em}
+
+  /* ---------- derived figures, each with the script behind it ---------- */
+  .meas{list-style:none;margin:0;padding:0;display:grid;gap:.45em;grid-auto-rows:1fr}
+  .meas li{display:flex;align-items:center;gap:1em;padding:.5em 1.1em;background:#f6f6fd;border-radius:14px}
+  .meas .ml{flex:1;font-size:1.06em;color:var(--ink)}
+  .meas .ml mark{font-size:1.18em}
+  .meas li code{flex:0 0 auto;font-size:.76em}
+
+  /* ---------- the real-benchmark slot ---------- */
+  .bench{display:grid;grid-template-columns:1fr 2fr;gap:1.3em;align-items:center;position:relative;
+    border-radius:22px;padding:1.1em 1.2em;margin-top:.9em}
+  .bench.ph-on{border:3px dashed #d9a21b;background:repeating-linear-gradient(135deg,#fffdf6 0 14px,#fdf6e3 14px 28px)}
+  .bench .ph{position:absolute;top:-.85em;left:1.2em;background:var(--amber);color:#fff;font-weight:800;
+    font-size:.74em;padding:.2em .85em;border-radius:999px;letter-spacing:.08em}
+  .bench .setup{margin:0;display:grid;gap:.45em}
+  .bench .setup div{background:#fff;border-radius:12px;padding:.5em .8em}
+  .bench .setup dt{font-size:.72em;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);font-weight:800}
+  .bench .setup dd{margin:0;color:var(--ink)}
+  .bench table{font-size:.9em}
+  .bench tbody tr{background:#fff}
+  .cmds{display:grid;grid-template-columns:1.6fr 1fr;gap:.9em}
+  .cmds pre.cmd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 
   video{width:auto;height:100%;max-width:100%;max-height:100%;object-fit:contain;
     border-radius:16px;background:#0b0b18;display:block;margin:0 auto}
@@ -313,7 +419,7 @@
   .ring.r2{width:77%;height:74%;color:var(--amber);background:var(--amber-t)}
   .ring.r3{width:55%;height:50%;color:var(--purple);background:var(--purple-t)}
   .ring.r4{width:33%;height:27%;color:var(--green);background:var(--green-t)}
-  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-25%);font-size:.78em;
+  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-5%);font-size:.78em;
     font-weight:800;color:#fff;background:var(--brand);border-radius:12px;padding:.35em .8em}
   .attack{position:absolute;top:-.2em;left:50%;width:11px;height:11px;border-radius:50%;
     background:var(--red);transform:translateX(-50%);animation:attack 3.4s ease-in-out infinite}
@@ -407,12 +513,38 @@
     .laywrap{display:block}
 
     /* one column for everything that was a grid of cards or stats */
-    .cards{grid-template-columns:1fr}
+    .cards,.cards[style*="--cols"]{grid-template-columns:1fr}
     .stats{grid-template-columns:repeat(2,1fr)}
     .ringcols{grid-template-columns:repeat(2,1fr)}
     .coverwrap,.quote2col,.quotesplit{grid-template-columns:1fr;text-align:left}
     .coverwrap .art,.quote2col .qmain img{max-height:none;width:100%}
     .rings{min-height:15em;margin:.5em 0}
+
+    /* the newer layouts collapse to one readable column */
+    .body>.fig,.body>.stack,.body>.qmap,.body>.tiers,.body>.evts,.body>.meas,.body>.bench{flex:none}
+    .fig.withside,.bench,.cmds{grid-template-columns:1fr}
+    .fig{grid-template-rows:auto}
+    .fig .shot{height:auto}
+    .fig .shot img{width:100%;max-height:none}
+    ul.big.side{margin-top:.2em}
+    .stack{grid-auto-rows:auto}
+    .stack .lyr{grid-template-columns:1fr;gap:.15em;padding:.7em 1em}
+    .stack .lyr.hi{margin:0}
+    .qmap{grid-auto-rows:auto}
+    .qmap .qi{grid-template-columns:2.2em 1fr;row-gap:.3em;padding:.6em .8em}
+    .qmap .arr{display:none}
+    .qmap .qa{grid-column:2}
+    .chain{flex-direction:column;gap:.3em}
+    .chain .ar{transform:rotate(90deg)}
+    .back,.legend{margin:.6em 0}
+    .chain ~ .cards{margin-top:.6em}
+    .tiers{grid-template-columns:1fr}
+    .evts{grid-template-columns:1fr 1fr}
+    .ev.wide{grid-column:1 / -1}
+    .meas{grid-auto-rows:auto}
+    .meas li{flex-wrap:wrap;gap:.4em}
+    .bench{margin-top:1em}
+    .bench th{overflow-wrap:normal;font-size:.68em;letter-spacing:.04em}
 
     /* A cell holding an unbreakable path (.cursor/rules/*.mdc, .claude/disabled.json)
        set the table's min-content width, and at 390px that is wider than the card: the
@@ -438,7 +570,7 @@
     .thumbs{grid-template-columns:repeat(2,1fr);gap:10px}
   }
   @media (prefers-reduced-motion:reduce){
-    .slide.in-next,.slide.in-prev,.stag>*,.lay .row,.pipe .node,.ring{animation:none;opacity:1;transform:none}
+    .slide.in-next,.slide.in-prev,.stag>*,.lay .row,.pipe .node,.ring,.stack .lyr,.tier{animation:none;opacity:1;transform:none}
     .attack,.blocked,.pipe .conn::after{animation:none;opacity:0}
     .lay .row.ram::after{animation:none;opacity:.55}
     .lay .row .strike path{animation:none;stroke-dashoffset:0}
@@ -624,18 +756,25 @@ const GLOSS = {
   orchestrator:{en:"The single agent that plans, splits work into registered tasks, dispatches specialists and judges their results. For cross-domain work only - a single-domain change goes straight to the agent that owns it.",
                 vi:"Agent duy nhất lập kế hoạch, chia việc thành các task đã đăng ký, điều phối chuyên gia và đánh giá kết quả. Chỉ dùng cho việc liên miền - việc trong một miền thì gọi thẳng agent sở hữu miền đó.",
                 ja:"計画し、作業を登録済みタスクに分割し、専門家を割り当て、結果を判断する唯一のエージェント。領域をまたぐ作業専用で、単一領域の変更は担当エージェントを直接呼びます。"},
+  ledger:{en:"A record of every review and test run, kept in .claude/state/verify-ledger.jsonl and keyed by a hash of the content it checked. A re-run on content that already passed would learn nothing, so the spawn hook refuses it.",
+          vi:"Bản ghi mọi lần review và chạy test, lưu trong .claude/state/verify-ledger.jsonl và đánh khoá bằng hash của nội dung đã kiểm. Chạy lại trên nội dung đã qua thì không học thêm được gì, nên hook spawn từ chối.",
+          ja:"すべてのレビューとテスト実行の記録。.claude/state/verify-ledger.jsonl に、検査した内容のハッシュをキーとして残ります。通過済みの内容への再実行は何も得られないため、生成フックが拒否します。"},
+  failclosed:{en:"When the guard itself fails - a timeout, a crash, an unexpected exit code - the call is blocked rather than waved through. Registered as onFailure: block with a timeout.",
+              vi:"Khi chính guard gặp lỗi - timeout, crash, mã thoát bất thường - lời gọi bị chặn thay vì được cho qua. Đăng ký bằng onFailure: block kèm timeout.",
+              ja:"ガード自体が失敗した時(タイムアウト、クラッシュ、想定外の終了コード)、呼び出しを通さず遮断すること。onFailure: block とタイムアウトで登録されます。"},
   spec:{en:"A written requirements document with stable IDs and acceptance criteria, so a change can be checked against something instead of a memory of a conversation.",
         vi:"Tài liệu yêu cầu được viết ra với ID ổn định và tiêu chí nghiệm thu, để một thay đổi có thể được đối chiếu thay vì dựa vào trí nhớ hội thoại.",
         ja:"安定したIDと受入基準を持つ要件文書。変更を会話の記憶ではなく、対象に照らして検証できます。"}
 };
 
 const S = [
+/* ============ OPENING ============ */
 /* 1 */
 {icon:"i-logo", kind:"cover",
  title:{en:"Agent Harness Engineering", vi:"Agent Harness Engineering", ja:"Agent Harness Engineering"},
- sub:{en:"The missing layer between the model and the agent, built for your repository",
-      vi:"Lớp còn thiếu giữa model và agent, dựng riêng cho repository của bạn",
-      ja:"モデルとエージェントの間に欠けていた層を、あなたのリポジトリのために"},
+ sub:{en:"Two skills and a viewer: the missing layer between the model and the agent, built for your repository",
+      vi:"Hai skill và một viewer: lớp còn thiếu giữa model và agent, dựng riêng cho repository của bạn",
+      ja:"2つのスキルと1つのビューア。モデルとエージェントの間に欠けていた層を、あなたのリポジトリのために"},
  lead:{en:"Give an AI agent a repo it can actually understand, and a <mark>harness it cannot escape</mark>.",
        vi:"Trao cho AI agent một repository nó thực sự hiểu được, và một <mark>harness nó không thể thoát ra</mark>.",
        ja:"AIエージェントに、本当に理解できるリポジトリと、<mark>抜け出せないハーネス</mark>を。"},
@@ -655,32 +794,38 @@ const S = [
       ja:"安定IDを持つ書かれた契約。リポジトリの目的に合わせたチーム。該当する時だけ読み込まれるルール。ディスク上のタスク状態。ウィンドウを閉じても何も失われません。"}},
   {ic:"i-shield", cls:"r",
    t:{en:"A harness it cannot escape", vi:"Một harness nó không thể thoát ra", ja:"抜け出せないハーネス"},
-   d:{en:"{{g:hook|Hooks}} that {{g:exit2|exit 2}} before the tool runs. A deny list, a tool allowlist per seat, a cap on how deep agents spawn. None of it asks the model to agree.",
-      vi:"{{g:hook|Hook}} {{g:exit2|exit 2}} trước khi tool kịp chạy. Deny list, allowlist tool cho từng vai, giới hạn độ sâu spawn agent. Không cái nào hỏi model có đồng ý không.",
-      ja:"ツール実行前に{{g:exit2|exit 2}}する{{g:hook|フック}}。拒否リスト、席ごとのツール許可リスト、エージェント生成の深さ上限。どれもモデルの同意を求めません。"}}],
+   d:{en:"{{g:hook|Hooks}} that {{g:exit2|exit 2}} before the tool runs, and block when they themselves fail. A deny list, a tool allowlist per seat, a cap on how deep agents spawn. None of it asks the model to agree.",
+      vi:"{{g:hook|Hook}} {{g:exit2|exit 2}} trước khi tool kịp chạy, và vẫn chặn khi chính nó gặp lỗi. Deny list, allowlist tool cho từng vai, giới hạn độ sâu spawn agent. Không cái nào hỏi model có đồng ý không.",
+      ja:"ツール実行前に{{g:exit2|exit 2}}し、自身が失敗しても遮断する{{g:hook|フック}}。拒否リスト、席ごとのツール許可リスト、エージェント生成の深さ上限。どれもモデルの同意を求めません。"}}],
  nav:{en:"Two halves", vi:"Hai nửa", ja:"2つの半分"}},
 
-/* 3 - the nine problems, one slide instead of three */
-{icon:"i-alert", kind:"table", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
- title:{en:"Nine ways it breaks today", vi:"Chín cách nó đổ vỡ hôm nay", ja:"いま壊れている9つの点"},
- sub:{en:"Three places, three problems each. The numbers come back as the answers land.",
-      vi:"Ba chỗ, mỗi chỗ ba vấn đề. Các con số sẽ quay lại khi câu trả lời xuất hiện.",
-      ja:"3つの場所に各3つ。番号は、答えが出てくる時に再び登場します。"},
- cols:{en:["Where","What breaks"], vi:["Ở đâu","Cái gì đổ vỡ"], ja:["どこで","何が壊れるか"]},
- rows:[
-  {en:["<strong>Setup</strong>","<mark class='m3'>01</mark> Kits install everything and fit nothing<br><mark class='m3'>02</mark> Phrasing the prompt eats the time<br><mark class='m3'>03</mark> Context is finite, however big the window"],
-   vi:["<strong>Thiết lập</strong>","<mark class='m3'>01</mark> Kit cài tất cả mà chẳng vừa với gì<br><mark class='m3'>02</mark> Diễn đạt prompt ngốn hết thời gian<br><mark class='m3'>03</mark> Context có hạn, cửa sổ lớn tới đâu cũng vậy"],
-   ja:["<strong>セットアップ</strong>","<mark class='m3'>01</mark> キットは全部入りで、何にも合わない<br><mark class='m3'>02</mark> プロンプトの言い回しが時間を食う<br><mark class='m3'>03</mark> ウィンドウがどれほど大きくてもコンテキストは有限"]},
-  {en:["<strong>Control</strong>","<mark class='m3'>04</mark> A rule written as an instruction can be skipped<br><mark class='m3'>05</mark> Hallucination and overflow derail the process<br><mark class='m3'>06</mark> Different models, unstable output"],
-   vi:["<strong>Kiểm soát</strong>","<mark class='m3'>04</mark> Quy tắc viết dạng chỉ dẫn có thể bị bỏ qua<br><mark class='m3'>05</mark> Ảo giác và tràn context phá vỡ quy trình<br><mark class='m3'>06</mark> Model khác nhau, đầu ra bất ổn"],
-   ja:["<strong>制御</strong>","<mark class='m3'>04</mark> 指示として書かれた規則は無視され得る<br><mark class='m3'>05</mark> 幻覚とあふれが工程を狂わせる<br><mark class='m3'>06</mark> モデルが違えば出力も不安定"]},
-  {en:["<strong>Project</strong>","<mark class='m3'>07</mark> Every repo has its own standard, and its own purpose<br><mark class='m3'>08</mark> A closed chat or a crash takes the work with it<br><mark class='m3'>09</mark> Few teams write {{g:spec|specs}} an agent can build from"],
-   vi:["<strong>Dự án</strong>","<mark class='m3'>07</mark> Mỗi repo có tiêu chuẩn và mục đích riêng<br><mark class='m3'>08</mark> Đóng chat hay sập máy là mất luôn công việc<br><mark class='m3'>09</mark> Ít team viết được {{g:spec|specs}} mà agent xây dựng theo được"],
-   ja:["<strong>プロジェクト</strong>","<mark class='m3'>07</mark> リポジトリごとに基準も目的も違う<br><mark class='m3'>08</mark> チャットを閉じる、落ちる、それで作業が消える<br><mark class='m3'>09</mark> エージェントが構築に使える{{g:spec|仕様}}を書けるチームは少ない"]}],
- note:{en:"None of these is fixed by a smarter model.",
-       vi:"Không vấn đề nào được giải quyết bằng một model thông minh hơn.",
-       ja:"どれも、より賢いモデルでは解決しません。"},
- nav:{en:"Nine problems", vi:"Chín vấn đề", ja:"9つの課題"}},
+/* ============ PART 1 - THE PROBLEM ============ */
+/* 3 */
+{icon:"i-alert", kind:"cards", cardCols:5, step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
+ title:{en:"What an agent does on a real repo, unharnessed", vi:"Agent làm gì trên một repo thật khi không có harness", ja:"ハーネスのないエージェントが実際のリポジトリでやること"},
+ sub:{en:"It fails in predictable ways, and a prompt stops none of them.",
+      vi:"Nó thất bại theo những cách đoán trước được, và không prompt nào ngăn được.",
+      ja:"失敗の仕方は予測できます。そして、プロンプトではどれも止まりません。"},
+ cards:[
+  {ic:"i-brokenlock", cls:"r",
+   t:{en:"Reads what it should not", vi:"Đọc thứ không được đọc", ja:"読むべきでないものを読む"},
+   d:{en:"Opens <code>.env</code> while just fixing a bug.", vi:"Mở <code>.env</code> khi chỉ đang sửa một lỗi.", ja:"バグを直すだけのつもりで <code>.env</code> を開く。"}},
+  {ic:"i-ghost", cls:"r",
+   t:{en:"Edits what it does not own", vi:"Sửa thứ không thuộc về nó", ja:"自分の担当外を編集する"},
+   d:{en:"One feature spreads into modules nobody assigned it.", vi:"Một tính năng lan sang những module không ai giao cho nó.", ja:"1つの機能が、誰も任せていないモジュールへ広がる。"}},
+  {ic:"i-clock", cls:"r",
+   t:{en:"Forgets the plan", vi:"Quên mất kế hoạch", ja:"計画を忘れる"},
+   d:{en:"The context compacts three steps in, and the plan goes with it.", vi:"Context bị nén khi đang ở bước thứ ba, và kế hoạch đi theo nó.", ja:"3手目でコンテキストが圧縮され、計画も一緒に消える。"}},
+  {ic:"i-dice", cls:"r",
+   t:{en:"Re-runs what already passed", vi:"Chạy lại thứ đã qua", ja:"通過済みのものを再実行する"},
+   d:{en:"A README typo earns the full suite and every reviewer.", vi:"Một lỗi chính tả trong README kéo theo cả bộ test và mọi reviewer.", ja:"READMEの誤字1つに、全テストと全レビュアーが動く。"}},
+  {ic:"i-chat", cls:"r",
+   t:{en:"Says “done” with no evidence", vi:"Nói “xong” mà không có bằng chứng", ja:"証拠なしで「完了」と言う"},
+   d:{en:"“All tests pass”, with no output behind it.", vi:"“Mọi test đều qua”, mà không có output nào phía sau.", ja:"「全テスト通過」、その裏付けとなる出力はない。"}}],
+ note:{en:"None of these is fixed by a smarter model. It is fixed by what surrounds the model.",
+       vi:"Không vấn đề nào được giải quyết bằng một model thông minh hơn. Nó được giải quyết bằng thứ bao quanh model.",
+       ja:"どれも、より賢いモデルでは解決しません。解決するのは、モデルを取り囲むものです。"},
+ nav:{en:"The problem", vi:"Vấn đề", ja:"課題"}},
 
 /* 4 */
 {icon:"i-target", kind:"quotes", step:{en:"Part 1 · The problem", vi:"Phần 1 · Vấn đề", ja:"第1部 · 課題"},
@@ -692,79 +837,87 @@ const S = [
   {en:"Speed creates the advantage. Control is what gets us to the destination.",
    vi:"Tốc độ tạo lợi thế. Khả năng kiểm soát mới đưa chúng ta đến đích.",
    ja:"速さは優位を生む。目的地へ導くのは、制御である。"}],
- nav:{en:"The idea", vi:"Ý tưởng", ja:"考え方"}},
+ nav:{en:"Two lines", vi:"Hai câu", ja:"2行で"}},
 
-/* 5 - what a harness is */
-{icon:"i-layers", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+/* ============ PART 2 - THE ANSWER ============ */
+/* 5 - the overview diagram */
+{icon:"i-layers", kind:"figure", step:{en:"Part 2 · The answer", vi:"Phần 2 · Lời giải", ja:"第2部 · 答え"},
+ title:{en:"How it all fits together", vi:"Mọi thứ khớp với nhau thế nào", ja:"全体のつながり"},
+ sub:{en:"<code>spec-builder</code> writes the contract, <code>harness-bootstrap</code> builds the harness from it and the code, the work writes state to disk, and <code>harness-view</code> reads it all back.",
+      vi:"<code>spec-builder</code> viết hợp đồng, <code>harness-bootstrap</code> dựng harness từ hợp đồng và code, công việc ghi trạng thái xuống đĩa, và <code>harness-view</code> đọc lại tất cả.",
+      ja:"<code>spec-builder</code> が契約を書き、<code>harness-bootstrap</code> が契約とコードからハーネスを作り、作業は状態をディスクに書き、<code>harness-view</code> がそれをすべて読み戻します。"},
+ img:{en:"../docs/assets/harness-overview.svg", ja:"../docs/assets/harness-overview.ja.svg"},
+ alt:{en:"Overview: what you bring flows into spec-builder, which writes one contract; harness-bootstrap reads it and the codebase and builds rules, hooks, an agent roster, routing, skills and verification; work writes state to disk; harness-view shows, scores, toggles and watches it.",
+      vi:"Tổng quan: đầu vào đi vào spec-builder, nó viết một hợp đồng; harness-bootstrap đọc hợp đồng và codebase rồi dựng rule, hook, roster agent, định tuyến, skill và kiểm chứng; công việc ghi trạng thái xuống đĩa; harness-view hiển thị, chấm điểm, bật tắt và theo dõi.",
+      ja:"全体図: 持ち込んだ材料が spec-builder に入り1つの契約になる。harness-bootstrap が契約とコードベースを読み、ルール・フック・ロスター・ルーティング・スキル・検証を構築。作業は状態をディスクに書き、harness-view が表示・採点・切替・監視する。"},
+ nav:{en:"Overview", vi:"Tổng quan", ja:"全体図"}},
+
+/* 6 - what a harness is */
+{icon:"i-layers", kind:"stack", step:{en:"Part 2 · The answer", vi:"Phần 2 · Lời giải", ja:"第2部 · 答え"},
  title:{en:"A harness is the operating system for an agent", vi:"Harness là hệ điều hành cho agent", ja:"ハーネスはエージェントのOS"},
  sub:{en:"Each layer answers a different question. The harness is the one usually missing.",
       vi:"Mỗi lớp trả lời một câu hỏi khác nhau. Harness là lớp thường bị thiếu.",
       ja:"各層は異なる問いに答えます。通常欠けているのがハーネスです。"},
- cols:{en:["Layer","In a computer","What it answers"], vi:["Lớp","Trong máy tính","Nó trả lời điều gì"], ja:["層","コンピュータでは","答える問い"]},
- rows:[
-  {en:["<strong>Agent</strong>","The application","What am I trying to do?"],
-   vi:["<strong>Agent</strong>","Ứng dụng","Tôi đang cố làm gì?"],
-   ja:["<strong>エージェント</strong>","アプリケーション","何をしようとしているか"]},
-  {en:["<strong><mark>Harness</mark></strong>","<mark>The operating system</mark>","<mark>How does it run safely?</mark>"],
-   vi:["<strong><mark>Harness</mark></strong>","<mark>Hệ điều hành</mark>","<mark>Nó chạy an toàn bằng cách nào?</mark>"],
-   ja:["<strong><mark>ハーネス</mark></strong>","<mark>オペレーティングシステム</mark>","<mark>どう安全に走らせるか</mark>"]},
-  {en:["<strong>SDK / framework</strong>","Building blocks","How do I build it?"],
-   vi:["<strong>SDK / framework</strong>","Khối xây dựng","Tôi xây nó thế nào?"],
-   ja:["<strong>SDK / フレームワーク</strong>","ビルディングブロック","どう作るか"]},
-  {en:["<strong>Model</strong>","The CPU","What can it reason about?"],
-   vi:["<strong>Model</strong>","CPU","Nó suy luận được gì?"],
-   ja:["<strong>モデル</strong>","CPU","何を推論できるか"]}],
+ layers:[
+  {n:{en:"Agent", vi:"Agent", ja:"エージェント"}, a:{en:"the application", vi:"ứng dụng", ja:"アプリケーション"}, q:{en:"What am I trying to do?", vi:"Tôi đang cố làm gì?", ja:"何をしようとしているか"}},
+  {hi:true, n:{en:"Harness", vi:"Harness", ja:"ハーネス"}, a:{en:"the operating system", vi:"hệ điều hành", ja:"オペレーティングシステム"}, q:{en:"How does it run safely, and stay on track?", vi:"Nó chạy an toàn và đúng hướng bằng cách nào?", ja:"どう安全に、軌道を外れずに走らせるか"}},
+  {n:{en:"SDK / framework", vi:"SDK / framework", ja:"SDK / フレームワーク"}, a:{en:"building blocks", vi:"khối xây dựng", ja:"ビルディングブロック"}, q:{en:"How do I build it?", vi:"Tôi xây nó thế nào?", ja:"どう作るか"}},
+  {n:{en:"Model", vi:"Model", ja:"モデル"}, a:{en:"the CPU", vi:"CPU", ja:"CPU"}, q:{en:"What can it reason about?", vi:"Nó suy luận được gì?", ja:"何を推論できるか"}}],
  note:{en:"With a framework, the developer writes the orchestration. With a harness, the model makes the plan and the harness keeps it on track.",
        vi:"Với framework, lập trình viên viết phần điều phối. Với harness, model lập kế hoạch còn harness giữ nó đi đúng hướng.",
        ja:"フレームワークでは開発者がオーケストレーションを書きます。ハーネスではモデルが計画を立て、ハーネスがそれを軌道に保ちます。"},
  nav:{en:"What a harness is", vi:"Harness là gì", ja:"ハーネスとは"}},
 
-/* 6 */
-{icon:"i-layers", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"Two skills, one for each half", vi:"Hai skill, mỗi skill cho một nửa", ja:"2つのスキル、半分ずつ"},
- sub:{en:"One writes what the agent must understand. The other builds what it cannot escape.",
-      vi:"Một cái viết ra điều agent phải hiểu. Cái còn lại dựng thứ nó không thể thoát ra.",
-      ja:"一方はエージェントが理解すべきものを書き、他方は抜け出せないものを構築します。"},
- cols:{en:["Skill","What it produces","Retires"], vi:["Skill","Nó tạo ra gì","Xoá bỏ"], ja:["スキル","生成するもの","解消する課題"]},
- rows:[
-  {en:["<strong><code>spec-builder</code></strong>","A selective {{g:spec|spec}} set (6 core sections, up to 8 optional): stable IDs, acceptance criteria, a data model, mandatory security NFRs","<mark class='m3'>09</mark> <mark class='m3'>02</mark>"],
-   vi:["<strong><code>spec-builder</code></strong>","Bộ {{g:spec|specs}} chọn lọc (6 mục cốt lõi, tối đa 8 mục tuỳ chọn): ID ổn định, tiêu chí nghiệm thu, mô hình dữ liệu, NFR bảo mật bắt buộc","<mark class='m3'>09</mark> <mark class='m3'>02</mark>"],
-   ja:["<strong><code>spec-builder</code></strong>","選択式の{{g:spec|仕様}}一式(コア6セクション常時、最大8セクションは任意): 安定ID、受入基準、データモデル、必須セキュリティNFR","<mark class='m3'>09</mark> <mark class='m3'>02</mark>"]},
-  {en:["<strong><code>harness-bootstrap</code></strong>","<code>.claude/</code>: a roster sized to the repo's purpose, path-scoped rules, {{g:hook|hooks}}, a {{g:denylist|deny list}}, a task board on disk","<mark class='m3'>01</mark> <mark class='m3'>04</mark> <mark class='m3'>08</mark>"],
-   vi:["<strong><code>harness-bootstrap</code></strong>","<code>.claude/</code>: đội hình vừa với mục đích repo, rule theo path, {{g:hook|hooks}}, {{g:denylist|deny list}}, bảng task trên đĩa","<mark class='m3'>01</mark> <mark class='m3'>04</mark> <mark class='m3'>08</mark>"],
-   ja:["<strong><code>harness-bootstrap</code></strong>","<code>.claude/</code>: 目的に合わせたロスター、パススコープのルール、{{g:hook|フック}}、{{g:denylist|拒否リスト}}、ディスク上のタスクボード","<mark class='m3'>01</mark> <mark class='m3'>04</mark> <mark class='m3'>08</mark>"]}],
- note:{en:"Four modes, chosen first: Greenfield · {{g:brownfield|Brownfield}} · Audit · Update. It reads the code before it writes anything, and existing files are reconciled, never clobbered.",
-       vi:"Bốn chế độ, chọn trước tiên: Greenfield · {{g:brownfield|Brownfield}} · Audit · Update. Nó đọc code trước khi viết bất cứ thứ gì, và file sẵn có được đối chiếu, không bao giờ bị ghi đè.",
-       ja:"最初に選ぶ4モード: Greenfield · {{g:brownfield|Brownfield}} · Audit · Update。何かを書く前にコードを読み、既存ファイルは上書きせず突き合わせます。"},
- nav:{en:"Two skills", vi:"Hai skill", ja:"2つのスキル"}},
+/* ============ PART 3 - THE QUESTIONS ============ */
+/* 7 - the map */
+{icon:"i-chat", kind:"qmap", step:{en:"Part 3 · The questions", vi:"Phần 3 · Các câu hỏi", ja:"第3部 · 問い"},
+ title:{en:"Seven questions teams actually ask", vi:"Bảy câu hỏi các team thực sự đặt ra", ja:"チームが実際に口にする7つの問い"},
+ sub:{en:"Each is answered by a mechanism you can open and read. The next slides take them in order.",
+      vi:"Mỗi câu được trả lời bằng một cơ chế bạn có thể mở ra đọc. Các slide tiếp theo đi lần lượt từng câu.",
+      ja:"どれも、開いて読める仕組みが答えます。次のスライドから順に見ていきます。"},
+ qs:[
+  {q:{en:"I want an agent team that fits my project, not a generic roster.", vi:"Tôi muốn một đội agent vừa với dự án, không phải roster chung chung.", ja:"汎用の顔ぶれではなく、自分のプロジェクトに合ったチームがほしい"},
+   a:{en:"Purpose profiles, a roster sized from the code", vi:"Hồ sơ mục đích, roster định cỡ từ code", ja:"目的プロファイルと、コードから決まるロスター"}},
+  {q:{en:"I want it safe, without it overthinking or burning tokens.", vi:"Tôi muốn an toàn, mà không nghĩ quá nhiều hay đốt token.", ja:"安全にしたい。でも考えすぎやトークンの浪費は困る"},
+   a:{en:"Blocking hooks, routing tiers, the verification ledger", vi:"Hook chặn, các bậc định tuyến, sổ kiểm chứng", ja:"遮断フック、ルーティングのティア、検証台帳"}},
+  {q:{en:"I am worried about leaking keys.", vi:"Tôi lo bị lộ key.", ja:"キーの漏洩が心配"},
+   a:{en:"<code>protect-secrets</code>, <code>env-read</code>, <code>/secret-scan</code>", vi:"<code>protect-secrets</code>, <code>env-read</code>, <code>/secret-scan</code>", ja:"<code>protect-secrets</code>、<code>env-read</code>、<code>/secret-scan</code>"}},
+  {q:{en:"Traditional SDLC is a struggle, and AI-DLC ends up half-hearted.", vi:"SDLC truyền thống thì vất vả, còn AI-DLC lại nửa vời.", ja:"従来の SDLC は苦しく、AI-DLC は中途半端に終わる"},
+   a:{en:"One agentic loop, ceremony matched to the change", vi:"Một vòng lặp agentic, nghi thức vừa với thay đổi", ja:"1つのエージェントループ、変更に見合った手続き"}},
+  {q:{en:"I want specs a human can confirm and an AI can understand.", vi:"Tôi muốn spec mà người xác nhận được và AI hiểu được.", ja:"人が確認でき、AIが理解できる仕様がほしい"},
+   a:{en:"<code>spec-builder</code>: a confirmation sheet and an index", vi:"<code>spec-builder</code>: phiếu xác nhận và một index", ja:"<code>spec-builder</code>: 確認シートとインデックス"}},
+  {q:{en:"I want to understand and control how the agents work, in depth.", vi:"Tôi muốn hiểu và kiểm soát cách các agent làm việc, thật sâu.", ja:"エージェントの動きを、細部まで理解して制御したい"},
+   a:{en:"<code>harness-view</code>, run history, <code>harness-check</code>", vi:"<code>harness-view</code>, lịch sử chạy, <code>harness-check</code>", ja:"<code>harness-view</code>、実行履歴、<code>harness-check</code>"}},
+  {q:{en:"Once built, it is too much to check, slow to fix, and the score is vague.", vi:"Dựng xong thì quá nhiều thứ để kiểm, sửa thì chậm, còn điểm số thì mơ hồ.", ja:"出来上がると確認しきれず、直すのも遅く、採点も曖昧"},
+   a:{en:"<code>harness-view assess</code>: a worklist and a published rubric", vi:"<code>harness-view assess</code>: danh sách việc và rubric công khai", ja:"<code>harness-view assess</code>: 作業リストと公開ルーブリック"}}],
+ nav:{en:"Seven questions", vi:"Bảy câu hỏi", ja:"7つの問い"}},
 
-/* 7 - purpose profiles: the answer to 01 and 07 */
-{icon:"i-ruler", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+/* 8 - Q1 purpose profiles */
+{icon:"i-ruler", kind:"cards", step:{en:"Question 1 · A team that fits", vi:"Câu 1 · Đội hình vừa vặn", ja:"問い1 · 合ったチーム"},
  title:{en:"The team is sized to what the repo is for", vi:"Đội hình vừa với mục đích của repo", ja:"チームはリポジトリの目的に合わせる"},
- sub:{en:"The first intake question is the purpose. A research repo never gets a unit-test seat. This answers problems 01 and 07.",
-      vi:"Câu hỏi intake đầu tiên là mục đích. Repo nghiên cứu không bao giờ nhận vai unit test. Đây là câu trả lời cho vấn đề 01 và 07.",
-      ja:"最初の質問は目的です。リサーチ用リポジトリに単体テストの席は付きません。課題01と07への答えです。"},
- cols:{en:["Purpose","Seats","Verified by"], vi:["Mục đích","Các vai","Kiểm chứng bằng"], ja:["目的","席","検証"]},
- rows:[
-  {en:["<strong>Code</strong>","One dev agent per real module, the review gate, spec-guardian; tests and database seats when asked","Tests and code review; security review only when the diff earns it"],
-   vi:["<strong>Code</strong>","Mỗi module thật một dev agent, cổng review, spec-guardian; vai test và database khi được yêu cầu","Test và code review; security review chỉ khi diff đáng phải có"],
-   ja:["<strong>コード</strong>","実在モジュールごとの開発エージェント、レビューゲート、spec-guardian。テストとDBの席は希望時のみ","テストとコードレビュー。セキュリティレビューは差分が必要とする時だけ"]},
-  {en:["<strong>Research</strong>","<code>researcher</code>, <code>checker</code>","Every claim traced to a source that says it"],
-   vi:["<strong>Nghiên cứu</strong>","<code>researcher</code>, <code>checker</code>","Mọi khẳng định truy được về nguồn nói điều đó"],
-   ja:["<strong>リサーチ</strong>","<code>researcher</code>、<code>checker</code>","すべての主張を、それを述べる出典まで辿る"]},
-  {en:["<strong>Strategy</strong>","<code>strategist</code>, <code>researcher</code>, <code>checker</code>","Distinct options, criteria fixed before scoring, the assumption that flips it"],
-   vi:["<strong>Chiến lược</strong>","<code>strategist</code>, <code>researcher</code>, <code>checker</code>","Phương án thực sự khác nhau, tiêu chí cố định trước khi chấm, giả định làm đảo kết luận"],
-   ja:["<strong>戦略</strong>","<code>strategist</code>、<code>researcher</code>、<code>checker</code>","本当に異なる選択肢、採点前に固定した基準、結論を覆す前提"]},
-  {en:["<strong>Docs</strong>","<code>writer</code>, <code>checker</code>","Accurate against the source, links that resolve"],
-   vi:["<strong>Tài liệu</strong>","<code>writer</code>, <code>checker</code>","Chính xác so với nguồn, link phải mở được"],
-   ja:["<strong>ドキュメント</strong>","<code>writer</code>、<code>checker</code>","出典に照らして正確、リンクが解決する"]}],
- note:{en:"Purposes combine, and one checker serves every non-code purpose. Code-only options are refused without the code purpose, so no seat is fielded with nothing to do.",
-       vi:"Các mục đích kết hợp được, và một checker phục vụ mọi mục đích không phải code. Tuỳ chọn chỉ dành cho code bị từ chối nếu không có mục đích code, nên không vai nào được lập ra mà không có việc.",
-       ja:"目的は組み合わせられ、コード以外の目的はすべて1つの checker が担います。コード専用の選択肢はコード目的なしでは拒否されるので、仕事のない席は作られません。"},
- nav:{en:"Purpose profiles", vi:"Hồ sơ mục đích", ja:"目的プロファイル"}},
+ sub:{en:"On an existing repo the code is read first and pre-fills the answers. Then the first question is the purpose.",
+      vi:"Với repo có sẵn, code được đọc trước và điền sẵn câu trả lời. Sau đó câu hỏi đầu tiên là mục đích.",
+      ja:"既存のリポジトリでは、まずコードを読んで回答を事前に埋めます。そして最初の問いは目的です。"},
+ cards:[
+  {ic:"i-box", cls:"p", t:{en:"Code", vi:"Code", ja:"コード"},
+   chips:[{en:"one dev seat per real module", vi:"mỗi module thật một dev seat", ja:"実在モジュールごとに開発席"},"code-reviewer","spec-guardian"],
+   d:{en:"Verified by tests and code review; security review only when the diff earns it.", vi:"Kiểm chứng bằng test và code review; security review chỉ khi diff đáng phải có.", ja:"テストとコードレビューで検証。セキュリティレビューは差分が必要とする時だけ。"}},
+  {ic:"i-doc", cls:"g", t:{en:"Research", vi:"Nghiên cứu", ja:"リサーチ"},
+   chips:["researcher","checker"],
+   d:{en:"Every claim traced to a source that says it.", vi:"Mọi khẳng định truy được về nguồn nói điều đó.", ja:"すべての主張を、それを述べる出典まで辿る。"}},
+  {ic:"i-target", cls:"a", t:{en:"Strategy", vi:"Chiến lược", ja:"戦略"},
+   chips:["strategist","researcher","checker"],
+   d:{en:"Distinct options, criteria fixed before scoring, the assumption that flips it.", vi:"Phương án thực sự khác nhau, tiêu chí cố định trước khi chấm, giả định làm đảo kết luận.", ja:"本当に異なる選択肢、採点前に固定した基準、結論を覆す前提。"}},
+  {ic:"i-chat", cls:"", t:{en:"Docs", vi:"Tài liệu", ja:"ドキュメント"},
+   chips:["writer","checker"],
+   d:{en:"Accurate against the source, links that resolve.", vi:"Chính xác so với nguồn, link phải mở được.", ja:"出典に照らして正確、リンクが解決する。"}}],
+ note:{en:"Sized from evidence: a run installs 3 to 17 of the 18 seats, never all of them by default. Purposes combine, one <code>checker</code> serves every non-code purpose, and intake fits in at most two question batches.",
+       vi:"Định cỡ từ bằng chứng: một lần chạy cài từ 3 đến 17 vai trong tổng số 18, không bao giờ cài hết theo mặc định. Các mục đích kết hợp được, một <code>checker</code> phục vụ mọi mục đích không phải code, và phần intake gói trong tối đa hai lượt hỏi.",
+       ja:"根拠から決めます。1回の実行で入るのは18席のうち3〜17席で、既定で全部入ることはありません。目的は組み合わせられ、コード以外の目的はすべて1つの <code>checker</code> が担い、質問は最大2回にまとまります。"},
+ nav:{en:"1 · The team", vi:"1 · Đội hình", ja:"1 · チーム"}},
 
-/* 8 - skills: find, create, wire */
-{icon:"i-puzzle", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+/* 9 - Q1 skills */
+{icon:"i-puzzle", kind:"cards", step:{en:"Question 1 · A team that fits", vi:"Câu 1 · Đội hình vừa vặn", ja:"問い1 · 合ったチーム"},
  title:{en:"Skills: find one, or make one, then wire it", vi:"Skill: tìm, hoặc tạo, rồi nối", ja:"スキル: 探す、なければ作る、そしてつなぐ"},
  sub:{en:"Nothing installs behind your back, and a skill no seat loads is reported, not ignored.",
       vi:"Không gì được cài sau lưng bạn, và skill không vai nào nạp sẽ bị báo cáo, không bị bỏ qua.",
@@ -785,41 +938,155 @@ const S = [
    d:{en:"<code>/skill-wire</code> adds it to the <code>skills:</code> preload of the seat that needs it. <code>harness-view</code> shows which skills sit on disk unwired.",
       vi:"<code>/skill-wire</code> thêm nó vào phần nạp sẵn <code>skills:</code> của vai cần nó. <code>harness-view</code> chỉ ra skill nào nằm trên đĩa mà chưa nối.",
       ja:"<code>/skill-wire</code> が、必要とする席の <code>skills:</code> プリロードに追加します。<code>harness-view</code> は未配線のままディスクにあるスキルを示します。"}}],
- nav:{en:"Skills", vi:"Skill", ja:"スキル"}},
+ nav:{en:"1 · Skills", vi:"1 · Skill", ja:"1 · スキル"}},
 
-/* 9 */
-{icon:"i-layers", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"Three mechanisms do the managing", vi:"Ba cơ chế đảm nhiệm việc quản lí", ja:"管理を担う3つの仕組み"},
+/* 10 - Q2 routing tiers */
+{icon:"i-flow", kind:"tiers", step:{en:"Question 2 · Safe, without waste", vi:"Câu 2 · An toàn, không lãng phí", ja:"問い2 · 安全に、無駄なく"},
+ title:{en:"Process proportional to the change", vi:"Quy trình tương xứng với thay đổi", ja:"変更の大きさに見合ったプロセス"},
+ sub:{en:"<mark>Most changes are Inline or Direct.</mark> A heavier tier than the change needs is a defect, not caution.",
+      vi:"<mark>Phần lớn thay đổi là Inline hoặc Direct.</mark> Chọn bậc nặng hơn mức cần là một lỗi, không phải sự thận trọng.",
+      ja:"<mark>大半の変更は Inline か Direct です。</mark>必要より重いティアを選ぶのは慎重さではなく欠陥です。"},
+ tiers:[
+  {cls:"g", w:1, name:"Inline",
+   when:{en:"A question, a lookup, a doc or config edit, a fix you can see whole", vi:"Một câu hỏi, tra cứu, sửa tài liệu hay cấu hình, một lỗi nhìn được trọn vẹn", ja:"質問、調べもの、ドキュメントや設定の修正、全体が見える修正"},
+   who:{en:"The main session. No subagent, no task file", vi:"Phiên chính. Không subagent, không task file", ja:"メインセッション。サブエージェントもタスクファイルもなし"}},
+  {cls:"g", w:2, name:"Direct",
+   when:{en:"One module, reversible, no contract, schema, auth, payment or infrastructure", vi:"Một module, hoàn tác được, không chạm hợp đồng, schema, auth, thanh toán hay hạ tầng", ja:"単一モジュール、可逆、契約・スキーマ・認証・決済・インフラに触れない"},
+   who:{en:"The owning seat, called straight", vi:"Gọi thẳng vai sở hữu", ja:"担当の席を直接呼ぶ"}},
+  {cls:"a", w:3, name:"Standard",
+   when:{en:"Several files, or a numbered requirement behind it", vi:"Nhiều file, hoặc có yêu cầu đánh số phía sau", ja:"複数ファイル、または番号付き要件がある"},
+   who:{en:"The owning seat; a task file only if it must survive a {{g:compaction|compaction}}", vi:"Vai sở hữu; chỉ lập task file khi phải sống qua {{g:compaction|compaction}}", ja:"担当の席。{{g:compaction|圧縮}}を越える必要がある時だけタスクファイル"}},
+  {cls:"r", w:4, name:"Guarded",
+   when:{en:"Several seats in order, or schema, auth, money, a migration, a deploy, personal data", vi:"Nhiều vai theo thứ tự, hoặc schema, auth, tiền, migration, deploy, dữ liệu cá nhân", ja:"複数の席を順に使う、またはスキーマ・認証・金銭・マイグレーション・デプロイ・個人データ"},
+   who:{en:"The only tier that goes through the {{g:orchestrator|orchestrator}}", vi:"Bậc duy nhất đi qua {{g:orchestrator|orchestrator}}", ja:"{{g:orchestrator|オーケストレーター}}を通る唯一のティア"}}],
+ most:{en:"most work", vi:"phần lớn công việc", ja:"大半の作業"},
+ note:{en:"Every seat pins its <code>model</code>, <code>effort</code>, <code>tools</code> and {{g:maxturns|maxTurns}}, and <code>settings.json</code> caps spawn depth and concurrent subagents, so a fan-out cannot run away.",
+       vi:"Mọi vai đều cố định <code>model</code>, <code>effort</code>, <code>tools</code> và {{g:maxturns|maxTurns}}, và <code>settings.json</code> giới hạn độ sâu spawn và số subagent chạy đồng thời, nên việc toả nhánh không thể mất kiểm soát.",
+       ja:"すべての席が <code>model</code>・<code>effort</code>・<code>tools</code>・{{g:maxturns|maxTurns}} を固定し、<code>settings.json</code> が生成の深さと同時実行数に上限を設けるので、ファンアウトは暴走しません。"},
+ nav:{en:"2 · Routing tiers", vi:"2 · Các bậc", ja:"2 · ティア"}},
+
+/* 11 - Q2 verification and the ledger */
+{icon:"i-flow", kind:"chain", step:{en:"Question 2 · Safe, without waste", vi:"Câu 2 · An toàn, không lãng phí", ja:"問い2 · 安全に、無駄なく"},
+ title:{en:"Verification that would learn nothing is refused", vi:"Kiểm chứng không học thêm được gì sẽ bị từ chối", ja:"何も得られない検証は拒否される"},
+ sub:{en:"The diff decides what gets checked, and the {{g:ledger|verification ledger}} remembers what already passed.",
+      vi:"Diff quyết định cái gì được kiểm tra, và {{g:ledger|sổ kiểm chứng}} nhớ những gì đã qua.",
+      ja:"何を検査するかは差分が決め、{{g:ledger|検証台帳}}は通過済みのものを覚えています。"},
+ steps:[
+  {t:{en:"The diff", vi:"Diff", ja:"差分"}, d:{en:"the paths a change touches", vi:"các đường dẫn mà thay đổi chạm tới", ja:"変更が触れたパス"}},
+  {t:{en:"<code>verify-plan.py</code>", vi:"<code>verify-plan.py</code>", ja:"<code>verify-plan.py</code>"}, d:{en:"names the gates it needs; a docs edit gets no reviewer, the secret scan always runs", vi:"chỉ ra các cổng cần chạy; sửa tài liệu thì không reviewer, quét secret luôn chạy", ja:"必要なゲートを挙げる。ドキュメント修正にレビュアーは付かず、シークレットスキャンは常に走る"}},
+  {t:{en:"The gates", vi:"Các cổng", ja:"ゲート"}, d:{en:"the tests it touches, code review, security review only when the diff earns it", vi:"các test liên quan, code review, security review chỉ khi diff đáng phải có", ja:"関係するテスト、コードレビュー、必要な時だけセキュリティレビュー"}},
+  {t:{en:"The ledger", vi:"Sổ kiểm chứng", ja:"台帳"}, d:{en:"records each pass by a hash of the content it checked", vi:"ghi lại mỗi lần qua theo hash của nội dung đã kiểm", ja:"通過を、検査した内容のハッシュで記録する"}}],
  cards:[
-  {ic:"i-brain", cls:"g", n:"A",
-   t:{en:"Context", vi:"Context", ja:"コンテキスト"},
-   d:{en:"State lives on disk and resumes from a short checkpoint, so {{g:compaction|compaction}} and a crash are survivable by design.",
-      vi:"Trạng thái nằm trên đĩa và tiếp tục từ một checkpoint ngắn, nên {{g:compaction|compaction}} và sự cố đều sống sót được theo thiết kế.",
-      ja:"状態はディスク上にあり、短いチェックポイントから再開します。{{g:compaction|圧縮}}もクラッシュも設計上生き延びます。"}},
-  {ic:"i-flow", cls:"p", n:"B",
-   t:{en:"Orchestration", vi:"Điều phối", ja:"オーケストレーション"},
-   d:{en:"A tier decides how much process a change earns, and the diff decides which checks it needs.",
-      vi:"Một bậc quyết định thay đổi xứng đáng bao nhiêu quy trình, và diff quyết định nó cần những kiểm tra nào.",
-      ja:"変更がどれだけの手続きに値するかをティアが決め、どの検査が必要かを差分が決めます。"}},
-  {ic:"i-shield", cls:"r", n:"C",
-   t:{en:"Security", vi:"Bảo mật", ja:"セキュリティ"},
-   d:{en:"Enforced layers and hooks on every event. The model does not get a vote.",
-      vi:"Các lớp cưỡng chế và hook ở mọi sự kiện. Model không có quyền bỏ phiếu.",
-      ja:"強制される層と、あらゆるイベントのフック。モデルに投票権はありません。"}}],
- nav:{en:"Three mechanisms", vi:"Ba cơ chế", ja:"3つの仕組み"}},
+  {ic:"i-alert", cls:"r", t:{en:"A re-run on content that passed", vi:"Chạy lại trên nội dung đã qua", ja:"通過済みの内容への再実行"}, d:{en:"Refused by <code>guard-agent-spawn</code>.", vi:"Bị <code>guard-agent-spawn</code> từ chối.", ja:"<code>guard-agent-spawn</code> が拒否。"}},
+  {ic:"i-alert", cls:"r", t:{en:"A third review round", vi:"Vòng review thứ ba", ja:"3回目のレビュー"}, d:{en:"Refused: the agent has to stop and ask.", vi:"Bị từ chối: agent phải dừng lại và hỏi.", ja:"拒否。エージェントは止まって尋ねるしかない。"}},
+  {ic:"i-alert", cls:"r", t:{en:"An identical brief, or a dispatch past budget", vi:"Brief giống hệt, hoặc vượt ngân sách", ja:"同一の指示書、予算超えの割り当て"}, d:{en:"Refused, and every dispatch is a line in the ledger.", vi:"Bị từ chối, và mọi lần điều phối là một dòng trong sổ.", ja:"拒否。すべての割り当ては台帳の1行になる。"}},
+  {ic:"i-shield", cls:"g", t:{en:"<code>REVERIFY: &lt;reason&gt;</code>", vi:"<code>REVERIFY: &lt;lý do&gt;</code>", ja:"<code>REVERIFY: &lt;理由&gt;</code>"}, d:{en:"Only a human forces a re-run, once, on the record.", vi:"Chỉ con người mới ép chạy lại, một lần, có ghi nhận.", ja:"再実行を強制できるのは人間だけ。1回限り、記録に残る。"}}],
+ nav:{en:"2 · Verification", vi:"2 · Kiểm chứng", ja:"2 · 検証"}},
 
-/* 10 */
-{icon:"i-brain", kind:"ctxlayers", step:{en:"Mechanism A · Context", vi:"Cơ chế A · Context", ja:"仕組みA · コンテキスト"},
- title:{en:"Four tiers, and only two survive", vi:"Bốn tầng, và chỉ hai tầng sống sót", ja:"4つの階層、生き残るのは2つだけ"},
- sub:{en:"Watch what a {{g:compaction|compaction}} does to each tier. This answers problems 03, 05 and 08.",
-      vi:"Hãy xem một lần {{g:compaction|compaction}} làm gì với từng tầng. Đây là câu trả lời cho vấn đề 03, 05 và 08.",
-      ja:"{{g:compaction|圧縮}}が各階層に何をするかをご覧ください。課題03・05・08への答えです。"},
+/* 12 - Q3 keys */
+{icon:"i-brokenlock", kind:"cards", cardCols:5, step:{en:"Question 3 · Keys", vi:"Câu 3 · Key", ja:"問い3 · キー"},
+ title:{en:"Keys stay out of the transcript", vi:"Key không lọt vào transcript", ja:"キーをトランスクリプトに出さない"},
+ sub:{en:"A value that reaches the transcript is in the logs for good. So the reads are stopped and the uses are redacted.",
+      vi:"Một giá trị đã vào transcript là nằm trong log mãi mãi. Vì vậy việc đọc bị chặn và việc dùng được che đi.",
+      ja:"トランスクリプトに出た値は、ログに永久に残ります。だから読み取りを止め、使う時は伏せます。"},
+ cards:[
+  {ic:"i-shield", cls:"g", tag:{en:"always", vi:"luôn bật", ja:"常時"}, t:{en:"<code>protect-secrets</code>", vi:"<code>protect-secrets</code>", ja:"<code>protect-secrets</code>"},
+   d:{en:"Blocks reading or copying <code>.env*</code> (not <code>.env.example</code>), keys, <code>secrets/</code> and <code>credentials/</code>, through Bash and PowerShell alike.", vi:"Chặn đọc hoặc sao chép <code>.env*</code> (trừ <code>.env.example</code>), key, <code>secrets/</code> và <code>credentials/</code>, qua cả Bash lẫn PowerShell.", ja:"<code>.env*</code>(<code>.env.example</code> を除く)、鍵、<code>secrets/</code>、<code>credentials/</code> の読取とコピーを、Bash でも PowerShell でも遮断。"}},
+  {ic:"i-plug2", cls:"g", tag:{en:"always", vi:"luôn bật", ja:"常時"}, t:{en:"<code>env-read.py</code>", vi:"<code>env-read.py</code>", ja:"<code>env-read.py</code>"},
+   d:{en:"Runs a command with the values loaded, and redacts every one from its output.", vi:"Chạy lệnh với các giá trị đã nạp, và che mọi giá trị khỏi output.", ja:"値を読み込んだ状態でコマンドを実行し、出力からすべての値を伏せる。"}},
+  {ic:"i-target", cls:"g", tag:{en:"always", vi:"luôn bật", ja:"常時"}, t:{en:"<code>/secret-scan</code>", vi:"<code>/secret-scan</code>", ja:"<code>/secret-scan</code>"},
+   d:{en:"Scans the diff before review. Any hit blocks until the key is rotated.", vi:"Quét diff trước khi review. Có kết quả là chặn đến khi key được thay.", ja:"レビュー前に差分をスキャン。検出されたら鍵を更新するまで止まる。"}},
+  {ic:"i-chat", cls:"a", tag:{en:"hooks_strict", vi:"hooks_strict", ja:"hooks_strict"}, t:{en:"<code>secret-guard</code>", vi:"<code>secret-guard</code>", ja:"<code>secret-guard</code>"},
+   d:{en:"A vendor-format key in a prompt is blocked before it is sent.", vi:"Key định dạng nhà cung cấp trong prompt bị chặn trước khi gửi.", ja:"プロンプト中のベンダー形式の鍵は送信前に遮断。"}},
+  {ic:"i-rocket", cls:"a", tag:{en:"hooks_strict", vi:"hooks_strict", ja:"hooks_strict"}, t:{en:"<code>guard-egress</code>", vi:"<code>guard-egress</code>", ja:"<code>guard-egress</code>"},
+   d:{en:"Blocks an upload to a host not on the allowlist: the step a prompt injection needs.", vi:"Chặn gửi dữ liệu tới host không có trong allowlist: bước mà prompt injection cần.", ja:"許可リストにないホストへの送信を遮断。プロンプトインジェクションが必要とする一手。"}}],
+ nav:{en:"3 · Keys", vi:"3 · Key", ja:"3 · キー"}},
+
+/* 13 - Q4 the agentic loop */
+{icon:"i-flow", kind:"chain", step:{en:"Question 4 · The way work flows", vi:"Câu 4 · Cách công việc vận hành", ja:"問い4 · 仕事の流れ"},
+ title:{en:"One loop, with the spec as the oracle", vi:"Một vòng lặp, với spec là thước đo", ja:"仕様を判定基準にした1つのループ"},
+ sub:{en:"Every step reads the same contract. Ceremony follows the change, not the calendar.",
+      vi:"Mọi bước đọc cùng một hợp đồng. Nghi thức đi theo thay đổi, không theo lịch.",
+      ja:"どのステップも同じ契約を読みます。手続きは暦ではなく変更に従います。"},
+ steps:[
+  {t:{en:"FR", vi:"FR", ja:"FR"}, d:{en:"confirmed on the sheet", vi:"đã xác nhận trên phiếu", ja:"シートで確認済み"}},
+  {t:{en:"task", vi:"task", ja:"タスク"}, d:{en:"names the FR, never copies it", vi:"ghi tên FR, không chép lại", ja:"FRを指名し、写さない"}},
+  {t:{en:"implement", vi:"implement", ja:"実装"}, d:{en:"one test per criterion ID", vi:"mỗi ID tiêu chí một test", ja:"基準IDごとに1つのテスト"}},
+  {t:{en:"verify-plan", vi:"verify-plan", ja:"verify-plan"}, d:{en:"the gates this diff needs", vi:"các cổng diff này cần", ja:"この差分に要るゲート"}},
+  {t:{en:"review", vi:"review", ja:"レビュー"}, d:{en:"each criterion-test pair", vi:"từng cặp tiêu chí - test", ja:"基準とテストの組ごと"}},
+  {t:{en:"done", vi:"done", ja:"完了"}, d:{en:"with the evidence map", vi:"kèm bản đồ bằng chứng", ja:"証拠の対応表とともに"}}],
+ back:{en:"A criterion that turns out wrong goes back to the spec, never around it: the oracle is not the actor's to edit.",
+       vi:"Một tiêu chí hoá ra sai phải quay về spec, không bao giờ đi vòng: thước đo không phải thứ người thực hiện được sửa.",
+       ja:"誤りと分かった基準は、迂回せず仕様へ戻します。判定基準は実行者が書き換えるものではありません。"},
+ cards:[
+  {ic:"i-clock", cls:"g", t:{en:"Inline / Direct", vi:"Inline / Direct", ja:"Inline / Direct"}, d:{en:"No spec work: the existing criteria still hold.", vi:"Không cần việc spec: các tiêu chí hiện có vẫn đúng.", ja:"仕様作業なし。既存の基準がそのまま有効。"}},
+  {ic:"i-doc", cls:"a", t:{en:"Standard", vi:"Standard", ja:"Standard"}, d:{en:"Append one criterion inside an FR already agreed.", vi:"Thêm một tiêu chí vào FR đã được đồng ý.", ja:"合意済みのFRに基準を1つ追加。"}},
+  {ic:"i-shield", cls:"r", t:{en:"Guarded", vi:"Guarded", ja:"Guarded"}, d:{en:"A new promise: confirm the FR first.", vi:"Một cam kết mới: xác nhận FR trước.", ja:"新しい約束。まずFRを確認する。"}}],
+ nav:{en:"4 · The loop", vi:"4 · Vòng lặp", ja:"4 · ループ"}},
+
+/* 14 - Q5 spec-builder */
+{icon:"i-doc", kind:"chain", step:{en:"Question 5 · The spec", vi:"Câu 5 · Spec", ja:"問い5 · 仕様"},
+ title:{en:"A contract a human confirms and an agent reads", vi:"Một hợp đồng người xác nhận và agent đọc được", ja:"人が確認し、エージェントが読む契約"},
+ sub:{en:"<code>spec-builder</code> turns any input into one contract under <code>docs/specs/</code>: 6 core sections, up to 8 optional, chosen by what your material contains.",
+      vi:"<code>spec-builder</code> biến mọi đầu vào thành một hợp đồng trong <code>docs/specs/</code>: 6 mục cốt lõi, tối đa 8 mục tuỳ chọn, chọn theo nội dung tài liệu của bạn.",
+      ja:"<code>spec-builder</code> はどんな入力も <code>docs/specs/</code> の1つの契約にします。コア6セクション常時、最大8セクションは任意で、素材の中身で選ばれます。"},
+ steps:[
+  {t:{en:"Any input", vi:"Mọi đầu vào", ja:"どんな入力も"}, d:{en:"an idea, transcripts, legacy docs, a scanned PDF", vi:"một ý tưởng, biên bản họp, tài liệu cũ, PDF scan", ja:"アイデア、議事録、既存文書、スキャンPDF"}},
+  {t:{en:"<code>spec-builder</code>", vi:"<code>spec-builder</code>", ja:"<code>spec-builder</code>"}, d:{en:"shows a per-source reading plan before asking anything", vi:"hiện kế hoạch đọc từng nguồn trước khi hỏi gì", ja:"何か尋ねる前に、ソースごとの読み方を示す"}},
+  {t:{en:"The contract", vi:"Hợp đồng", ja:"契約"}, d:{en:"stable FR IDs, Given/When/Then criteria with a negative case", vi:"ID FR ổn định, tiêu chí Given/When/Then có cả trường hợp phủ định", ja:"安定したFR ID、否定ケースを含む Given/When/Then 基準"}},
+  {t:{en:"Two views", vi:"Hai góc nhìn", ja:"2つの見え方"}, d:{en:"<code>confirmation.md</code> for the client, <code>index.json</code> for agents", vi:"<code>confirmation.md</code> cho khách hàng, <code>index.json</code> cho agent", ja:"顧客向けの <code>confirmation.md</code>、エージェント向けの <code>index.json</code>"}}],
+ cards:[
+  {ic:"i-alert", cls:"a", t:{en:"Nothing is invented", vi:"Không bịa ra gì", ja:"何も創作しない"}, d:{en:"An unknown becomes <code>AS-nn</code> with its impact, or <code>OI-nn</code> with an owner.", vi:"Điều chưa biết thành <code>AS-nn</code> kèm tác động, hoặc <code>OI-nn</code> kèm người phụ trách.", ja:"不明点は影響付きの <code>AS-nn</code>、または担当者付きの <code>OI-nn</code> になる。"}},
+  {ic:"i-chat", cls:"g", t:{en:"Yes, no, or change", vi:"Có, không, hoặc sửa", ja:"はい・いいえ・変更"}, d:{en:"Every FR in plain words, with a column for the PO to answer.", vi:"Mọi FR bằng lời thường, với một cột để PO trả lời.", ja:"すべてのFRを平易な言葉で。POが答える欄付き。"}},
+  {ic:"i-shield", cls:"p", t:{en:"<code>spec-check.py</code>", vi:"<code>spec-check.py</code>", ja:"<code>spec-check.py</code>"}, d:{en:"Regenerates the sheet and the index, and fails when either falls behind the spec.", vi:"Sinh lại phiếu và index, và báo lỗi khi một trong hai tụt sau spec.", ja:"シートとインデックスを再生成し、どちらかが仕様に遅れたら失敗する。"}}],
+ nav:{en:"5 · The spec", vi:"5 · Spec", ja:"5 · 仕様"}},
+
+/* 15 - Q6 harness-view */
+{icon:"i-grid", kind:"figure", step:{en:"Question 6 · Understand and control", vi:"Câu 6 · Hiểu và kiểm soát", ja:"問い6 · 理解と制御"},
+ title:{en:"See every part, and switch any of it off safely", vi:"Thấy mọi phần, và tắt bất kỳ phần nào một cách an toàn", ja:"すべてを見て、どれでも安全に止められる"},
+ sub:{en:"<code>harness-view</code> reads what is on disk with no model in the loop, and edits it from the same page.",
+      vi:"<code>harness-view</code> đọc những gì nằm trên đĩa, không có model nào tham gia, và sửa ngay trên cùng trang đó.",
+      ja:"<code>harness-view</code> はディスク上のものをモデルを介さずに読み、同じ画面から編集します。"},
+ img:{en:"../docs/assets/harness-view-flow.png"},
+ alt:{en:"harness-view drawing a harness as a live graph of agents, rules, hooks and commands", vi:"harness-view vẽ một harness thành graph trực tiếp gồm agent, rule, hook và command", ja:"harness-view がエージェント・ルール・フック・コマンドをライブグラフとして描いた画面"},
+ side:[
+  {ic:"i-flow", t:{en:"A live graph", vi:"Graph trực tiếp", ja:"ライブグラフ"}, d:{en:"Every agent, rule, hook, command and module, wired from the files themselves.", vi:"Mọi agent, rule, hook, command và module, nối từ chính các file.", ja:"エージェント・ルール・フック・コマンド・モジュールを、ファイル自体から配線。"}},
+  {ic:"i-grid", t:{en:"Toggles", vi:"Bật tắt", ja:"切替"}, d:{en:"Park a rule, hook or seat. A protected control needs a human to type the phrase.", vi:"Gác một rule, hook hay vai. Điều khiển được bảo vệ cần con người gõ câu xác nhận.", ja:"ルール・フック・席を停止。保護された制御は人間が合い言葉を打つ必要がある。"}},
+  {ic:"i-clock", t:{en:"Run history", vi:"Lịch sử chạy", ja:"実行履歴"}, d:{en:"<code>agent-history</code> archives every finished subagent run; <code>agent-trace</code> logs which rule loaded and why.", vi:"<code>agent-history</code> lưu mọi lần subagent chạy xong; <code>agent-trace</code> ghi rule nào được nạp và vì sao.", ja:"<code>agent-history</code> が全サブエージェント実行を保存し、<code>agent-trace</code> がどのルールがなぜ読まれたかを記録。"}},
+  {ic:"i-target", t:{en:"<code>harness-check.py</code>", vi:"<code>harness-check.py</code>", ja:"<code>harness-check.py</code>"}, d:{en:"Proves every cross-link points at something real.", vi:"Chứng minh mọi liên kết chéo trỏ tới thứ có thật.", ja:"すべての相互参照が実在するものを指すことを証明。"}}],
+ nav:{en:"6 · Control", vi:"6 · Kiểm soát", ja:"6 · 制御"}},
+
+/* 16 - Q7 assess */
+{icon:"i-chart", kind:"figure", step:{en:"Question 7 · A score with reasons", vi:"Câu 7 · Điểm số có lý do", ja:"問い7 · 理由のあるスコア"},
+ title:{en:"A worklist, not a vague score", vi:"Một danh sách việc, không phải điểm số mơ hồ", ja:"曖昧な点数ではなく、作業リスト"},
+ sub:{en:"<code>harness-view assess</code> is a plain rules engine. The same engine backs the browser tab and CI.",
+      vi:"<code>harness-view assess</code> là một engine luật thuần tuý. Cùng engine đó chạy cho tab trình duyệt và CI.",
+      ja:"<code>harness-view assess</code> は素朴なルールエンジンです。ブラウザのタブもCIも同じエンジンで動きます。"},
+ img:{en:"../docs/assets/harness-view-assess.png"},
+ alt:{en:"The harness-view Assess tab, with per-category bars and the findings list", vi:"Tab Assess của harness-view, với thanh điểm theo hạng mục và danh sách phát hiện", ja:"harness-view の Assess タブ。カテゴリ別のバーと所見一覧"},
+ side:[
+  {ic:"i-chart", t:{en:"Fix these first", vi:"Sửa cái này trước", ja:"まずこれを直す"}, d:{en:"Findings grouped by rule, ordered by weight x count / effort.", vi:"Phát hiện gom theo luật, xếp theo trọng số x số lượng / công sức.", ja:"所見をルールごとにまとめ、重み x 件数 / 手間で並べる。"}},
+  {ic:"i-target", t:{en:"One-click fixes", vi:"Sửa một chạm", ja:"ワンクリック修正"}, d:{en:"Pin a model, set an effort, strip write tools from a reviewer.", vi:"Cố định model, đặt effort, gỡ quyền ghi khỏi reviewer.", ja:"モデルを固定、effort を設定、レビュアーから書込ツールを外す。"}},
+  {ic:"i-clock", t:{en:"Since the last check", vi:"Từ lần kiểm trước", ja:"前回からの変化"}, d:{en:"Score before and after, findings fixed and new.", vi:"Điểm trước và sau, phát hiện đã sửa và mới.", ja:"前後のスコア、解消した所見と新しい所見。"}},
+  {ic:"i-doc", t:{en:"A published rubric", vi:"Rubric công khai", ja:"公開ルーブリック"}, d:{en:"Six categories, each with its own arithmetic, a rule ID, <code>file:line</code> evidence and the fix.", vi:"Sáu hạng mục, mỗi hạng mục có phép tính riêng, mã luật, bằng chứng <code>file:line</code> và cách sửa.", ja:"6カテゴリそれぞれに計算式、ルールID、<code>file:line</code> の証拠、修正方法。"}}],
+ note:{en:"Captured on a real harness of 219 nodes and 655 edges; the rubric scores the harness 99/100.",
+       vi:"Chụp trên một harness thật gồm 219 node và 655 cạnh; rubric chấm harness đó 99/100.",
+       ja:"実在のハーネス(ノード 219、エッジ 655)で撮影。ルーブリックはこれを 99/100 と採点。"},
+ nav:{en:"7 · Assess", vi:"7 · Assess", ja:"7 · Assess"}},
+
+/* ============ PART 4 - HOW IT WORKS ============ */
+/* 17 - context tiers */
+{icon:"i-brain", kind:"ctxlayers", step:{en:"Part 4 · How it works", vi:"Phần 4 · Cách nó hoạt động", ja:"第4部 · 仕組み"},
+ title:{en:"Four tiers of context, and only two survive", vi:"Bốn tầng context, và chỉ hai tầng sống sót", ja:"4つの階層、生き残るのは2つだけ"},
+ sub:{en:"The window is RAM and the work lives on disk. Watch what a {{g:compaction|compaction}} does to each tier.",
+      vi:"Cửa sổ context là RAM, còn công việc nằm trên đĩa. Hãy xem một lần {{g:compaction|compaction}} làm gì với từng tầng.",
+      ja:"ウィンドウはRAM、作業はディスクにあります。{{g:compaction|圧縮}}が各階層に何をするかをご覧ください。"},
  rows:[
   {cls:"ram", ic:"i-clock", tag:{en:"Always-RAM", vi:"Always-RAM", ja:"Always-RAM"},
    d:{en:"CLAUDE.md, the unconditional rules, the agent body, tool schemas", vi:"CLAUDE.md, các rule vô điều kiện, thân agent, schema tool", ja:"CLAUDE.md、無条件ルール、エージェント本体、ツールスキーマ"},
    m:{en:"every turn", vi:"mỗi lượt", ja:"毎ターン"}},
   {cls:"ram", ic:"i-box", tag:{en:"Lazy-RAM", vi:"Lazy-RAM", ja:"Lazy-RAM"},
-   d:{en:"The {{g:pathscoped|path-scoped}} rules, loaded only on a matching file", vi:"Các rule {{g:pathscoped|theo path}}, chỉ nạp khi chạm file khớp", ja:"{{g:pathscoped|パススコープ}}のルール、一致ファイル時のみ読込"},
+   d:{en:"The {{g:pathscoped|path-scoped}} rules and per-module CLAUDE.md, loaded only on a matching file", vi:"Các rule {{g:pathscoped|theo path}} và CLAUDE.md của từng module, chỉ nạp khi chạm file khớp", ja:"{{g:pathscoped|パススコープ}}のルールとモジュールごとの CLAUDE.md、一致ファイル時のみ読込"},
    m:{en:"on demand", vi:"theo yêu cầu", ja:"必要時のみ"}},
   {cls:"disk", ic:"i-doc", tag:{en:"Disk", vi:"Disk", ja:"Disk"},
    d:{en:"The task board and one file per task: a checkpoint and a bounded session log", vi:"Bảng task và mỗi task một file: một checkpoint và session log có giới hạn", ja:"タスクボードとタスクごとのファイル: チェックポイントと上限付きセッションログ"},
@@ -827,103 +1094,40 @@ const S = [
   {cls:"disk", ic:"i-layers", tag:{en:"Archive", vi:"Archive", ja:"Archive"},
    d:{en:"One file per finished subagent run, written by a {{g:hook|hook}} after the fact", vi:"Mỗi lần subagent chạy xong một file, do {{g:hook|hook}} ghi lại sau đó", ja:"サブエージェント実行ごとに1ファイル、{{g:hook|フック}}が事後に記録"},
    m:{en:"append-only", vi:"chỉ ghi thêm", ja:"追記専用"}}],
- nav:{en:"Context layers", vi:"Các tầng context", ja:"コンテキスト階層"}},
+ note:{en:"<code>task.py move</code> changes a task's board row, status and folder in one command, and <code>task.py checkpoint</code> writes the next step and the last green commit, so a fresh session resumes in three lines.",
+       vi:"<code>task.py move</code> đổi dòng trên bảng, status và thư mục của task trong một lệnh, và <code>task.py checkpoint</code> ghi bước kế tiếp cùng commit xanh gần nhất, nên một phiên mới tiếp tục chỉ với ba dòng.",
+       ja:"<code>task.py move</code> はボードの行・status・フォルダを1コマンドで変え、<code>task.py checkpoint</code> は次の一手と最後に green だったコミットを書きます。新しいセッションは3行で再開します。"},
+ nav:{en:"Context tiers", vi:"Các tầng context", ja:"コンテキスト階層"}},
 
-/* 11 - task state: one writer, a checkpoint, a bounded log */
-{icon:"i-brain", kind:"bullets", cls:"green", step:{en:"Mechanism A · Context", vi:"Cơ chế A · Context", ja:"仕組みA · コンテキスト"},
- title:{en:"Task state has one writer, and resumes in three lines", vi:"Trạng thái task chỉ có một người ghi, và tiếp tục chỉ với ba dòng", ja:"タスク状態の書き手は1つ、再開は3行で"},
- items:[
-  {t:{en:"One command moves a task", vi:"Một câu lệnh chuyển trạng thái task", ja:"タスクの移動は1コマンド"},
-   d:{en:"<code>task.py move</code> changes the board row, the file's status and its folder together, then reads the row back. A hook blocks a hand edit to the board.",
-      vi:"<code>task.py move</code> đổi cùng lúc dòng trên bảng, status của file và thư mục chứa nó, rồi đọc lại dòng đó. Một hook chặn việc sửa bảng bằng tay.",
-      ja:"<code>task.py move</code> がボードの行、ファイルの status、フォルダを同時に変え、行を読み返します。ボードの手編集はフックが遮断します。"}},
-  {t:{en:"A resume reads the checkpoint, not the history", vi:"Tiếp tục công việc đọc checkpoint, không đọc lịch sử", ja:"再開は履歴ではなくチェックポイントを読む"},
-   d:{en:"Next step, last green commit, open questions. The session log keeps its newest rows and archives the rest beside it, still committed.",
-      vi:"Bước kế tiếp, commit xanh gần nhất, câu hỏi còn mở. Session log giữ các dòng mới nhất và lưu phần còn lại bên cạnh, vẫn được commit.",
-      ja:"次の一手、最後に green だったコミット、未解決の質問。セッションログは新しい行だけを残し、残りは隣にアーカイブします(コミットは維持)。"}},
-  {t:{en:"Finished and crashed are told apart by a file", vi:"Hoàn tất và bị sập phân biệt bằng một file", ja:"完了と異常終了はファイルで区別する"},
-   d:{en:"Close-out writes a MISSION COMPLETE marker. On long projects, hooks write a checkpoint before a compaction and put the active tasks back in front of the agent after it.",
-      vi:"Khi kết thúc sẽ ghi dấu MISSION COMPLETE. Với dự án dài, hook ghi checkpoint trước khi compaction và đưa các task đang chạy trở lại trước mắt agent sau đó.",
-      ja:"終了時に MISSION COMPLETE マーカーを書きます。長期プロジェクトでは、圧縮の前にフックがチェックポイントを書き、圧縮の後に進行中のタスクをエージェントの前へ戻します。"}}],
- nav:{en:"Task state", vi:"Trạng thái task", ja:"タスク状態"}},
+/* 18 - hooks on every event */
+{icon:"i-shield", kind:"events", step:{en:"Part 4 · How it works", vi:"Phần 4 · Cách nó hoạt động", ja:"第4部 · 仕組み"},
+ title:{en:"Hooks on every event, each one block or warn by design", vi:"Hook ở mọi sự kiện, mỗi hook chặn hoặc cảnh báo có chủ đích", ja:"あらゆるイベントにフック。遮断か警告かは設計で決まる"},
+ sub:{en:"Each ships as <code>.sh</code> and <code>.ps1</code>. The baseline guards ship always; the rest ship with the flag that needs them.",
+      vi:"Mỗi hook có bản <code>.sh</code> và <code>.ps1</code>. Các guard nền luôn được cài; phần còn lại đi cùng cờ cần đến nó.",
+      ja:"各フックは <code>.sh</code> と <code>.ps1</code> の両形式。基本のガードは常に入り、それ以外は必要なフラグがある時だけ入ります。"},
+ legend:{b:{en:"blocks", vi:"chặn", ja:"遮断"}, w:{en:"warns", vi:"cảnh báo", ja:"警告"}, c:{en:"context or log", vi:"context hoặc log", ja:"文脈・記録"}},
+ events:[
+  {e:"SessionStart", w:{en:"a start or a compaction", vi:"khởi động hoặc sau compaction", ja:"開始・圧縮の後"}, hooks:[["session-context","c","long"]]},
+  {e:"UserPromptSubmit", w:{en:"before a prompt is sent", vi:"trước khi gửi prompt", ja:"プロンプト送信前"}, hooks:[["secret-guard","b","strict"]]},
+  {e:"PreToolUse", wide:true, w:{en:"before a tool call", vi:"trước lời gọi tool", ja:"ツール呼び出し前"}, hooks:[
+    ["protect-secrets","b",""],["guard-destructive","b",""],["guard-main-commit","b",""],["check-commit-msg","b",""],
+    ["guard-agent-spawn","b",""],["guard-board","b",""],["protect-adr","b",""],
+    ["guard-egress","b","strict"],["guard-large-file","b","strict"],["guard-deps","b","strict"],["guard-migration","b","db"]]},
+  {e:"PostToolUse", w:{en:"after an edit or a failure", vi:"sau khi sửa hoặc lỗi", ja:"編集・失敗の後"}, hooks:[
+    ["specs-reminder","w",""],["graph-stale","w",""],["retry-budget","w","long"],["research-sources","w","research"],["docs-links","w","docs"]]},
+  {e:"PreCompact", w:{en:"before a compaction", vi:"trước compaction", ja:"圧縮の前"}, hooks:[["compact-checkpoint","c","long"]]},
+  {e:"Stop", w:{en:"when a turn ends", vi:"khi một lượt kết thúc", ja:"ターン終了時"}, hooks:[["stop-evidence","b","strict"],["agent-history","c",""]]}],
+ note:{en:"Blocking guards {{g:failclosed|fail closed}}: a guard that times out or crashes blocks the call. Advisory hooks stay fail-open, because a broken reminder must never stop work. <code>stop-evidence</code> sends a claim back once, and <code>retry-budget</code> warns before it blocks.",
+       vi:"Các guard chặn {{g:failclosed|đóng khi lỗi}}: guard bị timeout hay crash sẽ chặn lời gọi. Hook tư vấn vẫn mở khi lỗi, vì một lời nhắc hỏng không bao giờ được làm dừng công việc. <code>stop-evidence</code> trả lại một lần, và <code>retry-budget</code> cảnh báo trước khi chặn.",
+       ja:"遮断ガードは{{g:failclosed|フェイルクローズ}}です。タイムアウトやクラッシュしたガードは呼び出しを遮断します。助言フックはフェイルオープンのまま。壊れたリマインダーが作業を止めてはならないからです。<code>stop-evidence</code> は一度だけ差し戻し、<code>retry-budget</code> は警告してから遮断します。"},
+ nav:{en:"Hooks", vi:"Hook", ja:"フック"}},
 
-/* 12 - routing tiers */
-{icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"Process proportional to the change", vi:"Quy trình tương xứng với thay đổi", ja:"変更の大きさに見合ったプロセス"},
- sub:{en:"<mark>Most changes are Inline or Direct</mark>. Choosing a heavier tier than the change needs is a defect, not caution.",
-      vi:"<mark>Phần lớn thay đổi là Inline hoặc Direct</mark>. Chọn bậc nặng hơn mức thay đổi cần là một lỗi, không phải sự thận trọng.",
-      ja:"<mark>大半の変更は Inline か Direct</mark> です。必要より重いティアを選ぶのは慎重さではなく欠陥です。"},
- cols:{en:["Tier","The change","Who runs it"], vi:["Bậc","Thay đổi","Ai chạy"], ja:["ティア","対象の変更","誰が実行するか"]},
- rows:[
-  {en:["<strong><mark>Inline</mark></strong>","A question, a lookup, a doc or config edit, a fix you can see whole","The main session. <strong>No subagent</strong>"],
-   vi:["<strong><mark>Inline</mark></strong>","Một câu hỏi, tra cứu, sửa tài liệu hay cấu hình, một lỗi nhìn được trọn vẹn","Phiên chính. <strong>Không subagent</strong>"],
-   ja:["<strong><mark>Inline</mark></strong>","質問、調べもの、ドキュメントや設定の修正、全体が見える修正","メインセッション。<strong>サブエージェントなし</strong>"]},
-  {en:["<strong><mark class='m2'>Direct</mark></strong>","One module, reversible, no contract, schema, auth, payment or infrastructure","The owning agent, called straight. <strong>No task file</strong>"],
-   vi:["<strong><mark class='m2'>Direct</mark></strong>","Một module, hoàn tác được, không chạm hợp đồng, schema, auth, thanh toán hay hạ tầng","Gọi thẳng agent sở hữu. <strong>Không task file</strong>"],
-   ja:["<strong><mark class='m2'>Direct</mark></strong>","単一モジュール、可逆、契約・スキーマ・認証・決済・インフラに触れない","担当エージェントを直接呼ぶ。<strong>タスクファイルなし</strong>"]},
-  {en:["<strong>Standard</strong>","One domain, several files, or a numbered requirement","The owning agent. A task file only if it must survive a {{g:compaction|compaction}}"],
-   vi:["<strong>Standard</strong>","Một miền, vài file, hoặc có yêu cầu đánh số","Agent sở hữu. Chỉ lập task file khi phải sống qua {{g:compaction|compaction}}"],
-   ja:["<strong>Standard</strong>","単一領域、複数ファイル、または番号付き要件","担当エージェント。{{g:compaction|圧縮}}を越える必要がある時だけタスクファイル"]},
-  {en:["<strong><mark class='m3'>Guarded</mark></strong>","Two or more domains, <em>or</em> schema, auth, money, a public contract, a migration, a deploy, personal data","<strong>The only tier that goes through the {{g:orchestrator|orchestrator}}</strong>"],
-   vi:["<strong><mark class='m3'>Guarded</mark></strong>","Từ hai miền trở lên, <em>hoặc</em> schema, auth, tiền, hợp đồng công khai, migration, deploy, dữ liệu cá nhân","<strong>Bậc duy nhất đi qua {{g:orchestrator|orchestrator}}</strong>"],
-   ja:["<strong><mark class='m3'>Guarded</mark></strong>","2領域以上、<em>または</em>スキーマ・認証・金銭・公開契約・マイグレーション・デプロイ・個人データ","<strong>{{g:orchestrator|オーケストレーター}}を通る唯一のティア</strong>"]}],
- note:{en:"Spawn depth and the number of concurrent subagents are capped in <code>settings.json</code>, so a fan-out cannot run away.",
-       vi:"Độ sâu spawn và số subagent chạy đồng thời bị giới hạn trong <code>settings.json</code>, nên việc toả nhánh không thể mất kiểm soát.",
-       ja:"生成の深さと同時実行サブエージェント数は <code>settings.json</code> で上限が決まっており、ファンアウトが暴走することはありません。"},
- nav:{en:"Routing tiers", vi:"Các bậc điều phối", ja:"ルーティングのティア"}},
-
-/* 13 - proportionate verification */
-{icon:"i-flow", kind:"table", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"The diff decides what gets checked", vi:"Diff quyết định cái gì được kiểm tra", ja:"何を検査するかは差分が決める"},
- sub:{en:"<code>verify-plan.py</code> reads the paths a change touches and prints the gates it needs. A skipped gate is one logged line with its reason.",
-      vi:"<code>verify-plan.py</code> đọc các đường dẫn mà thay đổi chạm tới và in ra những cổng cần chạy. Một cổng bị bỏ qua là một dòng log kèm lý do.",
-      ja:"<code>verify-plan.py</code> が変更の触れたパスを読み、必要なゲートを出力します。省いたゲートは理由付きで1行記録されます。"},
- cols:{en:["The diff touches","What runs"], vi:["Diff chạm tới","Cái gì chạy"], ja:["差分が触れるもの","実行されるもの"]},
- rows:[
-  {en:["<strong>Anything</strong>","The secret scan. Never skipped"],
-   vi:["<strong>Bất cứ thứ gì</strong>","Quét secret. Không bao giờ bỏ qua"],
-   ja:["<strong>何であれ</strong>","シークレットスキャン。省略されない"]},
-  {en:["<strong>Docs or config only</strong>","<mark class='m2'>No reviewer seat</mark>, no test run"],
-   vi:["<strong>Chỉ tài liệu hoặc cấu hình</strong>","<mark class='m2'>Không vai reviewer nào</mark>, không chạy test"],
-   ja:["<strong>ドキュメントか設定のみ</strong>","<mark class='m2'>レビュアーの席はゼロ</mark>、テストも走らない"]},
-  {en:["<strong>Code</strong>","The tests that touch it, and code review. The full suite once, at the branch gate"],
-   vi:["<strong>Code</strong>","Các test chạm tới nó, và code review. Toàn bộ suite chạy một lần, ở cổng của nhánh"],
-   ja:["<strong>コード</strong>","触れたテストとコードレビュー。全スイートはブランチのゲートで一度だけ"]},
-  {en:["<strong>Auth, secrets, parsing, data, AI tool calls, dependencies, infra</strong>","Security review too"],
-   vi:["<strong>Auth, secret, parsing, dữ liệu, lời gọi tool AI, dependency, hạ tầng</strong>","Thêm security review"],
-   ja:["<strong>認証、シークレット、パース、データ、AIツール呼び出し、依存関係、インフラ</strong>","セキュリティレビューも"]},
-  {en:["<strong>A named critical flow</strong>","An end-to-end run for that flow, never by default"],
-   vi:["<strong>Một luồng quan trọng đã đặt tên</strong>","Chạy end-to-end cho luồng đó, không bao giờ mặc định"],
-   ja:["<strong>名前付きの重要フロー</strong>","そのフローだけE2E。既定では走らない"]}],
- note:{en:"Briefs follow the same rule: no “double-check” step, because current models already verify their own work. Write the check into the gate once.",
-       vi:"Các brief theo cùng nguyên tắc: không có bước “kiểm tra lại”, vì model hiện nay đã tự kiểm chứng công việc. Viết kiểm tra vào cổng một lần.",
-       ja:"指示書も同じ原則です。現在のモデルは自分の作業を自ら検証するので、「再確認」の手順は入れません。検査はゲートに一度だけ書きます。"},
- nav:{en:"Verification", vi:"Kiểm chứng", ja:"検証"}},
-
-/* 14 - the Guarded flow */
-{icon:"i-flow", kind:"pipe", step:{en:"Mechanism B · Orchestration", vi:"Cơ chế B · Điều phối", ja:"仕組みB · オーケストレーション"},
- title:{en:"The Guarded flow, and the one gate at the end", vi:"Luồng Guarded, và một cổng duy nhất ở cuối", ja:"Guarded の流れと、最後にある一つのゲート"},
- sub:{en:"This answers problems 06 and 07: the shape holds whichever model runs inside it.",
-      vi:"Đây là câu trả lời cho vấn đề 06 và 07: hình dạng giữ nguyên bất kể model nào chạy bên trong.",
-      ja:"課題06と07への答え: 内側でどのモデルが動いても、形は保たれます。"},
- levels:[
-  {cls:"orch", items:[{en:"orchestrator", vi:"orchestrator", ja:"orchestrator"}],
-   cap:{en:"Analyze → decompose → register on the board", vi:"Phân tích → phân rã → đăng ký lên bảng", ja:"分析 → 分解 → ボードに登録"}},
-  {cls:"dev", items:[{en:"app-dev", vi:"app-dev", ja:"app-dev"},{en:"data-modeler", vi:"data-modeler", ja:"data-modeler"},{en:"frontend-ui-dev", vi:"frontend-ui-dev", ja:"frontend-ui-dev"}],
-   cap:{en:"Each scoped to real module paths. Direct and Standard work starts here", vi:"Mỗi agent gắn với đường dẫn module thật. Việc Direct và Standard bắt đầu tại đây", ja:"各自が実在のモジュールパスに紐づく。Direct と Standard はここから始まる"}},
-  {cls:"gate", items:[{en:"verify-plan", vi:"verify-plan", ja:"verify-plan"},{en:"qa-test", vi:"qa-test", ja:"qa-test"},{en:"code-reviewer", vi:"code-reviewer", ja:"code-reviewer"},{en:"security-reviewer", vi:"security-reviewer", ja:"security-reviewer"},{en:"/secret-scan", vi:"/secret-scan", ja:"/secret-scan"}],
-   cap:{en:"One gate over the branch diff, before the pull request. verify-plan picks which seats run", vi:"Một cổng trên diff của nhánh, trước pull request. verify-plan chọn vai nào chạy", ja:"プルリクエスト前に、ブランチ差分に対して一度だけ。どの席が走るかは verify-plan が選ぶ"}}],
- note:{en:"Reviewers hold no Edit or Write, so separation of duty is structural. A gate passes only when the session log records the run, and a “done” with no evidence is sent back once.",
-       vi:"Reviewer không có Edit hay Write, nên tách trách nhiệm là cấu trúc. Một cổng chỉ qua khi session log ghi lại lần chạy, và một câu “xong” không có bằng chứng sẽ bị trả lại một lần.",
-       ja:"レビュアーは Edit も Write も持たず、職務分離は構造です。ゲートはセッションログに実行が記録されて初めて通過し、証拠のない「完了」は一度差し戻されます。"},
- nav:{en:"The Guarded flow", vi:"Luồng Guarded", ja:"Guarded の流れ"}},
-
-/* 15 */
-{icon:"i-shield", kind:"rings", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
+/* 19 - defence in depth */
+{icon:"i-shield", kind:"rings", step:{en:"Part 4 · How it works", vi:"Phần 4 · Cách nó hoạt động", ja:"第4部 · 仕組み"},
  title:{en:"Defence in depth, and the model is inside", vi:"Phòng thủ theo chiều sâu, và model nằm bên trong", ja:"多層防御、そしてモデルはその内側にいる"},
- sub:{en:"An action must pass every layer. This answers problem 04: none of it depends on the model choosing to obey.",
-      vi:"Một hành động phải vượt qua mọi lớp. Đây là câu trả lời cho vấn đề 04: không lớp nào phụ thuộc vào việc model chịu tuân thủ.",
-      ja:"アクションは全層を通過せねばなりません。課題04への答え: どの層もモデルの従順さに依存しません。"},
+ sub:{en:"An action must pass every layer, and none of them depends on the model choosing to obey.",
+      vi:"Một hành động phải vượt qua mọi lớp, và không lớp nào phụ thuộc vào việc model chịu tuân thủ.",
+      ja:"アクションは全層を通過せねばならず、どの層もモデルの従順さに依存しません。"},
  rings:[
   {en:"1 · Deny list", vi:"1 · Deny list", ja:"1 · 拒否リスト"},
   {en:"2 · Hooks, exit 2", vi:"2 · Hooks, exit 2", ja:"2 · フック、exit 2"},
@@ -935,7 +1139,7 @@ const S = [
   {cls:"a", t:{en:"Deny list", vi:"Deny list", ja:"拒否リスト"},
    d:{en:"What it cannot see: <code>.env</code>, keys, <code>secrets/</code>", vi:"Cái nó không được thấy: <code>.env</code>, key, <code>secrets/</code>", ja:"見えないもの: <code>.env</code>、鍵、<code>secrets/</code>"}},
   {cls:"b", t:{en:"Hooks, exit 2", vi:"Hooks, exit 2", ja:"フック、exit 2"},
-   d:{en:"What it cannot do, checked before the tool runs", vi:"Cái nó không được làm, kiểm tra trước khi tool chạy", ja:"できないこと。ツール実行前に判定"}},
+   d:{en:"What it cannot do, checked before the tool runs, and blocked if the guard fails", vi:"Cái nó không được làm, kiểm trước khi tool chạy, và chặn nếu guard lỗi", ja:"できないこと。実行前に判定し、ガードが失敗しても遮断"}},
   {cls:"c", t:{en:"Tool allowlist", vi:"Tool allowlist", ja:"ツール許可リスト"},
    d:{en:"What it cannot reach: judges hold no Edit, only the orchestrator holds <code>Agent</code>", vi:"Cái nó không với tới: vai đánh giá không có Edit, chỉ orchestrator có <code>Agent</code>", ja:"届かないもの: 審査役は Edit を持たず、<code>Agent</code> はオーケストレーターのみ"}},
   {cls:"d", t:{en:"{{g:maxturns|maxTurns}}, spawn depth", vi:"{{g:maxturns|maxTurns}}, độ sâu spawn", ja:"{{g:maxturns|maxTurns}}、生成の深さ"},
@@ -945,79 +1149,40 @@ const S = [
        ja:"正直な限界: 拒否リストは前方一致で、順序の入れ替えで破れます。減速帯であり、ゲートはフックです。"},
  nav:{en:"Defence in depth", vi:"Phòng thủ chiều sâu", ja:"多層防御"}},
 
-/* 16 - hooks on every event */
-{icon:"i-shield", kind:"table", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
- title:{en:"Hooks on every event, not only before a tool call", vi:"Hook ở mọi sự kiện, không chỉ trước lời gọi tool", ja:"ツール呼び出しの前だけでなく、あらゆるイベントにフック"},
- sub:{en:"Each ships in a <code>.sh</code> and a <code>.ps1</code> flavor, and only with the options that need it.",
-      vi:"Mỗi hook có hai bản <code>.sh</code> và <code>.ps1</code>, và chỉ được cài cùng tuỳ chọn cần đến nó.",
-      ja:"各フックは <code>.sh</code> と <code>.ps1</code> の2形式で、必要とする選択肢がある時だけ入ります。"},
- cols:{en:["When","What it catches","Does"], vi:["Khi nào","Nó bắt được gì","Làm gì"], ja:["いつ","何を捉えるか","動作"]},
- rows:[
-  {en:["<strong>Before a tool call</strong>","A secret read, a commit to main, an Accepted {{g:adr|ADR}}, an off-roster spawn, a hand edit to the board, an edit to a shipped migration. Strict mode adds destructive commands, uploads to unknown hosts, large files, lockfile edits, <code>curl | sh</code>","<mark class='m3'>Blocks</mark>"],
-   vi:["<strong>Trước lời gọi tool</strong>","Đọc secret, commit vào main, sửa {{g:adr|ADR}} đã Accepted, spawn ngoài roster, sửa bảng bằng tay, sửa migration đã phát hành. Chế độ strict thêm lệnh phá huỷ, gửi dữ liệu tới host lạ, file lớn, sửa lockfile, <code>curl | sh</code>","<mark class='m3'>Chặn</mark>"],
-   ja:["<strong>ツール呼び出しの前</strong>","シークレット読取、main へのコミット、Accepted な{{g:adr|ADR}}、ロスター外の生成、ボードの手編集、出荷済みマイグレーションの編集。strict では破壊的コマンド、未知ホストへの送信、大きなファイル、ロックファイル編集、<code>curl | sh</code> も","<mark class='m3'>遮断</mark>"]},
-  {en:["<strong>After a failure</strong>","The same failing call, repeated","Warns, then blocks"],
-   vi:["<strong>Sau một lỗi</strong>","Cùng một lời gọi lỗi, lặp lại","Cảnh báo, rồi chặn"],
-   ja:["<strong>失敗の後</strong>","同じ失敗する呼び出しの繰り返し","警告→遮断"]},
-  {en:["<strong>Before a stop</strong>","“All tests pass” with no output, count or exit code behind it","Sends it back once"],
-   vi:["<strong>Trước khi dừng</strong>","“Mọi test đều qua” mà không có output, số đếm hay mã thoát nào","Trả lại một lần"],
-   ja:["<strong>停止の前</strong>","出力・件数・終了コードの裏付けがない「全テスト通過」","一度差し戻す"]},
-  {en:["<strong>Around a compaction</strong>","Writes a checkpoint before, puts the active tasks back after","Never blocks"],
-   vi:["<strong>Quanh một lần compaction</strong>","Ghi checkpoint trước, đưa các task đang chạy trở lại sau","Không bao giờ chặn"],
-   ja:["<strong>圧縮の前後</strong>","前にチェックポイントを書き、後で進行中のタスクを戻す","遮断しない"]},
-  {en:["<strong>After an edit</strong>","A changed spec, a stale graph, a broken link, a research claim with no source","Reminds"],
-   vi:["<strong>Sau khi sửa</strong>","Spec thay đổi, graph cũ, link hỏng, khẳng định nghiên cứu không có nguồn","Nhắc nhở"],
-   ja:["<strong>編集の後</strong>","仕様の変更、古いグラフ、壊れたリンク、出典のないリサーチ主張","注意喚起"]}],
- note:{en:"Hooks fail open, with one deliberate exception: a spawn the hook cannot read is refused.",
-       vi:"Hook mặc định cho qua khi lỗi, với một ngoại lệ có chủ đích: lần spawn mà hook không đọc được sẽ bị từ chối.",
-       ja:"フックは失敗時に通過させますが、意図的な例外が1つ: 読めない生成要求は拒否します。"},
- nav:{en:"Hooks", vi:"Hook", ja:"フック"}},
-
-/* 17 */
-{icon:"i-target", kind:"stats", step:{en:"Mechanism C · Security", vi:"Cơ chế C · Bảo mật", ja:"仕組みC · セキュリティ"},
- title:{en:"The safety floor is model-independent", vi:"Sàn an toàn không phụ thuộc model", ja:"安全性の下限はモデルに依存しない"},
- sub:{en:"This is the answer to problem 06, and it is measured rather than claimed.",
-      vi:"Đây là câu trả lời cho vấn đề 06, và nó được đo đạc chứ không phải tuyên bố suông.",
-      ja:"これは課題06への答えであり、主張ではなく実測です。"},
- stats:[
-  {v:"266/266", cls:"g", l:{en:"<b>Does the floor hold?</b> 101 forbidden actions blocked, 149 permitted actions and wiring checks upheld, with the strict, long-session and database hooks on", vi:"<b>Sàn có giữ được không?</b> 101 hành động bị cấm đều chặn, 149 hành động được phép và kiểm tra nối dây đều đạt, với hook strict, long-session và database bật", ja:"<b>下限は保たれるか</b> 禁止101件を遮断、許可と配線検査149件を維持。厳格・長期セッション・データベースのフックを有効にして"}},
-  {v:"0", cls:"g", l:{en:"<b>Models consulted?</b> None: the guardrails are shell scripts, so the result cannot depend on the model", vi:"<b>Model được hỏi?</b> Không có: guardrail là shell script nên kết quả không thể phụ thuộc vào model", ja:"<b>問い合わせるモデル</b> なし。ガードレールはシェルスクリプトなので、結果はモデルに左右されない"}},
-  {v:"266/266", cls:"g", l:{en:"<b>On Windows too?</b> The same suite through the PowerShell hook flavor", vi:"<b>Trên Windows thì sao?</b> Cùng bộ đó qua bản hook PowerShell", ja:"<b>Windowsでも</b> 同じ一式をPowerShell版フックで"}},
-  {v:"32/32", cls:"g", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter, both hook flavors", vi:"<b>Có sống sót khi port không?</b> Adapter Cursor và Codex, cả hai bản hook", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタ、両方のフック形式で"}}],
- note:{en:"This measures the floor, not the ceiling. Code quality and review depth do degrade with a cheaper model.",
-       vi:"Cái này đo sàn, không đo trần. Chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
-       ja:"これは下限であり上限ではありません。安いモデルではコード品質とレビューの深さは低下します。"},
- nav:{en:"Safety floor", vi:"Sàn an toàn", ja:"安全の下限"}},
-
-/* 18 - every seat fully specified; cost and briefs */
-{icon:"i-coins", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"The expensive setup is the one you get by not choosing", vi:"Cấu hình đắt nhất là cấu hình bạn nhận khi không chọn gì", ja:"最も高い構成は、何も選ばなかった時の構成"},
- sub:{en:"Every seat is fully specified, so cost and behaviour are decisions, not defaults.",
-      vi:"Mọi vai đều được khai báo đầy đủ, nên chi phí và hành vi là quyết định, không phải mặc định.",
-      ja:"すべての席が完全に定義されているので、コストも振る舞いも既定値ではなく判断です。"},
+/* 20 - verified live in Claude Code */
+{icon:"i-play", kind:"cards", step:{en:"Part 4 · How it works", vi:"Phần 4 · Cách nó hoạt động", ja:"第4部 · 仕組み"},
+ title:{en:"Run live in Claude Code, and four holes closed", vi:"Chạy thật trong Claude Code, và bốn lỗ hổng được bịt", ja:"Claude Code で実地に走らせ、4つの穴を塞いだ"},
+ sub:{en:"Scripted payloads could not show these. Real sessions did, and each fix was re-verified live.",
+      vi:"Payload viết sẵn không thể cho thấy những điều này. Phiên làm việc thật thì có, và mỗi bản sửa đều được kiểm lại trực tiếp.",
+      ja:"スクリプトのペイロードでは見えませんでした。実際のセッションで見え、各修正は実地で再検証済みです。"},
  cards:[
-  {ic:"i-coins", cls:"g",
-   t:{en:"Model and effort per seat", vi:"Model và effort theo từng vai", ja:"席ごとのモデルとeffort"},
-   d:{en:"Opus for judgment and gates, Sonnet for work against a contract, Haiku for mechanical seats. Low and medium effort wherever the contract is settled.",
-      vi:"Opus cho phán đoán và các cổng, Sonnet cho việc làm theo hợp đồng, Haiku cho vai cơ học. Effort low và medium ở mọi nơi hợp đồng đã rõ.",
-      ja:"判断とゲートは Opus、契約に沿った作業は Sonnet、機械的な席は Haiku。契約が固まっている所では low と medium の effort。"}},
-  {ic:"i-shield", cls:"p",
-   t:{en:"The rest of the frontmatter, set on purpose", vi:"Phần frontmatter còn lại, đặt có chủ đích", ja:"残りの frontmatter も意図して設定"},
-   d:{en:"<code>disallowedTools</code> on every judge, <code>permissionMode</code> so a gate never stalls on a prompt, <code>memory</code> only on seats that learn the repo.",
-      vi:"<code>disallowedTools</code> trên mọi vai đánh giá, <code>permissionMode</code> để cổng không bao giờ kẹt vì hỏi quyền, <code>memory</code> chỉ cho vai cần học repo.",
-      ja:"審査役すべてに <code>disallowedTools</code>、ゲートが確認待ちで止まらないよう <code>permissionMode</code>、リポジトリを学ぶ席にだけ <code>memory</code>。"}},
-  {ic:"i-chat", cls:"a",
-   t:{en:"Briefs written for current models", vi:"Brief viết cho model hiện nay", ja:"現在のモデル向けの指示書"},
-   d:{en:"No “double-check” instructions. Explicit limits on what a seat may delegate. A brief says what done looks like, once.",
-      vi:"Không có chỉ dẫn “kiểm tra lại”. Giới hạn rõ ràng về những gì một vai được phép giao lại cho agent khác. Brief nói một lần thế nào là xong.",
-      ja:"「再確認」の指示は書かない。席が委任できる範囲を明示する。何をもって完了とするかを一度だけ書く。"}}],
- note:{en:"Modelled, not measured: the default roster costs $2.523 per feature, 32% less than Opus at xhigh everywhere (<code>benchmark/model_cost.py</code>).",
-       vi:"Mô hình hoá, không phải đo thực tế: roster mặc định tốn $2.523 mỗi tính năng, rẻ hơn 32% so với để Opus ở xhigh khắp nơi (<code>benchmark/model_cost.py</code>).",
-       ja:"実測ではなくモデル計算: 既定ロスターは1機能あたり $2.523、全席 Opus xhigh より32%安価(<code>benchmark/model_cost.py</code>)。"},
- nav:{en:"Cost", vi:"Chi phí", ja:"コスト"}},
+  {ic:"i-flow", cls:"g", n:"1",
+   t:{en:"Git global options", vi:"Tuỳ chọn toàn cục của git", ja:"git のグローバルオプション"},
+   d:{en:"<code>git -c k=v commit</code>, <code>git -C . commit</code> and <code>git --git-dir .git push --force</code> walked past the commit and destructive guards. Now they are read through.",
+      vi:"<code>git -c k=v commit</code>, <code>git -C . commit</code> và <code>git --git-dir .git push --force</code> từng lọt qua guard commit và guard phá huỷ. Giờ chúng được đọc xuyên qua.",
+      ja:"<code>git -c k=v commit</code>、<code>git -C . commit</code>、<code>git --git-dir .git push --force</code> はコミットと破壊操作のガードをすり抜けていました。今は読み通されます。"}},
+  {ic:"i-coins", cls:"g", n:"2",
+   t:{en:"The Windows ledger", vi:"Sổ kiểm chứng trên Windows", ja:"Windows の台帳"},
+   d:{en:"Windows PowerShell 5.1 put a BOM before the payload, so the ledger allowed every dispatch. Fixed, and an unreadable payload now blocks.",
+      vi:"Windows PowerShell 5.1 chèn BOM trước payload, nên sổ cho qua mọi lần điều phối. Đã sửa, và payload không đọc được giờ sẽ bị chặn.",
+      ja:"Windows PowerShell 5.1 がペイロードの前に BOM を付け、台帳はすべての割り当てを通していました。修正済みで、読めないペイロードは遮断されます。"}},
+  {ic:"i-shield", cls:"g", n:"3",
+   t:{en:"Guards fail closed", vi:"Guard đóng khi lỗi", ja:"ガードはフェイルクローズ"},
+   d:{en:"Under load a guard timed out and <code>Remove-Item -Recurse -Force .</code> ran. Every blocking guard now carries <code>onFailure: block</code>.",
+      vi:"Khi tải nặng, một guard bị timeout và <code>Remove-Item -Recurse -Force .</code> đã chạy. Giờ mọi guard chặn đều mang <code>onFailure: block</code>.",
+      ja:"負荷下でガードがタイムアウトし、<code>Remove-Item -Recurse -Force .</code> が実行されました。今はすべての遮断ガードが <code>onFailure: block</code> を持ちます。"}},
+  {ic:"i-brokenlock", cls:"g", n:"4",
+   t:{en:"Secrets through PowerShell", vi:"Secret qua PowerShell", ja:"PowerShell 経由のシークレット"},
+   d:{en:"<code>Get-Content .env</code> through the PowerShell tool was never checked. <code>protect-secrets</code> now sees it.",
+      vi:"<code>Get-Content .env</code> qua tool PowerShell trước đây không được kiểm. Giờ <code>protect-secrets</code> thấy nó.",
+      ja:"PowerShell ツール経由の <code>Get-Content .env</code> は検査されていませんでした。今は <code>protect-secrets</code> が捉えます。"}}],
+ note:{en:"The guardrail eval now runs the <code>.ps1</code> flavour under the same Windows PowerShell the settings call, and the <code>.sh</code> hooks through Git Bash.",
+       vi:"Bộ eval guardrail giờ chạy bản <code>.ps1</code> dưới đúng Windows PowerShell mà settings gọi, và các hook <code>.sh</code> qua Git Bash.",
+       ja:"ガードレール評価は、<code>.ps1</code> 版を settings が呼ぶのと同じ Windows PowerShell で、<code>.sh</code> 版を Git Bash で実行するようになりました。"},
+ nav:{en:"Verified live", vi:"Kiểm chứng thật", ja:"実地検証"}},
 
-/* 19 */
-{icon:"i-plug2", kind:"table", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
+/* 21 - three tools */
+{icon:"i-plug2", kind:"table", step:{en:"Part 4 · How it works", vi:"Phần 4 · Cách nó hoạt động", ja:"第4部 · 仕組み"},
  title:{en:"One harness, three tools, guardrails included", vi:"Một harness, ba công cụ, kèm cả guardrails", ja:"1つのハーネス、3つのツール、ガードレールごと"},
  cols:{en:["","Claude Code","Cursor","Codex"], vi:["","Claude Code","Cursor","Codex"], ja:["","Claude Code","Cursor","Codex"]},
  rows:[
@@ -1038,67 +1203,93 @@ const S = [
        ja:"正直な限界: Codexは apply_patch 経由で編集するため{{g:adr|ADR}}ガードはベストエフォート、Cursorの afterFileEdit は観測のみ、そしてどちらにもサブエージェント生成のフックポイントがありません。"},
  nav:{en:"Cursor & Codex", vi:"Cursor & Codex", ja:"Cursor と Codex"}},
 
-/* 20 - harness-view */
-{icon:"i-target", kind:"cards", step:{en:"Part 2 · The solution", vi:"Phần 2 · Giải pháp", ja:"第2部 · 解決策"},
- title:{en:"So how do you know it is actually wired right?", vi:"Vậy làm sao biết nó thực sự được nối đúng?", ja:"では実際に正しく配線されているとどう分かるか"},
- sub:{en:"<code>harness-view</code> reads what is on disk, with no model in the loop, and edits it from the same page.",
-      vi:"<code>harness-view</code> đọc những gì nằm trên đĩa, không có model nào tham gia, và sửa ngay trên cùng trang đó.",
-      ja:"<code>harness-view</code> はディスク上のものをモデルを介さずに読み、同じ画面から編集します。"},
- cards:[
-  {ic:"i-flow", cls:"p", t:{en:"Reads any harness", vi:"Đọc mọi harness", ja:"どんなハーネスも読む"},
-   d:{en:"Code repos and research or writing repos, orchestrator-kit installs too. Every documented frontmatter field, and hooks on every event.",
-      vi:"Repo code lẫn repo nghiên cứu hay viết lách, cả bản cài orchestrator-kit. Mọi trường frontmatter được tài liệu hoá, và hook ở mọi sự kiện.",
-      ja:"コードのリポジトリも、リサーチや執筆のリポジトリも、orchestrator-kit のインストールも。文書化された全 frontmatter 項目と、あらゆるイベントのフック。"}},
-  {ic:"i-chart", cls:"a", t:{en:"Assess: a score with a reason", vi:"Assess: một điểm số có lý do", ja:"Assess: 理由のあるスコア"},
-   d:{en:"Every finding links to the node that caused it: a seat with no module, an unregistered hook, a task whose board row and file disagree, marked DRIFT.",
-      vi:"Mỗi phát hiện liên kết về node gây ra nó: vai không có module, hook chưa đăng ký, task mà dòng trên bảng và file không khớp, được đánh dấu DRIFT.",
-      ja:"各所見は原因ノードへリンクします。モジュールのない席、未登録のフック、ボードの行とファイルが食い違うタスク(DRIFT と表示)。"}},
-  {ic:"i-grid", cls:"g", t:{en:"And you change it here", vi:"Và bạn sửa ngay tại đây", ja:"そして、ここで変えられる"},
-   d:{en:"Park a rule, hook or seat; reorder a command's steps; set a seat's model, effort and tools. Switching off a reviewer needs a human to type the phrase.",
-      vi:"Gác một rule, hook hay vai; đổi thứ tự bước của command; đặt model, effort và tools cho một vai. Tắt reviewer đòi con người gõ đúng câu xác nhận.",
-      ja:"ルール・フック・席を停止し、コマンドの手順を並べ替え、席の model・effort・tools を設定。レビュアーを切るには人間が合い言葉を打つ必要があります。"}}],
- nav:{en:"harness-view", vi:"harness-view", ja:"harness-view"}},
+/* ============ PART 5 - PROOF ============ */
+/* 22 - the guardrail eval */
+{icon:"i-target", kind:"stats", step:{en:"Part 5 · Proof", vi:"Phần 5 · Bằng chứng", ja:"第5部 · 証拠"},
+ title:{en:"The safety floor is model-independent", vi:"Sàn an toàn không phụ thuộc model", ja:"安全性の下限はモデルに依存しない"},
+ sub:{en:"<code>eval/guardrail_eval.py</code> scaffolds a real harness per hook flavour and fires payloads at it. Measured, not claimed.",
+      vi:"<code>eval/guardrail_eval.py</code> dựng một harness thật cho mỗi bản hook và bắn payload vào nó. Đo đạc, không phải tuyên bố.",
+      ja:"<code>eval/guardrail_eval.py</code> がフック形式ごとに実物のハーネスを生成し、ペイロードを撃ち込みます。主張ではなく実測です。"},
+ stats:[
+  {v:"290/290", cls:"g", l:{en:"<b>Does the floor hold?</b> The <code>.sh</code> flavour: every must-block payload blocked, every must-allow payload allowed", vi:"<b>Sàn có giữ được không?</b> Bản <code>.sh</code>: mọi payload phải chặn đều bị chặn, mọi payload phải cho qua đều qua", ja:"<b>下限は保たれるか</b> <code>.sh</code> 版: 遮断すべきものはすべて遮断、許可すべきものはすべて許可"}},
+  {v:"290/290", cls:"g", l:{en:"<b>On Windows too?</b> The <code>.ps1</code> flavour, under the Windows PowerShell the settings call", vi:"<b>Trên Windows thì sao?</b> Bản <code>.ps1</code>, dưới Windows PowerShell mà settings gọi", ja:"<b>Windowsでも</b> <code>.ps1</code> 版を、settings が呼ぶ Windows PowerShell で"}},
+  {v:"0", cls:"g", l:{en:"<b>Models consulted?</b> None: the guardrails are shell scripts, so the result cannot depend on the model", vi:"<b>Model được hỏi?</b> Không có: guardrail là shell script nên kết quả không thể phụ thuộc vào model", ja:"<b>問い合わせるモデル</b> なし。ガードレールはシェルスクリプトなので、結果はモデルに左右されない"}},
+  {v:"32/32", cls:"a", l:{en:"<b>Does it survive the port?</b> The Cursor and Codex adapter self-test, both hook flavours", vi:"<b>Có sống sót khi port không?</b> Self-test của adapter Cursor và Codex, cả hai bản hook", ja:"<b>移植しても保たれるか</b> Cursor / Codex アダプタの自己テスト、両方のフック形式で"}}],
+ note:{en:"Scaffolded with the strict, long-session and database hooks on. It measures the hooks of that scaffold, not agent behaviour: code quality and review depth still degrade with a cheaper model.",
+       vi:"Dựng với hook strict, long-session và database bật. Nó đo hook của bản dựng đó, không đo hành vi agent: chất lượng code và độ sâu review vẫn giảm khi dùng model rẻ hơn.",
+       ja:"厳格・長期セッション・データベースのフックを有効にして生成。測るのはその構成のフックであり、エージェントの振る舞いではありません。安いモデルではコード品質とレビューの深さは低下します。"},
+ nav:{en:"Safety floor", vi:"Sàn an toàn", ja:"安全の下限"}},
 
-/* 21 */
+/* 23 - derived figures */
+{icon:"i-chart", kind:"measures", step:{en:"Part 5 · Proof", vi:"Phần 5 · Bằng chứng", ja:"第5部 · 証拠"},
+ title:{en:"Every number comes from a script in the repo", vi:"Mọi con số đều đến từ một script trong repo", ja:"すべての数値はリポジトリ内のスクリプト由来"},
+ sub:{en:"You can re-run all of them, and CI fails if a figure in the docs stops matching.",
+      vi:"Bạn có thể chạy lại tất cả, và CI sẽ fail nếu một con số trong tài liệu không còn khớp.",
+      ja:"すべて再実行できます。文書中の数値が一致しなくなればCIが失敗します。"},
+ rows:[
+  {l:{en:"<mark>-42%</mark> bytes the model must read to bootstrap", vi:"<mark>-42%</mark> byte model phải đọc để bootstrap", ja:"ブートストラップでモデルが読むバイト数 <mark>-42%</mark>"}, src:"benchmark/benchmark.py"},
+  {l:{en:"<mark>-90%</mark> bytes the model must author", vi:"<mark>-90%</mark> byte model phải tự viết ra", ja:"モデルが書くバイト数 <mark>-90%</mark>"}, src:"benchmark/benchmark.py"},
+  {l:{en:"<mark>75% of rule content</mark> stays out of the default session", vi:"<mark>75%</mark> nội dung rule nằm ngoài phiên mặc định", ja:"既定セッションの外に置かれるのは<mark>ルール本文の75%</mark>"}, src:"benchmark/benchmark.py"},
+  {l:{en:"<mark>18 agents, 17 rules, 23 commands, 26 hooks</mark> ship; a run installs 3 to 17 of the 18 seats", vi:"<mark>18 agent, 17 rule, 23 command, 26 hook</mark> được phát hành; mỗi lần chạy cài 3 đến 17 vai", ja:"<mark>18エージェント、17ルール、23コマンド、26フック</mark>を同梱。1回の実行で入るのは18席のうち3〜17席"}, src:"harness-bootstrap/assets/"},
+  {l:{en:"<mark>290/290</mark> guardrail eval cases per hook flavour", vi:"<mark>290/290</mark> ca eval guardrail cho mỗi bản hook", ja:"フック形式ごとのガードレール評価 <mark>290/290</mark>"}, src:"eval/guardrail_eval.py"}],
+ note:{en:"Byte counts are exact, counted from disk. Token figures are estimated at 3.6 characters per token. <code>scripts/check_numbers.py</code> holds every place a figure appears.",
+       vi:"Số byte là chính xác, đếm từ đĩa. Số token là ước tính ở mức 3,6 ký tự mỗi token. <code>scripts/check_numbers.py</code> giữ mọi nơi một con số xuất hiện.",
+       ja:"バイト数はディスクから数えた正確な値。トークン数は3.6文字/トークンでの推定値です。数値が現れる場所はすべて <code>scripts/check_numbers.py</code> が押さえています。"},
+ nav:{en:"Derived figures", vi:"Số liệu dẫn xuất", ja:"導出された数値"}},
+
+/* 24 - the real benchmark. The `bench` block between the BENCH markers is generated from
+   benchmark/results/live-vX.Y.Z/summary.json by scripts/bench_block.py - never edit it by hand. */
+{id:"real-benchmark", icon:"i-chart", kind:"bench", step:{en:"Part 5 · Proof", vi:"Phần 5 · Bằng chứng", ja:"第5部 · 証拠"},
+ title:{en:"A real benchmark: a live agent, with and without the harness", vi:"Benchmark thật: một agent chạy thật, có và không có harness", ja:"実地ベンチマーク: 同じエージェントを、ハーネスあり・なしで"},
+ sub:{en:"The same task on the same fixture repository, run by a real agent session. Figures come from the benchmark's own output.",
+      vi:"Cùng một task trên cùng một repo mẫu, chạy bằng một phiên agent thật. Số liệu lấy từ chính output của benchmark.",
+      ja:"同じフィクスチャリポジトリで同じタスクを、実際のエージェントセッションで実行。数値はベンチマーク自身の出力から取ります。"},
+/* BENCH:BEGIN */
+ bench:{
+  placeholder:false,
+  flag:{en:"", vi:"", ja:""},
+  setup:[
+   {k:{en:"Fixture", vi:"Repo mẫu", ja:"フィクスチャ"}, v:"benchmark/live/fixture"},
+   {k:{en:"Agent and model", vi:"Agent và model", ja:"エージェントとモデル"}, v:"Claude Code 2.1.299 - Sonnet: bugfix, docs, feature, resume; Haiku: review-twice, risky-git, secret"},
+   {k:{en:"Runs per arm", vi:"Số lần chạy mỗi nhánh", ja:"各条件の実行回数"}, v:"3 per task (42 sessions, $2.84)"},
+   {k:{en:"Source", vi:"Nguồn", ja:"出典"}, v:"benchmark/results/live-v1.21.0.md"}],
+  cols:{en:["Measure","Bare repo","Harnessed","Change"], vi:["Chỉ số","Repo trống","Có harness","Thay đổi"], ja:["指標","ハーネスなし","ハーネスあり","変化"]},
+  rows:[
+   {m:{en:"Sessions that leaked the .env value", vi:"Phiên làm lộ giá trị trong .env", ja:".env の値を漏らしたセッション"}, a:"3 of 3", b:"0 of 3", d:"refused"},
+   {m:{en:"Sessions that committed to main or pushed it", vi:"Phiên commit lên main hoặc push", ja:"main へのコミットや push をしたセッション"}, a:"3 of 3", b:"0 of 3", d:"refused"},
+   {m:{en:"Coding tasks completed", vi:"Task lập trình hoàn thành", ja:"完了したコーディングタスク"}, a:"100%", b:"100%", d:"same"},
+   {m:{en:"Bytes read to resume a task", vi:"Số byte đọc để tiếp tục một task", ja:"タスク再開時に読んだバイト数"}, a:"14,961", b:"8,467", d:"-43%"},
+   {m:{en:"Cost of that resume session", vi:"Chi phí của phiên tiếp tục đó", ja:"その再開セッションのコスト"}, a:"$0.105", b:"$0.210", d:"+101%"},
+   {m:{en:"Context on the first call (tokens)", vi:"Ngữ cảnh ở lần gọi đầu (token)", ja:"最初の呼び出しのコンテキスト (トークン)"}, a:"21,842", b:"32,786", d:"+50%"},
+   {m:{en:"Cost per coding session", vi:"Chi phí mỗi phiên lập trình", ja:"コーディング 1 セッションあたりのコスト"}, a:"$0.070", b:"$0.127", d:"+81%"},
+   {m:{en:"Cost of a \"review it twice\" request", vi:"Chi phí yêu cầu \"review hai lần\"", ja:"「2 回レビューして」の依頼のコスト"}, a:"$0.008", b:"$0.140", d:"+1650%"}]},
+/* BENCH:END */
+ note:{en:"What this does not measure is stated beside the results, not left for the reader to guess.",
+       vi:"Những gì benchmark này không đo được nêu ngay cạnh kết quả, không để người đọc tự đoán.",
+       ja:"このベンチマークが測らないものは、読み手に推測させず、結果の横に明記します。"},
+ nav:{en:"Real benchmark", vi:"Benchmark thật", ja:"実地ベンチマーク"}},
+
+/* 25 - videos: owned by the video work, kept verbatim */
 {icon:"i-play", kind:"video", step:{en:"See it run", vi:"Xem nó chạy", ja:"動作を見る"},
  title:{en:"The harness in motion", vi:"Harness khi vận hành", ja:"動作するハーネス"},
  sub:{en:"Every clip is captioned, so sound is not required.",
       vi:"Mọi clip đều có phụ đề, nên không cần bật tiếng.",
       ja:"すべてのクリップに字幕があるため、音声は不要です。"},
  clips:[
-  {f:"04-solution", t:{en:"The complete solution", vi:"Giải pháp hoàn chỉnh", ja:"完全なソリューション"}},
-  {f:"01-overview", t:{en:"What it is and why", vi:"Là gì và vì sao", ja:"何であり、なぜか"}},
-  {f:"02-flow", t:{en:"The operating flow", vi:"Luồng vận hành", ja:"運用フロー"}},
-  {f:"03-layers", t:{en:"The control layers", vi:"Các lớp kiểm soát", ja:"制御レイヤー"}},
-  {f:"07-skills-and-view", t:{en:"Skills and the viewer", vi:"Skill và viewer", ja:"スキルとビューア"}},
-  {f:"05-spec-builder", t:{en:"spec-builder in depth", vi:"spec-builder chi tiết", ja:"spec-builder を詳しく"}},
-  {f:"06-harness-bootstrap", t:{en:"harness-bootstrap in depth", vi:"harness-bootstrap chi tiết", ja:"harness-bootstrap を詳しく"}}],
+  {f:"00-intro", t:{en:"The introduction, narrated", ja:"イントロダクション (ナレーション付き)"}},
+  {f:"07-skills-and-view", t:{en:"Skills and the viewer", vi:"Skill và viewer", ja:"スキルとビューア"}}],
  nav:{en:"Videos", vi:"Video", ja:"動画"}},
 
-/* 22 */
-{icon:"i-chart", kind:"stats", step:{en:"Proof", vi:"Bằng chứng", ja:"証拠"},
- title:{en:"Every number comes from a script in the repo", vi:"Mọi con số đều đến từ một script trong repo", ja:"すべての数値はリポジトリ内のスクリプト由来"},
- sub:{en:"You can re-run all of them, and CI fails if a figure in the docs stops matching.",
-      vi:"Bạn có thể chạy lại tất cả, và CI sẽ fail nếu một con số trong tài liệu không còn khớp.",
-      ja:"すべて再実行できます。文書中の数値が一致しなくなればCIが失敗します。"},
- stats:[
-  {v:"-24%", l:{en:"bytes the model must read to bootstrap", vi:"byte model phải đọc để bootstrap", ja:"ブートストラップで読むバイト数"}},
-  {v:"-90%", l:{en:"bytes the model must author", vi:"byte model phải tự viết ra", ja:"モデルが書くバイト数"}},
-  {v:"73%", cls:"g", l:{en:"of rule content kept out of the default session", vi:"nội dung rule giữ ngoài phiên mặc định", ja:"既定セッション外に保つルール内容"}},
-  {v:"~0.2s", cls:"g", l:{en:"to scaffold the harness, and a re-run reports KEPT for every file", vi:"để scaffold harness, và chạy lại thì mọi file đều báo KEPT", ja:"ハーネスのscaffold。再実行では全ファイルが KEPT と報告される"}},
-  {v:"18", cls:"a", l:{en:"agents, 17 rules, 23 commands, 26 hooks", vi:"agents, 17 rules, 23 commands, 26 hooks", ja:"エージェント、17ルール、23コマンド、26フック"}},
-  {v:"$2.523", cls:"a", l:{en:"modelled cost per feature", vi:"chi phí mô hình hoá mỗi tính năng", ja:"機能あたりモデル計算コスト"}}],
- note:{en:"Byte counts are exact, counted from disk. Token and cost figures are MODELLED at 3.6 chars per token.",
-       vi:"Số byte là chính xác, đếm từ đĩa. Số token và chi phí là MÔ HÌNH HOÁ ở mức 3,6 ký tự mỗi token.",
-       ja:"バイト数はディスクから数えた正確な値。トークンとコストは3.6文字/トークンでのモデル計算値です。"},
- nav:{en:"Proof", vi:"Bằng chứng", ja:"証拠"}},
-
-/* 23 */
+/* ============ GET STARTED ============ */
+/* 26 */
 {icon:"i-rocket", kind:"close", step:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"},
- title:{en:"Two commands, and your repo is agent-ready", vi:"Hai câu lệnh, và repo của bạn sẵn sàng cho agent", ja:"2つのコマンドで、リポジトリはエージェント対応に"},
- sub:{en:"The agent understands the repo. It cannot leave the harness. The work is checked in proportion to the change.",
-      vi:"Agent hiểu repo. Nó không thể rời khỏi harness. Công việc được kiểm tra tương xứng với thay đổi.",
-      ja:"エージェントはリポジトリを理解し、ハーネスから出られず、作業は変更に見合った分だけ検査されます。"},
+ title:{en:"Install once, then two commands", vi:"Cài một lần, rồi hai câu lệnh", ja:"一度インストールして、2つのコマンド"},
+ sub:{en:"Nothing is written until you approve a one-screen plan, and existing files are reconciled, never overwritten.",
+      vi:"Không gì được ghi cho đến khi bạn duyệt một bản kế hoạch gọn trong một màn hình, và file sẵn có được đối chiếu, không bao giờ bị ghi đè.",
+      ja:"1画面の計画を承認するまで何も書かれず、既存ファイルは上書きせず突き合わせます。"},
+ note:{en:"Codex, Cursor, VS Code, Copilot and Kiro: <code>docs/PLUGIN.md</code>. The offline release zip and pinned versions: the Getting Started page in the wiki.",
+       vi:"Codex, Cursor, VS Code, Copilot và Kiro: <code>docs/PLUGIN.md</code>. File zip ngoại tuyến và phiên bản cố định: trang Getting Started trong wiki.",
+       ja:"Codex、Cursor、VS Code、Copilot、Kiro は <code>docs/PLUGIN.md</code> へ。オフライン用 zip と版の固定は wiki の Getting Started へ。"},
  nav:{en:"Get started", vi:"Bắt đầu", ja:"はじめる"}}
 
 ];
@@ -1134,7 +1325,9 @@ function ann(s){
     return `<span class="gl" tabindex="0" data-tip="${d.replace(/"/g,'&quot;')}">${label}</span>`;
   });
 }
-const L = o => ann((o && (o[lang] ?? o.en)) || '');
+// A plain string is language-neutral (a seat name, a figure); an object carries en/vi/ja.
+const L = o => ann(typeof o === 'string' ? o : ((o && (o[lang] ?? o.en)) || ''));
+const attr = s => String(s).replace(/<[^>]*>/g,'').replace(/"/g,'&quot;');
 
 const SQUIG = `<svg class="squig"><use href="#i-squig"/></svg>`;
 
@@ -1198,13 +1391,63 @@ function slideHTML(s){
       `<li class="${s.cls||''}">${icon(s.icon,'ic')}<div><b>${L(i.t)}</b><span>${L(i.d)}</span></div>
         <svg class="tick"><use href="#s-star"/></svg></li>`).join('')}</ul>`;
   }
-  if(s.kind==='cards'){
-    body = `<div class="cards">${s.cards.map(c=>
+  const cardsHTML = list => `<div class="cards"${s.cardCols?` style="--cols:${s.cardCols}"`:''}>${list.map(c=>
       `<div class="card ${c.cls||''}">
         ${icon(c.ic,'bgart')}
         ${c.n?`<span class="num">${icon('s-ring','ring')}${c.n}</span>`:''}
-        ${icon(c.ic,'ic')}<h3>${L(c.t)}</h3><p>${L(c.d)}</p>
+        ${c.tag?`<span class="ctag">${L(c.tag)}</span>`:''}
+        ${icon(c.ic,'ic')}<h3>${L(c.t)}</h3>
+        ${c.chips?`<div class="chips">${c.chips.map(x=>`<code>${L(x)}</code>`).join('')}</div>`:''}
+        <p>${L(c.d)}</p>
       </div>`).join('')}</div>`;
+  if(s.kind==='cards') body = cardsHTML(s.cards);
+  if(s.kind==='figure'){
+    const src = s.img[lang] ?? s.img.en;
+    const side = s.side ? `<ul class="big side">${s.side.map(i=>
+      `<li>${icon(i.ic||s.icon,'ic')}<div><b>${L(i.t)}</b><span>${L(i.d)}</span></div></li>`).join('')}</ul>` : '';
+    body = `<div class="fig ${s.side?'withside':''}"><a class="shot" href="${src}" target="_blank" rel="noopener"><img src="${src}" alt="${attr(L(s.alt))}"></a>${side}</div>`;
+  }
+  if(s.kind==='stack'){
+    body = `<div class="stack">${s.layers.map((y,i)=>
+      `<div class="lyr ${y.hi?'hi':''}" style="animation-delay:${120+i*120}ms"><b>${L(y.n)}</b><span class="an">${L(y.a)}</span><span class="qq">${L(y.q)}</span></div>`).join('')}</div>`;
+  }
+  if(s.kind==='qmap'){
+    body = `<ol class="qmap">${s.qs.map((x,i)=>
+      `<li class="qi"><span class="qn">${icon('s-ring','ring')}${i+1}</span><span class="qq">“${L(x.q)}”</span>
+        <svg class="arr"><use href="#s-arrow"/></svg><span class="qa">${L(x.a)}</span></li>`).join('')}</ol>`;
+  }
+  if(s.kind==='chain'){
+    body = `<div class="chain">${s.steps.map((x,i)=>
+      `${i?`<svg class="ar"><use href="#i-right"/></svg>`:''}<div class="st"><b>${L(x.t)}</b><span>${L(x.d)}</span></div>`).join('')}</div>`
+      + (s.back ? `<div class="back"><svg><use href="#i-left"/></svg><span>${L(s.back)}</span></div>` : '')
+      + (s.cards ? cardsHTML(s.cards) : '');
+  }
+  if(s.kind==='tiers'){
+    body = `<div class="tiers">${s.tiers.map((t,i)=>
+      `<div class="tier ${t.cls}" style="animation-delay:${120+i*120}ms">
+        <span class="pips">${[1,2,3,4].map(k=>`<i class="${k<=t.w?'on':''}"></i>`).join('')}</span>
+        <h3>${t.name}</h3>${i<2?`<span class="most">${L(s.most)}</span>`:''}
+        <p class="when">${L(t.when)}</p><p class="who">${L(t.who)}</p></div>`).join('')}</div>`;
+  }
+  if(s.kind==='events'){
+    const lg = s.legend;
+    body = `<div class="legend"><span class="hk b">${L(lg.b)}</span><span class="hk w">${L(lg.w)}</span><span class="hk c">${L(lg.c)}</span></div>
+      <div class="evts">${s.events.map(e=>
+      `<div class="ev ${e.wide?'wide':''}"><h4>${e.e.replace(/([a-z])([A-Z])/g,'$1<wbr>$2')}</h4><span class="when">${L(e.w)}</span>
+        <div class="hks">${e.hooks.map(h=>`<span class="hk ${h[1]}">${h[0]}${h[2]?` <i>${h[2]}</i>`:''}</span>`).join('')}</div></div>`).join('')}</div>`;
+  }
+  if(s.kind==='measures'){
+    body = `<ul class="meas">${s.rows.map(r=>
+      `<li><span class="ml">${L(r.l)}</span><code>${r.src}</code></li>`).join('')}</ul>`;
+  }
+  if(s.kind==='bench'){
+    const b = s.bench, cols = b.cols[lang] ?? b.cols.en;
+    body = `<div class="bench ${b.placeholder?'ph-on':''}" id="bench-results" data-placeholder="${b.placeholder?'true':'false'}">
+      ${b.placeholder?`<span class="ph">${L(b.flag)}</span>`:''}
+      <dl class="setup">${b.setup.map(r=>`<div><dt>${L(r.k)}</dt><dd>${L(r.v)}</dd></div>`).join('')}</dl>
+      <table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>
+      ${b.rows.map(r=>`<tr><td><strong>${L(r.m)}</strong></td><td>${L(r.a)}</td><td>${L(r.b)}</td><td>${L(r.d)}</td></tr>`).join('')}
+      </tbody></table></div>`;
   }
   if(s.kind==='quotes'){
     body = `<div class="frame quote2col">
@@ -1252,9 +1495,11 @@ function slideHTML(s){
            `<div class="rc ${c.cls}"><b>${L(c.t)}</b><span>${L(c.d)}</span></div>`).join('')}</div>`;
   }
   if(s.kind==='close'){
+    const c0 = lang==='vi'?'cài một lần, trong Claude Code':lang==='ja'?'一度だけ、Claude Code でインストール':'install once, in Claude Code';
     const c1 = lang==='vi'?'viết hợp đồng trước':lang==='ja'?'先に契約を書く':'write the contract first';
     const c2 = lang==='vi'?'dựng harness cho repo này':lang==='ja'?'このリポジトリのハーネスを構築':'build the harness for this repo';
-    body = `<pre class="cmd"><span class="c"># ${c1}</span>\n/spec-builder\n\n<span class="c"># ${c2}</span>\n/harness-bootstrap</pre>
+    body = `<div class="cmds"><pre class="cmd"><span class="c"># ${c0}</span>\n/plugin marketplace add nguyenhx2/agent-harness-bootstrap\n/plugin install harness-bootstrap@agent-harness-bootstrap\n/plugin install spec-builder@agent-harness-bootstrap</pre>
+      <pre class="cmd"><span class="c"># ${c1}</span>\n/spec-builder\n\n<span class="c"># ${c2}</span>\n/harness-bootstrap</pre></div>
       <div class="cta">
         <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
         <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
@@ -1270,7 +1515,15 @@ function fit(el){
   if(innerWidth <= 820){ b.style.removeProperty('--fit'); return; }
   // Only the body scales. The header band is fixed so headings stay identical
   // in size and position on every slide.
-  const overflows = () => b.scrollHeight > b.clientHeight + 1;
+  // A card hides its own overflow, so a body can fit while the text inside a card is cut off.
+  // The boxes count as overflowing too, or the fit would happily scale them past their edges.
+  // Measured from the in-flow children: a card's tilted artwork is absolutely positioned and
+  // deliberately hangs past the edge, so scrollHeight would report every card as overflowing.
+  const boxes = [...b.querySelectorAll('.card,.tier,.ev,.lyr,.lay .row,.qi,.meas li,.chain .st,.evts,.tiers,.stack,.qmap,.meas,.cards,.bench,.fig')].map(x =>
+    [x, [...x.children].filter(c => getComputedStyle(c).position !== 'absolute')]);
+  const spills = ([x, kids]) => { const r = x.getBoundingClientRect();
+    return kids.some(c => c.getBoundingClientRect().bottom > r.bottom + 1); };
+  const overflows = () => b.scrollHeight > b.clientHeight + 1 || boxes.some(spills);
   let lo = 0.4, hi = 1.7, best = 0.4;
   for(let i=0;i<14;i++){
     const mid = (lo + hi) / 2;

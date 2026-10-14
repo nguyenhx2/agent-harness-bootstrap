@@ -49,7 +49,7 @@ Several skills look relevant; routing must be explicit.
 - Request: "Write the specs for this app, then set up the agents to build it."
 - Repo state: an idea in chat, an empty repository.
 - Expected skills: spec-builder leads; harness-bootstrap composes, invoked through the Skill tool at
-  step 6 with `FR_LIST` taken from 05 verbatim.
+  step 7 (hand off) with `FR_LIST` taken from 05 verbatim.
 - Not expected: a second spec structure written by harness-bootstrap.
 - Success criteria: spec-builder writes `docs/specs/` and `index.json`; harness-bootstrap's dev
   agents name the same FR IDs; neither skill writes the other's files.

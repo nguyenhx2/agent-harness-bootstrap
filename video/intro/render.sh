@@ -25,19 +25,11 @@ fi
 
 [ -d node_modules ] || npm ci --no-audit --no-fund
 
+# Figures first: they may have moved in the repo since the last render. Then the timing, which also
+# measures the cached voice and music to set the mix. Neither calls an API.
 "${PY[@]}" derive_figures.py >/dev/null
 node scripts/build-timing.mjs
 mkdir -p out
-
-# The narration tempo (TEMPO in scripts/script.mjs; the timing build already divided every caption
-# time by it). atempo keeps the pitch. At tempo 1 the cached file is played as it is.
-for LANG_ in en ja; do
-  TEMPO=$(node -e "console.log(require('./src/timing.$LANG_.json').tempo)")
-  if [ "$TEMPO" != "1" ]; then
-    ffmpeg -v error -y -i "audio/narration.$LANG_.mp3" -filter:a "atempo=$TEMPO" \
-      -c:a libmp3lame -b:a 160k "audio/narration.$LANG_.paced.mp3"
-  fi
-done
 
 LN="I=-16:TP=-1.5:LRA=11"
 ARTIFACTS=()

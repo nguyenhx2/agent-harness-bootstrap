@@ -24,7 +24,6 @@
 try {
     $raw = [Console]::In.ReadToEnd()
     if (-not $raw) { exit 0 }
-    $payload = $raw | ConvertFrom-Json
 } catch {
     exit 0
 }
@@ -45,6 +44,42 @@ $cmdScrubs     = @(
     '[^\s]*\.env\.example'
 )
 $dbResetPattern = '{{DB_RESET_PATTERN}}'
+
+# --- fast path: decide the common case without ConvertFrom-Json -------------------------------
+# This hook starts on every shell call. ConvertFrom-Json loads a module, about a fifth of the run
+# on Windows PowerShell 5.1, and most commands can never be blocked here - so that case is decided
+# from the raw text first. Get-FastString returns one string field decoded EXACTLY, or $null: the
+# key must occur once, and the value must be printable ASCII using no JSON escape but \" \\ \n \r
+# \t (everything JSON.stringify writes for such text). A hook may only exit 0 on it, and only on a
+# test that is a necessary condition of every block it raises; $null or an exception falls
+# through to the full parse, which is unchanged. Copied verbatim - see "Latency" in
+# hooks/README.md.
+function Get-FastString([string]$raw, [string]$key) {
+    if ([regex]::Matches($raw, '"' + $key + '"\s*:').Count -ne 1) { return $null }
+    $m = [regex]::Match($raw, '"' + $key + '"\s*:\s*"((?:[^"\\]|\\.)*)"')
+    if (-not $m.Success) { return $null }
+    $s = $m.Groups[1].Value
+    if ($s -cmatch '[^\x20-\x7E]') { return $null }
+    $s = $s.Replace('\\', [string][char]1)
+    if ($s -cmatch '\\([^"nrt]|$)') { return $null }
+    $s = $s.Replace('\"', '"').Replace('\n', "`n").Replace('\r', "`r").Replace('\t', "`t")
+    return $s.Replace([string][char]1, '\')
+}
+
+# A shell call can only be blocked here for naming a .env file or for matching the DB-reset
+# pattern - the same -match tests as below, on the same decoded command. A file_path always
+# takes the full path.
+try {
+    $fc = $null
+    if (-not $raw.Contains('"file_path"')) { $fc = Get-FastString $raw 'command' }
+    if ($null -ne $fc -and -not ($fc -match '\.env' -or $fc -match $dbResetPattern)) { exit 0 }
+} catch { }
+
+try {
+    $payload = $raw | ConvertFrom-Json
+} catch {
+    exit 0
+}
 
 # --- 1. file access ---------------------------------------------------------------------------
 $path = $payload.tool_input.file_path

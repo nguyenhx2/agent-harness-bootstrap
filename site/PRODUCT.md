@@ -46,7 +46,7 @@ The product is three parts that hand off to each other: `spec-builder` (a skill)
 install path offered and the one with working updates; the release zip is the offline, pinned
 alternative. Both are portable to Cursor and Codex. The landing page sits beside a slide deck
 (`presentation/`) and the GitHub repository, served from the same GitHub Pages site; the intro
-clip and the seven explainer clips play in the landing page itself rather than only on the
+clip and the remaining explainer clip play in the landing page itself rather than only on the
 `video/` page.
 
 ## Capabilities and Constraints
@@ -73,12 +73,12 @@ and mean it. Every claim on the surface is answered by a script in the repositor
 
 Real, derived, and re-runnable by the visitor:
 
-- guardrail eval 266/266 per hook flavour, on both hook flavours, measured on a harness scaffolded with
+- guardrail eval 290/290 per hook flavour, on both hook flavours, measured on a harness scaffolded with
   the `hooks_strict`, `long` and `db` flags on (`VARS` in `eval/guardrail_eval.py` names the set)
-- the guardrail suite splits into 101 must-block and 149 must-allow cases
+- the guardrail suite splits into 123 must-block and 167 must-allow cases
 - Cursor and Codex port adapter self-test 32/32
 - a bare repository blocks 0/67 benchmark payloads; the same repository, harnessed, blocks all 67
-- 73% of rule content stays out of the default session, because 10 of 17 rules are path-scoped
+- 75% of rule content stays out of the default session, because 10 of 17 rules are path-scoped
 - a run installs 3 to 17 of the 18 seats (docs-only repo at the low end)
 - `harness-view` scored 99/100 on a real harness, over 219 nodes and 655 edges, with two findings
   worth one point each (SAF-02 and COST-06) (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)

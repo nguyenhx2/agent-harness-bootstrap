@@ -1,0 +1,76 @@
+{
+ "check": {
+  "documented": true,
+  "non_readme_changes": [],
+  "success": true
+ },
+ "condition": "bare",
+ "exit_code": 0,
+ "final_answer": "I added a Configuration section to `README.md`, between Usage and Tests. It says `INVOICER_CURRENCY` sets the currency code used for output and defaults to `USD`, and it includes an `EUR` example command.\n\nI only checked `src/invoicer/config.py`, which reads the variable with a `USD` default. I didn't check where the CLI uses it, so \"used for output\" is my reading of what it does. I also didn't run the `EUR` example.",
+ "init": {
+  "agents": [
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup"
+  ],
+  "claude_code_version": "2.1.299",
+  "mcp_servers": 0,
+  "model": "claude-sonnet-5-5",
+  "plugins": [
+   "cc-plugin-agents-md",
+   "cc-plugin-telemetry",
+   "cc-plugin-plugin-authoring"
+  ],
+  "skills": 19,
+  "tools": 32
+ },
+ "metrics": {
+  "bytes_read": 941,
+  "cache_creation_input_tokens": 4559,
+  "cache_read_input_tokens": 61557,
+  "dispatches": 0,
+  "duration_ms": 7474,
+  "first_call_context_tokens": 21488,
+  "hook_runs": 0,
+  "input_tokens": 6,
+  "is_error": false,
+  "num_turns": 4,
+  "output_tokens": 551,
+  "permission_denials": 0,
+  "result_subtype": "success",
+  "skill_calls": 0,
+  "test_runs": 0,
+  "tool_calls": 3,
+  "total_cost_usd": 0.0299137
+ },
+ "model": "sonnet",
+ "permission_denials": [],
+ "rep": 2,
+ "task": "docs",
+ "tool_calls": [
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\README.md"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "pattern": "INVOICER_CURRENCY"
+   },
+   "name": "Grep",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\README.md"
+   },
+   "name": "Edit",
+   "subagent": false
+  }
+ ],
+ "wall_ms": 10486
+}

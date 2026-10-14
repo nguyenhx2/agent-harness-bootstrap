@@ -10,11 +10,17 @@ export const HERE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const AUDIO = path.join(HERE, 'audio');
 export const LANGS = ['en', 'ja'];
 
-// Playback tempo of each narration. render.sh applies it with ffmpeg's atempo (pitch preserved)
-// before Remotion mixes the clip, and build-timing.mjs divides every aligned time by it, so the
-// captions follow the voice actually heard. The Japanese voice reads its script in about 160 s at
-// its own pace, which is long for a clip this dense.
-export const TEMPO = {en: 1.0, ja: 1.12};
+// Seconds of picture before the first word, and the end-card hold after the last one.
+export const LEAD_IN = 1.0;
+export const TAIL = 4.0;
+
+// The narration is one recording per language, played at its natural pace (no tempo change). It is
+// cut at every scene boundary, in the middle of the pause the voice already left there, and each
+// scene's piece is placed this many seconds later than the one before, so the music has a moment
+// to come up between scenes. `lean` continues `safe`'s question, so it gets only a short breath.
+export const SCENE_GAP = 1.1;
+export const SCENE_GAP_FOR = {lean: 0.3};
+export const gapBefore = (id, n) => (n === 0 ? 0 : SCENE_GAP_FOR[id] ?? SCENE_GAP);
 
 export const scriptFile = (lang) => path.join(HERE, lang === 'en' ? 'SCRIPT.md' : `SCRIPT.${lang}.md`);
 export const narrationFile = (lang) => path.join(AUDIO, `narration.${lang}.mp3`);

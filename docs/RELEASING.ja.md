@@ -2,79 +2,113 @@
 
 [English](RELEASING.md) · **日本語**
 
-2 つのスキル `harness-bootstrap` と `spec-builder` は、一つのリポジトリバージョン (`vX.Y.Z`) でまとめて
-リリースします。リリースは CHANGELOG 駆動です。各スキル自身の `CHANGELOG.md` が、そのスキルで何を出荷したかの
-唯一の正であり、GitHub のリリース本文は手で書くのではなく、それらのファイルから組み立てます。
+2 つのスキル `harness-bootstrap` と `spec-builder`、そしてツール `harness-view` は、一つのバージョン (`vX.Y.Z`) で
+まとめてリリースします。リリースは CHANGELOG 駆動です。GitHub のリリース本文は CHANGELOG ファイルから組み立て、
+手では書きません。`.claude/skills/release/` の `release` スキルが、このページを実行できる形にしたものです。
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 30, "nodeSpacing": 20}}}%%
+flowchart TD
+    subgraph LOCAL["手元のマシン"]
+        direction LR
+        B["版を上げる"] --> C["CHANGELOG を書く"]
+        C --> P["plugins/ を再生成"]
+        P --> V{"ゲート<br/>通過?"}
+        V -->|"いいえ"| C
+    end
+    subgraph CI["CI (タグで起動)"]
+        direction LR
+        G["ゲート再実行"] --> Z["zip を作る"]
+        Z --> N["本文を生成"]
+        N --> R(["公開"])
+        R --> X["バイナリ添付"]
+    end
+    LOCAL -->|"タグを push"| CI
+    style LOCAL fill:transparent,stroke:#888
+    style CI fill:transparent,stroke:#888
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class B,C mod
+    class P,Z,N,X det
+    class V,G gate
+    class R art
+```
+
+## バージョンが書かれている場所
+
+以下のすべてが `X.Y.Z` でなければなりません。一つでも古いと、自分の版を偽って名乗るものが出荷されるか、
+利用者に届きません。
+
+| ファイル | なぜ重要か | 検査するもの |
+|---|---|---|
+| `harness-bootstrap/SKILL.md`、`spec-builder/SKILL.md` (`version:`) | インストールしたスキルが自分の版を名乗る | `validate_release.py`、`package.py --check` |
+| `tools/harness-view/Cargo.toml` | バイナリに埋め込まれる (`--version`、Windows の VERSIONINFO、ページのフッター) | `validate_release.py`、`binaries` ジョブ |
+| `tools/harness-view/Cargo.lock` | `binaries` ジョブは `--locked` でビルドするので、古いロックはタグの push 後に全プラットフォームで失敗する。`cargo update -p harness-view` を実行する | `validate_release.py` |
+| `.claude-plugin/marketplace.json` | `/plugin update` が読む唯一のフィールド。上げないとプラグインの利用者にリリースが届かない | `validate_release.py X.Y.Z` |
+| `plugins/` (生成物) | Cursor、Codex、Agent Plugins 向けのスキルのコピー | `build_plugins.py --check` |
+| `docs/assets/CAPTURED.json` | UI のスクリーンショットはピクセルに版を焼き込む | `validate_release.py X.Y.Z` |
 
 ## 手順
 
-1. **バージョンを上げる。** `harness-bootstrap/SKILL.md` と `spec-builder/SKILL.md` の両方のフロントマターに
-   `version: X.Y.Z` を設定します。2 つは常に一致します - 2 つのスキルはまとめてリリースするからです。
-2. **CHANGELOG のエントリを書く。** 各スキル自身の `CHANGELOG.md` の先頭に `## [X.Y.Z] - YYYY-MM-DD` を追加
-   します ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 形式、新しいものが先)。そのスキルに実際に
-   触れたものだけを書きます。今回のリリースで機能上の変更がないスキルにも、その旨のエントリを追加します - どちら
-   にしてもバージョンは同期させます。
-   - PR のレビュアーではなく、GitHub のリリースページを読む人に向けて書きます。コミットの件名ではなく、何が
-     変わり、それが読む人にとってなぜ重要かを書きます。em ダッシュは使わず、普通のハイフンを使います。
-   - `tools/harness-view/CHANGELOG.md` にも `## [X.Y.Z] - YYYY-MM-DD` のエントリを追加します。ツールのバイナリは
-     同じリリースに添付されるので、リリース本文はそれも説明しなければなりません。エントリがないと、何が変わった
-     のかの説明が一切ないビルドをダウンロードさせることになります。これはゲートで確認されます。
-   - リポジトリのルートの `CHANGELOG.md` にも `## vX.Y.Z` のセクションを追加します。これは以前からある別の
-     物語形式の変更履歴で、`scripts/package.py --version X.Y.Z --check` が独立して引き続きゲートしています。
-3. **検証する。**
+1. **バージョンを上げます。** 上の表のファイルすべてです。ただし `plugins/` は生成物なので除きます。
+2. **CHANGELOG のエントリを書きます。**
+   - 各スキルの `CHANGELOG.md` と `tools/harness-view/CHANGELOG.md` の先頭に `## [X.Y.Z] - YYYY-MM-DD` を追加
+     します ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 形式、新しいものが先)。機能上の変更がない
+     スキルにも、その旨の一行を書きます。
+   - リポジトリ直下の `CHANGELOG.md` には `## vX.Y.Z` の説明を追加します。
+   - リリースページを読む人に向けて、何が変わり、なぜその人にとって重要かを Added、Changed、Fixed、Removed に
+     分けて書きます。Fixed には修正内容ではなく、どう壊れていたかを書きます。em ダッシュは使わず、数値はすべて
+     スクリプトに辿れるものにします。
+3. **プラグインのツリーを再生成します**: `py -3.13 scripts/build_plugins.py`
+4. **ゲートを実行します。** すべて通る必要があります。
+
    ```bash
    py -3.13 scripts/validate_release.py X.Y.Z
+   py -3.13 scripts/build_plugins.py --check
+   py -3.13 scripts/package.py --version X.Y.Z --check
+   py -3.13 eval/guardrail_eval.py
+   py -3.13 benchmark/benchmark.py
+   py -3.13 scripts/check_numbers.py
+   py -3.13 scripts/check_mermaid.py
    ```
-   次の場合に失敗します: CHANGELOG がない。エントリの形式が不正、重複している、または順序が違う。スキルの
-   CHANGELOG の最新バージョンが自身の `SKILL.md` と一致しない。2 つのスキルのバージョンが食い違う。
-   `tools/harness-view/Cargo.toml` がリポジトリのバージョンと食い違う。`tools/harness-view/CHANGELOG.md` に
-   エントリがない。または (バージョン引数つきの場合) リリースするバージョンのエントリを持たないスキルがある。
-   引数なしでは構造と同期の確認だけを行い、その形で CI がプッシュのたびに実行します。
-4. **タグを付ける。**
+
+5. **タグを付けて push します。**
+
    ```bash
    git tag -a vX.Y.Z -m "vX.Y.Z"
    git push origin vX.Y.Z
    ```
-5. **CI が公開する。** `release` ワークフローが成果物をビルドし、
-   `py -3.13 scripts/release_notes.py X.Y.Z -o notes.md` でリリース本文を生成します (各スキルと各ツールの
-   `## [X.Y.Z]` セクションが、それぞれ独立した `### skill-name` ブロックになります)。続いて
-   `gh release create` を実行します (リリースがすでにある場合は `gh release edit` +
-   `gh release upload --clobber` を実行するので、再実行しても安全です)。
 
-### バージョンの上げ方
+6. **CI が公開します。** `release` ワークフローが eval、ベンチマーク、`package.py --check`、
+   `validate_release.py X.Y.Z` を再実行し、zip を作り、`release_notes.py X.Y.Z` で本文を生成して (各 CHANGELOG の
+   節がそれぞれのブロックになる) 公開します。続いて `binaries` ジョブが `harness-view` の実行ファイルをビルドして
+   添付します。
+7. **公開されたものを確認します**: `gh release view vX.Y.Z --json assets -q '.assets[].name'`。アセットのない
+   リリースは、ただのタグです。
 
-バージョン番号を持つファイルは 3 つあり、3 つすべてが一致しなければなりません。これは `validate_release.py` が
-強制します: 両方のスキルの `SKILL.md` のフロントマターと、`tools/harness-view/Cargo.toml` です。Cargo の
-バージョンはリリースされる実行ファイルに埋め込まれる (Windows の VERSIONINFO、`--version`、ページのフッター)
-ので、古いままだと自分のバージョンを誤って報告するバイナリを出荷することになります。
+## 何がこれを強制しているか
 
-## これを強制しているもの
-
-| ルール | 強制しているもの |
+| ルール | 強制するもの |
 | --- | --- |
-| すべてのスキルがリリースバージョンの CHANGELOG エントリを持つ | `scripts/validate_release.py X.Y.Z` (リリースジョブのゲート) と `scripts/release_notes.py` (エントリを持つスキルが一つもないと非ゼロで終了) |
-| エントリは `## [X.Y.Z] - YYYY-MM-DD` 形式で、新しいものが先 | `scripts/validate_release.py` |
-| スキルの CHANGELOG のバージョンが自身の `SKILL.md` の `version:` と一致する | `scripts/validate_release.py` |
-| 2 つのスキルがリポジトリのバージョンで一致する | `scripts/validate_release.py` |
-| 上の同期確認はリリース時だけでなく、プッシュのたびに走る | `.github/workflows/eval.yml` (`guardrails` ジョブ) |
-| リリース本文は手で打つのではなく、CHANGELOG から組み立てる | `.github/workflows/release.yml` から呼ばれる `scripts/release_notes.py` |
-| リリース本文はスキルだけでなく、添付されるツールのバイナリも説明する | `scripts/release_notes.py` が `tools/harness-view/CHANGELOG.md` を読む。そのエントリがないと `scripts/validate_release.py X.Y.Z` が失敗する |
-| タグの `SKILL.md` のバージョンがタグそのものと一致する | `scripts/package.py --version X.Y.Z --check` (`release` ジョブのゲート) |
-| リポジトリのルートの `CHANGELOG.md` にリリースバージョンのセクションがある | `scripts/package.py --version X.Y.Z --check` (変更なし。上のスキルごとのファイルとは別) |
-| すべてのアーカイブにタグと一致する `VERSION` ファイルが入っている | `.github/workflows/release.yml` ("Assert VERSION is inside every archive") |
-| リリースジョブを再実行しても、既存のリリースで失敗しない | `release.yml` 内の `gh release edit` + `gh release upload --clobber` |
-| `tools/harness-view/Cargo.toml` がリポジトリのバージョンと一致する | `scripts/validate_release.py` (`binaries` ジョブでもターゲットごとに再確認) |
-| `tools/harness-view/Cargo.lock` が `Cargo.toml` と一致する | `scripts/validate_release.py` - `binaries` ジョブは `--locked` でビルドするので、`cargo update -p harness-view` を飛ばしたバージョン上げは、タグをプッシュした後にすべてのプラットフォームで失敗する |
-| ビルドしたバイナリがリリースバージョンを報告する | `binaries` ジョブが、ネイティブに実行できるターゲットで `harness-view --version` を実行する |
-| サポートするすべてのプラットフォームの単体バイナリが添付される | `.github/workflows/release.yml` (`binaries` マトリクスジョブ) |
-| binaries ジョブを再実行すると、失敗せずにアセットを置き換える | `binaries` ジョブ内の `gh release upload --clobber` |
-| アプリケーションのアイコンが存在し、必要なサイズをすべて持つ | `scripts/make_icons.py --check` (`guardrails` ジョブ) |
-| 生成・執筆したどの内容にも em ダッシュがない | 慣習 - ツールではなくレビューで確認 |
+| 各スキルとツールに、正しい形式の `## [X.Y.Z] - YYYY-MM-DD` が新しい順にある | `validate_release.py X.Y.Z` (リリースのゲート) |
+| スキルの最新の CHANGELOG の版が `SKILL.md` と一致し、2 つのスキルが一致する | `validate_release.py`。push ごとにも実行 (`eval.yml` の `guardrails` ジョブ) |
+| 直下の `CHANGELOG.md` に `## vX.Y.Z` があり、タグが `SKILL.md` と一致する | `package.py --version X.Y.Z --check` |
+| プラグインのマニフェストが `LICENSE.md` のライセンスを示す | `validate_release.py` |
+| 生成された `plugins/` がスキルと一致する | `build_plugins.py --check` (`eval.yml`) |
+| リリース本文が CHANGELOG から作られる | `release.yml` から呼ばれる `release_notes.py`。エントリがなければ非ゼロで終了 |
+| すべてのアーカイブに、タグと一致する `VERSION` ファイルがある | `release.yml` の "Assert VERSION is inside every archive" |
+| ビルドしたバイナリがリリースの版を名乗る | `binaries` ジョブが `harness-view --version` と exe のメタデータを確認 |
+| 再実行しても既存のリリースで失敗しない | `gh release edit` と `gh release upload --clobber` |
+| アプリケーションのアイコンがそろっている | `make_icons.py --check` (`eval.yml`) |
+| 本文に em ダッシュがない | 慣習。レビューで確認 |
 
-## リリースを取り下げる
+## リリースの取り下げ
 
 ```bash
 gh release delete vX.Y.Z --yes --cleanup-tag
 ```
 
-その後、影響を受けたスキルの `CHANGELOG.md` に、理由とともに記録します。
+そのうえで、影響を受けた `CHANGELOG.md` の **Removed** に理由とともに記録します。

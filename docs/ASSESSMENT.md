@@ -2,298 +2,214 @@
 
 **English** · [日本語](ASSESSMENT.ja.md)
 
-How this repo scores against the thesis it is built on, including where it falls short. Any claim not
-backed by a file or a runnable script in this repo is marked as not delivered.
+What this repo delivers against the thesis it is built on, and what it does not. A claim counts only
+when a file or a runnable script in this repo backs it. Anything else is marked not delivered.
+
+> Models are commoditising and are a poor place to build durable advantage. The advantage moves to
+> the **agent harness**, to **enterprise context**, and to **workflow integration**. Governance now
+> has to cover **privacy, IP, and model sovereignty**. Position AI capability not around *which model
+> we use*, but around the ability to turn **many models** into an agent system that has ROI, keeps
+> data under control, and runs safely in production.
 
 ## Scorecard
 
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
-| Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
-| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 266 payloads (110 must-block, 156 must-allow) at it: 266/266 correct, 532/532 when both hook flavors (`sh` and `ps1`) run. That is a harness scaffolded with the `hooks_strict`, `long` and `db` flags on (alongside `ui`, `ai`, `ddd`, `tests`, `unit`, `e2e`, `pr_cli`, `rtk` and `target_cursor`; the exact set is `VARS` in the script), so the opt-in strict hooks, the long-session hooks and the migration guard are all inside the figure, and a default install carries fewer hooks than the harness measured. No model is consulted: the guardrails are shell scripts and an exit code, so the result cannot depend on the model. The claim is re-runnable. The must-block set includes the spawn boundary and the verification ledger (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
-| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -24%, write path -90%, against the predecessor skill). The read-path number has fallen from -45% at the last assessment because the skill grew real capability (purpose profiles, the verification ledger, intake questionnaires, more reference docs) faster than compression could claw it back - see the predecessor comparison in `benchmark/RESULTS.md` for the trade. Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
-| Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
-| Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
-| Governance: model sovereignty | Enforced for data at rest; advisory beyond it | Gap 1 below. Partially closed. |
-| Many models -> one system | Not delivered | Gap 2 below. Now has a concrete, sharper edge: the spawn boundary is Claude-Code-only by construction. |
-| Enterprise context | Partial | The docs tree, specs, ADRs, glossary, business rules and the task board are real and are wired into the agents. New today: a committed module-boundary map (`docs/context/code-graph.md`: per module its owner, what it depends on and what depends on it) whose rows are the allowed cross-module imports, with the `graph-stale` hook naming a new edge on the edit that adds it, and DDD as the default methodology (TDD stays available, opt-in and composable) (flag `ddd`) binding the glossary to each dev agent's bounded context. Also new: a vetted path to extend a seat with a third-party skill - discovery across four source types now, not one (skills.sh, GitHub topic search, Anthropic's own repos, plugin marketplaces), a trust rubric (install count, publisher allow-list, audit status, mandatory content read) in `reference/skill-discovery.md`, and `/skill-wire` to attach one to a seat with a re-review, a diff, and a changelog record. That closes "no vetted way to extend seats with third-party skills"; see Gap 4 for what the review still leaves advisory. Intake grew three questions (internationalization, authorization model, operations posture), closing a questionnaire-coverage gap without adding a defaulted answer to any of them. `reference/tech-presets.md` gives codebase analysis a version-currency catalogue instead of relying on training-data memory, with an explicit rule that installed reality always wins over the preset - see Gap 5 for what keeps that catalogue honest. The sanctioned `env-read.py` path (list/check/diff/run, values never printed) closes the "devops/db/qa seats had no safe way to read local env files" gap; see Gap 4 for what it does not enforce. `.claude/.gitignore` is now shipped nested under `.claude/`, closing the edge case where per-task worktrees or machine state could get committed because the root `.gitignore` never mentioned them. Absent: any integration with the systems an enterprise actually runs on - ticketing, SSO, a CMDB, an internal package registry. |
-| Workflow integration | Partial | Slash commands, hooks, a task board that survives compaction, and now a post-bootstrap maintenance layer: `/harness-update` (idempotent re-run - `CONFLICT` queue, never clobbers), `/board-audit` (orphaned Active tasks, unlogged runs, attempt-cap breaches, unknown worktrees, stale graph), `/harness-tune` (reads the run archive, blocks, retry and attempt caps, verify-plan logs and the `harness-view` assessment, proposes at most four ranked changes to deploy rights, deny/ask lists, spawn allowlist, caps, model and effort, review gates and agent-history detail - asked once, each change proved by a check, closed by `harness-check.py`), `/harness-toggle` (a rule, command, hook or seat off and on, recorded), `/agent-permissions` (per-seat tool grants), `/new-skill` (a project skill, linted by `skill-check.py`). Deployment control level (human-only / agent-with-approval / agent-non-prod, flag `deploy_ask`) is now an intake question, not a fixed posture. Still absent: CI pipeline templates, PR automation, ticket sync. `devops` is a seat with no shipped pipeline. |
+| Models are commoditising | Acted on | `reference/cost-model.md` uses current pricing: Opus is 1.67x Sonnet, not 5x. Tier choice pays at the cheap end (Haiku), not between Opus and Sonnet. |
+| Advantage is the harness | Delivered, re-runnable | `eval/guardrail_eval.py` fires 290 payloads (123 must-block, 167 must-allow) at a scaffolded harness: 290/290 per hook flavour, 580/580 for `sh` and `ps1` together. No model is consulted. |
+| ROI | Half delivered | Cost per roster is modelled (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`). Value per feature is only starting to be measured. See Gap 3. |
+| Privacy | Delivered | `security-privacy.md`, enforced by `protect-secrets` and `settings.json` deny rules, both in the eval. Audit mode mounts product source read-only. |
+| Governance: IP | Delivered | `ip-compliance.md`: licence allow/deny by family, the AGPL-on-SaaS trigger, provenance of reproduced blocks, a diff check for reviewers. |
+| Governance: model sovereignty | Enforced on data, advisory on routing | Gap 1. |
+| Many models, one system | Not delivered | Gap 2. One vendor; tier is swappable, vendor is not. |
+| Enterprise context | Partial | Specs, ADRs, glossary, business rules, the task board and a module-boundary map are wired into the agents. No integration with ticketing, SSO, a CMDB or an internal registry. |
+| Workflow integration | Partial | Slash commands, hooks, a board that survives compaction, and a maintenance layer (`/harness-update`, `/harness-tune`, `/board-audit`, `/harness-toggle`, `/agent-permissions`, `/skill-wire`, `/new-skill`). No CI templates, PR automation or ticket sync. |
 
-## The thesis being scored
+## Enforced versus advised
 
-> Models are commoditising and are a poor place to build durable advantage. The advantage moves to
-> the **agent harness**, to **enterprise context**, and to **workflow integration**. Governance now
-> has to cover **privacy, IP, and model sovereignty**. Do not position AI capability around *which
-> model we use*; position it around the ability to turn **many models** into an agent system that has
-> ROI, keeps data under control, and runs safely in production.
+Every control in the harness sits on one of two sides. A **gate** stops a tool call whatever the
+model intends. A **rule** is text the model reads and usually follows. The gaps below are all places
+where something important still sits on the rule side.
+
+```mermaid
+flowchart TD
+    RULES["Rules and prose"]
+    CALL["Agent tool call"]
+    DENY{"Deny rules"}
+    HOOK{"Blocking hooks"}
+    STOP["Refused"]
+    RUN[/"Tool runs"/]
+
+    RULES -.->|"advice only"| CALL
+    CALL --> DENY
+    DENY -->|"match"| STOP
+    DENY -->|"no match"| HOOK
+    HOOK -->|"exit 2 or failure"| STOP
+    HOOK -->|"exit 0"| RUN
+
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+
+    class CALL,RULES mod
+    class DENY,HOOK,STOP gate
+    class RUN art
+```
+
+- **Deny rules** (`settings.json` `permissions.deny`) decide what an agent cannot even see.
+- **Blocking hooks** fail closed: each one is registered with `"onFailure": "block"` and a 30 s
+  timeout, so a crash or a timeout refuses the call instead of waving it through (v1.20.1).
+- **Rules** (`.claude/rules/`, agent bodies, command files) shape behaviour. Claude Code's own
+  documentation says they are not an enforcement layer.
+
+## Risks
+
+Status: **Fixed** (closed in the named release), **Mitigated** (reduced, not eliminated), **Open**
+(known, not addressed), **Accepted** (a deliberate trade-off), **Platform** (needs a Claude Code
+capability this repo does not control).
+
+| Risk | Impact | Mitigation | Status |
+|---|---|---|---|
+| A blocking guard times out or crashes | The command it should stop runs. Seen live: a `.ps1` guard took 13.2 s under load and `Remove-Item -Recurse -Force .` ran | `onFailure: block` and a 30 s timeout on every blocking guard. The eval fails if a guard loses the field | Fixed (v1.20.1) |
+| Git global options (`git -c k=v commit`, `git -C . commit`) | Walked past the commit and destructive-command guards. A commit landed on main live | Guards parse past global options. `if` filters use `*git *` so wrapped calls still match | Fixed (v1.20.1) |
+| Windows PowerShell 5.1 prefixes a BOM to the payload | The verification ledger read nothing and allowed every dispatch | BOM stripped in the hook and in `verify-plan.py`. An unreadable spawn payload now blocks | Fixed (v1.20.1) |
+| `protect-secrets` ignored the PowerShell tool | `Get-Content .env` there was not checked | The hook now matches `PowerShell` as well as `Bash` | Fixed (v1.20.1) |
+| Hook latency on every shell call | Each Bash call starts the Bash-matched guards. On Windows each subprocess costs 50-250 ms | Hooks run in parallel, so the slowest decides. `if` filters cut a plain `ls` from 4 hook processes to 2 (9 to 6 with `hooks_strict`, `long`, `rtk`). v1.21.0 adds a builtins-only fast path for commands a guard can never block | Mitigated |
+| Claude Code older than 2.1.295 | `onFailure` and `if` may be ignored, so guards could fail open | The requirement is stated in the hooks README. Not verified release by release | Open |
+| A bash guard finds no `jq`, `perl` or `python3` | That guard warns and allows | Deny rules remain the backstop. `guard-agent-spawn` refuses instead | Accepted |
+| Repeated reviews, test runs and dispatches | Tokens spent re-checking unchanged content, loops | Verification ledger, two review rounds at most, `dispatch_budget` (default 24), `attempts` cap of 3, `maxTurns` on every seat, spawn depth 2, concurrency 4 | Mitigated |
+| An oversized harness for a non-code repo | Test suites and code review gates where no code ships | Purpose profiles: research, strategy and docs harnesses field a few seats with a `checker`, no code tooling | Mitigated |
+| Confidential text routed to a model the policy forbids | Data leaves the permitted boundary | Restricted paths are denied at read time. Routing itself is rule text only | Open (Gap 1) |
+| Restricted data with no nameable path | The deny list cannot cover it | Intake forces the admission. An admission is not a control | Open (Gap 1) |
+| Single vendor | A provider swap is a port, not a config change | `AGENTS.md` is vendor-neutral. `harness-check.py` keeps seats and `model-tiers.md` in agreement | Open (Gap 2) |
+| Spawn boundary does not travel to Cursor or Codex | The roster is rule text on those tools | Both tools now have subagent-start hooks. A payload mapping is still needed | Open (Gap 2) |
+| No value measurement | Cost per feature without value per feature is not ROI | `benchmark/live/` (v1.21.0) runs real sessions, bare against harnessed. It does not yet compare model tiers | Open (Gap 3) |
+| A seat edits outside its module | Cross-module change without review by the owner | `guard-agent-scope` adds context, never blocks. `graph-stale` names a new cross-module import | Platform (Gap 4) |
+| A third-party skill gets a careless review | Its instructions are trusted like a rule | Trust rubric and `/skill-wire` re-review. Both are procedures the model runs | Open (Gap 4) |
+| An `.env` read through an unlisted command | A Python one-liner reads the value | `protect-secrets` blocks file tools and the listed shell readers. `env-read.py` is a safer default, not a forced path | Open (Gap 4) |
+| `tech-presets.md` goes stale | A bootstrap proposes outdated versions | Installed reality wins over the preset. Nothing re-checks the file on a schedule | Open (Gap 5) |
+| The eval measures a strict scaffold | A default install carries fewer hooks than the figure covers | The flag set is `VARS` in `eval/guardrail_eval.py` and is stated wherever the figure is | Accepted |
 
 ## Gap 1 - Model sovereignty: enforced on data, advisory on routing
 
-Status: partially closed.
+`model-policy.md` binds each data class (Public, Internal, Confidential, Restricted) to the models
+allowed to process it. Classification beats seat tier: if the class forbids the tier's model, the
+work re-routes or is not delegated.
 
-`model-policy.md` defines a data-classification table (Public / Internal / Confidential /
-Restricted) and binds each class to the models permitted to process it. The precedence rule is
-classification beats seat tier: if a task's data class does not permit the tier's model, the work
-re-routes or it does not get delegated at all.
+**What is enforced.** Enforcement is on the data, not the model. Intake asks where Restricted data
+lives, and the answers fill the `{{RESTRICTED_DENIES}}` slot at the head of the `settings.json` deny
+list. What an agent cannot read, it cannot send to any model.
 
-That rule lives in `.claude/rules/`, which is context, not configuration. Claude Code's own
-documentation is explicit: rules "shape Claude's behaviour but are not a hard enforcement layer". A
-rule on its own therefore enforces model sovereignty only as far as the model chooses to follow it.
+**What is advisory.**
 
-No `settings.json` deny rule ships for classification itself, because "sent Confidential text to a
-hosted model" is not a distinguishable tool call and a deny rule could not intercept it.
+- **Routing.** No tool call is shaped like "sent this text to that provider", so no hook can stop
+  readable Confidential text from going into a prompt.
+- **Data without a path.** If the organisation cannot name where Restricted data lives, the deny
+  list cannot cover it.
 
-### What is enforced
+## Gap 2 - Many models: a single-vendor harness
 
-Enforcement is on the *data*, not on the *model*. Restricted data lives at known paths, so a
-`permissions.deny` entry on `Read(<those paths>)` means the agent never obtains the data in the first
-place, and what an agent cannot read it cannot leak to any model, on any provider, regardless of
-which model is driving or whether it read the rule. This is the same mechanism the guardrail eval
-exercises.
+Agent definitions are Claude Code frontmatter. `model:` takes `opus`, `sonnet`, `haiku` or `fable`:
+four models from one vendor. The tier is swappable. The vendor is not.
 
-The pieces that implement it:
+**What partly helps.**
 
-- `.claude/settings.json` carries a `{{RESTRICTED_DENIES}}` slot at the head of the deny list.
-- The intake asks where Restricted data lives, as glob patterns.
-- `model-policy.md` states that the classification table is the *policy* and the deny list is the
-  *control*.
+- `AGENTS.md` is vendor-neutral and `CLAUDE.md` imports it. Other tools get the rules, not the
+  hooks, deny rules or permission model.
+- `port.py` ports the rules and the shell and file guards (`guard-main-commit`, `check-commit-msg`,
+  `protect-secrets`, `protect-adr`) to Cursor and Codex, with documented caveats.
+- `model-tiers.md` maps seat tiers to models, and `harness-check.py` fails a seat whose `model:`
+  contradicts its row. That is a consistency check, not an abstraction: seats still name the model.
 
-### What is still advisory
+**The spawn boundary.** `guard-agent-spawn` keys on Claude Code's `Agent|Task` tool. Cursor ships
+`subagentStart` (documented as able to deny) and Codex ships `SubagentStart` (blocking not
+documented, so unverified). A hook point is not the control. Two pieces of work stand between them:
 
-- **Routing itself.** Nothing prevents an agent from putting Confidential-but-readable text into a
-  prompt to a model that the table does not permit. There is no tool call shaped like "sent this text
-  to that provider", so there is nothing for a hook to intercept.
-- **Data the org cannot locate.** If Restricted material has no nameable path, the deny list cannot
-  cover it and the table is advice. The intake forces that admission rather than letting it pass
-  silently, but an admission is not a control.
+- **Payload fields differ.** The hook reads `subagent_type`, `model` and `prompt`. Cursor sends
+  `subagent_type`, `subagent_model` and `task`. Codex sends `agent_type` and `agent_id`.
+- **Roster identity may not survive.** The check is "does `.claude/agents/<type>.md` exist". Cursor
+  documents only generic subagent types. Codex reads agent types from an `[agents.<name>]` TOML table.
 
-The current position: this repo enforces model sovereignty at the data boundary, and governs it by
-rule everywhere else.
+`port.py` still prints that neither tool has a subagent-spawn hook point. That message predates both
+events and is out of date.
 
-## Gap 2 - Many models: this is a single-vendor harness
+**What would close it:** seats declare a tier, and the scaffolder generates `model:` from the tier
+table. A vendor swap would then be a one-file edit and a re-run.
 
-The thesis asks for the ability to turn many models into an agent system. This repo runs on Claude
-Code. Agent definitions are Claude Code frontmatter (`model:`, `effort:`, `tools:`, `maxTurns:`). The
-`model:` field accepts `opus | sonnet | haiku | fable`: four models from one vendor.
+## Gap 3 - ROI has no numerator yet
 
-Model tier is swappable. Model vendor is not. Re-pointing this roster at a self-hosted Llama or an
-Azure-hosted GPT is not a configuration change; it is a port.
+The repo measures what the harness costs. `benchmark/model_cost.py` puts a sonnet-only roster at
+0.80x the default and haiku-only at 0.26x. It cannot say whether the cheaper output is worth
+shipping, and that is the question the thesis rests on.
 
-Two things partially mitigate it, and neither is sufficient:
+`eval/guardrail_eval.py` measures the floor: what a model is prevented from doing. v1.21.0 adds
+`benchmark/live/`, which runs real `claude -p` sessions on fixed tasks, bare repo against
+harnessed repo, and reads every verdict from the repository with a deterministic checker. That is
+the start of a numerator. It still does not run one harness across model tiers on the same tasks,
+which is what would test the thesis.
 
-- `AGENTS.md` is the vendor-neutral document, and `CLAUDE.md` is a thin `@AGENTS.md` import. Other
-  coding agents that read `AGENTS.md` get the rules. They do not get the hooks, the settings deny
-  rules, or the permission model, so they get the advice and none of the enforcement. The file says
-  so.
-- The seat-tier table in `model-tiers.md` (judgment / implementation / mechanical -> model) is the
-  right shape for portability: it is the one file a provider swap would edit, instead of a sweep
-  across every agent file. But it currently maps to Anthropic aliases, and nothing generates from
-  it - the agent files still name the model directly. The scaffolder does now check that the two
-  agree (`seat_problems` in `scaffold.py` fails a seat whose `model:` contradicts its row), so a
-  half-done sweep is caught, but that is a consistency check, not an abstraction.
+## Gap 4 - Advice where a gate is wanted
 
-What would close it: make the tier the thing the agent declares, and generate the concrete `model:`
-value from the tier table at scaffold time. The scaffolder already does this kind of substitution. A
-vendor swap would then be a one-file edit plus a re-run. It is not done.
+Four controls look like gates and are procedures.
 
-The newest hook sharpens this rather than helping it, though less than this document used to claim.
-`guard-agent-spawn` is a PreToolUse hook keyed to Claude Code's `Agent|Task` tool. Until recently
-both this file and `port.py` stated that neither Cursor nor Codex exposed an equivalent
-subagent-spawn hook point. **That is no longer true**: Cursor ships `subagentStart` / `subagentStop`
-with a matcher on subagent type, and Codex ships `SubagentStart` / `SubagentStop` with an
-`agent_type` matcher.
+- **Module scope.** A `PreToolUse` payload for `Edit|Write` names no calling subagent, so no hook can
+  tell which seat is writing. `guard-agent-scope` is therefore advisory by design: it adds context
+  when an edit lands in a module another seat owns and the active task never named it, stays silent
+  when the picture is ambiguous, and always exits 0. Closing this needs caller identity on tool
+  payloads from Claude Code. More code here would not help.
+- **Skill install.** `reference/skill-discovery.md` and `/skill-wire` require reading every file of
+  a candidate skill for secret access, egress and config-edit instructions. The model that is about
+  to trust the skill does the reading. The gate is an `AskUserQuestion` and a changelog line.
+- **Env files.** `protect-secrets` blocks `Read`/`Edit`/`Write` on `.env*` and the listed shell
+  readers (`cat`, `head`, `type`, `Get-Content` and others) in both `Bash` and `PowerShell`. A
+  Python or Node one-liner is not a shape it recognises. The rule to use `env-read.py` is prose.
+- **Data routing.** Gap 1.
 
-Cursor's documentation says `subagentStart` "can allow or deny subagent creation" and that exit 2
-blocks. Codex's page lists exit-2 blocking for `PreToolUse`, `PostToolUse`, `UserPromptSubmit` and
-`Stop`, and does not state it for `SubagentStart`, so on Codex the event is confirmed to exist and
-its blocking behaviour is **unverified**. That distinction is worth keeping: this section is being
-rewritten precisely because it previously asserted more than had been checked.
+## Gap 5 - Tech presets rot without a currency check
 
-What has not changed is that a hook point is not the same as the control. Two things stand between
-them, and both are real work rather than wiring:
+`reference/tech-presets.md` gives codebase analysis a version catalogue, so a model does not propose
+a version from stale training data. `codebase-analysis.md` says installed reality wins and a
+contradicting preset becomes a migration proposal. That rule is text. No script diffs the catalogue
+against a package registry, and no scheduled job flags it as stale.
 
-- **The payload fields differ.** The hook reads `tool_input.subagent_type`, `tool_input.model` and
-  `tool_input.prompt`. Cursor supplies `subagent_type`, `subagent_model` and `task`; Codex supplies
-  `agent_type` and `agent_id`. An adapter mapping is needed, of the kind the Cursor adapter already
-  performs for shell and read events.
-- **Roster identity may not survive.** The check that carries the weight is "does
-  `.claude/agents/<type>.md` exist". Cursor's documented subagent types are `generalPurpose`,
-  `explore` and `shell`, and whether a named subagent reports its own name there is unverified.
-  Codex takes its agent types from an `[agents.<name>]` TOML table rather than from markdown seats,
-  so membership would only line up if the porter emitted that table too.
-
-So the honest statement is: **reachable on both tools, equivalent on neither yet.** Today the
-boundary still does not travel, and on Cursor and Codex the roster remains rules text a model can
-read rather than a gate. The difference from before is that this is now a porting job with a known
-shape, not a missing capability in the tools.
-
-## Gap 3 - ROI has no numerator
-
-The repo measures what the harness costs and what it saves. It does not measure what it produces.
-`benchmark/model_cost.py` will tell you a feature costs about $2.52 on the default roster and about
-$0.65 on an all-Haiku roster. It cannot tell you whether the Haiku feature is worth shipping.
-
-That is the question that decides whether the thesis holds. If a good harness makes a cheap model
-produce acceptable work, the thesis is right and model choice really is commoditised. If it does not,
-then model quality still dominates and the harness is a cost optimisation rather than a strategy.
-
-Nothing in this repo measures it. `eval/guardrail_eval.py` measures only the floor: the things a
-cheap model is *prevented* from doing. The ceiling - whether it writes good code, whether a Haiku
-reviewer catches the bug an Opus reviewer catches - needs an eval with real tasks, real rubrics, and
-an API key, run against your own repo. That scaffolding is not here, and no number for it is quoted
-anywhere in the repo.
-
-## Gap 4 - Per-agent module scope is a nudge, not a gate - and cannot become one without data Claude Code does not expose
-
-Status: open, and this batch turned it from "nobody built the hook" into "the hook exists and is
-structurally capped," which is a different, smaller gap than it looks.
-
-Each dev agent's frontmatter says "Scope: you own `{{MODULE_PATHS}}`. Do not modify files outside
-it." and the DDD rule restates the same boundary in domain language ("bounded contexts", never
-import another context's internals). Both are `.claude/rules/` or agent-frontmatter prose on their
-own - read, not enforced.
-
-This batch shipped `guard-agent-scope.sh`, a `PreToolUse` hook on `Edit|Write`, to close it the way
-`guard-agent-spawn` closed the spawn boundary. It does not, and its own header explains why: a
-`PreToolUse` payload for `Edit|Write` carries `cwd` and `tool_input` (`file_path`, `content`) and
-nothing that names which subagent is calling. `guard-agent-spawn` can gate because it fires on the
-dispatch itself, where `tool_input.subagent_type` is the payload; once a dispatched agent starts
-making its own `Edit`/`Write` calls, that identity is gone. `agent-history.sh`'s header confirms it
-from the other side: subagent identity only ever arrives on `SubagentStop`, and that event carries no
-`tool_input` at all. So a hook on this event cannot tell "the wrong seat editing outside its lane"
-from "the orchestrator's own docs maintenance" from "the one dev agent this project has" - blocking
-on data that is not there would either block legitimate writes indiscriminately or silently no-op,
-both worse than an honest nudge. `protect-adr` is not a counterexample: it blocks purely on
-`file_path` against a fixed list of Accepted ADRs and never needs to know who is calling, which is
-exactly the property module-scope enforcement lacks.
-
-What the hook does instead, using `/code-graph`'s module-ownership map and the sole in-flight task's
-declared scope: it emits `hookSpecificOutput.additionalContext` - never a block - when an edited file
-falls in a module a different agent owns and the Active task never named it, and it stays silent
-whenever the picture is ambiguous (no graph yet, zero or more than one Active task, an unowned
-module) rather than guessing. It always exits 0. It is real and it is tested (two of the eval's
-must-allow cases exercise it), and it is genuinely useful signal. It is not, and cannot become, the
-gate the previous version of this document said was simply unbuilt.
-
-What would actually close it: a Claude Code payload capability this repo does not control - caller
-identity on tool calls other than the dispatch itself. Until that exists, `guard-agent-scope`'s nudge
-is the ceiling, not a stepping stone to a gate that a bit more code here would reach.
-
-The skill-install path added today is the same pattern a third time. `reference/skill-discovery.md`'s
-trust rubric and `/skill-wire`'s re-review at wire time both center on "read every file in the skill
-for secret access, external data egress, or instructions to edit `.claude/`/`settings.json`/hooks" -
-but that read is a procedure in a command file, carried out by the same model that is about to start
-trusting the skill it is reviewing. No hook parses a candidate skill's files for those patterns before
-`.claude/skills/` becomes content a future turn will follow; the gate is an `AskUserQuestion` and a
-changelog line, not a technical control. A skill that got a sloppy review is trusted exactly as much
-as a rule the model chose to follow - Gap 1's problem, in a third costume.
-
-`env-read.py`, added this batch, is a fourth costume of the same problem. `protect-secrets` hard-blocks
-the well-known vectors - `Read`/`Edit`/`Write` on a `.env*` path, and shell commands matching
-`cat`/`type`/`head`/`Get-Content` against one - so those are an enforced control, not advice. But
-nothing makes an agent route through `env-read.py` instead: a Bash command that opens the file some
-other way (a short Python or Node one-liner, a text editor invoked as a subprocess, a tool whose name
-the regex does not list) is not a shape the hook recognizes, and the rule that says "use
-`env-read.py`" is `.claude/rules/agent-guardrails.md` prose - read, not enforced. The script is a
-genuinely safer default when an agent chooses it (values never printed, production names refused);
-it does not close the gap, it narrows what a careless agent would otherwise have to invent.
-
-## Gap 5 - Tech-presets rot the moment nobody runs the currency check
-
-Status: open, newly introduced by the file that closes a different gap.
-
-`reference/tech-presets.md` gives codebase analysis a version-currency catalogue so a fresh model does
-not propose a framework version from stale training data. `codebase-analysis.md` states the rule that
-is supposed to keep it honest: what is actually installed always wins over the preset, versions get
-verified against the registry rather than recalled from memory, and a preset that contradicts
-installed reality becomes a migration proposal, not a silent rewrite.
-
-That rule is text a model reads and (usually) follows - the same shape as every other gap in this
-document. Nothing re-checks `tech-presets.md` itself against the outside world on any cadence: no
-script diffs it against a package registry, no hook blocks a bootstrap that used it unchanged past
-some age, and no CI job flags the file as stale. A catalogue that ships once and is then trusted by
-every future bootstrap is exactly the kind of content that is accurate on the day it is written and
-silently wrong a year later. The currency *rule* is real; the currency *check* is not automated.
-
-What would close it: a script that spot-checks a sample of `tech-presets.md`'s pinned versions
-against the relevant package registries and fails a scheduled job (not the bootstrap itself, which
-should not depend on network access) when the drift exceeds some threshold - the same "trust but
-verify on a schedule" shape `/board-audit` already uses for task-board drift.
+**What would close it:** a scheduled job that spot-checks pinned versions against their registries
+and fails past a drift threshold. Not the bootstrap itself, which must not need the network.
 
 ## What the repo supports today
 
-1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 250/250
-   (500/500 across both hook flavors), measured on a harness scaffolded with `hooks_strict`, `long`
-   and `db` on - the flag set is `VARS` in `eval/guardrail_eval.py`.
-2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
-   Measured: 24% less to read (down from 45% - the skill grew capability faster than compression
-   could recover it, see `benchmark/RESULTS.md`), 90% less to author, 73% of rule content kept out
-   of the default session, under a second to scaffold.
-3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
-   Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the
-   quality gate treats that as a bug.
-4. **The default roster is deliberately not the cheapest.** `sonnet-only` (high) is ~20% cheaper. The
-   default spends the difference on Opus review gates, on the argument that the seat whose entire job
-   is catching what a generation pass got wrong is the worst place to economise. That is a bet, it is
-   stated as a bet, and the table lets you take the other side of it.
-5. **Governance is written down, versioned, and diffable.** The parts that can be enforced
-   deterministically (secrets, PII, destructive ops, immutable ADRs, commit hygiene) are enforced by
-   hooks. `guard-destructive` ships by default; the stricter set (large files, egress, unpinned
-   dependencies, secrets in prompts and output, mid-session config changes, evidence-free "done") is
-   opt-in behind the `hooks_strict` flag, and the eval measures a harness with it on.
-6. **The spawn boundary and anti-loop discipline are gates, not advice.** `guard-agent-spawn` blocks
-   spawning a type outside the roster, overriding a roster seat's model at spawn time, and dispatching
-   a write-capable seat that names neither a registered `TASK-NNN` nor a `TIER: direct` / `TIER: standard`
-   marker (Direct and Standard work has no task file by design; Guarded work still needs a registered
-   task), each with a matching allow case in the eval. It also reads the verification ledger
-   (`.claude/state/verify-ledger.jsonl`, through `verify-plan.py --dispatch-check`): no review or suite
-   re-run on content that already passed, no third review round, no identical brief, and a per-task
-   dispatch budget (`dispatch_budget`, default 24, in `.claude/verify-map.json`). The environment caps
-   `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` and `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` bound fan-out. An
-   `attempts:` cap (3, then `Blocked`), `maxTurns` on every seat, and the `retry-budget` hook under
-   the `long` flag bound how long a stuck agent can run before a human has to look. `/board-audit` sweeps for the failure
-   modes those controls don't catch by construction: orphaned Active tasks, unlogged completions, and
-   worktrees the board never registered. `guard-agent-scope` is the honest sibling of the spawn
-   boundary: a nudge, not a gate, and documented as structurally unable to become one - see Gap 4.
-7. **Post-bootstrap operation is a maintained workflow, not a one-time scaffold.** `/harness-update`
-   re-runs the scaffolder against a changed codebase and never overwrites a differing file - conflicts
-   queue for a human to resolve, they do not get silently resolved for you. `/harness-tune` starts from
-   the record of what actually happened and changes control-level dials (deploy rights, deny/ask lists,
-   spawn allowlist, caps, review gates) only after showing the diff and getting a yes. Both end on
-   `harness-check.py`, which must exit 0.
-8. **A seat can be extended with a third-party skill through a vetted path, not a blind drop.**
-   `reference/skill-discovery.md`'s rubric (install count, publisher allow-list, duplicate and audit
-   checks, a mandatory content read) gates install; `/skill-wire` re-reviews at wire time, refuses a
-   skill that would instruct a config edit or hand a reviewer seat write-shaped instructions, and
-   records every wire. What it still cannot do is described in Gap 4.
+1. **Safety does not depend on the model.** 290/290 per hook flavour, re-runnable, on a harness
+   scaffolded with `hooks_strict`, `long` and `db` on.
+2. **The hooks are proven in real sessions, not only on scripted payloads.** v1.20.1 ran them inside
+   `claude -p` and fixed the four holes that only showed up there. The eval now runs the `ps1`
+   flavour under the same Windows PowerShell the settings call, and `.sh` hooks through Git Bash.
+3. **The harness is cheap to carry.** Measured against the predecessor skill:
+   bytes the model must write -90%, and 75% of rule content kept out of the default session.
+   Read-path figures are in `benchmark/RESULTS.md`.
+4. **Cost is a decision.** Every seat carries an explicit `model:` and `effort:`. The default roster
+   spends more than sonnet-only on Opus review gates. That is a stated bet, and the cost table lets
+   you take the other side.
+5. **Proportion is enforced.** The tier table sends small work Inline or Direct. The verification
+   ledger refuses a review or suite re-run on content that already passed, a third review round, an
+   identical brief, or a dispatch past the task's budget.
+6. **The spawn boundary is a gate.** `guard-agent-spawn` blocks a seat outside the roster, a model
+   override, and a write-capable dispatch with neither a `TASK-NNN` nor a `TIER: direct` /
+   `TIER: standard` marker.
+7. **The harness is maintained, not dropped.** `/harness-update` never overwrites a differing file.
+   `/harness-tune` changes a dial only after showing the diff. Both end on `harness-check.py`.
 
 ## Remaining work, in priority order
 
-1. **Enforce classification with path denies** (closes Gap 1, uses machinery that already works).
-2. **Make seat tier the declared thing and generate `model:` from it** (closes Gap 2's mechanical
-   half; the vendor port itself remains a port). The spawn boundary still does not travel, but it
-   has moved from "tool limitation" to backlog item: both Cursor and Codex now expose subagent-start
-   hooks, so what is missing is a field mapping and a way to make roster identity line up, not a
-   capability in the tools. See Gap 2 for what each one would take.
-3. **Ship a quality eval harness** so the central claim - that a good harness narrows the gap between
-   model tiers - can be tested rather than asserted (closes Gap 3).
-4. CI templates and a real `devops` pipeline, so "workflow integration" means something beyond the
-   maintenance layer (`/board-audit`, `/harness-tune`, `/harness-update`) that now exists.
-5. **Not actionable by this repo.** Closing Gap 4's module-scope half for real needs Claude Code to
-   expose caller/subagent identity on `Edit`/`Write` payloads, not more code here - `guard-agent-scope`
-   already does everything an advisory hook can do without that data. Track the upstream capability;
-   do not re-attempt a blocking version of this hook until it lands.
-6. **Add a first-pass content scan to skill install/wire** - grep a candidate skill's files for
-   secret-adjacent calls, external endpoints, and config-edit instructions before the model's own
-   content review runs. Not a replacement for the read (judgment still catches what a pattern match
-   cannot), but a second line the model cannot skip under time pressure (extends Gap 4's fix to the
-   skill-install path).
-7. **Widen `protect-secrets`'s command pattern past the literal `cat`/`type`/`head` list**, or accept
-   that `env-read.py` is a safer default rather than an enforced one and say so wherever the harness
-   currently implies otherwise (closes Gap 4's fourth costume).
-8. **Schedule a currency check for `reference/tech-presets.md`** against the package registries it
-   claims to reflect, separate from the bootstrap path itself (closes Gap 5).
-
-Items 1, 2, 6, and 7 are small - each reuses a mechanism the harness already has. Item 3 is the one
-that matters, and it is the one that could prove the thesis wrong. Item 5 is not actionable at all
-right now - it waits on a platform capability, not a backlog slot.
+1. **A quality eval across model tiers** on the live benchmark's tasks. It is the one item that
+   could prove the thesis wrong (Gap 3).
+2. **Generate `model:` from the seat tier** at scaffold time (Gap 2, mechanical half).
+3. **Port the spawn boundary** to Cursor's `subagentStart`: a payload mapping plus a way to make
+   roster identity line up. Update `port.py`'s message in the same change (Gap 2).
+4. **A first-pass content scan on skill install** that greps for secret access, external endpoints
+   and config-edit instructions before the model's review (Gap 4).
+5. **Widen `protect-secrets`** to interpreter one-liners, or say everywhere that `env-read.py` is a
+   default, not an enforced path (Gap 4).
+6. **A scheduled currency check** for `tech-presets.md` (Gap 5).
+7. **CI templates and a `devops` pipeline**, so workflow integration reaches past the maintenance
+   commands.
+8. **Not actionable here:** a blocking module-scope hook waits on Claude Code exposing caller
+   identity on `Edit`/`Write` payloads (Gap 4).

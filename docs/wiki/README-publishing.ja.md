@@ -2,31 +2,43 @@
 
 [English](README-publishing.md) · **日本語**
 
-このディレクトリのページは、GitHub Wiki の**ソース**です。Wiki 自体は別の git リポジトリ
-(`<repo>.wiki.git`) で、CI はそれを一切読みません。まさにそれが Wiki の腐る理由です。中の数字は古くなり、
-どのチェックも気づきません。
+このディレクトリのページは GitHub Wiki の**ソース**です。Wiki は別の git リポジトリ
+(`<repo>.wiki.git`) で、どの CI も読みません。Wiki が腐るのはそのためです。
 
-そこで、リファレンスページはここでは一切書きません。`scripts/build_wiki.py` がアセットから生成し、その横の
-ナラティブページ (日本語版の `*-ja.md` を含む) はそのままコピーされます。
+そこでリファレンスページは手で書きません。`scripts/build_wiki.py` がアセットから生成し、横にある
+説明ページはそのままコピーします。
+
+```mermaid
+flowchart TD
+    A[/"アセットとフラグ"/] --> B["build_wiki.py"]
+    N[/"docs/wiki/ のページ"/] --> B
+    B --> D[/"dist/wiki/"/]
+    D -->|"main へのマージ"| W["wiki.yml が push"]
+    W --> R[/"GitHub Wiki"/]
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class B,W det
+    class A,N,D,R art
+```
 
 ## ビルド
 
 ```bash
 python scripts/build_wiki.py            # -> dist/wiki/
+python scripts/build_wiki.py --check    # ビルドして検証: 表、リンク、テンプレートの目印
 ```
 
 ## 公開
 
-**`main` へのマージのたびに自動で。** `.github/workflows/wiki.yml` が Wiki を再ビルドしてプッシュします。
-ビルド結果が実際に変わらない限り、何もしません。パスフィルタは意図的に付けていません。ビルダーはアセット、
-スキャフォルダのフラグ集合、`benchmark.py` から導いた数字を読むので、実際の入力はリポジトリのほとんどに
-及び、誰かが入力を一つ追加した最初の時点でフィルタは間違ったものになっていたはずです。代わりにビルド結果を
-比較すれば、間違えようがありません。
+**`main` へのマージごとに自動で。** `.github/workflows/wiki.yml` が Wiki を再ビルドして push し、
+出力に差がなければ何もしません。パスフィルターは意図して付けていません: ビルダーはアセット、
+スキャフォルダのフラグ集合、`benchmark.py` から導いた数字を読むので、実際の入力はリポジトリの
+大半です。出力を比べる方法なら間違えようがありません。
 
-`eval` ワークフローも実行のたびに Wiki をビルドするので、ページを壊す変更は、Wiki に届く前にビルドを
-失敗させます。
+`eval` ワークフローも毎回 Wiki をビルドするので、ページを壊す変更は Wiki に届く前に失敗します。
 
-### 必要なら手作業で
+### 手で行う場合
 
 ```bash
 python scripts/build_wiki.py
@@ -37,11 +49,11 @@ cd /tmp/ahb-wiki && git add -A && git commit -m "docs: rebuild wiki from the rep
 
 ### 自動化ではできないこと
 
-Wiki のリポジトリは、最初のページが GitHub の UI から作られるまで存在しません。これは GitHub が API で
-提供していない一度きりの手作業で、このリポジトリではすでに済んでいます。フォークでは、ワークフローが
-プッシュできるようになる前に一度これを行う必要があります。
+Wiki のリポジトリは、最初のページを GitHub の UI で作るまで存在しません。GitHub が API で公開して
+いない一度きりの手作業です。このリポジトリでは済んでいます。フォークでは、ワークフローが push
+できるようになる前に一度行う必要があります。
 
 ## Wiki の UI でページを編集しない
 
-生成バナーの付いたページは次のビルドで上書きされ、その次のビルドは今やマージのたびに起こります。生成元の
-アセットか、`docs/wiki/` のナラティブソースを変更すれば、ページはそれに追従します。
+生成されたページは、次のマージでの次のビルドで上書きされます。元のアセット、または `docs/wiki/`
+の説明ページのソースを変更してください。

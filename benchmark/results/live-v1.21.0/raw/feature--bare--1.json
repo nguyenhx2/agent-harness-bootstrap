@@ -1,0 +1,174 @@
+{
+ "check": {
+  "hidden_tests_pass": true,
+  "success": true,
+  "suite_tail": "Ran 17 tests in 0.010s |  | OK"
+ },
+ "condition": "bare",
+ "exit_code": 0,
+ "final_answer": "`total` now takes `--discount PCT`, and all 13 tests pass, including the new ones. I haven't committed anything.\n\n- **`apply_discount`:** `apply_discount(subtotal_cents, pct)` in `src/invoicer/pricing.py` returns the subtotal minus the discount, with the discount rounded half up through `round_half_up` as ADR 0001 requires. For example, 5% of 250 cents is 12.5, which rounds to 13, so the result is 237. A `pct` outside 0\u2013100, a non-integer or a bool raises `ValueError`.\n- **CLI:** the discount comes off before tax, so tax is computed on the discounted amount. The `discount` line sits between `subtotal` and `tax` and is formatted like them. It shows the amount taken off as a positive figure, for example `discount USD 1.50`.\n- **Tests:** I added tests for `apply_discount` and for the CLI. The CLI test runs the 15.00 subtotal with `--discount 10 --tax-bp 825` and checks every output line.\n\nThe `discount` line always prints, so without the option it shows `discount USD 0.00`. The existing CLI test only checks for the lines it expects, so it still passes. If you want the line only when `--discount` is given, say so and I'll change it.",
+ "init": {
+  "agents": [
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup"
+  ],
+  "claude_code_version": "2.1.299",
+  "mcp_servers": 0,
+  "model": "claude-sonnet-5-5",
+  "plugins": [
+   "cc-plugin-agents-md",
+   "cc-plugin-telemetry",
+   "cc-plugin-plugin-authoring"
+  ],
+  "skills": 19,
+  "tools": 32
+ },
+ "metrics": {
+  "bytes_read": 7603,
+  "cache_creation_input_tokens": 12125,
+  "cache_read_input_tokens": 168320,
+  "dispatches": 0,
+  "duration_ms": 29198,
+  "first_call_context_tokens": 21595,
+  "hook_runs": 0,
+  "input_tokens": 14,
+  "is_error": false,
+  "num_turns": 18,
+  "output_tokens": 3967,
+  "permission_denials": 0,
+  "result_subtype": "success",
+  "skill_calls": 0,
+  "test_runs": 1,
+  "tool_calls": 17,
+  "total_cost_usd": 0.10503000000000001
+ },
+ "model": "sonnet",
+ "permission_denials": [],
+ "rep": 1,
+ "task": "feature",
+ "tool_calls": [
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\pricing.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "pattern": "**/*.{py,md}"
+   },
+   "name": "Glob",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\cli.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\tax.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\docs\\adr\\0001-integer-cents.md"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\money.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\tests\\test_cli.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\tests\\test_pricing.py"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\pricing.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\pricing.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\cli.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\cli.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\src\\invoicer\\cli.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\tests\\test_pricing.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\tests\\test_pricing.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\tests\\test_cli.py"
+   },
+   "name": "Edit",
+   "subagent": false
+  },
+  {
+   "input": {
+    "command": "python -m unittest discover -s tests -t . 2>&1 | Select-Object -Last 15"
+   },
+   "name": "PowerShell",
+   "subagent": false
+  }
+ ],
+ "wall_ms": 31719
+}

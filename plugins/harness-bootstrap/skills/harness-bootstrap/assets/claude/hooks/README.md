@@ -134,7 +134,66 @@ scaffold or a hand edit brings a disabled hook back, `harness-toggle.py reapply`
   a command it runs the hook anyway, which is the safe direction. `guard-destructive` and
   `protect-secrets` carry no `if`: they must see every command. Effect on a plain `ls` through
   the Bash tool: 4 hook processes -> 2 in a default harness, 9 -> 6 with `hooks_strict`, `long`
-  and `rtk`.
+  and `rtk`. Fewer processes is half of it; the other half is what each one costs - see
+  "Latency" below.
+
+## Latency
+
+Hooks run in parallel, so the slowest guard decides how long every Bash call waits, and a guard
+that waits long enough gets turned off. Under load it is worse than a wait: a fail-closed guard
+that reaches its 30 s timeout blocks the call, and `guard-destructive.sh` did exactly that with
+four Claude Code sessions running at once on Windows, blocking every Bash call in each session.
+
+What a hook costs is mostly the processes it starts, not what it computes. On Windows every
+external process and every bash subshell (`$(...)`, `printf | grep`) costs 50-250 ms, and the old
+`.sh` guards started a JSON parser plus several of those per call, two per token in
+`guard-destructive`. On `.ps1`, PowerShell's own start dominates and `ConvertFrom-Json` adds a
+module load.
+
+**The fast path.** Every hook that starts on a Bash call (`protect-secrets`, `guard-destructive`,
+`guard-egress`, `guard-deps`, `retry-budget`, and, behind their `if`, `guard-main-commit`,
+`check-commit-msg`, `guard-large-file`) first decides the common case, "this command is not
+mine", from the raw payload:
+
+- `.sh`: `read_payload` takes stdin without a fork, and `fast_str` decodes `tool_input.command`
+  with bash builtins (no subshell, no external process). `.ps1`: `Get-FastString` does the same
+  before `ConvertFrom-Json` runs.
+- The decode is exact or it gives up. The key must occur once; the value must be printable ASCII
+  and use no JSON escape but `\" \\ \n \r \t` (everything `JSON.stringify` writes for such text).
+  Anything else (non-ASCII, `\u` escapes, a duplicate key) takes the full parse.
+- A hook may only **exit 0** on the fast path, and only on a test that is a necessary condition of
+  every block it raises: `guard-destructive` needs a deletion verb or `git` as a token, or
+  DROP/TRUNCATE; `guard-egress` a curl/wget/iwr/irm/Invoke-* word; `guard-deps` a download tool,
+  `iex`, or a package manager starting a word; `protect-secrets` a `.env` or a DB-reset match;
+  `retry-budget` an existing state file. Each test is written case-insensitively, or with the same
+  operator the full check uses, so it is never narrower than what it fronts. Doubt falls through
+  to the full parse, which is unchanged.
+- `guard-destructive.sh` also does its full check on builtins (it has no `if` and its real work
+  is `rm` and `git`, the commands that reach it); only a forced push's `git rev-parse` and the
+  host scan after a DROP/TRUNCATE still start a process.
+
+The eval pins both sides: the "fast path:" cases are the shapes a careless pre-check would let
+through (a separator inside `\n`/`\t`, a quoted or capitalised verb, a lookalike `"command"` in the
+description), and its fast-path suite runs each hook with `PATH` empty (`.sh`) or reports whether
+`ConvertFrom-Json`'s module loaded (`.ps1`), so a fast path that quietly stopped deciding goes red.
+
+**Measured 2026-10-14**, one Windows 11 machine (22 cores, heavily loaded by parallel eval runs, so
+absolute numbers are high), Git Bash 5.2 and Windows PowerShell 5.1, a harness with
+`hooks_strict`, `long` and `rtk`, median of 7 interleaved runs. Not a published figure: re-measure
+before quoting it.
+
+| | `.sh` before | `.sh` after | `.ps1` before | `.ps1` after |
+|---|---|---|---|---|
+| slowest single guard on `ls -la` | 4424 ms (`guard-egress`) | 90 ms | 466 ms | 369 ms |
+| all 6 guards in parallel, `ls -la` | 5563 ms | 131 ms | 620 ms | 548 ms |
+| all 9 guards in parallel, `git status` | 5125 ms | 139 ms | 1034 ms | 937 ms |
+| `guard-destructive`, 4 concurrent, `git push --force-with-lease origin feat/x && rm -rf node_modules dist build/out coverage`, p95 | 12034 ms | 175 ms | 1420 ms | 1424 ms |
+
+Through Claude Code itself (`claude -p`, haiku, three parallel `ls` calls, `.sh`): the PreToolUse
+window went from 8.7 s to 1.2 s. The `.ps1` flavor still pays one PowerShell start per guard
+(roughly 300 ms each on an idle machine); merging the Bash guards into one dispatcher would pay it
+once, but `/harness-toggle`, `guard-config` and the graph all address hooks by file, and a
+dispatcher would make disabling it disable `protect-secrets` without the HARD confirmation.
 
 ## Env files: what a seat may read, and how
 
@@ -178,7 +237,12 @@ allow cases in the guardrail eval before shipping it.
   project's; a bare relative `.claude/state/history` writes to the wrong place.
 - **bash hooks need a JSON parser.** `jq` is NOT installed by default on macOS, and a missing `jq`
   would make a security hook silently allow everything. Each `.sh` falls back `jq` -> `perl`
-  (core `JSON::PP`) -> `python3`, and warns on stderr if none exists.
+  (core `JSON::PP`) -> `python3`, and warns on stderr if none exists. The fast path (see
+  "Latency") needs none of them, so a command it can decode exactly is judged even with no parser
+  installed; `guard-destructive` then still blocks, the rest still allow what is not theirs.
+- **A gate regex in a variable, not inline, and never trusted on status alone.** `[[ $s =~ $re ]]`
+  returns 2 for a regex the engine rejects; `fast_unmatched` allows only on status 1, so a bad
+  regex reads as "maybe mine" and takes the full parse.
 - **POSIX ERE has no portable `\b`** (BSD grep), so word boundaries are hand-rolled as
   `(^|[^a-zA-Z0-9_.-])` / `([^a-zA-Z0-9_-]|$)` in both flavors, keeping the regexes aligned.
 - **A bash on Windows cannot always resolve a `C:/x` `cwd` in a file test or hand it to a

@@ -23,6 +23,39 @@
 try {
     $raw = [Console]::In.ReadToEnd()
     if (-not $raw) { exit 0 }
+} catch {
+    exit 0
+}
+
+# --- fast path: decide the common case without ConvertFrom-Json -------------------------------
+# This hook starts on every shell call. ConvertFrom-Json loads a module, about a fifth of the run
+# on Windows PowerShell 5.1, and most commands can never be blocked here - so that case is decided
+# from the raw text first. Get-FastString returns one string field decoded EXACTLY, or $null: the
+# key must occur once, and the value must be printable ASCII using no JSON escape but \" \\ \n \r
+# \t (everything JSON.stringify writes for such text). A hook may only exit 0 on it, and only on a
+# test that is a necessary condition of every block it raises; $null or an exception falls
+# through to the full parse, which is unchanged. Copied verbatim - see "Latency" in
+# hooks/README.md.
+function Get-FastString([string]$raw, [string]$key) {
+    if ([regex]::Matches($raw, '"' + $key + '"\s*:').Count -ne 1) { return $null }
+    $m = [regex]::Match($raw, '"' + $key + '"\s*:\s*"((?:[^"\\]|\\.)*)"')
+    if (-not $m.Success) { return $null }
+    $s = $m.Groups[1].Value
+    if ($s -cmatch '[^\x20-\x7E]') { return $null }
+    $s = $s.Replace('\\', [string][char]1)
+    if ($s -cmatch '\\([^"nrt]|$)') { return $null }
+    $s = $s.Replace('\"', '"').Replace('\n', "`n").Replace('\r', "`r").Replace('\t', "`t")
+    return $s.Replace([string][char]1, '\')
+}
+
+# A shell upload needs a curl / wget / iwr / irm / Invoke-* token, compared lowercased as
+# below. WebFetch payloads carry no command and take the full path.
+try {
+    $fc = Get-FastString $raw 'command'
+    if ($null -ne $fc -and -not ($fc.ToLower() -cmatch 'curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod')) { exit 0 }
+} catch { }
+
+try {
     $payload = $raw | ConvertFrom-Json
 } catch {
     exit 0

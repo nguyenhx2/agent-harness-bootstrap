@@ -177,7 +177,7 @@ def port_cursor_rules(claude_rules: pathlib.Path, dest: pathlib.Path,
 CHECKS_PER_FLAVOR = 16
 
 # The Bash-matching hooks that need no per-payload adaptation on Codex.
-BASH_HOOKS = ["guard-main-commit", "check-commit-msg", "protect-secrets"]
+BASH_HOOKS = ["guard-main-commit", "check-commit-msg", "protect-secrets", "guard-destructive"]
 # Hooks that inspect a file path.
 FILE_HOOKS = ["protect-adr", "protect-secrets"]
 
@@ -218,11 +218,13 @@ cwd = payload.get("cwd") or "."
 if event == "shell":
     claude = {"cwd": cwd, "tool_name": "Bash",
               "tool_input": {"command": payload.get("command", "")}}
-    names = ["guard-main-commit", "check-commit-msg", "protect-secrets"]
+    names = ["guard-main-commit", "check-commit-msg", "protect-secrets", "guard-destructive"]
 elif event == "read":
     claude = {"cwd": cwd, "tool_name": "Read",
               "tool_input": {"file_path": payload.get("file_path", "")}}
-    names = ["protect-adr", "protect-secrets"]
+    # Reading an Accepted ADR is the point of an ADR; protect-adr guards edits only. Running it
+    # here refused every read of docs/decisions/, so agents in Cursor could not consult them.
+    names = ["protect-secrets"]
 elif event == "edit":
     claude = {"cwd": cwd, "tool_name": "Edit",
               "tool_input": {"file_path": payload.get("file_path", "")}}

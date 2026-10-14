@@ -117,32 +117,125 @@ unquote() {
   printf '%s' "$t"
 }
 
-payload=$(cat)
-json_fields tool_input.command cwd
-cmd="${JF[0]}"
-raw_cwd="${JF[1]}"
+# --- fast path: decide the common case with bash builtins only ---------------------------------
+# This hook starts on every shell call, and on Windows each subshell or external process costs
+# 50-250 ms: the JSON parser, every `printf | grep`, every `$(...)`. Most commands can never be
+# blocked here, so that case is decided before any of them run. read_payload takes stdin without
+# a fork; fast_str decodes one string field EXACTLY or gives up. A hook may only exit 0 on what
+# these return, and only on a test that is a necessary condition of every block it raises; any
+# doubt falls through to the full parse, which is unchanged. Copied verbatim into every hook that
+# has a fast path - see "Latency" in hooks/README.md.
+read_payload() {
+  payload=
+  # bash reads a pipe one byte per syscall: fine for a shell call's few hundred bytes, slower than
+  # one `cat` past a few KB (an Edit or Write payload), so the rest of a long one goes to cat.
+  if IFS= read -r -d '' -n 4096 payload; then
+    payload+=$(cat)
+  fi
+}
+# fast_str KEY -> FAST_STR. Fails unless the payload holds "KEY": exactly once, with a string value
+# that is printable ASCII and uses no JSON escape but \" \\ \n \r \t - everything JSON.stringify
+# writes for such text, so the decode is exact. Runs in the C locale: in a multibyte locale a lead
+# byte could swallow the backslash of an escaped quote and end the value early.
+fast_str() {
+  local key=$1 s rest re re2 bs='\' q='"' had=${LC_ALL+x} old=${LC_ALL-} rc=1
+  LC_ALL=C
+  re="\"$key\"[[:space:]]*:[[:space:]]*\"(([^\"\\\\]|\\\\.)*)\""
+  re2="\"$key\"[[:space:]]*:"
+  if [[ $payload =~ $re ]]; then
+    s=${BASH_REMATCH[1]}
+    rest=${payload#*"$q$key$q"}
+    rc=0
+    [[ $rest =~ $re2 ]] && rc=1
+    case $s in *[!\ -~]*) rc=1 ;; esac
+    s=${s//"$bs$bs"/$'\001'}
+    case $s in *"$bs"[!nrt\"]*|*"$bs") rc=1 ;; esac
+    s=${s//"$bs$q"/"$q"}
+    s=${s//"${bs}n"/$'\n'}
+    s=${s//"${bs}r"/$'\r'}
+    s=${s//"${bs}t"/$'\t'}
+    FAST_STR=${s//$'\001'/"$bs"}
+  fi
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  return $rc
+}
+# fast_unmatched ERE: true only when ERE was compiled and did not match FAST_STR (exit status 1).
+# A regex the engine rejects (status 2) must never read as "no match".
+fast_unmatched() {
+  local had=${LC_ALL+x} old=${LC_ALL-} rc
+  LC_ALL=C
+  [[ $FAST_STR =~ $1 ]]
+  rc=$?
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  [ "$rc" -eq 1 ]
+}
+
+read_payload
+# Every block below needs one of these words in the command: a deletion verb or `git` standing
+# as its own token, or DROP / TRUNCATE. Written case-insensitively so the gate is never narrower
+# than the case-folding checks it fronts.
+FAST_GATE='(^|[^A-Za-z0-9_-])([Rr][Mm]|[Rr][Ii]|[Rr][Dd]|[Rr][Mm][Dd][Ii][Rr]|[Dd][Ee][Ll]|[Ee][Rr][Aa][Ss][Ee]|[Rr][Ee][Mm][Oo][Vv][Ee]-[Ii][Tt][Ee][Mm]|[Gg][Ii][Tt])([^A-Za-z0-9_-]|$)|[Dd][Rr][Oo][Pp]|[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee]'
+fast_str command && fast_unmatched "$FAST_GATE" && exit 0
+# --- full parse ------------------------------------------------------------------------------
+# Also fork-free, except `git rev-parse` for a forced push and the host scan for DROP/TRUNCATE.
+# The commands that reach this point are exactly the ones worth checking - `rm`, `git` - and with
+# a `$(...)` or a `tr` per token they cost 10 s and more with four sessions running at once on
+# Windows, long enough to hit the 30 s timeout, which fails closed and blocks every Bash call.
+# The exact decode is reused when it worked; the JSON parser is the fallback, not the default.
+cmd= raw_cwd=
+if fast_str command; then
+  cmd=$FAST_STR
+  if fast_str cwd; then raw_cwd=$FAST_STR; else cmd=; fi
+fi
+if [ -z "$cmd" ]; then
+  json_fields tool_input.command cwd
+  cmd="${JF[0]}"
+  raw_cwd="${JF[1]}"
+fi
 [ -z "$cmd" ] && exit 0
-cwd_posix=$(printf '%s' "$raw_cwd" | tr '\\' '/')
+cwd_posix=${raw_cwd//\\//}
 cwd_posix=${cwd_posix%/}
-base_cwd=$(norm_path "$raw_cwd")
-[ -z "$base_cwd" ] && base_cwd=$(pwd)
+# Kept as written and converted (norm_path) only where git needs a real directory.
+base_cwd=$cwd_posix
+[ -z "$base_cwd" ] && base_cwd=$PWD
+
+# unq TOKEN -> UQ: one layer of surrounding quotes off, as unquote() does, without a subshell.
+unq() {
+  UQ=$1
+  UQ=${UQ#\"}; UQ=${UQ%\"}; UQ=${UQ#\'}; UQ=${UQ%\'}
+}
+# lower TEXT -> LO: ASCII A-Z folded, which is what `tr 'A-Z' 'a-z'` did, without a process.
+lower() {
+  local s=$1
+  s=${s//A/a}; s=${s//B/b}; s=${s//C/c}; s=${s//D/d}; s=${s//E/e}; s=${s//F/f}; s=${s//G/g}
+  s=${s//H/h}; s=${s//I/i}; s=${s//J/j}; s=${s//K/k}; s=${s//L/l}; s=${s//M/m}; s=${s//N/n}
+  s=${s//O/o}; s=${s//P/p}; s=${s//Q/q}; s=${s//R/r}; s=${s//S/s}; s=${s//T/t}; s=${s//U/u}
+  s=${s//V/v}; s=${s//W/w}; s=${s//X/x}; s=${s//Y/y}; s=${s//Z/z}
+  LO=$s
+}
 
 # --- target classification for rm ----------------------------------------------------------
+RE_TOP='^/[^/]+$'
+RE_DRIVE='^[A-Za-z]:/?$'
+RE_DRIVE_TOP='^[A-Za-z]:/[^/]+$'
 is_danger_target() {
-  local t b
-  t=$(unquote "$1" | tr '\\' '/')
+  local t b lb
+  unq "$1"
+  t=${UQ//\\//}
   b=${t%/\*}
   while [ "${#b}" -gt 1 ] && [ "${b%/}" != "$b" ]; do b=${b%/}; done
   case "$b" in
     ""|"/"|"~"|"\$HOME"|"\${HOME}"|"."|".."|"*"|".*"|"\$PWD"|"\${PWD}"|"\$(pwd)"|'`pwd`'|".git"|"./.git") return 0 ;;
     "\$env:USERPROFILE"|"\$env:HOMEPATH"|"%USERPROFILE%"|"\$env:SystemDrive"|"%SystemDrive%") return 0 ;;
   esac
-  printf '%s' "$b" | grep -Eq '^/[^/]+$' && return 0
-  printf '%s' "$b" | grep -Eq '^[A-Za-z]:/?$' && return 0
-  printf '%s' "$b" | grep -Eq '^[A-Za-z]:/[^/]+$' && return 0
+  [[ $b =~ $RE_TOP ]] && return 0
+  [[ $b =~ $RE_DRIVE ]] && return 0
+  [[ $b =~ $RE_DRIVE_TOP ]] && return 0
   if [ -n "$cwd_posix" ]; then
     [ "$b" = "$cwd_posix" ] && return 0
-    [ "$(printf '%s' "$b" | tr 'A-Z' 'a-z')" = "$(printf '%s' "$cwd_posix" | tr 'A-Z' 'a-z')" ] && return 0
+    lower "$b"; lb=$LO
+    lower "$cwd_posix"
+    [ "$lb" = "$LO" ] && return 0
   fi
   return 1
 }
@@ -155,9 +248,19 @@ is_protected_branch() {
   return 1
 }
 
+# branch_at DIR -> the branch checked out there (norm_path turns a C:/x dir into one git can use)
+branch_at() {
+  git -C "$(norm_path "$1")" rev-parse --abbrev-ref HEAD 2>/dev/null
+}
+
 # --- per-segment checks ----------------------------------------------------------------------
+# Split on && || ; | - the same separators, in the same order of precedence, as the sed
+# expression this replaced: (&&|\|\||;|\|) taken leftmost-first.
 workdir="$base_cwd"
-segments=$(printf '%s\n' "$cmd" | sed -E 's/(&&|\|\||;|\|)/\n/g')
+segments=${cmd//&&/$'\n'}
+segments=${segments//||/$'\n'}
+segments=${segments//;/$'\n'}
+segments=${segments//|/$'\n'}
 while IFS= read -r seg; do
   set -f
   read -ra toks <<< "$seg"
@@ -167,26 +270,26 @@ while IFS= read -r seg; do
 
   # a leading `cd <dir>` moves where later git segments resolve their branch
   if [ "${toks[0]}" = "cd" ] && [ "$n" -ge 2 ]; then
-    d=$(unquote "${toks[1]}" | tr '\\' '/')
+    unq "${toks[1]}"; d=${UQ//\\//}
     case "$d" in
-      /*|[A-Za-z]:/*) workdir=$(norm_path "$d") ;;
+      /*|[A-Za-z]:/*) workdir=$d ;;
       *) workdir="$workdir/$d" ;;
     esac
     continue
   fi
 
   for ((i = 0; i < n; i++)); do
-    tok=$(unquote "${toks[i]}")
+    unq "${toks[i]}"; tok=$UQ
     # PowerShell and cmd deletion: Remove-Item and its aliases (ri, rd, rmdir, del, erase) delete a
     # tree with -Recurse alone - -Force only adds hidden and read-only files - and cmd's rd/del
     # take /s. Names and parameters are case-insensitive and parameters may be abbreviated.
-    tl=$(printf '%s' "$tok" | tr 'A-Z' 'a-z')
+    lower "$tok"; tl=$LO
     case "$tl" in
       remove-item|ri|rd|rmdir|del|erase|*/rmdir)
         rec=0; targets=(); skip=0
         for ((j = i + 1; j < n; j++)); do
-          a=$(unquote "${toks[j]}")
-          al=$(printf '%s' "$a" | tr 'A-Z' 'a-z')
+          unq "${toks[j]}"; a=$UQ
+          lower "$a"; al=$LO
           if [ "$skip" -eq 1 ]; then skip=0; continue; fi
           case "$al" in
             -r|-re|-rec|-recu|-recur|-recurs|-recurse|/s) rec=1 ;;
@@ -219,9 +322,10 @@ while IFS= read -r seg; do
               --*) continue ;;
               -*)
                 # PowerShell's rm alias takes -Force (and its abbreviations), not -f in a cluster
-                case "$(printf '%s' "$a" | tr 'A-Z' 'a-z')" in -fo|-for|-forc|-force) force=1 ;; esac
-                printf '%s' "$a" | grep -q '[rR]' && rec=1
-                printf '%s' "$a" | grep -q 'f' && force=1
+                lower "$a"
+                case "$LO" in -fo|-for|-forc|-force) force=1 ;; esac
+                case "$a" in *[rR]*) rec=1 ;; esac
+                case "$a" in *f*) force=1 ;; esac
                 continue ;;
             esac
           fi
@@ -231,7 +335,8 @@ while IFS= read -r seg; do
         if [ "$rec" -eq 1 ] && [ "$force" -eq 1 ]; then
           for t in "${targets[@]}"; do
             if is_danger_target "$t"; then
-              block "rm -rf on '$(unquote "$t")' would delete the repository, the home directory or a system path. Delete the specific build output you mean (for example dist/ or node_modules/), or ask the user to do this by hand."
+              unq "$t"
+              block "rm -rf on '$UQ' would delete the repository, the home directory or a system path. Delete the specific build output you mean (for example dist/ or node_modules/), or ask the user to do this by hand."
             fi
           done
         fi
@@ -240,10 +345,10 @@ while IFS= read -r seg; do
       git|*/git)
         gdir="$workdir"; sub=""; k=$((i + 1))
         while [ "$k" -lt "$n" ]; do
-          a=$(unquote "${toks[k]}")
+          unq "${toks[k]}"; a=$UQ
           case "$a" in
-            -C) k=$((k + 1)); d=$(unquote "${toks[k]}" | tr '\\' '/')
-                case "$d" in /*|[A-Za-z]:/*) gdir=$(norm_path "$d") ;; *) gdir="$gdir/$d" ;; esac ;;
+            -C) k=$((k + 1)); unq "${toks[k]}"; d=${UQ//\\//}
+                case "$d" in /*|[A-Za-z]:/*) gdir=$d ;; *) gdir="$gdir/$d" ;; esac ;;
             -c|--git-dir|--work-tree|--namespace|--config-env) k=$((k + 1)) ;;
             -*) ;;
             *) sub="$a"; break ;;
@@ -251,7 +356,7 @@ while IFS= read -r seg; do
           k=$((k + 1))
         done
         rest=()
-        for ((j = k + 1; j < n; j++)); do rest+=("$(unquote "${toks[j]}")"); done
+        for ((j = k + 1; j < n; j++)); do unq "${toks[j]}"; rest+=("$UQ"); done
         case "$sub" in
           push)
             forced=0; all=0; pos=()
@@ -263,30 +368,33 @@ while IFS= read -r seg; do
                 --all|--mirror) all=1 ;;
                 -o|--push-option|--repo|--receive-pack|--exec) skip=1 ;;
                 --*) ;;
-                -*) printf '%s' "$a" | grep -q 'f' && forced=1 ;;
+                -*) case "$a" in *f*) forced=1 ;; esac ;;
                 *) pos+=("$a") ;;
               esac
             done
-            branches=()
-            if [ "${#pos[@]}" -ge 2 ]; then
-              for r in "${pos[@]:1}"; do
-                case "$r" in +*) forced=1; r=${r#+} ;; esac
-                case "$r" in *:*) r=${r##*:} ;; esac
-                if [ "$r" = "HEAD" ]; then
-                  r=$(git -C "$gdir" rev-parse --abbrev-ref HEAD 2>/dev/null)
-                fi
-                branches+=("$r")
-              done
-            else
-              branches+=("$(git -C "$gdir" rev-parse --abbrev-ref HEAD 2>/dev/null)")
-            fi
-            if [ "$forced" -eq 1 ]; then
-              [ "$all" -eq 1 ] && block "a force push with --all/--mirror rewrites every branch, protected ones included."
-              for b in "${branches[@]}"; do
-                if is_protected_branch "$b"; then
-                  block "force push to protected branch '$b' rewrites shared history. Push to a feature branch and open a PR, or ask the user to do this by hand."
-                fi
-              done
+            # The branch is only worth a `git rev-parse` once the push is known to be forced.
+            if [ "$forced" -eq 1 ] || [ "${#pos[@]}" -ge 2 ]; then
+              branches=()
+              if [ "${#pos[@]}" -ge 2 ]; then
+                for r in "${pos[@]:1}"; do
+                  case "$r" in +*) forced=1; r=${r#+} ;; esac
+                  case "$r" in *:*) r=${r##*:} ;; esac
+                  if [ "$r" = "HEAD" ]; then
+                    r=$(branch_at "$gdir")
+                  fi
+                  branches+=("$r")
+                done
+              else
+                branches+=("$(branch_at "$gdir")")
+              fi
+              if [ "$forced" -eq 1 ]; then
+                [ "$all" -eq 1 ] && block "a force push with --all/--mirror rewrites every branch, protected ones included."
+                for b in "${branches[@]}"; do
+                  if is_protected_branch "$b"; then
+                    block "force push to protected branch '$b' rewrites shared history. Push to a feature branch and open a PR, or ask the user to do this by hand."
+                  fi
+                done
+              fi
             fi
             ;;
           reset)
@@ -300,8 +408,8 @@ while IFS= read -r seg; do
               case "$a" in
                 --force) cf=1 ;;
                 --*) ;;
-                -*) printf '%s' "$a" | grep -q 'f' && cf=1
-                    printf '%s' "$a" | grep -q '[xX]' && cx=1 ;;
+                -*) case "$a" in *f*) cf=1 ;; esac
+                    case "$a" in *[xX]*) cx=1 ;; esac ;;
               esac
             done
             [ "$cf" -eq 1 ] && [ "$cx" -eq 1 ] && block "git clean -x also deletes ignored files - local env files, local databases, caches - none of which git can restore. Drop -x, or list with 'git clean -n -x' first and ask the user."
@@ -328,7 +436,19 @@ done <<< "$segments"
 
 # --- destructive SQL against a non-local host (whole command: the SQL and the host flag are
 #     often on opposite sides of a pipe) --------------------------------------------------------
-if printf '%s' "$cmd" | grep -Eiq '(DROP[[:space:]]+(TABLE|DATABASE|SCHEMA)|TRUNCATE[[:space:]]+)'; then
+# grep -i only for non-ASCII text, where its locale's case folding is the reference; ASCII text
+# gets the same test as a builtin, with the case spelled out.
+sql_destructive() {
+  local re='([Dd][Rr][Oo][Pp][[:space:]]+([Tt][Aa][Bb][Ll][Ee]|[Dd][Aa][Tt][Aa][Bb][Aa][Ss][Ee]|[Ss][Cc][Hh][Ee][Mm][Aa])|[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee][[:space:]]+)'
+  local had=${LC_ALL+x} old=${LC_ALL-} ascii=1 rc
+  LC_ALL=C
+  case $cmd in *[!\ -~$'\t\n\r']*) ascii=0 ;; esac
+  if [ "$ascii" -eq 1 ]; then [[ $cmd =~ $re ]]; rc=$?; fi
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  [ "$ascii" -eq 1 ] && return $rc
+  printf '%s' "$cmd" | grep -Eiq '(DROP[[:space:]]+(TABLE|DATABASE|SCHEMA)|TRUNCATE[[:space:]]+)'
+}
+if sql_destructive; then
   hosts=$( {
     printf '%s\n' "$cmd" | grep -Eo -- '(^|[[:space:]])(-h|-S|--host|--server)[[:space:]=]*[^[:space:]]+' | sed -E 's/^[[:space:]]*(-h|-S|--host|--server)[[:space:]=]*//'
     printf '%s\n' "$cmd" | grep -Eio -- 'host=[^[:space:];]+' | sed -E 's/^[hH][oO][sS][tT]=//'

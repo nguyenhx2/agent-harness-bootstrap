@@ -1,9 +1,7 @@
 # From spec to the agentic loop
 
-The spec is not a phase that ends before the work starts. It is the oracle the loop checks against
-at every step, and the loop only works if each step reads the same contract. This file says how a
-requirement travels from `docs/specs/` into an agent's hands and back, and how much of that trip a
-change actually needs.
+The spec is the oracle every step of the loop checks against. This file says how a requirement
+travels from `docs/specs/` to an agent and back, and how much of that trip a change needs.
 
 ## The loop
 
@@ -22,15 +20,13 @@ FR (confirmed)  ->  task  ->  implement  ->  verify-plan  ->  review  ->  done
 | **review** | the diff and the criterion IDs | findings | the reviewer checks each criterion-test pair, not the code alone |
 | **done** | the evidence map | the task closed with it | a criterion with no evidence is not met; say so rather than close |
 
-**A criterion that turns out wrong goes back to the spec, not around it.** If the implementer finds
-that a criterion cannot be met, or that meeting it would be wrong, that is an open issue in 11 and a
-`change` on the confirmation sheet - never a quietly adjusted test. The loop's whole value is that
-the oracle is not the actor's to edit.
+**A criterion that turns out wrong goes back to the spec, not around it.** A criterion that cannot
+be met, or would be wrong to meet, becomes an open issue in 11 and a `change` on the confirmation
+sheet - never a quietly adjusted test. The oracle is not the actor's to edit.
 
 ## Agents read the index first
 
-`docs/specs/index.json` exists so that an agent working on one FR does not load every section to find
-it. It carries, per FR: title, plain-words statement, priority, status, the sheet's decision,
+`docs/specs/index.json` lets an agent working on one FR skip every other section. Per FR it carries: title, plain-words statement, priority, status, the sheet's decision,
 criterion count and IDs, open issues, linked tasks, and the file and anchor of the full block.
 
 - Pick work from the index: `status` Confirmed, `decision` yes, `open_issues` empty, `tasks` empty.
@@ -40,7 +36,7 @@ criterion count and IDs, open issues, linked tasks, and the file and anchor of t
 
 ## Ceremony in proportion
 
-The full spec cycle is for changes to the contract. Most changes are not. Match the harness's tiers:
+The full spec cycle is for changes to the contract. Match the harness's tiers:
 
 | The change | What the spec needs | Then |
 |------------|---------------------|------|
@@ -48,10 +44,9 @@ The full spec cycle is for changes to the contract. Most changes are not. Match 
 | **Standard** - new or changed behaviour inside an existing FR | one appended criterion (`AC-03.4`), `spec-check.py --write`, a revision row | the owning seat implements against it; the sheet shows the new line for the next confirmation |
 | **Guarded** - a new FR, a changed priority, anything a stakeholder must agree to | the FR block, its criteria, the confirmation sheet answered | the full loop above |
 
-The test for which row applies is one question: **would a stakeholder reading the sheet see a
-different promise?** No: no spec work. Yes, inside an FR they already agreed to: append the
-criterion. Yes, a new promise: confirm it first. A heavier row than the change needs is as much a
-defect as a lighter one - ceremony that does not change the outcome is how teams learn to skip it.
+The test: **would a stakeholder reading the sheet see a different promise?** No: no spec work.
+Yes, inside an agreed FR: append the criterion. Yes, a new promise: confirm it first. A heavier row
+than the change needs is as much a defect as a lighter one.
 
 ## Non-code repositories
 

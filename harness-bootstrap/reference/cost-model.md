@@ -1,7 +1,7 @@
 # Cost model - how to make a roster cheap without making it dumb
 
-Read this before assigning `model:` or `effort:` to any generated agent. It is the reasoning behind
-[`roster.md`](roster.md)'s allocation table; that table is the answer, this is the why.
+The reasoning behind [`roster.md`](roster.md)'s allocation table. Read it before deviating from that
+table.
 
 ## The pricing that actually applies
 
@@ -14,23 +14,17 @@ Read this before assigning `model:` or `effort:` to any generated agent. It is t
 
 Cache reads cost ~0.1x input. Cache writes cost 1.25x (5-minute TTL) or 2x (1-hour TTL).
 
-**The headline: Opus is 1.67x Sonnet, not 5x.** Much published multi-agent advice - including this
-skill's previous version - dates from a five-fold Opus/Sonnet gap and concluded "spend the expensive
-model only on review gates." At these prices that is mostly wrong: downgrading a reviewer to Sonnet
-saves ~40% of that agent's tokens, not ~80%, and buys it by weakening the seat whose whole job is
-catching what a generation pass got wrong. Haiku, though, is a genuine 3x saving against Sonnet and
-5x against Opus - the cheap end of the ladder is where tier selection still pays.
+**Opus is 1.67x Sonnet, not 5x.** Downgrading a reviewer to Sonnet saves ~40% of that seat's tokens
+and weakens the seat whose job is catching what generation got wrong. Haiku is a genuine 3x saving
+against Sonnet and 5x against Opus - the cheap end of the ladder is where tier selection pays.
 
-## The four levers, ranked by how much they actually move the bill
+## The four levers, ranked by how much they move the bill
 
 ### 1. `effort:` - the biggest lever, and the one most rosters never set
 
-`effort` controls thinking depth and how much the model does per turn. It is valid subagent
-frontmatter (`low` | `medium` | `high` | `xhigh` | `max`) and defaults to inheriting the session
-level - in practice, whatever the human's session runs at, usually `high` or `xhigh`. On a ten-agent
-roster that is a large, silent, unbudgeted spend. Lower effort means fewer, more-consolidated tool
-calls, less preamble, terser output - it cuts thinking tokens, output tokens, AND turn count, so it
-compounds.
+`effort` (`low` | `medium` | `high` | `xhigh` | `max`) sets thinking depth and work per turn. Unset, it
+inherits the session level - usually `high` or `xhigh` - which on a ten-seat roster is a large,
+silent spend. Lower effort cuts thinking tokens, output tokens and turn count, so it compounds.
 
 | Effort | Use for | Notes |
 |---|---|---|
@@ -40,38 +34,28 @@ compounds.
 | `xhigh` | The hardest coding and agentic work: a cross-cutting refactor, a root-cause hunt | Best setting for coding/agentic on Opus 4.8 and Sonnet 5. Do **not** reach for it reflexively |
 | `max` | Effectively never, in a generated roster | Prone to overthinking, diminishing returns. Reserve for a human deciding a specific hard case |
 
-**Dev seats run at `medium`, not `high`.** A `<domain>-dev` seat in this harness works against a
-settled contract by construction: in the Guarded flow `spec-guardian` has locked the acceptance
-criteria and the design step has named the modules, interfaces and edge cases before the first
-line; in Direct work the change is one reversible module. That is the `medium` row, and current
-models hold quality at `medium` for that kind of step. The judgment the seat still needs is
-supplied by the brief, not by thinking depth - and the anti-loop rule already spends capability
-where it pays: the third attempt re-dispatches one tier of `effort:` higher with what the first two
-got wrong (`task-control.md`). So the default is `medium`, raised to `high` per seat only when its
-attempts show it (repeated `scope` failures on clear briefs), and recorded in `model-tiers.md`.
-Seats that make the calls - `ba-analyst`, `data-modeler`, the reviewers, `strategist`, `checker` -
-stay at `high`.
+**Dev seats run at `medium`.** A `<domain>-dev` seat works against a settled contract: in the
+Guarded flow `spec-guardian` has locked the criteria and the design names modules, interfaces and
+edge cases; in Direct work the change is one reversible module. The brief supplies the judgment, and
+the anti-loop rule re-dispatches the third attempt one `effort:` tier higher (`task-control.md`).
+Raise a dev seat to `high` only when its attempts show it (repeated `scope` failures on clear
+briefs), and record it in `model-tiers.md`. Seats that make the calls - `ba-analyst`,
+`data-modeler`, the reviewers, `strategist`, `checker` - stay at `high`.
 
-Two traps worth stating plainly:
-
-- **Do not default everything to `xhigh`.** On Opus 4.8 the intelligence ceiling is high enough that
-  `high` is the right starting point; `xhigh` is something you move *to* after measuring, not from.
-- **Do not starve a judgment seat to save money.** At `low`/`medium` the model scopes work tightly to
-  what was asked. That is exactly right for `history-tracker` and exactly wrong for `debugger`. If
-  you see shallow reasoning on a hard problem, raise `effort` - do not try to prompt around it.
+- **Do not default everything to `xhigh`.** On Opus 4.8 start at `high`; move to `xhigh` after
+  measuring.
+- **Do not starve a judgment seat.** Tight scoping at `low`/`medium` is right for
+  `history-tracker` and wrong for `debugger`. Shallow reasoning on a hard problem means raise
+  `effort`, not prompt around it.
 
 ### 2. Context hygiene - what every request pays for, on every turn
 
-An agent's input cost is dominated by things that are re-sent on *every* turn of its run: the system
-prompt, the tool schemas, the loaded rules, and the files it has read. Those recur; the agent body you
-wrote once does not dominate anything.
+Input cost is dominated by what is re-sent every turn: system prompt, tool schemas, loaded rules,
+files read. In descending order of payoff:
 
-Three concrete cuts, in descending order of payoff:
-
-**Path-scope the rules.** A `.claude/rules/` file with no `paths:` frontmatter loads at launch, into
-every session, at the same priority as `CLAUDE.md` - a roster whose rules are all unconditional pays
-for every one in every agent, forever, including `frontend.md` in the database agent. With `paths:`
-the rule enters context only when Claude touches a matching file:
+**Path-scope the rules.** A `.claude/rules/` file with no `paths:` loads into every session at
+`CLAUDE.md` priority - `frontend.md` in the database agent, forever. With `paths:` it loads only
+when a matching file is touched:
 
 ```markdown
 ---
@@ -82,39 +66,32 @@ paths:
 # Frontend conventions
 ```
 
-Only genuinely universal rules stay unconditional - in the generated roster that is `00-overview.md`,
-`agent-guardrails.md`, `task-tracking.md`, `conventional-commits.md`, and the two governance rules
-(`model-policy.md`, and `ai-governance.md` when the `ai` flag is set), which decide what may be sent
-where *before* any file is touched and so cannot be path-scoped. The seat-tier table is not among
-them: it lives in the path-scoped `model-tiers.md`. Everything else gets a `paths:` block - the single largest
-recurring saving, costing nothing but frontmatter.
+Only rules that bind before any file is touched stay unconditional: `00-overview.md`,
+`agent-guardrails.md`, `task-tracking.md`, `conventional-commits.md`, `model-policy.md`, and
+`ai-governance.md` with the `ai` flag. The seat-tier table lives in path-scoped `model-tiers.md`.
 
-**Grant tools narrowly.** Every tool in `tools:` ships its JSON schema on every request. Reviewers
-need `Read, Grep, Glob, Bash` - `Edit`/`Write` costs tokens *and* destroys their independence.
-Omitting `tools:` inherits everything including every MCP tool on the machine - thousands of schema
-tokens the agent never calls. `disallowedTools` strips MCP servers an agent has no business touching.
+**Grant tools narrowly.** Every tool in `tools:` ships its schema on every request. Reviewers need
+`Read, Grep, Glob, Bash`; `Edit`/`Write` costs tokens and their independence. Omitting `tools:`
+inherits every MCP tool on the machine. `disallowedTools` strips servers a seat has no business
+touching.
 
-**Bound the runaway.** `maxTurns` is a circuit breaker: a looping agent burns the full context every
-turn, and the cost of a stuck agent is unbounded. Set it on the mechanical seats, where a high turn
-count means something already went wrong.
+**Bound the runaway.** `maxTurns` is a circuit breaker: a looping agent burns its full context every
+turn. Set it on the mechanical seats, where a high turn count means something already went wrong.
 
-**Verify in proportion to the diff.** The most expensive habit is not a tier choice, it is
-verification nobody needed: three reviewers over a README edit, the full suite after every step, an
-end-to-end run for a rename. The generated harness decides this per diff with
-`.claude/scripts/verify-plan.py` - security review only when the paths touch auth, secrets, input
-parsing, data handling, AI tool calls, dependencies or infrastructure; end to end only for a named
-critical flow; docs and config get the secret scan and nothing else - and every skipped gate is one
-logged line with its reason. Current models also verify their own work unprompted, so a brief that
-says "double-check" or "add a final verification step" buys a second pass that learns nothing.
-Write the check into the gate once, never into every brief.
+**Verify in proportion to the diff.** The costliest habit is verification nobody needed: three
+reviewers over a README edit, the full suite after every step, end to end for a rename.
+`.claude/scripts/verify-plan.py` decides per diff - security review only when paths touch auth,
+secrets, input parsing, data handling, AI tool calls, dependencies or infrastructure; end to end only
+for a named critical flow; docs and config get the secret scan only - and logs each skipped gate
+with its reason. Current models check their own work unprompted, so a brief asking for an extra
+review pass buys one that learns nothing. Put the check in the gate once - a script exit code -
+never in every brief.
 
-**Keep resumable state compact.** A task that is resumed re-reads its state each time. The task
-file carries a three-line checkpoint (next step, last green commit, open questions) that
-`task.py resume` prints with the last few log rows, and the session log keeps only its newest rows
-in the file - older ones are archived beside it, still committed. Resuming costs the digest, not
-the history.
+**Keep resumable state compact.** The task file carries a three-line checkpoint (next step, last
+green commit, open questions) that `task.py resume` prints with the last log rows; older log rows
+are archived beside the file. Resuming costs the digest, not the history.
 
-### 3. Model tier - still real, but a smaller dial than it used to be
+### 3. Model tier - a smaller dial than it used to be
 
 Apply in this order and stop at the first match:
 
@@ -124,60 +101,44 @@ Apply in this order and stop at the first match:
 | Does it make consequential judgment calls (planning, decomposition, root-cause) or exist to catch *other* agents' mistakes (a review or merge gate)? | `opus` |
 | Otherwise - producing code, tests, docs, or structured output against a settled spec | `sonnet` |
 
-Note the order changed from the usual formulation: **test for mechanical first.** That is where tier
-selection still buys a 3-5x saving. The Opus-vs-Sonnet decision below it is a 1.67x dial, so make it
-on quality grounds and stop agonizing about the cost.
+**Test for mechanical first** - that is where tier selection buys 3-5x. Opus versus Sonnet is a
+1.67x dial; decide it on quality.
 
-`fable` is not assigned to any seat by default: it costs 2x Opus, and its strength - very
-long-horizon autonomous runs - is not what a bounded, orchestrator-supervised task agent does. Field
-it only when a human explicitly asks, on a specific hard problem.
+`fable` is on no seat by default: it costs 2x Opus, and its strength - very long autonomous runs -
+is not what a bounded, supervised task seat does. Field it only when a human asks, for a specific
+hard problem.
 
-**Never leave `model:` unset.** It defaults to `inherit` - the agent silently runs on whatever the
-caller uses. Not a choice but the absence of one; on a mechanical agent it means Opus prices to
-summarize a log file.
+**Never leave `model:` unset.** It defaults to `inherit`: a mechanical seat then summarizes a log at
+Opus prices.
 
-### 4. Prompt-cache stability - a 90% discount you get for free, or lose for free
+### 4. Prompt-cache stability - a 90% discount you get or lose for free
 
-Caching is a **prefix match** (`tools` → `system` → `messages`); any byte change invalidates
-everything after it. Cache reads cost ~0.1x input. For a generated roster this means one rule, about
-*authoring*, not runtime:
+Caching is a **prefix match** (`tools` → `system` → `messages`); one changed byte invalidates
+everything after it.
 
 > **Agent bodies, rule files, and CLAUDE.md must be byte-stable across runs.**
 
-Nothing in them may interpolate a timestamp, a run ID, a session counter, or today's date - a single
-`Generated: 2026-07-14` line cold-misses that agent's cache on every future run. Volatile state
-belongs in the task file under `docs/tasks/`, which the agent *reads* as a message, not in the
-system prompt it *is*.
+No timestamp, run ID, session counter or date in them - one `Generated: 2026-07-14` line cold-misses
+that agent's cache on every run. Volatile state belongs in the task file, which the agent reads as a
+message.
 
-Two corollaries:
-
-- Changing an agent's `tools:` list mid-project invalidates its whole cache (tools render at position
-  zero). Batch roster changes; don't trickle them.
-- The orchestrator dispatching to a stable agent set gets cache reads on every dispatch. A roster
-  churning every session never warms.
+- Changing a seat's `tools:` invalidates its whole cache (tools render first). Batch roster changes.
+- A stable seat set gets cache reads on every dispatch; a roster churning every session never warms.
 
 ## When NOT to spawn a subagent
 
-A subagent is not free parallelism. It starts with a fresh context window and must re-establish
-everything - re-read the files, re-load the rules, re-derive the situation - at full price, because
-a fresh context has nothing cached. The trade is worth it when the subagent's work would otherwise
-**flood the parent's context** with material the parent will never reference again - a wide search,
-a long log, twenty files skimmed to find one; it returns a summary, the parent keeps a clean window
-(this is why `Explore` exists). It is *not* worth it when the task is two tool calls the parent
-could make itself: delegating a single `grep` costs more than running it.
+A subagent starts with a fresh, uncached context and re-reads everything at full price. It pays off
+when its work would otherwise **flood the parent's context** - a wide search, a long log, twenty
+files skimmed for one - and returns a summary. It does not pay off for two tool calls the parent
+could make: delegating one `grep` costs more than running it.
 
-So, for the orchestrator's dispatch rule:
-
-- **Fan out** when the work is independent and voluminous - that's parallel wall-clock *and* context
-  savings.
-- **Inline it** when the work is small and its output is small.
-- Never dispatch an agent whose entire job is to hand back something the parent already has.
+- **Fan out** independent, voluminous work - parallel wall-clock and context savings.
+- **Inline** small work with small output.
+- Never dispatch a seat to hand back something the parent already has.
 
 ## Putting it together
 
-The allocation in [`roster.md`](roster.md) falls straight out of the above: the savings come from
-the **bottom** of the roster (mechanical seats on `haiku`+`low`, bounded by `maxTurns`) and from
-**context discipline on every seat** (path-scoped rules, narrow tool grants, stable bodies) - not
-from downgrading the seats that do the thinking. Record the allocation in the setup-plan echo so a
-human sees it was decided rather than defaulted, and re-state it in the quality gate. An agent
-shipped with `model:` or `effort:` unset is a bug, not a default.
+The savings come from the **bottom** of the roster (mechanical seats on `haiku` + `low`, bounded by
+`maxTurns`) and from **context discipline on every seat** (path-scoped rules, narrow tools, stable
+bodies) - not from downgrading the thinking seats. Show the allocation in the setup-plan echo so a
+human sees it was decided. A seat with `model:` or `effort:` unset is a bug.

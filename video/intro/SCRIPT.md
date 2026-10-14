@@ -6,13 +6,19 @@ with the same scene ids. Each `##` heading is a scene; each `-` line under it is
 spoken in order. The narration sent to the voice is the cues joined with a space, so a caption can
 never say something the voice does not.
 
-The clip is built as pain-point bubbles: the first cue of each question scene is the question a
-team actually asks, drawn as a speech bubble, and the cues after it are the mechanism that answers
-it. The questions mirror the seven sections of "The problems it solves" in `README.md`; `safe` and
-`lean` are the two halves of the second one.
+The clip is built as pain-point bubbles. After the soul line, `frame` says what is coming. Each
+question scene then opens with a short lead-in line, spoken over a "question n of 7" card; the
+quoted cue after it is the question a team actually asks, drawn as a speech bubble; and the cues
+after that are the mechanism that answers it. The quote marks are what tells the composition which
+cue is the question. The questions mirror the seven sections of "The problems it solves" in
+`README.md`; `safe` and `lean` are the two halves of the second one.
+
+It is written to be spoken, not read: short sentences and contractions. The voice is never sped
+up; `scripts/build-timing.mjs` only shortens long pauses and opens a short gap between scenes, so
+the music can come up.
 
 `scripts/build-timing.mjs` reads this file together with the character alignment the voice came
-back with, and writes `src/timing.en.json`: one start and end per cue, one start per scene. Edit a
+back with and the silences in the cached audio, and writes `src/timing.en.json`: one start and end per cue, one start per scene. Edit a
 cue and the cached narration no longer matches; the timing build refuses to run until the voice is
 regenerated (`bash render.sh --generate voice --force`).
 
@@ -29,59 +35,71 @@ licence beside it in `src/icons.LICENSE`.
 ## open
 
 - Give an AI agent a repo it can actually understand,
-- and a harness it cannot escape.
+- and a harness it can't escape.
+
+## frame
+
+- Teams putting agents on real work keep asking the same few questions.
+- Here they are, with what answers each one.
 
 ## team
 
+- First, the team.
 - "I want an agent team that fits my project."
-- harness-bootstrap reads your code first, and asks what the repo is for: code, research, strategy or docs.
-- The roster is sized from evidence: one dev seat per real module, never every seat by default.
+- harness-bootstrap reads your code first, then asks what the repo is for: code, research, strategy, or docs.
+- One dev seat per real module. Never every seat by default.
 
 ## safe
 
+- Next, safety and cost.
 - "I want it safe, without it overthinking or burning tokens."
-- Hooks block in the shell, so no model decides.
-- A force push to main is refused by default.
+- Hooks block in the shell, so no model gets a say.
+- A force push to main? Refused, by default.
 
 ## lean
 
 - verify-plan reads the diff and asks only for the checks it needs.
-- The ledger refuses a review of content that already passed, and review rounds are bounded.
+- The ledger won't re-review what already passed, and review rounds are capped.
 - Every seat pins its model, effort and tools.
 
 ## keys
 
-- "I am worried about leaking keys."
-- protect-secrets blocks reading env files and keys.
-- env-read runs a command with the values loaded, then redacts them from the output.
+- Then, secrets.
+- "I'm worried about leaking keys."
+- protect-secrets blocks reads of env files and keys.
+- env-read runs a command with the values loaded, and redacts them from the output.
 
 ## loop
 
+- Now, how the work flows.
 - "Traditional SDLC makes every task a struggle, and AI-DLC ends up half-hearted."
 - Here the spec is the oracle of one loop: requirement, task, implement, verify, review, done.
 - Ceremony follows the change: a small edit stays inline, a schema change gets the guarded flow.
 
 ## spec
 
+- Then, the spec.
 - "I want specs a human can confirm and an AI can understand."
 - spec-builder writes one contract: a plain-words sheet the client answers, and an index agents read first.
 - Anything unknown is flagged, never invented.
 
 ## control
 
+- Next, seeing inside.
 - "I want to understand and control how the agents work, in depth."
 - harness-view draws every agent, rule, hook and module as a live graph, read off disk.
-- Toggle any part off safely, and every finished subagent run is archived.
+- Switch any part off safely, and every finished subagent run is archived.
 
 ## assess
 
-- "Once built, it is too much to check, slow to fix, and the score is vague."
-- harness-view assess makes it a worklist, with one-click fixes and what changed since the last check.
-- Every finding carries a rule ID, its file and line, and the fix, from a published rubric.
+- And last, the check.
+- "Once built, it's too much to check, slow to fix, and the score is vague."
+- harness-view assess turns that into a worklist, with one-click fixes and what changed since last time.
+- Every finding has a rule ID, its file and line, and the fix, from a published rubric.
 
 ## close
 
-- A repo it can actually understand. A harness it cannot escape.
+- A repo it can actually understand. A harness it can't escape.
 
 ## On-screen figures
 
@@ -92,7 +110,7 @@ hand: re-run the deriver, then re-render. Because this file is the scene source 
 
 [//]: # (figures:begin)
 - team scene: a run installs 3 to 17 of the 18 seats; purpose profiles code, research, strategy, docs
-- safe scene: 26 hooks; guardrail eval 266/266 per hook flavour, on a strict scaffold
+- safe scene: 26 hooks; guardrail eval 290/290 per hook flavour, on a strict scaffold
 - lean scene: review bounded at 2 rounds; spawn depth 2, at most 4 concurrent subagents
 - loop scene: tiers Inline (main session), Direct (owning agent), Standard (owning agent), Guarded (orchestrator)
 - spec scene: 6 core sections, up to 8 optional

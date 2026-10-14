@@ -1,24 +1,20 @@
 # Codebase analysis - deriving the harness from the source that exists
 
-Brownfield and audit mode. Analyze the current source and produce an evidence-based **Inventory
-Report** whose mapping tables parameterize the whole bootstrap - so the generated harness describes
-THIS codebase, not a generic project.
-
-Run this BEFORE the intake questionnaire. Never generate a file before the report is confirmed.
+Brownfield and audit mode, BEFORE intake. Produce an evidence-based **Inventory Report** whose
+mapping tables parameterize the bootstrap. Generate nothing until the report is confirmed.
 
 ## Phase A - discover
 
-Sweep the repo read-only (Glob/Grep/Read). Record a file path as proof for every finding - never
-guess.
+Sweep read-only (Glob/Grep/Read). Every finding carries a file path as proof.
 
-**Dispatch the sweep in parallel.** The ten passes below are mutually independent: past ~50 source
-files, dispatch THREE `Explore` agents in ONE message and merge their reports -
+**Parallel sweep.** The passes are independent: past ~50 source files, dispatch THREE `Explore`
+agents in ONE message and merge their reports -
 - agent 1: passes 1, 2, 7 (stack, layout and modules, conventions in force);
 - agent 2: passes 3, 4, 5, 6 (data layer, async and infra, integrations, configuration surface);
 - agent 3: passes 8, 9, 10 (risky operations, existing agent surface, git reality).
 
-Each prompt names its passes verbatim from the list below and requires evidence paths. A smaller
-repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism.
+Each prompt names its passes verbatim and requires evidence paths. A smaller repo is cheaper
+inline.
 
 0. **Purpose** - what the repo produces, which sets the purpose flags intake Q0 confirms. Source
    files and a build manifest → `purpose_code`. A tree that is mostly prose, with a docs-site
@@ -29,12 +25,10 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
    the code-only passes (3, 4 and the stack half of 1) and say so in the report.
 1. **Stack** - manifests → language, framework, test runner, lint/format tools, pinned versions.
    Lockfile → package manager. The scripts block → the real test/lint/build/deploy commands.
-   Installed reality always beats any preset - see [`tech-presets.md`](tech-presets.md) for the
-   currency rule and how a contradicting preset becomes a migration proposal, not a silent rewrite.
+   Installed reality beats any preset ([`tech-presets.md`](tech-presets.md)).
 
-   Glob for all of these; a project is often two of them at once, and finding only the first hides
-   half the stack. Each row states what the finding is FOR - a detector whose result changes nothing
-   is noise, so do not extend this list without an answer in the third column.
+   Glob for all of these - a project is often two at once. Add a row only with an answer in the
+   third column.
 
    | Ecosystem | Manifests and lockfiles | What the finding drives |
    |---|---|---|
@@ -46,10 +40,9 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
    | Go / Rust / PHP | `go.mod`, `Cargo.toml`, `Cargo.lock`, `composer.json`, `composer.lock` | Toolchain and test command |
    | Monorepo | `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, `settings.gradle*`, Cargo `[workspace]` | The repo is MULTI-package: glob sets take the union across packages (see Phase C), and the module map comes from the workspace member list, not from a guess at `src/` |
 
-   A monorepo marker changes the shape of everything downstream, so check for one before writing any
-   glob. Every manifest found also belongs in `{{DEP_MANIFEST_GLOBS}}`, which is what path-scopes
-   `rules/ip-compliance.md`: a licence rule that does not match the repo's real manifest never loads,
-   and the licence gate is silently absent.
+   Check for a monorepo marker before writing any glob. Every manifest found goes into
+   `{{DEP_MANIFEST_GLOBS}}`, which path-scopes `rules/ip-compliance.md` - miss one and the licence
+   gate silently never loads.
 2. **Layout and modules** - source dirs one and two levels deep (`src/*`, `app/*`, `lib/*`,
    `packages/*`). Per module: purpose, rough size, and the dependencies visible cheaply.
 3. **Data layer** - ORM and schema files (`schema.prisma`, `models/`, `migrations/`, `*.sql`); the DB
@@ -70,12 +63,9 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
    the docs tree. What exists, what is stale (references to files that no longer exist), what conflicts
    with the standard.
 
-   Which agentic tool the repo is actually driven from decides whether step 8 ports, so rank this
-   evidence the same way pass 10 ranks the git platform - and be honest that it has got harder. The
-   signals have **converged**: Cursor reads `.claude/agents/`, `.claude/skills/` and `CLAUDE.md`
-   natively, and all three tools read `AGENTS.md`. A `.claude/` directory is therefore no longer
-   proof of Claude Code, and the instruction this table replaces ("`.claude/` -> Claude Code") was
-   confidently wrong on any repo a Cursor user had touched.
+   Which agentic tool drives the repo decides whether step 8 ports. Rank the evidence: the signals
+   have **converged** - Cursor reads `.claude/agents/`, `.claude/skills/` and `CLAUDE.md` natively,
+   and all three tools read `AGENTS.md` - so a `.claude/` directory does not prove Claude Code.
 
    | Evidence | Reads as | Strength |
    |---|---|---|
@@ -88,24 +78,18 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
    | `AGENTS.md` alone | Claude Code, Cursor, or Codex | **None. ASK, do not guess** |
    | No `.codex/` anywhere | nothing | **Weak evidence of anything.** Codex loads a project-local `.codex/` only when the project is marked trusted, so a Codex user can leave no trace in the repo at all |
 
-   Absence is the trap here, which is why the last row is spelled out rather than left implied. A
-   Weak or None row pre-selects nothing: it goes to the user as question 3a in
-   [`intake.md`](intake.md), the same rule pass 10 applies to a remote host that names no product.
-   Disagreeing signals - a `.cursorrules` beside a `.claude/settings.json` with hooks - mean BOTH
-   are reported and both are offered, not that the stronger one wins.
+   Pre-select only Strong rows. A Weak or None row goes to the user as intake question 3a
+   ([`intake.md`](intake.md)). Disagreeing signals - a `.cursorrules` beside a
+   `.claude/settings.json` with hooks - mean BOTH are reported and offered.
 
    Then record **who wrote** any pre-existing `.cursor/` or `.codex/`: grep it for
-   `generated by port.py`. The porter stamps that string into every `.mdc` comment and every
-   `hooks.json` `_generated_by` key, so its absence means a human authored the file. That decides
-   the Phase E class: porter output is PRESENT-OK or PRESENT-DRIFT and may be re-emitted, a
-   hand-authored file is a **CONFLICT** the user resolves. The check only became possible once the
-   porter started marking its own output - before that, a re-port discarded hand-tuned `.mdc` rules
-   and still printed a clean report.
+   `generated by port.py` (stamped into every `.mdc` comment and every `hooks.json`
+   `_generated_by` key). Porter output is PRESENT-OK or PRESENT-DRIFT and may be re-emitted; a
+   hand-authored file is a **CONFLICT** the user resolves.
 10. **Git reality** - default branch, branch naming, hosting platform, existing PR/MR conventions.
 
-    The platform decides which CLI the seats are told to use, so rank the evidence - the remote
-    alone is not conclusive, because self-hosted GitLab and Bitbucket Server both sit on a company
-    hostname that names neither product.
+    The platform decides which CLI the seats use. The remote alone is not conclusive: self-hosted
+    GitLab and Bitbucket Server sit on a company hostname.
 
     | Evidence | Reads as | Strength |
     |---|---|---|
@@ -119,9 +103,8 @@ repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism
     Disagreeing signals (a `.gitlab-ci.yml` under a `github.com` origin is a real migration state)
     mean ASK, reporting both sides.
 
-    Then check the CLI is usable, since a missing or logged-out one changes what a seat can be told
-    to do: `gh auth status`, `glab auth status`. Record authenticated, logged-out, or absent.
-    Bitbucket has no CLI of this shape - Q11 in [`intake.md`](intake.md) covers what happens instead.
+    Then record whether the CLI is authenticated, logged out or absent (`gh auth status`,
+    `glab auth status`). Bitbucket has no such CLI - intake Q11 covers it.
 
 ## Phase B - the Inventory Report
 
@@ -166,18 +149,14 @@ Present ONE report, about two screens:
 
 Get explicit confirmation or corrections before moving on. Corrections override findings.
 
-**The report is a hypothesis, not ground truth.** It is evidence-seeded but produced by a fast
-survey; the deep work that follows is expected to VALIDATE it and sometimes invert it - a control
-assumed present may prove absent, a severity may escalate once its blast radius is seen.
-Contradicting the report later is a success of the process. Let evidence win: update the
-master-plan, the severity, and the report itself; never argue the evidence back into agreement.
+**The report is a hypothesis.** Later work may invert it - a control assumed present proves absent,
+a severity escalates. Let evidence win: update the master-plan, the severity and the report; never
+argue the evidence back into agreement.
 
 ## Phase C - flags and globs
 
-The analysis emits two things the scaffolder cannot infer and the user should not have to type. Both
-are load-bearing: **path-scoped rules are the harness's main recurring token saving**
-([`cost-model.md`](cost-model.md)), and a rule scoped to a nonexistent path never loads - a silently
-dead guardrail.
+Two outputs the scaffolder cannot infer. A rule scoped to a nonexistent path never loads - a
+silently dead guardrail.
 
 **Flags** - set from evidence, confirmed at intake:
 
@@ -190,9 +169,8 @@ dead guardrail.
 | `audit` | Set by mode, not by evidence - agents will never write to the source |
 | `windows` / `posix` | The dev OS (detected, then confirmed) |
 
-**Glob sets** - derived from the ACTUAL tree, never from a framework's idealized layout. Verify each
-matches at least one real file before writing it into `vars.json`; a glob that matches nothing is a
-bug the scaffolder cannot catch for you.
+**Glob sets** - from the ACTUAL tree, never a framework's idealized layout. Confirm each matches at
+least one real file before it goes into `vars.json`.
 
 | Var | Scopes the rule | Typical shape (confirm against the tree) |
 |---|---|---|
@@ -201,9 +179,8 @@ bug the scaffolder cannot catch for you.
 | `{{DB_GLOBS}}` | `data-model` (flag `db`) | `prisma/**`, `src/db/**`, `**/migrations/**` |
 | `{{TEST_GLOBS}}` | `testing` | `**/*.{test,spec}.*`, `tests/**`, `e2e/**` |
 
-A monorepo takes the union across packages (`packages/*/src/**`), not a per-package rule set. Where the
-code has no separation - one flat directory - say so and scope to the directory rather than inventing a
-structure the code does not have.
+A monorepo takes the union across packages (`packages/*/src/**`). Flat code with no separation is
+scoped to its directory, not to an invented structure.
 
 ## Phase D - mapping tables
 
@@ -213,11 +190,9 @@ client, an integrations dir) gets its own owner. UI gets ONE frontend agent rega
 count. Feeds `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, and the roster ([`roster.md`](roster.md)) -
 the routing table must cover every agent and every module: no orphans either way.
 
-The report's **Spec module** column carries the code from `docs/specs/modules/<module>/` whose IDs
-this code module implements (`BLG`, for `FR-BLG-nn`), or `-` when the spec set is flat and there is
-nothing to map. It is what ties a code module to the section that specifies it: the owning dev
-agent's scope then names both the code paths and that spec folder, and a spec module with no code
-module (or the reverse) is a gap worth reporting rather than papering over.
+The report's **Spec module** column carries the code from `docs/specs/modules/<module>/` this module
+implements (`BLG` for `FR-BLG-nn`), or `-` for a flat spec set. The owner's scope names both the code
+paths and that spec folder; a spec module with no code module (or the reverse) is a reported gap.
 
 **Conventions → rules.** Write `coding-standards`, `frontend`, `data-model`, `testing` from the OBSERVED
 conventions. Where observation contradicts good practice (no strict mode, hardcoded colors), do NOT
@@ -245,17 +220,17 @@ the class IS the action. Generation never clobbers.
 | CONFLICT | Contradicts a standard guardrail (a hook that permits force-push, a rule that allows prod writes) | **Flag** to the user as a decision. Never silently resolved either way |
 | EXTRA | Exists, not in the standard, not harmful | **Keep and register** in `00-overview.md` / `AGENTS.md`. The standard is a floor, not a ceiling |
 
-Never delete or rewrite-from-scratch a file the user authored. And do not reformat or "fix" product
-source during bootstrap: convention violations in `src/` become backlog tasks. The bootstrap touches
-only the agent surface - `.claude/`, `docs/`, the root instruction files, `.env.example`, the CI stub.
+Never delete or rewrite a file the user authored, and never "fix" product source during bootstrap:
+convention violations become backlog tasks. The bootstrap touches only `.claude/`, `docs/`, the root
+instruction files, `.env.example` and the CI stub.
 
 ## Phase F - migration backlog
 
-Every gap and every convention deviation becomes a registered task, so orchestration has real work on
-day one instead of an empty board:
+Every gap and convention deviation becomes registered work, grouped into a few large tasks the
+user approves:
 
 - `docs/tasks/master-plan.md` gets a "Phase 1 - standardization" section.
-- One `TASK-NNN` row per gap. Owner = the agent that owns that concern. P0 for guardrail gaps, P1 for
+- One `TASK-NNN` row per group of related gaps. Owner = the agent that owns that concern. P0 for guardrail gaps, P1 for
   convention drift, P2 for nice-to-haves.
 - Create the task files for the P0 items immediately, from `docs/templates/TASK.md`. They
   start at status `Planned` - see [`task-control.md`](task-control.md).

@@ -11,6 +11,20 @@ const en = {
   closeA: 'A repo it can actually understand.',
   closeB: 'A harness it cannot escape.',
   you: 'you',
+
+  // frame, and the lead-in card before each question
+  frameTitle: 'The questions teams keep asking',
+  frameSub: 'and what answers each one',
+  questionOf: (n: number, of: number) => `question ${n} of ${of}`,
+  topic: {
+    team: 'A team that fits',
+    safe: 'Safe, without the waste',
+    keys: 'Keys stay secret',
+    loop: 'A loop that holds',
+    spec: 'Specs both sides can read',
+    control: 'See it, control it',
+    assess: 'A score you can act on',
+  } as Record<string, string>,
   kicker: {
     team: 'a team that fits',
     safe: 'safe by default',
@@ -137,6 +151,18 @@ const ja: Strings = {
   closeA: '本当に理解できるリポジトリと、',
   closeB: '抜け出せないハーネス。',
   you: 'あなた',
+  frameTitle: 'チームがいつも聞くこと',
+  frameSub: 'それぞれに、答えがあります',
+  questionOf: (n: number, of: number) => `質問 ${n} / ${of}`,
+  topic: {
+    team: '合ったチーム',
+    safe: '安全に、無駄なく',
+    keys: 'キーを守る',
+    loop: '回り続けるループ',
+    spec: '双方が読める仕様',
+    control: '見て、制御する',
+    assess: '直せる採点',
+  },
   kicker: {
     team: '合ったチーム',
     safe: '既定で安全',

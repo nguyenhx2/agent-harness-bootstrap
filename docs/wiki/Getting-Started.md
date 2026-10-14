@@ -4,15 +4,7 @@
 
 ## Install
 
-Download the bundle from the [latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
-and unzip it into your skills directory:
-
-```bash
-unzip agent-harness-bootstrap.zip -d ~/.claude/skills/
-```
-
-Or skip the download entirely - the recommended path is the plugin marketplace, inside any
-Claude Code session:
+The recommended path is the plugin marketplace, from inside any Claude Code session:
 
 ```text
 /plugin marketplace add nguyenhx2/agent-harness-bootstrap
@@ -20,83 +12,106 @@ Claude Code session:
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-Updates then arrive with `/plugin update`. The zip remains the offline, pinned route.
+Updates then arrive with `/plugin update`. For an offline, pinned install, download the bundle from
+the [latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) and unzip
+it into your skills directory:
 
-Claude Code picks the skills up on the next session. Each archive carries a `VERSION` file inside
-the skill directory, so an installed skill is self-identifying: if you are ever unsure what you have,
-read `~/.claude/skills/harness-bootstrap/VERSION`.
+```bash
+unzip agent-harness-bootstrap.zip -d ~/.claude/skills/
+```
+
+Claude Code picks the skills up on the next session. Each skill directory carries a `VERSION` file,
+so `~/.claude/skills/harness-bootstrap/VERSION` tells you what you have.
+
+The blocking hooks declare `onFailure: "block"`, so a guard that crashes or times out refuses the
+call instead of letting it through. That key needs Claude Code 2.1.295 or later.
 
 ## Which skill first
 
-That depends on what you already have, not on which one is more interesting.
+It depends on what you already have.
 
 | Your situation | Run |
 |---|---|
-| An idea, a transcript, notes, or a pile of legacy docs, and no specs | `/spec-builder` first, then `/harness-bootstrap` |
+| An idea, a transcript, notes or legacy docs, and no specs | `/spec-builder` first, then `/harness-bootstrap` |
 | An existing codebase, with or without specs | `/harness-bootstrap` - it reads the code first |
 | A repo you must analyse but never modify | `/harness-bootstrap`, and answer that it is audit-only |
 
-Neither skill needs the other. The contract makes the harness better, and the harness makes the
-contract enforceable, but each stands alone.
+Each skill stands alone. If you start with `/harness-bootstrap` and there are no specs, it offers to
+hand over to `spec-builder`.
 
 ## What happens when you run harness-bootstrap
 
-**1. It reads your code first.** In a repo with any source in it, the analysis is mandatory, not
-optional. It produces an Inventory Report - the stack, the modules, the conventions it observed, the
-risky operations it found, and the gaps - and shows it to you before anything is written. Everything
-after this is parameterised by what that report found.
+```mermaid
+flowchart TD
+    A["1. Read the code"]
+    R[/"Inventory Report"/]
+    B["2. Ask what code<br/>cannot decide"]
+    C{"3. Plan OK?"}
+    D["4. Scaffold"]
+    K[/"ADDED / KEPT"/]
+    X[/"CONFLICT queue"/]
+    E(["5. Summary and next step"])
 
-**2. It asks you what code cannot decide.** The first question is what the repo is for (code,
-research, strategy, docs, in any combination); everything after it is asked only where that purpose
-needs it. Then documentation language, commit identity, data sensitivity, which actions must be gated,
-how long-lived the project is, whether you want tests automated. The closed choices are one
-pre-answered questionnaire of at most two calls, in the language you write in, and anything the
-analysis already answered is not asked again. If you have no specs yet it hands over to
-`spec-builder` instead of just noting the gap.
+    A --> R --> B --> C
+    C -->|"change it"| B
+    C -->|"yes"| D
+    D --> K --> E
+    D --> X -->|"you reconcile"| E
 
-**3. It shows you the plan before writing.** What will be created, what will be kept, what will be
-modified, and the roster with each seat's model and effort. You confirm, or you change it.
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class A,B mod
+    class C,E hum
+    class D det
+    class R,K,X art
+```
 
-**4. It scaffolds.** The scaffolder **never overwrites an existing file**. It reports each file as
-`ADDED`, `KEPT` (already identical) or `CONFLICT` (exists and differs). A `CONFLICT` is not an
-error - it is the reconciliation queue, and you resolve each one by hand. It also writes a short
-`CLAUDE.md` into each module it found, and ends by checking that every link between the seats, hooks,
-rules and commands resolves.
-
-**5. You get a summary and a next step.** Usually `/task-resume`, or `spec-builder` if there are no
-specs yet.
+1. **It reads your code first.** With any source in the repo the analysis is mandatory. The
+   Inventory Report lists the stack, the modules, the conventions, the risky operations and the
+   gaps, and you see it before anything is written.
+2. **It asks what code cannot decide.** The first question is the repo's purpose (code, research,
+   strategy, docs, in any combination); later questions are asked only where that purpose needs
+   them. The closed choices come as one pre-answered questionnaire of at most two calls, in your
+   language. Anything the analysis already answered is not asked again.
+3. **It shows the plan.** Files created, kept and modified, and the roster with each seat's model
+   and effort. You confirm or change it.
+4. **It scaffolds.** The scaffolder **never overwrites a file**. Each one is `ADDED`, `KEPT`
+   (identical) or `CONFLICT` (exists and differs). A `CONFLICT` is the reconciliation queue, not an
+   error. It also writes a short `CLAUDE.md` into each module, and ends by checking that every link
+   between seats, hooks, rules and commands resolves.
+5. **You get a summary and a next step**, usually `/task-resume`.
 
 ## Your first loop
 
-The harness is not finished until the loop has run once. Create one real task, register it on the
-board, and resume it:
+The harness is not finished until the loop has run once:
 
 ```bash
-/new-task          # asks, then writes docs/tasks/active/TASK-001.md and registers it in master-plan.md
+/new-task          # asks first, then writes docs/tasks/active/TASK-NNN-<slug>.md and its board row
 /task-resume       # reads the task's checkpoint and picks up from the next step
 /review-changes    # the review gate, before you open a PR
 ```
 
-`/new-task` opens a task only for work you agreed to, and only after you say yes. From then on task
-state changes through `python .claude/scripts/task.py`, which keeps the file, its folder and the board
-row in step; a hand edit of a board row is refused. If `/task-resume` finds nothing, the board is
-empty - which is itself the answer. In a brownfield
-repo the analysis seeds the board from the gap list, so there is real work waiting on day one.
+- `/new-task` opens a task only for work you agreed to, and only after you say yes.
+- Task state then changes through `python .claude/scripts/task.py`, which keeps the file, its
+  folder and the board row in step. A hand edit of a board row is refused.
+- An empty board is an answer, not an error. In a brownfield repo the analysis seeds the board from
+  its gap list, so there is real work on day one.
 
 ## Verify it actually guards
-
-Do not take the guardrails on trust. From the repository:
 
 ```bash
 python eval/guardrail_eval.py
 ```
 
-It scaffolds a real harness (with the strict hooks, the long-session hooks and the database guard on)
-and fires known-bad and known-good payloads at it, per hook flavour. No model is consulted. The same
-command is what CI runs. If you want to see the difference the harness makes, `benchmark.py`
-runs the must-block payloads against a harnessed repo and against the same repo with `.claude/`
-removed. To check that the harness hangs together, run `python .claude/scripts/harness-check.py` in
-your repo: it names the file and line of any link that points at nothing.
+From this repository, the eval scaffolds a real harness (strict, long-session and database hooks
+on) and fires known-bad and known-good payloads at it, per hook flavour. No model is consulted, and
+CI runs the same command. `benchmark/benchmark.py` replays the must-block payloads against a
+harnessed repo and the same repo without `.claude/`.
+
+In your own repo, `python .claude/scripts/harness-check.py` names the file and line of any link that
+points at nothing.
 
 ## Removing it
 
@@ -104,11 +119,12 @@ your repo: it names the file and line of any link that points at nothing.
 rm -rf .claude/
 ```
 
-Every piece is a file. There is no daemon, no service, and nothing outside the repository to clean
-up. That is deliberate: a harness you cannot delete in one command is a harness you cannot evaluate.
+That removes every agent, rule, hook and command. The scaffold also wrote `AGENTS.md`, `CLAUDE.md`,
+the `docs/` tree and the per-module `CLAUDE.md` files; they are plain files, and `git status` lists
+them. There is no daemon, no service and nothing outside the repository to clean up.
 
 ## Next
 
-- [[Tailored Build]] - why the roster is smaller than the catalogue, and how that is decided
+- [[Tailored Build]] - why the roster is smaller than the catalogue
 - [[Harness View]] - see what you just built, and score it
 - [[Troubleshooting]] - when a hook does not fire

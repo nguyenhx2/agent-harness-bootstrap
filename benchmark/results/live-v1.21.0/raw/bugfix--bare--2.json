@@ -1,0 +1,77 @@
+{
+ "check": {
+  "success": true,
+  "suite_passes": true,
+  "suite_tail": "Ran 10 tests in 0.003s |  | OK",
+  "tests_modified": []
+ },
+ "condition": "bare",
+ "exit_code": 0,
+ "final_answer": "The bug was in `compute_tax` in `src/invoicer/tax.py`. It used floor division (`//`), so it rounded down. ADR 0001 says money rounds half up. A 1005-cent subtotal at 8.25% gave 82 cents instead of 83.\n\nI changed it to use the existing `round_half_up` helper from `money.py`. All 10 tests pass now, including the two that were failing (`test_rounds_half_up` and the CLI `test_total`).\n\nI haven't committed the change.",
+ "init": {
+  "agents": [
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup"
+  ],
+  "claude_code_version": "2.1.299",
+  "mcp_servers": 0,
+  "model": "claude-sonnet-5-5",
+  "plugins": [
+   "cc-plugin-agents-md",
+   "cc-plugin-telemetry",
+   "cc-plugin-plugin-authoring"
+  ],
+  "skills": 19,
+  "tools": 32
+ },
+ "metrics": {
+  "bytes_read": 3503,
+  "cache_creation_input_tokens": 5873,
+  "cache_read_input_tokens": 84582,
+  "dispatches": 0,
+  "duration_ms": 18093,
+  "first_call_context_tokens": 21483,
+  "hook_runs": 0,
+  "input_tokens": 8,
+  "is_error": false,
+  "num_turns": 4,
+  "output_tokens": 722,
+  "permission_denials": 0,
+  "result_subtype": "success",
+  "skill_calls": 0,
+  "test_runs": 3,
+  "tool_calls": 3,
+  "total_cost_usd": 0.039186200000000004
+ },
+ "model": "sonnet",
+ "permission_denials": [],
+ "rep": 2,
+ "task": "bugfix",
+ "tool_calls": [
+  {
+   "input": {
+    "command": "cd <WORK>/repo && ls && git ls-files && (npm test 2>&1 || python -m pytest 2>&1) | tail -40"
+   },
+   "name": "Bash",
+   "subagent": false
+  },
+  {
+   "input": {
+    "command": "cd <WORK>/repo && python -m unittest discover -s tests -t . 2>&1 | tail -30; cat src/invoicer/tax.py src/invoicer/money.py"
+   },
+   "name": "Bash",
+   "subagent": false
+  },
+  {
+   "input": {
+    "command": "cd <WORK>/repo && sed -i 's|^\"\"\"Sales tax. Rates are basis points (825 = 8.25%).\"\"\"|&\\n\\nfrom .money import round_half_up|; s|subtotal_cents \\* rate_bp // 10_000|round_half_up(subtotal_cents * rate_bp, 10_000)|' src/invoicer/tax.py && python -m unittest discover -s tests -t . 2>&1 | tail -4; git diff"
+   },
+   "name": "Bash",
+   "subagent": false
+  }
+ ],
+ "wall_ms": 20512
+}

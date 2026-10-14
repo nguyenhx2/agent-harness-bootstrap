@@ -1,8 +1,6 @@
 # Source routing - reading the documents before eliciting against them
 
-You cannot elicit against a document you have not read, and you cannot tell a document you
-read badly from one you read well by looking at the output. `scripts/route_sources.py`
-decides which reader owns each source and prints a reason per decision;
+`scripts/route_sources.py` picks the reader for each source and prints a reason per decision;
 `scripts/ingest.py` executes one entry of that plan.
 
 ```bash
@@ -10,8 +8,7 @@ python scripts/route_sources.py <files-folders-urls> --out-dir <dir> -o <dir>/pl
 python scripts/ingest.py <source> --via native --out <dir>/source.txt
 ```
 
-The router runs its own policy table on every invocation before it touches a file, so a
-routing bug surfaces in milliseconds rather than after twelve extractions.
+The router self-tests its policy table before touching a file.
 
 ## Routing table
 
@@ -29,21 +26,16 @@ routing bug surfaces in milliseconds rather than after twelve extractions.
 | `http(s)://` | `markitdown` | fetched and converted | whatever the page renders in script |
 | anything else | `markitdown`, then report | - | reported by name, never assumed empty |
 
-Visual output is narrow on purpose: pages are rasterized **only** when the text strategy is
-`vision`. A readable document gains nothing from a PNG of itself, and rendering everything
-is how a routing step turns into an image pipeline.
+Pages are rasterized **only** when the text strategy is `vision`.
 
 ## The 80-chars-per-page rule
 
 `TEXT_LAYER_MIN_CHARS_PER_PAGE = 80`. A PDF whose extracted text averages fewer than 80
 characters per page is treated as having no text layer.
 
-The number matters because a scanned PDF does not fail. It returns a few characters per
-page and an exit code of zero. A model handed that, about a file the user called "the
-requirements", writes plausible requirements - which is the never-invent failure arriving
-through the file reader instead of through the interview. Both scripts apply the threshold:
-the router routes to `vision`, and `ingest.py --via native` refuses the same PDF rather than
-hand back near-empty text.
+A scanned PDF does not fail: it returns a few characters per page and exit 0, and a model handed
+that writes plausible requirements. Both scripts apply the threshold: the router routes to
+`vision`, and `ingest.py --via native` refuses the same PDF.
 
 ## Overrides
 
@@ -57,8 +49,8 @@ hand back near-empty text.
 
 ## When a reader is missing
 
-Optional dependencies are all optional. A missing one changes the route and names what was
-lost; it never crashes and never skips a file quietly.
+A missing optional dependency changes the route and names what was lost; it never crashes and
+never skips a file quietly.
 
 ```
 pip install pymupdf python-docx python-pptx openpyxl   # the native readers
@@ -72,32 +64,21 @@ install would improve it.
 ## Unreadable is a finding, not a gap
 
 When nothing installed can read a source, the route is `unreadable` and `ingest.py` exits 2
-with the reason. That source becomes an `OI-nn` in section 11 naming the file, why it could
-not be read, and what would make it readable - a pip install, or a re-export request to the
-user. It is never dropped from the pile, and its content is never guessed at from its
-filename. Same discipline the skill already applies to unstated requirements, extended down
-to the file-reading layer.
-
-An empty extraction gets the same treatment: `ingest.py` warns on zero characters, because
-an empty result is not evidence of an empty document.
+with the reason. The source becomes an `OI-nn` in section 11 naming the file, why it could not
+be read, and the fix - a pip install, or a re-export request. Never drop it, never guess its
+content from its filename. An empty extraction is treated the same: `ingest.py` warns on zero
+characters.
 
 ## Limits
 
-What this deliberately does **not** do, and why:
-
-- **No knowledge base.** The mechanism here is distilled from the `docs-to-knowledge` skill,
-  whose output contract is a rendered knowledge base with an audit-review loop. That skill's
-  `render_knowledge.py`, `gen_audit_review.py`, its knowledge schema and its audit playbook
-  were left behind on purpose: spec-builder's output contract is its numbered sections. For
-  a genuinely large, diagram-dense, cross-checking job, run that skill and feed spec-builder
+- **No knowledge base.** The output contract is the numbered sections. For a large,
+  diagram-dense, cross-checking job, run the `docs-to-knowledge` skill and feed spec-builder
   its output.
-- **No diagram reconstruction, no page-versus-text cross-check.** Extracted text is taken as
-  the source; nothing here compares it against the pixels. A diagram-heavy deck whose meaning
-  lives in arrows is a case for a vision read or for `docs-to-knowledge`.
-- **No OCR.** `vision` means a model reads the rendered pages. There is no OCR engine in this
-  skill, and markitdown does not OCR PDFs either.
-- **No format conversion.** Legacy binary Office is read where a reader exists; it is never
-  converted in place, and LibreOffice is not shelled out to.
-- **Unsupported formats are reported, not skipped.** An extension nothing recognises is
-  routed to markitdown and, if that also fails, named in the plan and in the run's output.
-  A file that appears in the plan and produced no text is an `OI-nn`, every time.
+- **No diagram reconstruction, no page-versus-text cross-check.** Extracted text is the source.
+  A deck whose meaning lives in arrows needs a vision read or `docs-to-knowledge`.
+- **No OCR.** `vision` means a model reads the rendered pages; markitdown does not OCR PDFs.
+- **No format conversion.** Legacy binary Office is read where a reader exists, never
+  converted; LibreOffice is not shelled out to.
+- **Unsupported formats are reported, not skipped.** An unrecognised extension goes to
+  markitdown and, if that fails, is named in the plan. A planned file that produced no text is
+  an `OI-nn`, every time.

@@ -20,7 +20,7 @@ The page leads with the idea - give an AI agent a repo it can actually understan
 it cannot escape - and lets the intro clip carry it before anything is explained. Then it earns
 the claim, mechanism first, and only then asks the visitor to install:
 
-1. **The idea, in one clip** - `00-intro.mp4` inline; the seven older clips behind a disclosure.
+1. **The idea, in one clip** - `00-intro.mp4` inline; the one deeper clip (07, skills and the viewer) behind a disclosure.
 2. **Does any of this sound familiar** - eight symptoms, each with what answers it.
 3. **What answers it** - the three pieces, then N1, the delivery net.
 4. **Process sized to the change** - N4, the four routing tiers; then verification planned from
@@ -92,21 +92,35 @@ boundaries. The measured pairs are recorded as comments beside the tokens.
 - **`--mono`**: the platform mono stack, used where there is a value or a designator: figures,
   listings, net labels, controls, the document register.
 - Japanese sets Andada Pro over a mincho stack (`Hiragino Mincho ProN`, `Yu Mincho`,
-  `Noto Serif JP`) at 1.9 leading, no Latin tracking, and measures in `em` rather than `ch`.
+  `Noto Serif JP`) at 1.9 leading and no Latin tracking, on the same rem measure as English.
 
-Six fluid steps, `--t--2` through `--t-3`, all `clamp()` except the smallest. Display tracking is
-`-0.032em`; the floor is `-0.04em`. Measures live on the element whose font size they are counted
-in, because a `ch` measure set on a parent at a larger size renders far wider than it reads.
+Six fluid steps, `--t--2` through `--t-3`, all `clamp()` except the smallest, which is 12px: no
+text on the page, inline code included, sets below it. Display tracking is `-0.032em`; the floor is
+`-0.04em`.
+
+Every prose block - intro, note, caption, readout list, footer - shares one measure, `--measure:
+50rem`. It is counted in rem on purpose: a `ch` measure resolves against each element's own font
+size, so a 70ch intro and a 70ch note one step smaller ended 170px apart and the small text stopped
+at half the sheet. 50rem is about 70ch at body size and about 90ch at the small step, in both
+languages. Prose uses `text-wrap: pretty`; short statements (readout headlines, callouts, layer and
+command descriptions, provenance lines) use `balance` so none ends on a one- or two-word line.
+Japanese text breaks by phrase (`word-break: auto-phrase`, with `line-break: strict`), so a word
+never splits and a paragraph never ends on a stranded 「す。」. A source newline between two CJK
+characters renders as a space in Chromium, so Japanese sentences are kept on one source line.
 
 ## Space and the sheet
 
 `--s-0` through `--s-3`, all `clamp()` above the first two. One rhythm throughout, with more space
-above a heading than below it.
+above a heading than below it. A section's inset and the plate's padding take those steps as two or
+three literal stops on the same curve rather than through `clamp()`, because the vendored design
+detector resolves neither `clamp()` nor logical properties and read every section as text flush
+against its rule.
 
 `.wrap` is `max-width: 76rem` with `padding-inline: var(--gutter)`, where
 `--gutter: max(20px, env(safe-area-inset-left, 0px))`. No other rule sets `padding-inline` on a
-`.wrap`, so the gutter has no path to zero. Measured at 360px and 390px on both pages,
-`document.scrollWidth` equals `clientWidth`.
+`.wrap`, so the gutter has no path to zero. Measured at 390, 768, 1024, 1280 and 1440px on both
+pages, `document.scrollWidth` equals `clientWidth` with no `overflow` clip on `body`, so the skip
+link and the copy controls are never cut off.
 
 ## Components
 

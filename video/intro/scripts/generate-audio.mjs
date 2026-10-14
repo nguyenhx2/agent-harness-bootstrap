@@ -7,27 +7,36 @@
 // sent only in the xi-api-key header, and never printed, logged or written anywhere.
 import {existsSync, readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import path from 'node:path';
-import {HERE, AUDIO, LANGS, TEMPO, readScript, narrationText, sha, narrationFile, alignmentFile} from './script.mjs';
+import {HERE, AUDIO, LANGS, LEAD_IN, TAIL, SCENE_GAP, readScript, narrationText, sha, narrationFile, alignmentFile} from './script.mjs';
 
 const API = 'https://api.elevenlabs.io/v1';
-const TTS_MODEL = 'eleven_multilingual_v2';
+
+// The most natural model first. The key has no models_read scope, so availability cannot be asked
+// for: each model is tried in turn, and an error (no access, no timestamps) falls through to the
+// next. The model that answered is recorded in audio/ASSETS.json.
+//   eleven_v3: stability is a mode, not a dial: 0 creative, 0.5 natural, 1 robust.
+//   eleven_multilingual_v2: lower stability and a little style read as spoken, not recited.
+const MODELS = [
+  {model_id: 'eleven_v3', voice_settings: {stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true}},
+  {model_id: 'eleven_multilingual_v2',
+    voice_settings: {stability: 0.4, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true}},
+];
+
 const VOICES = {
-  // "Brian", an ElevenLabs premade voice: a calm, deep American narrator.
-  en: {voice_id: 'nPczCjzI2devNBz1zQrb', name: 'Brian',
-    voice_settings: {stability: 0.55, similarity_boost: 0.75, style: 0.1, use_speaker_boost: true}},
-  // "Otani", a native Japanese narrator from the ElevenLabs voice library (standard accent,
-  // middle-aged male, tagged for narration), so the Japanese clip is not an English voice reading
-  // Japanese. Its natural pace is slow for a clip this dense, so render.sh plays it slightly faster
-  // (TEMPO in script.mjs, pitch preserved) and the caption timing is scaled to match.
-  ja: {voice_id: '3JDquces8E8bkmvbh6Bc', name: 'Otani',
-    voice_settings: {stability: 0.55, similarity_boost: 0.75, style: 0.1, use_speaker_boost: true}},
+  // "Elise - Warm, Natural and Engaging", a voice-library voice: young American woman, tagged
+  // conversational, described for explainers and narration.
+  en: {voice_id: 'EST9Ui6982FZPSi7gCHi', name: 'Elise'},
+  // "Kaori - Relatable and Friendly Voice", a native Japanese woman from the voice library, standard
+  // accent, tagged conversational: a light, easygoing delivery rather than an announcer's.
+  ja: {voice_id: 'G3EZ8O36A0x9lmeOtr0f', name: 'Kaori'},
 };
 
 const MUSIC_PROMPT =
-  'Calm, confident minimal electronic underscore for a technical product explainer. Soft warm ' +
-  'synth pads, a gentle muted pulse, light plucked arpeggio, steady 90 BPM, no drum hits that ' +
-  'distract, no vocals, no melody that competes with a narrator. Gentle lift every twenty seconds ' +
-  'or so, builds slightly in the middle, resolves calmly at the end.';
+  'Modern, warm, light tech ambient bed for a friendly product explainer. Soft analog synth pads, ' +
+  'a steady gentle pulse from a muted kick and soft shaker at 100 BPM, a light plucked arpeggio, ' +
+  'warm sub bass. Optimistic and calm, never dramatic. No vocals, no lead melody that competes ' +
+  'with a narrator. Present and audible throughout, consistent energy, a gentle lift every half ' +
+  'minute, resolves warmly at the end.';
 
 const SFX = {
   'sfx-whoosh': {text: 'A soft, airy cinematic whoosh transition, subtle and short', duration_seconds: 1.2},
@@ -35,10 +44,6 @@ const SFX = {
   'sfx-chime': {text: 'A gentle, warm two-note confirmation chime, clean and minimal', duration_seconds: 1.5},
 };
 
-// Seconds of picture before the first word, and the end-card hold after the last one. The timing
-// build uses the same two numbers; the music has to cover both.
-const LEAD_IN = 1.0;
-const TAIL = 4.0;
 
 function apiKey() {
   if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
@@ -100,18 +105,31 @@ async function voice(key, lang, force) {
     return;
   }
   const v = VOICES[lang];
-  const res = await post(
-    `${API}/text-to-speech/${v.voice_id}/with-timestamps?output_format=mp3_44100_128`,
-    {text, model_id: TTS_MODEL, voice_settings: v.voice_settings},
-    key,
-  );
-  const j = await res.json();
+  let j = null;
+  let used = null;
+  for (const m of MODELS) {
+    try {
+      const res = await post(
+        `${API}/text-to-speech/${v.voice_id}/with-timestamps?output_format=mp3_44100_128`,
+        {text, model_id: m.model_id, voice_settings: m.voice_settings},
+        key,
+      );
+      const body = await res.json();
+      if (!body.alignment?.characters?.length) throw new Error(`${m.model_id}: no character alignment`);
+      j = body;
+      used = m;
+      break;
+    } catch (e) {
+      console.log(`  ${m.model_id} unavailable for ${lang}: ${String(e.message).slice(0, 160)}`);
+    }
+  }
+  if (!j) throw new Error(`no model produced a ${lang} narration`);
   writeFileSync(out, audioBytes(Buffer.from(String(j.audio_base64 ?? ''), 'base64'), 'narration'));
   writeFileSync(alignmentFile(lang), JSON.stringify({alignment: j.alignment}, null, 0) + '\n');
   const m2 = loadManifest();
   m2.narration = m2.narration && !m2.narration.voice_id ? m2.narration : {};
   m2.narration[lang] = {endpoint: 'POST /v1/text-to-speech/{voice_id}/with-timestamps',
-    voice_id: v.voice_id, voice_name: v.name, model_id: TTS_MODEL, voice_settings: v.voice_settings,
+    voice_id: v.voice_id, voice_name: v.name, model_id: used.model_id, voice_settings: used.voice_settings,
     text_sha256: sha(text)};
   saveManifest(m2);
   console.log(`  wrote   ${path.basename(out)} + ${path.basename(alignmentFile(lang))}`);
@@ -121,7 +139,8 @@ async function music(key, force) {
   const out = path.join(AUDIO, 'music.mp3');
   // One bed for both languages, long enough for the longer narration.
   const ends = LANGS.filter((l) => existsSync(alignmentFile(l))).map((l) =>
-    JSON.parse(readFileSync(alignmentFile(l), 'utf8')).alignment.character_end_times_seconds.at(-1) / TEMPO[l]);
+    JSON.parse(readFileSync(alignmentFile(l), 'utf8')).alignment.character_end_times_seconds.at(-1)
+    + SCENE_GAP * readScript(l).length);
   if (!ends.length) throw new Error('no narration alignment yet: generate the voice first');
   const ms = Math.ceil(LEAD_IN + Math.max(...ends) + TAIL + 1) * 1000;
   const m = loadManifest();

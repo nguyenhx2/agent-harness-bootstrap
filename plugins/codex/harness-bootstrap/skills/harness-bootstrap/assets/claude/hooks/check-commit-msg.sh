@@ -32,7 +32,62 @@ sys.stdout.write(d if isinstance(d, str) else "")' "$1" 2>/dev/null
   fi
 }
 
-payload=$(cat)
+# --- fast path: decide the common case with bash builtins only ---------------------------------
+# This hook starts on every shell call, and on Windows each subshell or external process costs
+# 50-250 ms: the JSON parser, every `printf | grep`, every `$(...)`. Most commands can never be
+# blocked here, so that case is decided before any of them run. read_payload takes stdin without
+# a fork; fast_str decodes one string field EXACTLY or gives up. A hook may only exit 0 on what
+# these return, and only on a test that is a necessary condition of every block it raises; any
+# doubt falls through to the full parse, which is unchanged. Copied verbatim into every hook that
+# has a fast path - see "Latency" in hooks/README.md.
+read_payload() {
+  payload=
+  # bash reads a pipe one byte per syscall: fine for a shell call's few hundred bytes, slower than
+  # one `cat` past a few KB (an Edit or Write payload), so the rest of a long one goes to cat.
+  if IFS= read -r -d '' -n 4096 payload; then
+    payload+=$(cat)
+  fi
+}
+# fast_str KEY -> FAST_STR. Fails unless the payload holds "KEY": exactly once, with a string value
+# that is printable ASCII and uses no JSON escape but \" \\ \n \r \t - everything JSON.stringify
+# writes for such text, so the decode is exact. Runs in the C locale: in a multibyte locale a lead
+# byte could swallow the backslash of an escaped quote and end the value early.
+fast_str() {
+  local key=$1 s rest re re2 bs='\' q='"' had=${LC_ALL+x} old=${LC_ALL-} rc=1
+  LC_ALL=C
+  re="\"$key\"[[:space:]]*:[[:space:]]*\"(([^\"\\\\]|\\\\.)*)\""
+  re2="\"$key\"[[:space:]]*:"
+  if [[ $payload =~ $re ]]; then
+    s=${BASH_REMATCH[1]}
+    rest=${payload#*"$q$key$q"}
+    rc=0
+    [[ $rest =~ $re2 ]] && rc=1
+    case $s in *[!\ -~]*) rc=1 ;; esac
+    s=${s//"$bs$bs"/$'\001'}
+    case $s in *"$bs"[!nrt\"]*|*"$bs") rc=1 ;; esac
+    s=${s//"$bs$q"/"$q"}
+    s=${s//"${bs}n"/$'\n'}
+    s=${s//"${bs}r"/$'\r'}
+    s=${s//"${bs}t"/$'\t'}
+    FAST_STR=${s//$'\001'/"$bs"}
+  fi
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  return $rc
+}
+# fast_unmatched ERE: true only when ERE was compiled and did not match FAST_STR (exit status 1).
+# A regex the engine rejects (status 2) must never read as "no match".
+fast_unmatched() {
+  local had=${LC_ALL+x} old=${LC_ALL-} rc
+  LC_ALL=C
+  [[ $FAST_STR =~ $1 ]]
+  rc=$?
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  [ "$rc" -eq 1 ]
+}
+
+read_payload
+# The guard only acts on `git ... commit`.
+fast_str command && fast_unmatched '[Cc][Oo][Mm][Mm][Ii][Tt]' && exit 0
 cmd=$(json_str tool_input.command)
 [ -z "$cmd" ] && exit 0
 

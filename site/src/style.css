@@ -84,7 +84,9 @@
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --body: var(--serif);
 
-  --t--2: 0.6875rem;
+  /* The label step. 12px is the floor for any text on this page: at 11px the
+     mono provenance lines and readout labels fell below comfortable reading. */
+  --t--2: 0.75rem;
   --t--1: clamp(0.78rem, 0.755rem + 0.12vw, 0.85rem);
   --t-0: clamp(1rem, 0.965rem + 0.17vw, 1.09rem);
   --t-1: clamp(1.18rem, 1.1rem + 0.4vw, 1.4rem);
@@ -96,11 +98,14 @@
   --s-2: clamp(1.5rem, 1.2rem + 1.4vw, 2.25rem);
   --s-3: clamp(2.5rem, 1.9rem + 2.8vw, 4rem);
 
-  /* One measure for body prose, and it is the only number that decides where a
-     paragraph wraps. 58ch was under the readable band (~65-75 characters) and
-     every component then cut a tighter one of its own on top of it, so a
-     paragraph in a full-width section wrapped at half the width it had. */
-  --measure: 70ch;
+  /* One measure for every prose block, and it is the only number that decides
+     where a paragraph wraps. It is counted in rem, not ch, on purpose: a ch
+     measure resolves against each element's own font size, so a 70ch intro set
+     at body size and a 70ch note set one step smaller ended 170px apart, and the
+     small text - notes, captions, the footer - stopped at half the container.
+     50rem is one right edge for all of them: about 70ch at body size, about 90ch
+     at the small step, and roughly two thirds of the 76rem sheet. */
+  --measure: 50rem;
   /* The gutter has a floor. This is the only rule that sets padding-inline on
      a wrap, so there is no path by which it collapses on a narrow phone. */
   --gutter: max(20px, env(safe-area-inset-left, 0px));
@@ -155,7 +160,6 @@ body {
   line-height: 1.65;
   font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
 }
 
 /* `balance` evens the lines of a heading out, which means it will break a
@@ -167,11 +171,18 @@ h1 { font-size: var(--t-3); letter-spacing: -0.032em; }
 h2 { font-size: var(--t-2); }
 h3 { font-size: var(--t-1); letter-spacing: -0.012em; }
 p, ul, ol, dl, figure { margin: 0; }
+/* Prose keeps its natural breaks and only pulls back a stranded last word.
+   `balance` is kept to one- and two-line statements: on an intro or a callout
+   it evens three lines out by narrowing all of them, and the block then sits
+   at two thirds of the measure it was given. */
+p, li, dd, figcaption { text-wrap: pretty; }
+.rd__t, .symp .a, .layers p, .note, .step p, .cmds p, .src { text-wrap: balance; }
 
 a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: from-font; }
 a:hover { text-decoration-color: var(--accent-text); }
 
-code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
+/* Inline code sits a step under its prose, but never under the 12px floor. */
+code, kbd, samp, pre { font-family: var(--mono); font-size: max(0.9em, 0.75rem); }
 
 ::selection { background: var(--field); color: var(--on-field); }
 :root { accent-color: var(--field); caret-color: var(--accent-text); }
@@ -348,8 +359,15 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 
 /* ---------------------------------------------------------------- sections */
 
-.sec { padding-block: var(--s-3); border-top: 1px solid var(--line); }
-.sec--net { padding-top: var(--s-2); border-top: 0; }
+/* A section's inset is --s-3 taken in three steps (2.5, 3.25, 4rem) rather
+   than through clamp(): the repo's static design detector resolves neither
+   clamp() nor logical properties, and read every section as text flush
+   against its top rule. The steps sit on the clamp's own curve. */
+.sec { padding-top: 2.5rem; padding-bottom: 2.5rem; border-top: 1px solid var(--line); }
+@media (min-width: 48rem) { .sec { padding-top: 3.25rem; padding-bottom: 3.25rem; } }
+@media (min-width: 72rem) { .sec { padding-top: 4rem; padding-bottom: 4rem; } }
+.sec.sec--net { padding-top: 1.5rem; border-top: 0; }
+@media (min-width: 56rem) { .sec.sec--net { padding-top: 2.25rem; } }
 /* Long enough for the longest h2 on the page to set on one line at desktop
    ("The roster is decided, not installed", 36 characters), short enough that a
    future one still breaks before it runs the width of the section. At 20ch it
@@ -370,11 +388,12 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 
 .plate {
   margin-top: var(--s-2);
-  padding: clamp(0.9rem, 0.5rem + 1.6vw, 1.5rem);
+  padding: 1rem;
   background: var(--field);
   border-radius: var(--radius);
   color: var(--on-field);
 }
+@media (min-width: 40rem) { .plate { padding: 1.5rem; } }
 .plate__head {
   display: flex;
   flex-wrap: wrap;
@@ -911,6 +930,8 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   max-width: var(--measure);
   overflow-wrap: anywhere;
 }
+/* A command is one unit: `py -3.13` broken after `py` reads as two commands. */
+.src code { white-space: nowrap; font-size: 1em; }
 
 /* ---------------------------------------------------------------- the clips */
 
@@ -955,7 +976,7 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 }
 .clip__links a:hover { color: var(--accent-text); }
 
-.more { margin-top: var(--s-2); border-top: 1px solid var(--line); }
+.more { margin-top: var(--s-2); padding-top: 0.5rem; border-top: 1px solid var(--line); }
 .more > summary {
   display: flex;
   align-items: center;
@@ -1107,8 +1128,11 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 
 /* ---------------------------------------------------------------- footer */
 
-.colophon { border-top: 1px solid var(--line); padding-block: var(--s-2) var(--s-3); }
+.colophon { border-top: 1px solid var(--line); padding-top: var(--s-2); padding-bottom: var(--s-3); }
 .colophon p { color: var(--ink-2); font-size: var(--t--1); max-width: var(--measure); }
+.colophon p + p { margin-top: 0.5rem; }
+/* A product name is one unit; "Claude" at a line end and "Code" below it is two. */
+.colophon p a { white-space: nowrap; }
 .colophon nav { display: flex; flex-wrap: wrap; gap: 0 var(--s-1); margin-top: 0.35rem; }
 .colophon nav a {
   display: inline-flex;
@@ -1132,32 +1156,23 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 :lang(ja) h1, :lang(ja) h2, :lang(ja) h3 { line-height: 1.45; letter-spacing: 0; }
 /* Mincho at the Latin display size is oversized for a CJK setting. */
 :lang(ja) h1 { font-size: clamp(1.9rem, 1.4rem + 2.2vw, 2.85rem); }
-:lang(ja) p, :lang(ja) li { overflow-wrap: anywhere; line-break: strict; }
+/* Strict line-breaking keeps small kana and closing brackets off the start of a
+   line. `anywhere` is the overflow floor for a long path in a narrow column. */
+:lang(ja) :is(p, li, dd, figcaption, h1, h2, h3) { overflow-wrap: anywhere; line-break: strict; }
+/* Text breaks between phrases rather than between any two characters, so a
+   word such as 「ハーネス」 never splits across a line, and a paragraph cannot end
+   on a stranded 「す。」: with phrases as the unit, `text-wrap: pretty` pulls a
+   whole phrase down instead. Where `auto-phrase` is unsupported it is ignored,
+   and the strict line-break rule above still holds. */
+:lang(ja) :is(p, li, dd, figcaption, h1, h2, h3, .pick label, .act) { word-break: auto-phrase; }
 :lang(ja) .hero h1 { max-width: 15em; }
 :lang(ja) .hero .lede { max-width: 30em; }
 :lang(ja) .hero .sub,
 :lang(ja) .sec h2 { max-width: 32em; }
-/* The Latin measure is counted in `ch` and the Japanese one in `em`, because a
-   full-width script sets one glyph per em: 44em is 44 CJK characters a line,
-   which is the top of the Japanese reading band the same way 70ch is the top of
-   the Latin one. It is raised from 40em for the same reason `--measure` moved,
-   and no further - past the band a CJK line is genuinely harder to track back. */
-:lang(ja) .prose,
-:lang(ja) .note,
-:lang(ja) .rd ul,
-:lang(ja) .layers p,
-:lang(ja) .step p,
-:lang(ja) .cmds p,
-:lang(ja) .symp .a,
-:lang(ja) .states dd,
-:lang(ja) .vw__cap p,
-:lang(ja) .clip p,
-:lang(ja) .shot figcaption,
-:lang(ja) .src,
-:lang(ja) .versus p,
-:lang(ja) .colophon p { max-width: 44em; }
+/* Japanese shares the Latin measure. It is set in rem, so it no longer depends
+   on which script the glyphs belong to: 50rem is about 46 characters at body
+   size and about 58 at the small step that notes and captions use. */
 :lang(ja) .rd__t { max-width: 28em; }
-:lang(ja) .pieces p { max-width: 34em; }
 /* A mincho quotation takes the CJK marks, not the Latin ones. */
 :lang(ja) .symp .q > span::before { content: "\300C"; }
 :lang(ja) .symp .q > span::after { content: "\300D"; }

@@ -19,17 +19,9 @@ value of this seat: a reviewer that edits has become a dev agent.
 You are dispatched only when `python .claude/scripts/verify-plan.py` says this diff needs you;
 its `log:` line is in your brief. Filtering happens later, in `/review-changes` aggregation, not here.
 
-Report every issue you find, including ones you are uncertain about or consider low-severity. Do not
-filter for importance or confidence at this stage. Your goal here is coverage: it is better to surface
-a finding that later gets filtered out than to silently drop a real bug.
-
-For each finding give a **confidence** and a **severity** so the orchestrator can rank them. Use the
-severity model in `.claude/rules/code-quality.md` - it is defined once, there.
-
-(This instruction exists because a reviewer told to "only report high-severity issues" will follow that
-literally: it investigates just as thoroughly, finds the bugs, then declines to report what it judges
-below the bar. Precision rises and measured recall falls, which looks like a capability regression but
-is a prompt artifact.)
+Report every issue you find, including ones you are uncertain about or consider low-severity - do
+not self-filter. For each give a **confidence** and a **severity** (the model in
+`.claude/rules/code-quality.md`) so the caller can rank them.
 
 ## Check, in order
 
@@ -52,6 +44,6 @@ Group findings by severity. For each: file:line, one-sentence statement of the d
 failure scenario (inputs or state → wrong output). A finding without a failure scenario is a
 suggestion, not a defect - label it as such.
 
-Do not merge. Do not deploy. **End with the one-line session-log row for this run** - you cannot write
-it yourself, your caller records it, and a gate that is not recorded did not happen: the orchestrator
-treats an unlogged "reviewed" as unverified.
+Do not merge. Do not deploy. **End with the one-line session-log row for this run** - your caller
+records it; an unlogged review did not happen.
+

@@ -2,35 +2,33 @@
   "narration": {
     "en": {
       "endpoint": "POST /v1/text-to-speech/{voice_id}/with-timestamps",
-      "voice_id": "nPczCjzI2devNBz1zQrb",
-      "voice_name": "Brian",
-      "model_id": "eleven_multilingual_v2",
+      "voice_id": "EST9Ui6982FZPSi7gCHi",
+      "voice_name": "Elise",
+      "model_id": "eleven_v3",
       "voice_settings": {
-        "stability": 0.55,
+        "stability": 0.5,
         "similarity_boost": 0.75,
-        "style": 0.1,
         "use_speaker_boost": true
       },
-      "text_sha256": "af307b5328f47fa20df85e841c43dfc4d8100e0f14aa3cf655ca14dd17665131"
+      "text_sha256": "bcd6a54174d1ede7514e75373f3df1a1fbe43832d6ec884b3fadf70b3742b079"
     },
     "ja": {
       "endpoint": "POST /v1/text-to-speech/{voice_id}/with-timestamps",
-      "voice_id": "3JDquces8E8bkmvbh6Bc",
-      "voice_name": "Otani",
-      "model_id": "eleven_multilingual_v2",
+      "voice_id": "G3EZ8O36A0x9lmeOtr0f",
+      "voice_name": "Kaori",
+      "model_id": "eleven_v3",
       "voice_settings": {
-        "stability": 0.55,
+        "stability": 0.5,
         "similarity_boost": 0.75,
-        "style": 0.1,
         "use_speaker_boost": true
       },
-      "text_sha256": "86337331be3a6789937cd80733ae4df8fbf83b00b6bad9d58857c3b83c03ea18"
+      "text_sha256": "a29d0b3e1e8df553c783936d878487237b54afc1310ef9bb3f1a3cb604f75db5"
     }
   },
   "music": {
     "endpoint": "POST /v1/music",
-    "prompt": "Calm, confident minimal electronic underscore for a technical product explainer. Soft warm synth pads, a gentle muted pulse, light plucked arpeggio, steady 90 BPM, no drum hits that distract, no vocals, no melody that competes with a narrator. Gentle lift every twenty seconds or so, builds slightly in the middle, resolves calmly at the end.",
-    "music_length_ms": 150000,
+    "prompt": "Modern, warm, light tech ambient bed for a friendly product explainer. Soft analog synth pads, a steady gentle pulse from a muted kick and soft shaker at 100 BPM, a light plucked arpeggio, warm sub bass. Optimistic and calm, never dramatic. No vocals, no lead melody that competes with a narrator. Present and audible throughout, consistent energy, a gentle lift every half minute, resolves warmly at the end.",
+    "music_length_ms": 193000,
     "model_id": "music_v1",
     "force_instrumental": true
   },
