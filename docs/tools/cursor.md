@@ -87,7 +87,7 @@ A guard that cannot execute answers **deny**, never allow: it does not know the 
 ## Verify it works
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 32/32
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 34/34
 ```
 
 Per hook flavour it checks the write contract, the adapter wiring, and six behaviour cases: deny

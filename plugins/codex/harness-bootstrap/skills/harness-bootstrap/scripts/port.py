@@ -174,7 +174,7 @@ def port_cursor_rules(claude_rules: pathlib.Path, dest: pathlib.Path,
 # self_test_flavor() and read by scripts/check_numbers.py to police the published figure. Only
 # meaningful on a full run: a machine with no interpreter for a flavor skips the behaviour half.
 # 7 write-contract checks (self_test_contract) + 3 adapter wiring checks + 6 adapter behaviour cases.
-CHECKS_PER_FLAVOR = 16
+CHECKS_PER_FLAVOR = 17
 
 # The Bash-matching hooks that need no per-payload adaptation on Codex.
 BASH_HOOKS = ["guard-main-commit", "check-commit-msg", "protect-secrets", "guard-destructive",

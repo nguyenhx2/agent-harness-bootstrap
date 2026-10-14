@@ -214,7 +214,7 @@ observes; neither tool has a subagent-spawn hook point.
 **The safety floor (slide 22):** `eval/guardrail_eval.py` scaffolds a real harness per hook flavour
 and fires 312 payloads at it: 134 must-block, 178 must-allow, 312/312 correct for `.sh` and for
 `.ps1`, with `hooks_strict`, `long` and `db` on. No model is consulted. The port adapter self-test
-is 32/32. *"A cheap model cannot commit a secret. Not because it knows better, but because the hook
+is 34/34. *"A cheap model cannot commit a secret. Not because it knows better, but because the hook
 exits 2 and the tool call never happens."* Then the honest limit: this is the floor, not the
 ceiling, and it measures the hooks of that scaffold, not agent behaviour.
 
@@ -312,7 +312,7 @@ Checked by `scripts/check_numbers.py`; re-run it rather than editing a figure by
 
 - 18 agents (+1 dev-agent template), 17 rules, 23 commands, 27 hooks; a run installs 3 to 17 of the 18 seats
 - 7 unconditional rules, 10 path-scoped; 75% of rule content stays out of the default session
-- Guardrail eval 312/312 (134 must-block, 178 must-allow) per hook flavour with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 32/32
+- Guardrail eval 312/312 (134 must-block, 178 must-allow) per hook flavour with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 34/34
 - spec-builder: 6 core sections, up to 8 optional
 - Four routing tiers: Inline, Direct, Standard, Guarded - only Guarded uses the orchestrator
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`

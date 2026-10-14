@@ -86,7 +86,7 @@ flowchart TD
 ## 動作を確かめる
 
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # 32/32 を期待
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # 34/34 を期待
 ```
 
 フックの種類ごとに、書き込みの契約、アダプターの配線、六つの振る舞いを確かめます: `cat .env` を
