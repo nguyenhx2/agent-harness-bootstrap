@@ -1329,8 +1329,11 @@ function ann(s){
 const L = o => ann(typeof o === 'string' ? o : ((o && (o[lang] ?? o.en)) || ''));
 // Markup is stripped for a plain-text attribute, then every remaining special character is
 // escaped, so a stray "<" left by a partial tag can never reopen an element.
-const attr = s => String(s).replace(/<[^>]*>/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const attr = s => {
+  let t = String(s), prev;
+  do { prev = t; t = t.replace(/<[^>]*>/g, ''); } while (t !== prev);  // until no tag is left
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
 
 const SQUIG = `<svg class="squig"><use href="#i-squig"/></svg>`;
 
