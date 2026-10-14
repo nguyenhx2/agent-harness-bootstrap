@@ -182,8 +182,44 @@ jobs:
       - name: Port adapter must enforce (Cursor/Codex)
         run: python harness-bootstrap/scripts/port.py --self-test
 
+  # The hooks are shell scripts, so the shell they meet decides whether they block. macOS ships
+  # bash 3.2 (no associative arrays, no ${x,,}, no mapfile) and a BSD userland; Windows runs them
+  # through Git Bash and the .ps1 twin through Windows PowerShell 5.1. Ubuntu above proves
+  # neither, so the guardrail eval and the scaffold integration run on both here as well.
+  cross-platform:
+    name: guardrails on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            eval_args: ""
+          - os: windows-latest
+            eval_args: "--flavor ps1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      - name: Guardrail eval
+        shell: bash
+        run: |
+          set -o pipefail
+          bash --version | head -1
+          python eval/guardrail_eval.py ${{ matrix.eval_args }} 2>&1 | tee eval.log
+          grep -q -- "--- POSIX (.sh) ---" eval.log || { echo "::error::the POSIX half did not run"; exit 1; }
+
+      - name: Every scaffolded harness must hang together
+        run: python scripts/check_integration.py
+
+      - name: Port adapter must enforce (Cursor/Codex)
+        run: python harness-bootstrap/scripts/port.py --self-test
+
   scaffold-matrix:
-    name: scaffold (${{ matrix.flavor }})
+    name: scaffold (${{ matrix.flavor }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -193,6 +229,8 @@ jobs:
             flavor: posix
           - os: windows-latest
             flavor: windows
+          - os: macos-latest
+            flavor: posix
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 

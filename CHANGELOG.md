@@ -5,6 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.21.2
+
+Security by design, re-audited. The README opens a new section that draws the five layers
+between an agent and an irreversible action - what the model decides, what the runtime limits,
+what the deny rules refuse, what the hooks block, and what only a person can lift - with what is
+not enforced stated beside them. Building it meant firing bypass attempts at a scaffolded harness
+first, and the ones that walked past are closed: a `.env` read behind a pipe, a redirect, a glob,
+split quotes or braces, `grep -r` through the tree, `find . -delete` at the repo root, and an
+agent rewriting a guard through the shell, which a new always-on hook, `protect-harness`, now
+refuses. The guards run in CI on macOS and Windows as well as Linux, and harness-view loads in
+about half the script time.
+
 ## v1.21.1
 
 The intro video and the site, finished. The intro has a narrator who sounds like she knows the

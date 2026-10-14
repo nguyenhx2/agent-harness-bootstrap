@@ -36,8 +36,12 @@ $allowPattern  = '\.env\.example$'
 # Parity with the .sh flavor: match the FILE, not a closed list of reader verbs. A verb list
 # let `strings .env` and any wrapper through. Scrubs below remove the forms that may
 # legitimately name a .env file, before the test runs.
-$cmdPattern    = '(^|[^a-zA-Z0-9_./-])[^\s]*\.env(\.[a-zA-Z0-9_-]+)?(\s|$|"|''|;|&)'
+# The name ends at anything a file name cannot contain - a pipe, a redirect, a bracket, a comma
+# from brace expansion - not only at a space or quote: `cat .env|base64` and `(cat .env)` once
+# walked past a terminator list that stopped at space, quote, ; and &.
+$cmdPattern    = '(^|[^a-zA-Z0-9_./-])[^\s]*\.env(\.[a-zA-Z0-9_-]+)?([^a-zA-Z0-9_.-]|$)'
 $cmdScrubs     = @(
+    '--exclude(-dir)?=[^\s]*',
     '(?i)(cp|copy|mv|Copy-Item)\s+[^\s]*\.env\.example\s+[^\s]*\.env(\.[a-zA-Z0-9_-]+)?',
     '>>?\s*[^\s]*\.env(\.[a-zA-Z0-9_-]+)?',
     '[^\s]*env-read\.py[^;&|]*',
@@ -72,13 +76,21 @@ function Get-FastString([string]$raw, [string]$key) {
 try {
     $fc = $null
     if (-not $raw.Contains('"file_path"')) { $fc = Get-FastString $raw 'command' }
-    if ($null -ne $fc -and -not ($fc -match '\.env' -or $fc -match $dbResetPattern)) { exit 0 }
+    # Also falls through for a dot-name carrying a glob, quote, brace or backslash (`.e?v`,
+    # `.e""nv`) and for any grep: see 2b below.
+    if ($null -ne $fc -and -not ($fc -match '\.env' -or $fc -match '\.[^\s/]*[\]\[*?{"''\\`]' -or
+            $fc -match 'grep' -or $fc -match $dbResetPattern)) { exit 0 }
 } catch { }
 
 try {
     $payload = $raw | ConvertFrom-Json
 } catch {
     exit 0
+}
+
+function Block-Env([string]$why) {
+    [Console]::Error.WriteLine("BLOCKED: $why Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed).")
+    exit 2
 }
 
 # --- 1. file access ---------------------------------------------------------------------------
@@ -99,6 +111,68 @@ if ($cmd) {
     if ($cmdScrubbed -match $cmdPattern) {
         [Console]::Error.WriteLine("BLOCKED: this command names a .env file. Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed).")
         exit 2
+    }
+    # 2b. The shell rewrites a name before the command sees it, so a literal match is not enough.
+    # Same three checks, same order, as shell_words in the .sh twin.
+    #   Quote removal: `.e""nv` and `.e\nv` are `.env` by the time cat opens them.
+    #   Globbing: a word that a .env name would match (`.e?v`, `.env*`, `.e[n]v`, `.*`) is the
+    #     file. Only a word whose last part starts with a dot can match one.
+    #   Recursive grep: refused when it searches the working directory, or a directory holding a
+    #     .env file, with no --include or env --exclude filter.
+    $stripQ = { param($t) $t.Replace('"', '').Replace("'", '').Replace('\', '').Replace('`', '') }
+    $c = & $stripQ $cmd
+    $s = & $stripQ $cmdScrubbed
+    $s = $s -replace '--exclude(-dir)?=[^\s]*', ''
+    if ($s -match $cmdPattern) { Block-Env 'this command names a .env file once its quotes are removed.' }
+    $ws = @(($c -replace '[;&|()<>=,{}]', ' ') -split '\s+' | Where-Object { $_ })
+    for ($i = 0; $i -lt $ws.Count; $i++) {
+        $w = $ws[$i]
+        if ($w -eq '--exclude' -or $w -eq '--exclude-dir') { $i++; continue }
+        if ($w -notmatch '[*?\[]') { continue }
+        $b = ($w -split '/')[-1]
+        if (-not $b.StartsWith('.')) { continue }
+        if ('.env' -like $b -or '.env.local' -like $b -or '.env.production' -like $b) {
+            Block-Env "the pattern '$w' expands to a .env file."
+        }
+    }
+    $cwdPosix = ([string]$payload.cwd) -replace '\\', '/'
+    $cwdPosix = $cwdPosix.TrimEnd('/')
+    foreach ($line in ($c -split '&&|\|\||;|\|')) {
+        $t = @($line -split '\s+' | Where-Object { $_ })
+        $g = -1
+        for ($i = 0; $i -lt $t.Count; $i++) {
+            if ($t[$i] -cmatch '^(grep|egrep|fgrep)$' -or $t[$i] -cmatch '/grep$') { $g = $i; break }
+        }
+        if ($g -lt 0) { continue }
+        $rec = $false; $inc = $false; $opts = $true; $patSeen = $false; $paths = @()
+        for ($i = $g + 1; $i -lt $t.Count; $i++) {
+            $w = $t[$i]
+            if ($opts -and $w -eq '--') { $opts = $false; continue }
+            if ($opts) {
+                if ($w -in @('--recursive', '--dereference-recursive', '--directories=recurse')) { $rec = $true; continue }
+                if ($w -eq '--include' -or $w -like '--include=*' -or $w -like '--exclude=*env*' -or $w -like '--exclude-dir=*') { $inc = $true; continue }
+                if ($w -in @('-e', '-f') -or $w -like '--regexp=*' -or $w -like '--file=*') { $patSeen = $true; continue }
+                if ($w.StartsWith('--')) { continue }
+                if ($w.StartsWith('-')) { if ($w -cmatch '[rR]') { $rec = $true }; continue }
+            }
+            if (-not $patSeen) { $patSeen = $true; continue }
+            $paths += $w
+        }
+        if (-not $rec -or $inc) { continue }
+        if ($paths.Count -eq 0) { $paths = @('.') }
+        foreach ($dir in $paths) {
+            if ($dir -ne '/') { $dir = $dir.TrimEnd('/') }
+            $found = $dir -in @('.', './', '..', '*', '/', '') -or ($cwdPosix -and $dir -eq $cwdPosix)
+            if (-not $found) {
+                $d = if ($dir -match '^(/|[A-Za-z]:/)') { $dir } else { "$cwdPosix/$dir" }
+                $hit = @(Get-ChildItem -LiteralPath $d -Force -Filter '.env*' -File -ErrorAction SilentlyContinue |
+                         Where-Object { $_.Name -eq '.env' -or ($_.Name -like '.env.*' -and $_.Name -ne '.env.example') })
+                $found = $hit.Count -gt 0
+            }
+            if ($found) {
+                Block-Env "grep -r through '$dir' would print what is inside a .env file on the way. Add --include='*.ts' (or --exclude='.env*'), or use the Grep tool."
+            }
+        }
     }
     if ($cmd -match $dbResetPattern) {
         [Console]::Error.WriteLine("BLOCKED: destructive DB command. Schema changes go through the controlled migration flow; DB resets must be run by the user themselves.")

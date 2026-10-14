@@ -10,7 +10,7 @@ which; the quality gate and `docs/CONTEXT-MANAGEMENT.md` cite it.
 | Control | Where | What it stops |
 |---|---|---|
 | `permissions.deny` in `settings.json` | `Read(**/.env)`, `Read(**/*.pem)`, `Read(**/secrets/**)`, `Bash(git push --force:*)`, `Bash(rm -rf:*)`, plus a `{{RESTRICTED_DENIES}}` slot at the head of the list | What the agent cannot even **see**. The action never reaches a tool call |
-| **PreToolUse hooks**, exit code 2 | `protect-secrets`, `guard-main-commit`, `check-commit-msg`, `protect-adr` | What the agent cannot **do**: read a `.env`, commit to `main`, ship a non-conventional commit message, edit an ADR whose on-disk status is `Accepted` |
+| **PreToolUse hooks**, exit code 2 | `protect-secrets`, `guard-destructive`, `protect-harness`, `guard-main-commit`, `check-commit-msg`, `protect-adr` | What the agent cannot **do**: read a `.env`, commit to `main`, ship a non-conventional commit message, edit an ADR whose on-disk status is `Accepted` |
 | `tools:` allowlist in agent frontmatter | e.g. `code-reviewer` and `security-reviewer` get `Read, Grep, Glob, Bash` | What the agent cannot **reach**. The frontmatter makes "reviewers do not edit" structural |
 | `disallowedTools` in agent frontmatter | `Edit, Write, NotebookEdit` on every read-only seat | The same boundary stated twice, so a later grant to `tools:` cannot turn a judge into an author |
 | `maxTurns` | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. `cost-model.md`: *"the cost of a stuck agent is unbounded"* |
@@ -26,6 +26,14 @@ case count lives in `CASES_PER_FLAVOR`, asserted on every run - not in this sent
 > exits 2 and the tool call never happens.`
 
 The guardrails are shell scripts; no model is consulted. **The safety floor is model-independent.**
+
+**The files the enforced layer lives in are enforced too.** `protect-harness` asks the user before
+an agent edits `.claude/settings.json`, `.claude/settings.local.json` or anything under
+`.claude/hooks/`, and refuses a shell command that writes there. Without it, a guard is one
+`echo >> .claude/hooks/...` away from `exit 0`; verified live in Claude Code, in
+`bypassPermissions` mode that write went through without the hook and was refused with it. The
+README's [Security by design](../../README.md#security-by-design) section draws all of this as five
+layers.
 
 ## Advisory
 
@@ -51,7 +59,7 @@ around. Removal is *recorded and graded* by `harness-toggle.py` and the viewer's
 
 | Tier | What is in it | What it costs to disable |
 |---|---|---|
-| **HARD** | `protect-secrets`, `guard-agent-spawn` hooks; `security-privacy`, `agent-guardrails` rules; `/review-changes`; the `orchestrator` and reviewer seats | the literal phrase `disable <name>`, compared byte for byte |
+| **HARD** | `protect-secrets`, `guard-agent-spawn`, `protect-harness` hooks; `security-privacy`, `agent-guardrails` rules; `/review-changes`; the `orchestrator` and reviewer seats | the literal phrase `disable <name>`, compared byte for byte |
 | **SOFT** | `guard-main-commit`, `check-commit-msg`, `protect-adr`; `ai-governance`; **every** agent seat | an explicit acknowledgement (`--yes` / `confirm_soft`) |
 | unlisted | everything else | nothing beyond the record |
 

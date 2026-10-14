@@ -11,9 +11,9 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval workflow"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-290%2F290%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 290/290 cases per hook flavour, on a strict scaffold"></a>
+  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-312%2F312%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 312/312 cases per hook flavour, on a strict scaffold"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
-  <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="26 hooks"></a>
+  <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="27 hooks"></a>
 </p>
 
 An AI agent on a real repository fails in predictable ways: it reads what it should not, edits what
@@ -75,6 +75,37 @@ offline release zip and pinned versions: [Getting Started](docs/wiki/Getting-Sta
 <p align="center">
   <img src="docs/assets/harness-overview.svg" alt="How it all fits together. What you bring - an idea, transcripts, legacy docs, an existing or empty repo, half-written specs - flows into spec-builder, which writes one contract. harness-bootstrap reads that contract and the codebase and builds six parts: path-scoped rules, hooks that block in the shell, a roster sized to the repo's purpose, routing across the Inline, Direct, Standard and Guarded tiers, wired skills, and proportionate verification. Work writes state to disk - the task board, run history and checkpoints - and harness-view reads the harness and that state to show, score, toggle and watch it." width="960">
 </p>
+
+## Security by design
+
+An agent's instructions are the weakest thing between it and an irreversible action, so they are
+only the first of five layers. Each layer below is decided by something the model cannot argue
+with: the runtime, the permission system, a shell script's exit code, and finally you.
+
+<p align="center">
+  <img src="docs/assets/security-layers.svg" alt="Five security layers between an agent's next action and its execution. SOFT, decided by the model: AGENTS.md, path-scoped rules and seat prompts. SCOPED, decided by the runtime: per-seat tool allowlists, read-only reviewers, maxTurns, pinned models, spawn caps and the verification ledger. FORCED, decided by the permission system: deny rules for secret files, force push, hard reset, rm -rf, deploy and database reset. HARD, decided by a shell script that exits 2: the blocking hooks, which fail closed. HUMAN, above every layer: agent edits to the harness's own settings and hooks ask you, shell writes there are refused, and switching a hard control off takes a typed phrase recorded in a committed file. Below: what proves it, and what is not enforced." width="100%">
+</p>
+
+| Layer | Decided by | What it holds | Where it gives way |
+|---|---|---|---|
+| **Soft** - guidance | the model | `AGENTS.md`, path-scoped rules, each seat's prompt. In the live benchmark below it refused every unsafe request before a hook had to fire | A model can outweigh it, and compaction can drop it |
+| **Scoped** - seat limits | the Claude Code runtime | A tools allowlist per seat (review seats also list Edit and Write in `disallowedTools`), `maxTurns`, a pinned model and effort, spawn depth 2 with at most 4 at once, the verification ledger | Limits what a seat can call, not what it does with a tool it holds |
+| **Forced** - deny rules | the permission system | Reads of `.env*`, keys and `secrets/`; force push, `reset --hard`, `rm -rf`, deploy and DB reset. PR create, merge and deploy are asked | A literal prefix: `rm -fr` and `git push origin main --force` walk past, which is why the next layer exists |
+| **Hard** - blocking hooks | a shell script's exit code | Always on: `protect-secrets`, `protect-harness`, `guard-destructive`, `guard-main-commit`, `check-commit-msg`, `protect-adr`, `guard-agent-spawn`, `guard-board`, `guard-task-scope`. With `hooks_strict`: `guard-egress`, `secret-guard`, `guard-config`, `guard-large-file`, `guard-deps`, `stop-evidence`. A crash or timeout blocks | Reads commands best-effort: a file name the command builds at run time is beyond it |
+| **Human** - only a person | you | An agent edit to `settings.json` or a hook asks you, and a shell write there is refused. Switching a hard control off takes the typed phrase `disable <name>`, committed to `.claude/disabled.json`; a re-review past the ledger takes `REVERIFY` in your own brief | - |
+
+**Re-audited for v1.21.2.** Bypass attempts fired at a scaffolded harness found these walking
+past: `.env` followed by a pipe, a redirect or a bracket (`cat .env|base64`), names the shell
+builds from a glob, quotes or braces (`cat .e?v`, `cat .e""nv`, `cat {.env,x}`), `grep -r`
+through the tree, `find . -delete` at the repo root, and an agent rewriting a guard through the
+shell. All of them are closed and are now guardrail eval cases. The last one was
+checked live in Claude Code: in `bypassPermissions` mode an `echo >> .claude/hooks/...` changed
+the guard without `protect-harness`, and was refused with it.
+
+**Not enforced, and said so:** which model provider readable text is sent to (no tool call
+exists to intercept), secrets at a path nobody named, `guard-agent-scope` (advisory: the payload
+names no calling seat), and egress and mid-session config changes, which need `hooks_strict`.
+The full ranking: [`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md).
 
 ## The problems it solves
 
@@ -200,8 +231,8 @@ python scripts/check_numbers.py     # every published figure matches its script
 ```
 
 The guardrail eval scaffolds a real harness per hook flavour (`.sh` and `.ps1`) with `hooks_strict`,
-`db`, `long` and the test flags on, then fires payloads at it: 290/290 per flavour (123 must-block,
-167 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
+`db`, `long` and the test flags on, then fires payloads at it: 312/312 per flavour (134 must-block,
+178 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
 does not measure agent behaviour or a default scaffold. Cases: [`eval/README.md`](eval/README.md).
 Benchmark caveats: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 

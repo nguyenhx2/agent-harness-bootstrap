@@ -16,7 +16,7 @@ when a file or a runnable script in this repo backs it. Anything else is marked 
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acted on | `reference/cost-model.md` uses current pricing: Opus is 1.67x Sonnet, not 5x. Tier choice pays at the cheap end (Haiku), not between Opus and Sonnet. |
-| Advantage is the harness | Delivered, re-runnable | `eval/guardrail_eval.py` fires 290 payloads (123 must-block, 167 must-allow) at a scaffolded harness: 290/290 per hook flavour, 580/580 for `sh` and `ps1` together. No model is consulted. |
+| Advantage is the harness | Delivered, re-runnable | `eval/guardrail_eval.py` fires 312 payloads (134 must-block, 178 must-allow) at a scaffolded harness: 312/312 per hook flavour, 624/624 for `sh` and `ps1` together. No model is consulted. |
 | ROI | Half delivered | Cost per roster is modelled (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`). Value per feature is only starting to be measured. See Gap 3. |
 | Privacy | Delivered | `security-privacy.md`, enforced by `protect-secrets` and `settings.json` deny rules, both in the eval. Audit mode mounts product source read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: licence allow/deny by family, the AGPL-on-SaaS trigger, provenance of reproduced blocks, a diff check for reviewers. |

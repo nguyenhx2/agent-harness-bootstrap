@@ -7,6 +7,20 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.21.2] - 2026-10-14
+
+### Changed
+
+- **Faster to load and to lay out.** The page asks for the first graph before it compiles its
+  scripts, so the server scans while the browser parses; the Graph layout reads positions from
+  typed arrays instead of looking them up by id inside its O(n^2) loops (the same layout to the
+  last bit, about 3x cheaper); and the content-reference extractor no longer copies every word it
+  reads. On a 219-node harness: script time per load 195 -> 97 ms, Graph tab 195 -> 113 ms,
+  `/graph.json` about 20% faster. Output is byte-identical; a test holds the new extractor to the
+  old one over 1,000+ real files.
+- `protect-harness` is in the HARD tier of the toggle: switching it off takes the typed phrase
+  `disable protect-harness`.
+
 ## [1.21.1] - 2026-10-14
 
 No functional change. The version moves with the repo release, which changes only the intro

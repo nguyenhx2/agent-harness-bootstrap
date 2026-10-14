@@ -6,6 +6,54 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.21.2] - 2026-10-14
+
+A re-audit of the guards, by firing bypass attempts at a scaffolded harness. Every form below
+walked past before this release and is now a guardrail eval case.
+
+### Added
+
+- **`protect-harness`, always on.** An agent Edit or Write to `.claude/settings.json`,
+  `.claude/settings.local.json` or anything under `.claude/hooks/` asks the user; a shell command
+  that writes there (`sed -i`, `>>`, `cp`, `Set-Content` ...) is blocked. Without it a guard was
+  one `echo >> .claude/hooks/...` away from `exit 0`. Verified live in Claude Code: in
+  `bypassPermissions` mode that write went through without the hook and was refused with it. It
+  carries no `if` filter, because an `if` does not see a redirect target. It joins the HARD tier
+  of `/harness-toggle`, so switching it off takes the typed phrase.
+- **Cross-platform CI.** The guardrail eval, the scaffold integration matrix and the port
+  adapter self-test now also run on macOS (bash 3.2, BSD userland) and Windows (Git Bash and
+  Windows PowerShell 5.1), and the scaffold matrix gains macOS.
+
+### Fixed
+
+- **`protect-secrets` missed a `.env` read the shell rewrites first.**
+  - The file name ended only at a space, a quote, `;` or `&`, so `cat .env|base64`,
+    `cat .env>x`, `(cat .env)` and `cat {.env,x}` were allowed. It now ends at any character a
+    file name cannot contain.
+  - Globs that expand to a `.env` name (`cat .e?v`, `cat .env*`, `cat ./.e[n]v`, `cat .*`) are
+    matched the way the shell would, and quotes or backslashes split inside the name
+    (`cat .e""nv`) are removed before the test.
+  - `grep -r` through the working directory, or through a directory holding a `.env`, with no
+    `--include` or env `--exclude`, printed the file's lines on the way and is now refused.
+    `grep -rn TODO src/`, `--include=*.ts`, `--exclude=.env*` and `rg` (which skips hidden files)
+    still pass.
+- **`guard-destructive` missed `find`.** `find . -delete` and `find . -exec rm {} +` on the repo
+  root, home or a system path are blocked like `rm -rf`; a test that narrows the match
+  (`find . -name '*.pyc' -delete`) and a build directory (`find dist -delete`) still pass.
+
+- **The Cursor adapter allowed everything on Windows with the posix hook flavour.** It ran the
+  `.sh` hooks with a bare `bash`, which Windows resolves to the WSL launcher in System32 before
+  PATH; the hook ran in a Linux userland that could not read the payload's `C:/` paths, and every
+  action came back allowed. It now runs them through Git Bash, as Claude Code does, and the
+  adapter also runs `protect-harness` on shell commands. Found by the new Windows CI job.
+- **`code-graph.py --file` misjudged a path on macOS and on some Windows machines.** It resolved
+  the file but not the root, so under `/var` (a link to `/private/var`) or an 8.3 short temp path
+  a file inside the repo read as outside it. Found by the new macOS and Windows CI jobs.
+
+### Changed
+
+- The guardrail eval has 312 cases per hook flavour (134 must-block, 178 must-allow).
+
 ## [1.21.1] - 2026-10-14
 
 No functional change. The version moves with the repo release, which changes only the intro

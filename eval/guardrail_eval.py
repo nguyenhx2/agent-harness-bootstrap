@@ -75,11 +75,11 @@ BASH = find_bash()
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 290
+CASES_PER_FLAVOR = 312
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
-MUST_BLOCK_PER_FLAVOR = 123
-MUST_ALLOW_PER_FLAVOR = 167
+MUST_BLOCK_PER_FLAVOR = 134
+MUST_ALLOW_PER_FLAVOR = 178
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -179,6 +179,38 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("secret: strings .env", "protect-secrets", 2, p("Bash", command="strings .env")),
         ("secret: rtk read .env", "protect-secrets", 2, p("Bash", command="rtk read .env")),
         ("secret: xxd .env.local", "protect-secrets", 2, p("Bash", command="xxd .env.local")),
+        # --- what the shell turns into .env before the command runs (v1.21.2) -------------
+        # A literal match missed every one of these: the name ended at a pipe, a redirect or a
+        # bracket the terminator list did not know, or the shell built it from a glob, quotes
+        # or braces, or grep -r read it on the way through the tree.
+        ("secret: .env then a pipe", "protect-secrets", 2, p("Bash", command="cat .env|base64")),
+        ("secret: .env in a subshell", "protect-secrets", 2, p("Bash", command="(cat .env)")),
+        ("secret: brace expansion", "protect-secrets", 2, p("Bash", command="cat {.env,x}")),
+        ("secret: glob .e?v", "protect-secrets", 2, p("Bash", command="cat .e?v")),
+        ("secret: glob .env*", "protect-secrets", 2, p("Bash", command="cat .env*")),
+        ("secret: quote-split name", "protect-secrets", 2, p("Bash", command='cat .e""nv')),
+        ("secret: grep -r over the tree", "protect-secrets", 2, p("Bash", command="grep -r API_KEY .")),
+        ("secret: grep -rn, no path", "protect-secrets", 2, p("Bash", command="grep -rn API_KEY")),
+        ("allow: grep -r in a source dir", "protect-secrets", 0, p("Bash", command="grep -rn TODO src/")),
+        ("allow: grep -r with --include", "protect-secrets", 0,
+         p("Bash", command="grep -rn KEY . --include=*.ts")),
+        ("allow: grep -r excluding env files", "protect-secrets", 0,
+         p("Bash", command="grep -r KEY . --exclude=.env*")),
+        ("allow: a glob that cannot match a dotfile", "protect-secrets", 0, p("Bash", command="ls *.ts")),
+        # --- protect-harness: the files every other guard depends on (v1.21.2) -----------
+        # It ASKS rather than blocks, so "blocked" here is exit 0 with an ask decision on stdout.
+        ("harness: edit a hook asks the user", "protect-harness", 0,
+         p("Edit", file_path=".claude/hooks/protect-secrets.sh"), {"contains": '"ask"'}),
+        ("harness: write settings.json asks", "protect-harness", 0,
+         p("Write", file_path=".claude/settings.json"), {"contains": '"ask"'}),
+        ("harness: mixed-case path asks", "protect-harness", 0,
+         p("Edit", file_path=".Claude/Settings.json"), {"contains": '"ask"'}),
+        ("harness: shell write to a hook is blocked", "protect-harness", 2,
+         p("Bash", command="sed -i 's/exit 2/exit 0/' .claude/hooks/guard-destructive.sh")),
+        ("allow: read settings.json", "protect-harness", 0,
+         p("Bash", command="cat .claude/settings.json"), {"not_contains": '"ask"'}),
+        ("allow: edit a rule file", "protect-harness", 0,
+         p("Edit", file_path=".claude/rules/testing.md"), {"not_contains": '"ask"'}),
         # --- MUST ALLOW: the legitimate env paths -----------------------------------------
         # This class was missing entirely, and its absence is exactly why a real user hit
         # "agents cannot read env when they genuinely need it". A guard that blocks the work
@@ -435,6 +467,14 @@ def optin_hook_cases(repo: str, feature_repo: str) -> list[tuple]:
          p("Bash", command='psql -h prod-db.example.com -c "DROP TABLE users"')),
         ("allow: rm -rf build output", "guard-destructive", 0,
          p("Bash", command="rm -rf node_modules dist")),
+        # find deletes as surely as rm -rf, and no deny rule names it (v1.21.2)
+        ("destructive: find . -delete", "guard-destructive", 2, p("Bash", command="find . -delete")),
+        ("destructive: find . -exec rm", "guard-destructive", 2,
+         p("Bash", command="find . -type f -exec rm {} +")),
+        ("allow: find cleanup narrowed by -name", "guard-destructive", 0,
+         p("Bash", command="find . -name '*.pyc' -delete")),
+        ("allow: find -delete in build output", "guard-destructive", 0,
+         p("Bash", command="find dist -delete")),
         ("allow: force-with-lease to a feature branch", "guard-destructive", 0,
          p("Bash", command="git push --force-with-lease origin feat/x")),
         ("allow: DROP TABLE on localhost", "guard-destructive", 0,
@@ -1662,12 +1702,14 @@ BLOCKING_GUARDS = {
     "PreToolUse": {"protect-adr", "guard-task-scope", "guard-board", "protect-secrets",
                    "protect-repos", "guard-main-commit", "check-commit-msg", "guard-destructive",
                    "guard-large-file", "guard-egress", "guard-deps", "guard-migration",
-                   "guard-agent-spawn"},
+                   "guard-agent-spawn", "protect-harness"},
     "UserPromptSubmit": {"secret-guard"},
     "ConfigChange": {"guard-config"},
 }
 # Guards that must see EVERY command: an `if` filter on them would be a bypass.
-NO_IF_GUARDS = {"guard-destructive", "protect-secrets"}
+# protect-harness joined in v1.21.2: verified live, `Bash(*.claude*)` did not run it for
+# `echo x >> .claude/hooks/a.sh` - a redirect target is not part of what `if` matches.
+NO_IF_GUARDS = {"guard-destructive", "protect-secrets", "protect-harness"}
 IF_EVENTS = {"PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest",
              "PermissionDenied"}
 # Commands each `if`-filtered guard exists to catch (its live bypasses and wrapped forms).

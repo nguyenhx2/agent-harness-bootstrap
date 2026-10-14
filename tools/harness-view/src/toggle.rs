@@ -37,6 +37,7 @@ fn err(code: u16, msg: impl Into<String>) -> ToggleError {
 const HARD: &[(&str, &str)] = &[
     ("hook", "protect-secrets"),
     ("hook", "guard-agent-spawn"),
+    ("hook", "protect-harness"),
     ("rule", "security-privacy"),
     ("rule", "agent-guardrails"),
     ("command", "review-changes"),

@@ -73,10 +73,10 @@ and mean it. Every claim on the surface is answered by a script in the repositor
 
 Real, derived, and re-runnable by the visitor:
 
-- guardrail eval 290/290 per hook flavour, on both hook flavours, measured on a harness scaffolded with
+- guardrail eval 312/312 per hook flavour, on both hook flavours, measured on a harness scaffolded with
   the `hooks_strict`, `long` and `db` flags on (`VARS` in `eval/guardrail_eval.py` names the set)
 - the guardrail suite splits into 123 must-block and 167 must-allow cases
-- Cursor and Codex port adapter self-test 32/32
+- Cursor and Codex port adapter self-test 34/34
 - a bare repository blocks 0/67 benchmark payloads; the same repository, harnessed, blocks all 67
 - 75% of rule content stays out of the default session, because 10 of 17 rules are path-scoped
 - a run installs 3 to 17 of the 18 seats (docs-only repo at the low end)

@@ -659,13 +659,16 @@ let lastGraphText = "";
 async function load(rootOverride, quiet) {
   const target = rootOverride !== undefined ? rootOverride : currentRoot;
   const url = "graph.json" + (target ? "?root=" + encodeURIComponent(target) : "");
+  // the page head already asked for the server's own root; use that answer once
+  const early = !quiet && !target ? window.hvFirstGraph : null;
+  window.hvFirstGraph = null;
   let res, body;
   try {
     // scanning a big tree is the slowest thing this page does, so it is the
     // operation the indicator exists for
     [res, body] = await withBusy("scanning", null, async () => {
-      const r = await fetch(url);
-      const text = await r.text();
+      const r = await (early || fetch(url).then(x => x.text().then(text => ({ ok: x.ok, status: x.status, text }))));
+      const text = r.text;
       const same = quiet && r.ok && text === lastGraphText;
       if (r.ok) lastGraphText = text;
       return [r, same ? null : JSON.parse(text)];
@@ -838,25 +841,45 @@ function fitView(vis) {
   panzoom.x = (cv.width - (Math.min(...xs) + Math.max(...xs)) * k) / 2;
   panzoom.y = (cv.height - (Math.min(...ys) + Math.max(...ys)) * k) / 2;
 }
+// Both passes below are O(n^2) per iteration, and they used to look every
+// position up by its string id and compare ids as strings inside the inner loop:
+// 200 iterations over 219 nodes is 9.6 million of each, and that, not the
+// arithmetic, was what made the Graph tab take a fifth of a second to appear.
+// The coordinates now live in typed arrays for the duration of the run and the
+// pairs are listed once, in the order the old loops visited them, so every
+// floating-point operation happens in the same sequence: the layout is
+// unchanged to the last bit, only cheaper to reach.
+function layoutArrays(vis) {
+  const N = vis.length, X = new Float64Array(N), Y = new Float64Array(N);
+  vis.forEach((n, i) => { X[i] = pos[n.id].x; Y[i] = pos[n.id].y; });
+  return { N, X, Y, store() { vis.forEach((n, i) => { pos[n.id].x = X[i]; pos[n.id].y = Y[i]; }); } };
+}
 function forceSim(vis, iters) {
-  const ids = new Set(vis.map(n => n.id));
-  const es = graph.edges.filter(e => ids.has(e.from) && ids.has(e.to));
+  const { N, X, Y, store } = layoutArrays(vis);
+  const at = new Map(vis.map((n, i) => [n.id, i]));
+  const es = graph.edges.filter(e => at.has(e.from) && at.has(e.to));
+  const ef = Int32Array.from(es, e => at.get(e.from)), et = Int32Array.from(es, e => at.get(e.to));
+  // the unordered pairs the old `a.id >= b.id` test let through, in its order
+  const ids = vis.map(n => n.id), pairs = [];
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (!(ids[i] >= ids[j])) pairs.push(i, j);
+  const P = Int32Array.from(pairs);
+  const W = cv.width, H = cv.height;
   for (let it = 0; it < iters; it++) {
-    for (const a of vis) for (const b of vis) {
-      if (a.id >= b.id) continue;
-      const pa = pos[a.id], pb = pos[b.id];
-      let dx = pb.x - pa.x, dy = pb.y - pa.y, d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
+    for (let k = 0; k < P.length; k += 2) {
+      const a = P[k], b = P[k + 1];
+      let dx = X[b] - X[a], dy = Y[b] - Y[a], d2 = dx * dx + dy * dy + 0.01, d = Math.sqrt(d2);
       const rep = 2600 / d2, fx = dx / d * rep, fy = dy / d * rep;
-      pa.x -= fx; pa.y -= fy; pb.x += fx; pb.y += fy;
+      X[a] -= fx; Y[a] -= fy; X[b] += fx; Y[b] += fy;
     }
-    for (const e of es) {
-      const pa = pos[e.from], pb = pos[e.to];
-      let dx = pb.x - pa.x, dy = pb.y - pa.y, d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+    for (let k = 0; k < ef.length; k++) {
+      const a = ef[k], b = et[k];
+      let dx = X[b] - X[a], dy = Y[b] - Y[a], d = Math.sqrt(dx * dx + dy * dy) + 0.01;
       const f = (d - 130) * 0.015, fx = dx / d * f, fy = dy / d * f;
-      pa.x += fx; pa.y += fy; pb.x -= fx; pb.y -= fy;
+      X[a] += fx; Y[a] += fy; X[b] -= fx; Y[b] -= fy;
     }
-    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(40, Math.min(cv.width - 40, p.x)); p.y = Math.max(30, Math.min(cv.height - 30, p.y)); }
+    for (let i = 0; i < N; i++) { X[i] = Math.max(40, Math.min(W - 40, X[i])); Y[i] = Math.max(30, Math.min(H - 30, Y[i])); }
   }
+  store();
   separate(vis, 400);
 }
 
@@ -866,32 +889,34 @@ function forceSim(vis, iters) {
 // view look like a pile. This pushes overlapping rectangles apart along their
 // smallest escape direction, which is cheap and converges in a few passes.
 function separate(vis, iters) {
-  const pad = 6;
+  const pad = 6, hh = 24 + pad;
+  const { N, X, Y, store } = layoutArrays(vis);
+  const half = Float64Array.from(vis, n => (n._w || 80) / 2);
+  // a margin well outside the canvas: pinning nodes to the visible edge left
+  // them nothing to escape into, so dense graphs never stopped overlapping
+  const W = cv.width, H = cv.height, mx = W * 1.5, my = H * 1.5;
   for (let it = 0; it < iters; it++) {
     let moved = false;
-    for (let i = 0; i < vis.length; i++) {
-      for (let j = i + 1; j < vis.length; j++) {
-        const a = vis[i], b = vis[j], pa = pos[a.id], pb = pos[b.id];
-        const hw = (a._w || 80) / 2 + (b._w || 80) / 2 + pad, hh = 24 + pad;
-        const dx = pb.x - pa.x, dy = pb.y - pa.y;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const hw = half[i] + half[j] + pad;
+        const dx = X[j] - X[i], dy = Y[j] - Y[i];
         const ox = hw - Math.abs(dx), oy = hh - Math.abs(dy);
         if (ox <= 0 || oy <= 0) continue;      // boxes already clear
         moved = true;
         if (ox < oy) {                          // shorter escape is sideways
           const s = (dx < 0 ? -1 : 1) * ox / 2;
-          pa.x -= s; pb.x += s;
+          X[i] -= s; X[j] += s;
         } else {
           const s = (dy < 0 ? -1 : 1) * oy / 2;
-          pa.y -= s; pb.y += s;
+          Y[i] -= s; Y[j] += s;
         }
       }
     }
-    // a margin well outside the canvas: pinning nodes to the visible edge left
-    // them nothing to escape into, so dense graphs never stopped overlapping
-    const mx = cv.width * 1.5, my = cv.height * 1.5;
-    for (const n of vis) { const p = pos[n.id]; p.x = Math.max(-mx, Math.min(cv.width + mx, p.x)); p.y = Math.max(-my, Math.min(cv.height + my, p.y)); }
+    for (let i = 0; i < N; i++) { X[i] = Math.max(-mx, Math.min(W + mx, X[i])); Y[i] = Math.max(-my, Math.min(H + my, Y[i])); }
     if (!moved) break;
   }
+  store();
 }
 
 // The connected set for a selection: the node, its direct neighbours, and the

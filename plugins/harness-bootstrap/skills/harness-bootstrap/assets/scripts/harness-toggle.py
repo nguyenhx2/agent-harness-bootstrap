@@ -18,7 +18,7 @@ indent 2 preserving key order - the first toggle normalizes its formatting,
 after which disable/enable round-trips are byte-identical.
 
 Safety tiers (hardcoded, not configurable):
-  HARD - protect-secrets, guard-agent-spawn hooks; security-privacy,
+  HARD - protect-secrets, guard-agent-spawn, protect-harness hooks; security-privacy,
          agent-guardrails rules; the review-changes command; the orchestrator
          and reviewer SEATS. Disabling needs --confirm "disable <name>" typed
          literally by the USER.
@@ -57,7 +57,7 @@ KINDS = ("rule", "command", "hook", "agent")
 DIRS = {"rule": "rules", "command": "commands", "hook": "hooks",
         "agent": "agents"}
 
-HARD = {"hook/protect-secrets", "hook/guard-agent-spawn",
+HARD = {"hook/protect-secrets", "hook/guard-agent-spawn", "hook/protect-harness",
         "rule/security-privacy", "rule/agent-guardrails",
         "command/review-changes",
         # the seats the rest of the harness assumes: only the orchestrator
