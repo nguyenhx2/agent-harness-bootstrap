@@ -362,7 +362,9 @@ def check_file(root: pathlib.Path, path: str, hook: bool) -> int:
     p = pathlib.Path(path)
     p = p if p.is_absolute() else root / p
     try:
-        rel = p.resolve().relative_to(root).as_posix()
+        # Both sides resolved: macOS's /var is a link to /private/var and a Windows temp dir can be
+        # an 8.3 short name, so a resolved file under an unresolved root reads as outside it.
+        rel = p.resolve().relative_to(root.resolve()).as_posix()
     except ValueError:
         return 0
     if pathlib.PurePosixPath(rel).suffix not in SOURCE_EXTS or \

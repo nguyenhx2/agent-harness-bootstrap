@@ -41,6 +41,10 @@ walked past before this release and is now a guardrail eval case.
   root, home or a system path are blocked like `rm -rf`; a test that narrows the match
   (`find . -name '*.pyc' -delete`) and a build directory (`find dist -delete`) still pass.
 
+- **`code-graph.py --file` misjudged a path on macOS and on some Windows machines.** It resolved
+  the file but not the root, so under `/var` (a link to `/private/var`) or an 8.3 short temp path
+  a file inside the repo read as outside it. Found by the new macOS and Windows CI jobs.
+
 ### Changed
 
 - The guardrail eval has 312 cases per hook flavour (134 must-block, 178 must-allow).
