@@ -2,14 +2,60 @@
 
 **English** · [日本語](HARNESS-GRAPH-SCHEMA.ja.md)
 
-`.claude/state/harness-graph.json` is the canonical, machine-readable description of a
-harnessed repo's control plane: every agent, rule, command, hook, script, code module, and
-active task, plus the typed relationships between them. It is written by
-`.claude/scripts/harness-graph.py` or, byte for byte the same, by `harness-view scan`
-(`scripts/check_graph_parity.py` holds the two to that), rendered by `graph-html.py`
-(`docs/context/harness-graph.html`, Flow and Graph views), and consumed by external tools
-such as the `harness-view` native viewer. Anything that reads this file must tolerate unknown
-extra keys; anything that writes it must preserve the guarantees below.
+`.claude/state/harness-graph.json` is the machine-readable map of a harnessed repo's control plane:
+every agent, rule, command, hook, script, skill, instruction file, code module and task, and the
+typed edges between them.
+
+```mermaid
+flowchart LR
+    HG["harness-graph.py"] --> J[/"harness-graph.json"/]
+    HV["harness-view scan"] --> J
+    J --> GH["graph-html.py"]
+    GH --> H[/"harness-graph.html"/]
+    J --> V["harness-view"]
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class HG,HV,GH det
+    class J,H art
+    class V hum
+```
+
+- **Writers**: `.claude/scripts/harness-graph.py` and `harness-view scan`. Their output is byte for
+  byte the same; `scripts/check_graph_parity.py` holds them to it.
+- **Readers**: `graph-html.py` renders `docs/context/harness-graph.html` (Flow and Graph views), and
+  the `harness-view` viewer reads it directly.
+- **Contract**: a reader tolerates unknown extra keys; a writer keeps every guarantee below.
+
+The edges that carry the most meaning, as the Flow view draws them:
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 35, "nodeSpacing": 25}}}%%
+flowchart TD
+    HU(["Human"]) -->|"invokes"| CM["Command"]
+    CM -->|"delegates"| AG["Agent"]
+    ST["settings.json"] -->|"triggers"| HK["Hook"]
+    HK -->|"enforces"| RU["Rule"]
+    RU -->|"gates"| AG
+    AG -->|"owns"| MO["Module"]
+    AG -->|"reviews"| GT["Merge request"]
+    GT -->|"escalates"| HU
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class HU hum
+    class CM,AG mod
+    class ST,HK,RU,GT gate
+    class MO art
+```
+
+The full sets are in the [Nodes](#nodes) and [Edges](#edges) tables.
 
 ## Guarantees
 

@@ -19,6 +19,7 @@ Checks (each an error, exit 1):
     priority        an FR has no **Priority**, or it is not Must / Should / Could / Won't
     status          an FR has no **Status**, or it is not Draft / Confirmed / Withdrawn / Superseded
     no-criteria     a live FR has no acceptance criterion
+    negative-case   a live FR has only one criterion, so its negative case is missing
     criterion-id    a criterion has no AC-nn.n ID, a duplicate one, or one numbered for another FR
     criterion-form  a criterion is not "Given ..., when ..., then ..." or "Done when ..."
     undefined-ref   an FR or OI is mentioned but defined nowhere
@@ -27,8 +28,8 @@ Checks (each an error, exit 1):
     decision        a reply in the sheet is not yes / no / change
     stale           confirmation.md or index.json is missing or no longer matches the spec
 
-Warnings (printed, exit 0): an FR with a single criterion (no negative case), a sheet decision
-that has not been folded back into 05 yet, a Confirmed FR still blocked by an open issue.
+Warnings (printed, exit 0): a sheet decision that has not been folded back into 05 yet, a
+Confirmed FR still blocked by an open issue.
 
 The keywords Given / when / then / Done when stay English whatever the prose language - they are
 structure, like the table headers; the clauses between them are in the user's language.
@@ -372,7 +373,9 @@ def read_spec(root: Path, rep: Report) -> dict:
                 rep.err("no-criteria", f"{fr.file}:{fr.line} {fr.id} has no acceptance "
                                        f"criterion - it cannot be implemented or confirmed")
             elif len(fr.criteria) == 1:
-                rep.warnings.append(f"{fr.id} has one criterion; add the negative case")
+                rep.err("negative-case", f"{fr.file}:{fr.line} {fr.id} has one criterion; add "
+                                         f"the negative case (what must NOT happen, or the error "
+                                         f"the user sees)")
 
     for kind, mid, where in mentions:
         if kind == "FR" and mid not in frs:
@@ -659,6 +662,8 @@ def self_test() -> list[str]:
                              "of every request they own.\n- [ ] AC-02.2 Given another user's "
                              "request, when the requester opens its URL, then access is denied.\n",
                         ""),
+        "negative-case": (f05, "- [ ] AC-02.2 Given another user's request, when the requester "
+                               "opens its URL, then access is denied.\n", ""),
         "criterion-id": (f05, "AC-02.2 Given", "AC-03.2 Given"),
         "criterion-form": (f05, "AC-01.1 Given a pending request, when",
                            "AC-01.1 The approver can reject, when"),

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Re-render every clip, both languages, at 1080p.
+# Re-render every Manim clip, both languages, at 1080p.
 #
 # The scene sources are hashed into video/RENDERED.json, so a clip whose source changed but whose
 # mp4 did not is a figure that lies in pixels - scripts/check_media.py exists because exactly that
@@ -10,8 +10,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 
-CLIPS="01-overview:Overview 02-flow:Flow 03-layers:Layers 04-solution:Solution
-       05-spec-builder:SpecBuilder 06-harness-bootstrap:HarnessBootstrap 07-skills-and-view:SkillsAndView"
+# The Manim clips still shipped. The narrated intro is a Remotion project: bash video/intro/render.sh.
+CLIPS="07-skills-and-view:SkillsAndView"
 
 fail=0
 for entry in $CLIPS; do

@@ -1,26 +1,20 @@
 # Elicitation
 
-How to get the inputs out of whatever the user actually brought - which is rarely a tidy brief.
+How to get the inputs out of whatever the user actually brought - rarely a tidy brief.
 
 ## The one rule everything else serves
 
 **Never invent a requirement.**
 
 Anything the source material does not state and does not clearly imply goes to
-`11-assumptions-constraints.md` - as an assumption (AS-nn) if you are proceeding on it, or as an
-open issue (OI-nn) if you are not - and is flagged to the user in the final summary. It never
-appears in 05 or 07 as though someone had decided it.
+`11-assumptions-constraints.md` - an assumption (AS-nn) if you proceed on it, an open issue (OI-nn)
+if you do not - and is flagged in the final summary. It never appears in 05 or 07 as though someone
+had decided it.
 
-This is not pedantry. A missing requirement is *visible*: work stalls, someone asks, it gets
-answered, and the cost is one conversation. A plausible invented requirement is *invisible*: it is
-estimated, built, tested against itself, and every downstream document - the feasibility table, the
-PRD, the task board, the test plan - treats it as settled. It surfaces in UAT, in front of the one
-person who always knew it was wrong. It is the most expensive error available to a BA, and it is
-the one an LLM is most prone to, because filling a gap with something plausible is exactly what a
-language model is for.
-
-The failure mode has a tell: you find yourself writing a requirement that reads well and that
-nobody said. Stop, and move it to 11.
+Why: a missing requirement is *visible* - someone asks, and it costs one conversation. A plausible
+invented one is *invisible* - estimated, built, tested against itself, treated as settled by every
+downstream document, and found in UAT. It is the most expensive BA error and the one an LLM is most
+prone to. The tell: you are writing a requirement that reads well and that nobody said. Move it to 11.
 
 ## What to ask vs what to infer
 
@@ -40,10 +34,9 @@ nobody said. Stop, and move it to 11.
 | Volumes and growth | No | Ask. An order-of-magnitude guess here is a design decision |
 | Output language | From the user's own language | Only if genuinely unclear |
 
-The distinction that matters: **infer structure, ask for decisions.** You may derive that a
-"submit for approval" flow implies an approver role - that is structure. You may not derive who the
-approver is, whether they may approve their own submission, or what happens if they are on leave -
-those are decisions.
+**Infer structure, ask for decisions.** A "submit for approval" flow implies an approver role -
+structure. Who the approver is, whether they may approve their own submission, what happens when
+they are on leave - decisions.
 
 ## Routing by input type
 
@@ -61,45 +54,19 @@ at the same gate: the confirmed FR list plus the section selection.
 
 ## Read the sources first
 
-Whenever the user hands over files rather than prose, route and read them **before** the first
-question. You cannot elicit against a document you have not actually read, and a question whose
-answer sat in paragraph two of a PDF you skimmed costs the user's trust.
-
-```bash
-python scripts/route_sources.py <files-folders-urls> --out-dir <dir> -o <dir>/plan.json
-python scripts/ingest.py <source> --via <strategy> --out <dir>/<source>.txt   # per plan entry
-```
-
-The router decides which reader owns each source and prints the reason;
-[`source-routing.md`](source-routing.md) carries the table, the overrides, and the limits.
-
-Relay that plan to the user before reading - one line per source, nothing more. It is the
-checkpoint that proves their files were actually read (and names the ones that cannot be),
-and it is the only narration this step gets: no per-file progress commentary, no summaries of
-summaries. The next thing the user sees after the plan is the first question batch.
-
-**A source that cannot be read never becomes a silent gap.** If nothing installed can open it, or
-its PDF text layer turns out to be a scan (under 80 characters per page - the extraction succeeds
-and returns almost nothing, which is precisely how an invented requirement gets written), it
-becomes an `OI-nn` in section 11 naming the file, why it is unreadable, and what would make it
-readable: a specific `pip install`, or a re-export request to the user. Then say so in the final
-summary. The same discipline this file applies to an unstated requirement, applied one layer down:
-the failure has to be visible, because a document nobody could read is indistinguishable from a
-document nobody thought to mention.
-
-For a genuinely large, diagram-dense, cross-checking pile, a document-digestion skill of the
-docs-to-knowledge class (if installed) still does more than this routing layer does - it renders
-pages, reconstructs diagrams, and audits its own extraction. Delegating to it and ingesting its
-output is legitimate. Reading nothing is not.
+When the user hands over files, route and read them **before** the first question - a question
+whose answer sat in a PDF you skimmed costs the user's trust. The commands, the reader table, the
+unreadable-source rule and the limits are in [`source-routing.md`](source-routing.md). Relay the plan
+as one line per source; it is the only narration this step gets, and the next thing the user sees
+is the first question batch. A docs-to-knowledge class skill, if installed, does more for a large,
+diagram-dense pile; delegating to it is legitimate, reading nothing is not.
 
 ## By input type
 
 ### A one-line idea
 
-Expect to ask the most. Do not compensate by filling the gaps yourself - a spec set built on one
-line plus your imagination is a spec set of fiction with a table of contents.
-
-Ask in batches (max 4 questions per `AskUserQuestion` call), in this order:
+Expect to ask the most; never compensate by filling gaps yourself. Ask in batches (max 4 questions
+per `AskUserQuestion` call), in this order:
 
 1. Who uses it, and what do they do today instead?
 2. What are the three things it must do? (These become the Must FRs.)
@@ -107,72 +74,54 @@ Ask in batches (max 4 questions per `AskUserQuestion` call), in this order:
 4. What already exists that it must talk to? (Integrations, identity, the system of record - and what
    happens to the flow if each one is unavailable.)
 
-Then produce a *draft* FR list and get it confirmed before writing anything else. Everything after
-05 is derived from it, so a wrong FR list costs twelve documents.
+Then produce a *draft* FR list and get it confirmed before writing anything else.
 
 ### A transcript or meeting notes
 
-The richest input, and the one most likely to be over-read. Discipline:
+The richest input, and the one most likely to be over-read:
 
 - Extract only what was **said**. "We'll probably need approvals" is an open issue, not FR-03.
-- Note who said each thing - it populates the `Source` column of the business rules table and the
-  `Owner` column in 11. A rule with no source is a guess.
-- Disagreement in the room is a finding, not noise. Two stakeholders describing the same process
-  differently is an OI with both versions recorded, not an average of the two.
-- Decisions that were *deferred* in the meeting are the highest-value open issues in the document.
-  They are also the ones a model most wants to quietly resolve. Do not.
+- Note who said each thing - it fills the `Source` column of the business rules and the `Owner`
+  column in 11. A rule with no source is a guess.
+- Disagreement in the room is an OI with both versions recorded, never an average of the two.
+- Decisions *deferred* in the meeting are the highest-value open issues. Do not quietly resolve them.
 
 ### An existing PRD or spec
 
-- Map it onto the numbered sections; do not restructure its content, and do not "improve" a requirement
-  while moving it. Preserve the original ID if it has one and note the mapping.
-- The gaps are the deliverable. A PRD almost always has functional requirements and almost never
-  has: security NFRs, data classification, permission scope, failure behaviour for integrations, or
-  a feasibility assessment. Fill 06, 07, 09, and 12 by asking - not by inferring from the FRs.
-- Where the PRD contradicts itself, both readings go in 11 as an OI. Choosing one silently is the
-  invented-requirement failure wearing a disguise.
+- Map it onto the numbered sections without restructuring or "improving" its content. Preserve the
+  original ID if it has one and note the mapping.
+- The gaps are the deliverable: security NFRs, data classification, permission scope, integration
+  failure behaviour, feasibility. Fill 06, 07, 09, and 12 by asking, not by inferring from the FRs.
+- Where the PRD contradicts itself, both readings go in 11 as an OI.
 
 ### Legacy docs and an existing codebase
 
-- The code is evidence of behaviour, not of intent. `status IN ('A','B','C')` tells you the states
-  exist; it does not tell you which are still used, and it certainly does not tell you which are
-  correct.
-- Read the schema for 08 and the route/permission layer for 06. These are the two places where
-  reality most reliably beats documentation.
+- Code is evidence of behaviour, not of intent: `status IN ('A','B','C')` says the states exist, not
+  which are used or correct.
+- Read the schema for 08 and the route/permission layer for 06.
 - Anything the code does that no stakeholder mentioned is an OI: "the system currently does X - is
-  this a requirement or an accident?" That question has surfaced more scope than any other in this
-  document.
+  this a requirement or an accident?"
 - Anything a stakeholder wants that the code cannot support is a `Partial` or `No` row in 12.
-- If this system replaces or coexists with a legacy one, the cutover plan (migrate the data once, run
-  both in parallel for a period, or a hard switch) and any data-migration mapping are business
-  decisions - ask, and if nobody has decided, it is an OI blocking every FR that depends on cutover,
-  not an assumption you make on their behalf.
+- A replacement or coexisting legacy system: the cutover plan (migrate once, run in parallel, or a
+  hard switch) and any data-migration mapping are business decisions - ask; undecided, it is an OI
+  blocking every FR that depends on cutover.
 
 ## Ask in the user's language
 
-**Infer the language from how the user wrote to you, and ask every question in it** - the question
-text, the option labels and the option descriptions, not only the spec you eventually produce.
-Default to English only when the input is genuinely too short or too mixed to tell. Interviewing
-someone in a language they did not choose to write in costs you answer quality on exactly the
-questions that need nuance.
-
-This is separate from the output-language choice in the setup batch below. That one is a deliberate
-decision about the document; the interview language is inferred and never asked. They can differ,
-and the interview has to happen in the user's language to find that out.
-
-IDs, codes, filenames, entity and enum names stay English regardless, per
-[`writing-rules.md`](writing-rules.md) - translate the question, never the identifier.
+**Infer the language from how the user wrote to you, and ask every question in it** - question text,
+option labels and option descriptions. Default to English only when the input is too short or too
+mixed to tell. This is separate from the output-language choice in the setup batch below: that one
+is a decision about the document; the interview language is inferred, never asked. IDs, codes,
+filenames, entity and enum names stay English, per [`writing-rules.md`](writing-rules.md).
 
 ## Batching questions
 
-Closed-choice questions (output language, security posture category, and similar - a fixed, small set
-of named options) go through **`AskUserQuestion`**: max 4 options per question, recommended option
-first labeled `"(Recommended)"` where one genuinely exists (most elicitation questions have no safe
-recommendation - see the rule above, do not manufacture one just to fill the label), up to 4 questions
-batched per call. Most elicitation questions are open-ended (a name, a number, a description) and stay
-plain chat questions instead. Grouped so each batch is answerable by one person in one sitting: do not
-interleave "what is your NFR target for p95 latency" with "who signs this off" - they have different
-audiences and the mixed batch stalls on whichever is harder.
+Closed-choice questions (output language, security posture category - a small set of named options)
+go through **`AskUserQuestion`**: max 4 options per question, up to 4 questions per call, the
+recommended option first labeled `"(Recommended)"` only where one genuinely exists - most
+elicitation questions have no safe recommendation. Open-ended questions (a name, a number, a
+description) stay plain chat. Group each batch so one person can answer it in one sitting: do not
+mix a p95 latency target with "who signs this off".
 
 Suggested batches:
 
@@ -200,52 +149,36 @@ One `AskUserQuestion` call, before scaffolding (skip any part the request alread
   / lightweight (core sections, gate limited to completeness + grounding; traceability checks run
   only over what exists). Lightweight changes the gate's breadth, never the never-invent rule.
 
-**The batch's output is a file, not a memory.** Write the decision to
-`<target>/docs/specs/.sections.json` before scaffolding: every optional section in `selected` or
-`excluded`, exactly once, each with a one-line reason naming what in the source material decided it
-(or that the user chose it outright); core sections in neither, because they are not decisions.
-`scaffold.py` refuses to write a single section without that file, and refuses again if the reasons
-are empty or if `selected` disagrees with `vars.json`'s flags. The schema and the refusal messages
-live with the code, in `scripts/scaffold.py`.
+**The batch's output is a file, not a memory.** Write `<target>/docs/specs/.sections.json` before
+scaffolding: every optional section in `selected` or `excluded`, exactly once, each with a one-line
+reason naming what in the source material decided it (or that the user chose it outright); core
+sections in neither. `scaffold.py` refuses to write without it, with an empty reason, or when
+`selected` disagrees with `vars.json`'s flags; the schema and refusal messages live in
+`scripts/scaffold.py`. The selection is echoed in the confirmation gate and verified by the quality
+gate.
 
-The selection is echoed back in the confirmation gate and is what the quality gate verifies
-against.
-
-If the user cannot answer a batch, that is a result: each unanswered question becomes an OI with an
-owner and a needed-by date. A spec set full of well-formed open issues is a good deliverable. A
-spec set with no open issues is almost always a fabricated one - real projects have unknowns, and a
-document that shows none has hidden them.
+An unanswered question is a result: an OI with an owner and a needed-by date. A spec set with no
+open issues is almost always a fabricated one.
 
 ## Express elicitation - pacing, not shortcuts
 
-A user in a hurry ("let's move fast", "keep it lean") can compress the *process*, never the *content*.
-There is no defaults table here like harness-bootstrap's express intake - business facts are never
-guessed, so there is nothing safe to default. What can legitimately move faster:
+A user in a hurry can compress the *process*, never the *content*. There is no defaults table -
+business facts are never guessed. What can move faster:
 
-- **Section order and depth, not section count.** Draft 01-05 from what the user already gave you
-  before opening a new elicitation batch for 06+, so the FR list is visibly forming instead of the user
-  waiting through four batches before anything is confirmable.
-- **Fewer, denser batches.** Combine the 4 suggested batches above into 2-3 where the source material
-  already answers most of a batch, asking only the gaps - still via `AskUserQuestion`/chat as above,
-  never silently.
-- **A shallower first pass, explicitly labeled.** Produce the FR list and confirmation gate fast, mark
-  06/07/09/12 as "pending detail" open issues rather than blocking on them, and schedule a second pass.
-  This is still every unknown recorded as an OI - never a filled-in guess standing in for the pass that
-  did not happen yet.
+- **Order and depth, not section count.** Draft 01-05 from what the user gave before opening a batch
+  for 06+, so the FR list is visibly forming.
+- **Fewer, denser batches.** Merge the four batches into 2-3 where the source already answers most
+  of one, asking only the gaps - never silently.
+- **A labeled shallow first pass.** Reach the FR list and confirmation gate fast, record 06/07/09/12
+  as "pending detail" open issues, and schedule a second pass - never a guess standing in for it.
 
-Priorities, NFR targets, security posture, and volumes are asked in every pace - "fast" changes how
-soon you ask and how many at once, never whether you ask.
+Priorities, NFR targets, security posture, and volumes are asked at every pace.
 
 ## The confirmation gate
 
-Before writing sections 02-14, echo back:
-
-- the FR list with proposed MoSCoW priorities (marked as *proposed*),
-- the roles,
-- the open issues you have already collected.
-
-Get an explicit yes. This is the cheapest checkpoint in the whole procedure, and it catches the
-invented requirement while it is still one line rather than one section.
+Before writing sections 02-14, echo back the FR list with *proposed* MoSCoW priorities, the roles,
+and the open issues collected so far. Get an explicit yes - it catches an invented requirement while
+it is still one line.
 
 ## Final summary to the user
 
@@ -256,4 +189,4 @@ Always surface, in the last message:
 - every `Partial` and `No` in the feasibility table,
 - any security NFR whose target you proposed rather than received.
 
-The user's job is to correct these. They cannot correct what you did not tell them you assumed.
+They cannot correct what you did not tell them you assumed.

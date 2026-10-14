@@ -1,9 +1,7 @@
 # Tech presets - recommending a CURRENT stack, not a remembered one
 
-A model's knowledge has a cutoff: left to habit it scaffolds Next.js 15 when 16 is out, or pins a
-deprecated package. This reference makes version currency a CHECKED step, not a memory, plus compressed
-pick-vs-pitfall tables so a proposal is reasoned, not guessed. Read at intake Batch B/F with
-[`intake.md`](intake.md).
+Version currency is a CHECKED step, not a memory; the pick-vs-pitfall tables make a proposal
+reasoned, not guessed. Read at intake Batch B/F with [`intake.md`](intake.md).
 
 ## The currency rule, first
 
@@ -17,17 +15,12 @@ the real registry; record BOTH the version found and the date checked in `docs/c
 | GitHub-released tool | `gh api repos/<org>/<repo>/releases/latest --jq .tag_name` |
 | Own release channel | its docs/changelog page, when it outpaces the registry |
 
-Verified working via `npm view <pkg> version` for next, react, tailwindcss, @tiptap/core, prisma,
-vitest, @playwright/test, and via `gh api repos/vercel/next.js/releases/latest --jq .tag_name`. Numbers
-omitted on purpose - they'd be stale by the time this file is read.
-
 **No network -> write `unverified`**, never a guess; register a task to check it before relying on the
 pin. Row shape: `| next | 16.3.0 | npm view next version | 2026-08-06 |`.
 
 ## Presets
 
-Pick the row, never the version - bootstrap fills the version in per the rule above. Pitfall column is
-`-` where none is genuinely non-obvious.
+Pick the row, never the version - fill the version in per the rule above.
 
 ### Editors - prose and code
 
@@ -157,16 +150,15 @@ Confirm imports are per-icon, not a barrel import of the whole set.
 
 ## Greenfield vs brownfield - who wins
 
-**Greenfield**: this file is the DEFAULT proposal - present the pick and its checked version, confirm
-before writing `tech-stack.md`. **Brownfield**: [`codebase-analysis.md`](codebase-analysis.md) wins,
-always. A preset contradicting what's installed is never a silent override - it becomes a
+**Greenfield**: this file is the default proposal - present the pick and its checked version,
+confirm before writing `tech-stack.md`. **Brownfield**: [`codebase-analysis.md`](codebase-analysis.md)
+always wins. A preset contradicting what is installed is never a silent swap - it becomes a
 migration-backlog task (Phase F), noted in `docs/context/known-issues.md`.
 
 ## Licence awareness
 
-Flag these at intake, tied to `ip-compliance.md`'s allow/deny table (`{{ALLOWED_LICENCES}}` /
-`{{DENIED_LICENCES}}`): **AG Grid** Community (MIT) vs Enterprise (paid - scale pivoting, Excel-style
-edit). **Font Awesome** Free (subset) vs Pro (paid, leaks through react-icons too). **ECharts**
-(Apache-2.0, free) vs **Highcharts** (source-available, commercial licence for most commercial use) -
-not interchangeable defaults. Any of these in a dependency change goes through `ip-compliance.md`'s
-"check on a diff": state the package, licence, and which row it lands in. No row cited, no add.
+Flag these at intake against `ip-compliance.md`'s allow/deny table: **AG Grid** Community (MIT) vs
+Enterprise (paid). **Font Awesome** Free (subset) vs Pro (paid, also through react-icons).
+**ECharts** (Apache-2.0) vs **Highcharts** (commercial licence for most commercial use) - not
+interchangeable. Any of these in a dependency change goes through `ip-compliance.md`'s "check on a
+diff": package, licence, and the row it lands in. No row cited, no add.

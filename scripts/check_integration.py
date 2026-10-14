@@ -9,7 +9,10 @@ Two halves:
             and solo_review, on both hook flavors - and validate each one with the checker the
             harness itself ships, `harness-bootstrap/assets/scripts/harness-check.py --stage
             scaffold`. A flag combination nobody scaffolds by hand is exactly where a command that
-            names an unfielded seat, or a tier row for a seat that does not exist, hides.
+            names an unfielded seat, or a tier row for a seat that does not exist, hides. Every
+            text file each scaffold writes must also be LF: a Windows checkout holds CRLF assets,
+            and a path that copies them byte for byte ships the checkout's line endings instead
+            of the harness's (`crlf`).
 
   coverage  Every file under harness-bootstrap/assets is a manifest `src`, or is listed in
             EXCLUDED with the reason it is not copied (the dev-agent template is instantiated by
@@ -72,6 +75,9 @@ COMBOS = (
     ("code+docs", ["purpose_code", "purpose_docs", "solo_review", "db", "tests", "unit",
                    "hooks_strict", "long"]),
     ("code+research", ["purpose_code", "purpose_research", "long", "tests", "e2e"]),
+    # Audit mode fields seats authored at audit time; this combo once failed only outside the matrix.
+    ("audit", ["purpose_code", "audit", "tests", "unit"]),
+    ("code-extras", ["purpose_code", "ui", "ai", "terse", "rtk", "pr_cli", "deploy_ask", "tdd", "tests", "unit"]),
 )
 QUICK = ("code-full", "all-noncode")
 FLAVORS = ("posix", "windows")
@@ -146,6 +152,9 @@ def coverage_problems(assets: pathlib.Path, manifest: list[dict], checker,
 def scaffold(target: pathlib.Path, vars_: dict, flags: list[str], flavor: str) -> tuple[int, str]:
     v = json.loads(json.dumps(vars_))
     v["flags"] = [flavor] + flags
+    # Audit mode needs the workspace layout it protects; the other combos ignore these.
+    v["vars"].setdefault("REPO_DIR_LIST", "repos/app")
+    v["vars"].setdefault("WORKSPACE_ROOT", ".")
     v["vars"]["HOOK_RUNNER"] = ("bash" if flavor == "posix"
                                 else "powershell -NoProfile -ExecutionPolicy Bypass -File")
     v["vars"]["HOOK_EXT"] = "sh" if flavor == "posix" else "ps1"
@@ -168,6 +177,28 @@ def validate(target: pathlib.Path) -> list[dict]:
                             f"{(r.stderr or r.stdout)[-400:]}", "fix": "run it by hand"}]
 
 
+def crlf_files(target: pathlib.Path) -> list[str]:
+    """-> the text files under `target` holding a CRLF line ending, relative to it.
+
+    Scaffold output is LF everywhere, whatever line endings the skill's own checkout holds, so a
+    harness scaffolded on Windows is byte-identical to one scaffolded on Linux. Binary files (a NUL
+    byte, or not UTF-8) are skipped: a CR-LF pair inside an image is not a line ending.
+    """
+    out = []
+    for p in sorted(target.rglob("*")):
+        if not p.is_file() or ".git" in p.relative_to(target).parts:
+            continue
+        data = p.read_bytes()
+        if b"\r\n" not in data or b"\0" in data:
+            continue
+        try:
+            data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        out.append(p.relative_to(target).as_posix())
+    return out
+
+
 def run_matrix(combos, work: pathlib.Path) -> tuple[dict, list[str]]:
     """-> ({(check, file, line, message, fix): [combo names]}, scaffold failures)."""
     vars_ = base_vars()
@@ -183,6 +214,10 @@ def run_matrix(combos, work: pathlib.Path) -> tuple[dict, list[str]]:
                 continue
             for f in validate(target):
                 key = (f["check"], f["file"], f["line"], f["message"], f["fix"])
+                seen.setdefault(key, []).append(label)
+            for rel in crlf_files(target):
+                key = ("crlf", rel, None, "scaffolded with CRLF line endings; every harness file "
+                       "is LF", "write it through scaffold.py's LF normalisation, not byte for byte")
                 seen.setdefault(key, []).append(label)
     return seen, failures
 
@@ -255,6 +290,20 @@ def self_test(checker) -> list[str]:
             hook.unlink()
             if not any(f["check"] == "hook-missing" for f in validate(target)):
                 dead.append("matrix validation did not report a deleted, registered hook")
+            # The CRLF scan: a real scaffold is clean, one CRLF text file is reported, and a
+            # binary file holding the same bytes is not.
+            stray = crlf_files(target)
+            if stray:
+                dead.append(f"the scaffolder itself wrote CRLF, so the crlf scan has no clean "
+                            f"baseline: {stray[:4]}")
+            (target / "docs" / "crlf.md").write_bytes(b"one\r\ntwo\r\n")
+            # Valid UTF-8 apart from the NUL, so the NUL test is what keeps it out.
+            (target / "docs" / "blob.bin").write_bytes(b"\0\r\nPNG\r\n")
+            got = crlf_files(target)
+            if "docs/crlf.md" not in got:
+                dead.append("the crlf scan did not report a CRLF text file")
+            if "docs/blob.bin" in got:
+                dead.append("the crlf scan reported a binary file as a CRLF text file")
     r = subprocess.run([sys.executable, str(CHECKER), "--self-test"], capture_output=True,
                        text=True)
     if r.returncode != 0:

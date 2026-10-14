@@ -1,0 +1,84 @@
+{
+ "check": {
+  "documented": true,
+  "non_readme_changes": [],
+  "success": true
+ },
+ "condition": "bare",
+ "exit_code": 0,
+ "final_answer": "I added a Configuration section to `README.md`, between Usage and Tests. I didn't run the example command or commit anything.\n\nIt documents `INVOICER_CURRENCY` as the currency code printed before amounts, defaulting to `USD`. It notes that this only changes the label and does no conversion, and includes an `INVOICER_CURRENCY=EUR python -m invoicer total widget:250:2` example. I based this on `config.py` and `money.py`.",
+ "init": {
+  "agents": [
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup"
+  ],
+  "claude_code_version": "2.1.299",
+  "mcp_servers": 0,
+  "model": "claude-sonnet-5-5",
+  "plugins": [
+   "cc-plugin-agents-md",
+   "cc-plugin-telemetry",
+   "cc-plugin-plugin-authoring"
+  ],
+  "skills": 19,
+  "tools": 32
+ },
+ "metrics": {
+  "bytes_read": 1390,
+  "cache_creation_input_tokens": 5014,
+  "cache_read_input_tokens": 84119,
+  "dispatches": 0,
+  "duration_ms": 10867,
+  "first_call_context_tokens": 21488,
+  "hook_runs": 0,
+  "input_tokens": 8,
+  "is_error": false,
+  "num_turns": 5,
+  "output_tokens": 744,
+  "permission_denials": 0,
+  "result_subtype": "success",
+  "skill_calls": 0,
+  "test_runs": 0,
+  "tool_calls": 4,
+  "total_cost_usd": 0.0359239
+ },
+ "model": "sonnet",
+ "permission_denials": [],
+ "rep": 3,
+ "task": "docs",
+ "tool_calls": [
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\README.md"
+   },
+   "name": "Read",
+   "subagent": false
+  },
+  {
+   "input": {
+    "pattern": "INVOICER_CURRENCY"
+   },
+   "name": "Grep",
+   "subagent": false
+  },
+  {
+   "input": {
+    "path": "<WORK>\\repo\\src",
+    "pattern": "currency"
+   },
+   "name": "Grep",
+   "subagent": false
+  },
+  {
+   "input": {
+    "file_path": "<WORK>\\repo\\README.md"
+   },
+   "name": "Edit",
+   "subagent": false
+  }
+ ],
+ "wall_ms": 13232
+}

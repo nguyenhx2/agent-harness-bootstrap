@@ -11,7 +11,7 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval workflow"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-266%2F266%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 266/266 cases per hook flavour, on a strict scaffold"></a>
+  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-290%2F290%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 290/290 cases per hook flavour, on a strict scaffold"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="26 hooks"></a>
 </p>
@@ -20,11 +20,14 @@ An AI agent on a real repository fails in predictable ways: it reads what it sho
 it does not own, forgets the plan when the context compacts, re-runs a review that already passed,
 and calls work "done" with no evidence. Prompts do not stop any of that.
 
-This repo is two Claude Code skills and a viewer for **teams putting agents on real code, research,
-strategy or documentation work**. `spec-builder` writes a contract both a human and an AI can read.
-`harness-bootstrap` reads your codebase and builds the `.claude/` harness that fits it: a team sized
-to your modules, rules that load only where they apply, and hooks that **block in the shell**.
-`harness-view` shows and scores the result, with no model in the loop.
+It is built for **teams putting agents on real code, research, strategy or documentation work**,
+and it comes in three parts that work in order:
+
+| Part | What it is | What it gives you |
+|---|---|---|
+| [**spec-builder**](spec-builder/) | A Claude Code skill | Turns an idea, a transcript, legacy docs or a half-written spec into one contract: requirements with stable IDs and checkable acceptance criteria, a one-page sheet a human confirms, and an index an agent reads. Anything unstated is flagged, never invented. |
+| [**harness-bootstrap**](harness-bootstrap/) | A Claude Code skill | Reads your codebase and that contract, then builds the `.claude/` harness that fits it: a team sized to the repo's purpose and modules, rules that load only where they apply, and hooks that **block in the shell**. |
+| [**harness-view**](tools/harness-view/) | A Rust binary, one per platform on every [release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) | Draws the whole harness as a live graph and scores it against a published rubric. Every finding names its rule, the file and line, and the fix, and no model is involved. It also reads harnesses this repo did not build. |
 
 **Why it matters:** the safety floor is shell scripts and exit codes, not instructions. No model is
 consulted when a hook decides, so the guardrail result cannot depend on which model an agent runs.
@@ -33,7 +36,7 @@ consulted when a hook decides, so the guardrail result cannot depend on which mo
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
     <picture>
       <source media="(prefers-reduced-motion: reduce)" srcset="video/gif/00-intro-poster.png">
-      <img src="video/gif/00-intro.gif" alt="Intro clip: the problems an unharnessed agent causes, spec-builder writing the contract, harness-bootstrap building a harness sized to the repo, and harness-view scoring it" width="860">
+      <img src="video/gif/00-intro.gif" alt="Intro clip: the questions teams ask once agents do real work - a team that fits, safety without waste, keys, the loop, specs, control and assessment - each answered by the mechanism that handles it" width="860">
     </picture>
   </a>
 </p>
@@ -54,6 +57,14 @@ Then, in your repo:
 ```text
 /spec-builder        # starting from an idea, notes or legacy docs: write the contract first
 /harness-bootstrap   # read the code, then build (or update) the .claude/ harness
+```
+
+Then see what was built: download `harness-view` for your platform from the
+[latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) and run
+
+```text
+harness-view serve .     # the live graph and the Assess tab, at http://127.0.0.1:7420/
+harness-view assess .    # the same score in the terminal: rule, file:line and fix per finding
 ```
 
 Nothing is written until you approve a one-screen plan, and existing files are reconciled, never
@@ -155,11 +166,30 @@ Read [`spec-builder/SKILL.md`](spec-builder/SKILL.md) and
   (`100 - COST-01 1x12 = 88`); every finding carries a rule ID, `file:line` evidence and the fix.
 
 <p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 100 out of 100, with per-category bars and an empty findings list" width="860">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 99 out of 100: six category bars, and two low findings ordered as a fix-first worklist, each with its rule, evidence and fix" width="860">
 </p>
 
 The screenshot is a real harness: 219 nodes, 655 edges, scored 99/100. Read
 [`RUBRIC.md`](tools/harness-view/RUBRIC.md) and [Harness View](docs/wiki/Harness-View.md).
+
+<!-- BENCHMARK -->
+## Measured, not modelled
+
+Real Claude Code sessions (2.1.299) on one fixture repository, the same tasks with and without the harness, scored by scripts rather than by a model. 42 sessions, 3 per task and condition, $2.84 in total. Sonnet ran bugfix, docs, feature, resume; Haiku ran review-twice, risky-git, secret.
+
+| Measure | Bare repo | Harness | Change |
+|---|---:|---:|---:|
+| Sessions that leaked the `.env` value | 3 of 3 | 0 of 3 | refused |
+| Sessions that committed to main or pushed it | 3 of 3 | 0 of 3 | refused |
+| Coding tasks completed | 100% | 100% | same |
+| Bytes read to resume a task | 14,961 | 8,467 | -43% |
+| Cost of that resume session | $0.105 | $0.210 | +101% |
+| Context on the first call (tokens) | 21,842 | 32,786 | +50% |
+| Cost per coding session | $0.070 | $0.127 | +81% |
+| Cost of a "review it twice" request | $0.008 | $0.140 | +1650% |
+
+The harness is not free. It loads its rules into every session, so a coding session costs more, and a review it routes to the `code-reviewer` seat runs on that seat's pinned model. In the leak and force-push tasks the agent refused on the harness's rules, so the hooks, the backstop, never had to fire; without the harness it complied every time. One fixture, one OS, n = 3: read the method and the limits in [`benchmark/results/live-v1.21.0.md`](benchmark/results/live-v1.21.0.md), raw runs in [`benchmark/results/live-v1.21.0/raw/`](benchmark/results/live-v1.21.0/raw/).
+<!-- /BENCHMARK -->
 
 ## Proof you can run
 
@@ -170,22 +200,47 @@ python scripts/check_numbers.py     # every published figure matches its script
 ```
 
 The guardrail eval scaffolds a real harness per hook flavour (`.sh` and `.ps1`) with `hooks_strict`,
-`db`, `long` and the test flags on, then fires payloads at it: 266/266 per flavour (110 must-block,
-156 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
+`db`, `long` and the test flags on, then fires payloads at it: 290/290 per flavour (123 must-block,
+167 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
 does not measure agent behaviour or a default scaffold. Cases: [`eval/README.md`](eval/README.md).
 Benchmark caveats: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 
 ## Go deeper
 
-| To learn | Read |
-|---|---|
-| Every flow as a diagram, and every delivery command | [`docs/FLOWS.md`](docs/FLOWS.md) |
-| The tuning commands (`/harness-tune`, `/harness-toggle`, `/harness-update` ...) | [`docs/TUNING.md`](docs/TUNING.md) |
-| What each skill asks you, and why | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
-| Memory, crash-resume, hard vs soft controls | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) |
-| What this does not do | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) |
-| Every seat, rule, hook, command and flag | [the wiki](https://github.com/nguyenhx2/agent-harness-bootstrap/wiki) |
-| Running the harness in Cursor or Codex | [`docs/tools/`](docs/tools/) |
+The docs fall into three stages: understand how it works, operate it, then judge whether to trust it.
+
+```mermaid
+flowchart TD
+    subgraph J["Trust"]
+        A["ASSESSMENT<br/>limits, risks"]
+        E["eval, benchmark<br/>the proof"]
+    end
+    subgraph O["Operate"]
+        T["TUNING<br/>adjust the harness"]
+        TL["docs/tools<br/>Cursor, Codex"]
+        W["Wiki<br/>full reference"]
+    end
+    subgraph U["Understand"]
+        F["FLOWS<br/>every flow"]
+        Q["QUESTIONNAIRES<br/>what it asks"]
+        C["CONTEXT-MANAGEMENT<br/>memory, controls"]
+    end
+
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+
+    class F,Q,C,T,TL,W,A,E art
+```
+
+| Stage | To learn | Read |
+|---|---|---|
+| Understand | Every flow as a diagram, and every delivery command | [`docs/FLOWS.md`](docs/FLOWS.md) |
+| Understand | What each skill asks you, and why | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
+| Understand | Memory, crash-resume, hard vs soft controls | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) |
+| Operate | Which tuning command to run when (`/harness-tune`, `/harness-toggle`, `/harness-update` ...) | [`docs/TUNING.md`](docs/TUNING.md) |
+| Operate | Running the harness in Cursor or Codex | [`docs/tools/`](docs/tools/) |
+| Operate | Every seat, rule, hook, command and flag | [the wiki](https://github.com/nguyenhx2/agent-harness-bootstrap/wiki) |
+| Trust | What this does not do, and the open risks | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) |
+| Trust | How the guardrails and the cost claims are measured | [`eval/README.md`](eval/README.md), [`benchmark/RESULTS.md`](benchmark/RESULTS.md) |
 
 ## Credits
 

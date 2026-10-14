@@ -96,7 +96,81 @@ cmd_pattern='(^|[^a-zA-Z0-9_./-])[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([[:space:
 cmd_scrub='s/(cp|copy|mv|Copy-Item)[[:space:]]+[^[:space:]]*\.env\.example[[:space:]]+[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/>>?[[:space:]]*[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/[^[:space:]]*\.env\.example//g; s/[^[:space:]]*env-read\.py[^;&|]*//g'
 db_reset_pattern='{{DB_RESET_PATTERN}}'
 
-payload=$(cat)
+# --- fast path: decide the common case with bash builtins only ---------------------------------
+# This hook starts on every shell call, and on Windows each subshell or external process costs
+# 50-250 ms: the JSON parser, every `printf | grep`, every `$(...)`. Most commands can never be
+# blocked here, so that case is decided before any of them run. read_payload takes stdin without
+# a fork; fast_str decodes one string field EXACTLY or gives up. A hook may only exit 0 on what
+# these return, and only on a test that is a necessary condition of every block it raises; any
+# doubt falls through to the full parse, which is unchanged. Copied verbatim into every hook that
+# has a fast path - see "Latency" in hooks/README.md.
+read_payload() {
+  payload=
+  # bash reads a pipe one byte per syscall: fine for a shell call's few hundred bytes, slower than
+  # one `cat` past a few KB (an Edit or Write payload), so the rest of a long one goes to cat.
+  if IFS= read -r -d '' -n 4096 payload; then
+    payload+=$(cat)
+  fi
+}
+# fast_str KEY -> FAST_STR. Fails unless the payload holds "KEY": exactly once, with a string value
+# that is printable ASCII and uses no JSON escape but \" \\ \n \r \t - everything JSON.stringify
+# writes for such text, so the decode is exact. Runs in the C locale: in a multibyte locale a lead
+# byte could swallow the backslash of an escaped quote and end the value early.
+fast_str() {
+  local key=$1 s rest re re2 bs='\' q='"' had=${LC_ALL+x} old=${LC_ALL-} rc=1
+  LC_ALL=C
+  re="\"$key\"[[:space:]]*:[[:space:]]*\"(([^\"\\\\]|\\\\.)*)\""
+  re2="\"$key\"[[:space:]]*:"
+  if [[ $payload =~ $re ]]; then
+    s=${BASH_REMATCH[1]}
+    rest=${payload#*"$q$key$q"}
+    rc=0
+    [[ $rest =~ $re2 ]] && rc=1
+    case $s in *[!\ -~]*) rc=1 ;; esac
+    s=${s//"$bs$bs"/$'\001'}
+    case $s in *"$bs"[!nrt\"]*|*"$bs") rc=1 ;; esac
+    s=${s//"$bs$q"/"$q"}
+    s=${s//"${bs}n"/$'\n'}
+    s=${s//"${bs}r"/$'\r'}
+    s=${s//"${bs}t"/$'\t'}
+    FAST_STR=${s//$'\001'/"$bs"}
+  fi
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  return $rc
+}
+# fast_unmatched ERE: true only when ERE was compiled and did not match FAST_STR (exit status 1).
+# A regex the engine rejects (status 2) must never read as "no match".
+fast_unmatched() {
+  local had=${LC_ALL+x} old=${LC_ALL-} rc
+  LC_ALL=C
+  [[ $FAST_STR =~ $1 ]]
+  rc=$?
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  [ "$rc" -eq 1 ]
+}
+
+read_payload
+# A shell call can only be blocked here for naming a .env file or for matching the DB-reset
+# pattern. The pattern is user-supplied, so it is tried here only when this bash can match
+# case-insensitively (nocasematch on =~ is proven on the spot) and the pattern is plain ASCII with
+# no anchor or backslash - grep reads ^ $ per line and knows GNU escapes that bash's regex may not.
+# Anything else takes the full path. A file_path always does.
+fast_db_unmatched() {
+  local rc=0 had=${LC_ALL+x} old=${LC_ALL-}
+  LC_ALL=C
+  case $db_reset_pattern in *[!\ -~]*|*'^'*|*'$'*|*'\'*) rc=1 ;; esac
+  if [ "$had" = x ]; then LC_ALL=$old; else unset LC_ALL; fi
+  [ "$rc" -eq 0 ] || return 1
+  rc=1
+  shopt -s nocasematch
+  if [[ AbC =~ ^aBc$ ]]; then fast_unmatched "$db_reset_pattern" && rc=0; fi
+  shopt -u nocasematch
+  return $rc
+}
+case $payload in
+  *'"file_path"'*) ;;
+  *) fast_str command && fast_unmatched '\.[Ee][Nn][Vv]' && fast_db_unmatched && exit 0 ;;
+esac
 json_fields tool_input.file_path tool_input.command
 path="${JF[0]}"
 cmd="${JF[1]}"

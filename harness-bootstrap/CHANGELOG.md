@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.21.0] - 2026-10-14
+
+Faster hooks, a smaller footprint, and a benchmark run in real Claude Code sessions rather than
+modelled. Live results: `benchmark/results/live-v1.21.0.md`.
+
+### Added
+
+- **A live benchmark** (`benchmark/live/`): real `claude -p` sessions on one fixture, with and
+  without the harness, scored by scripts. 42 sessions: 0 of 3 leaks and 0 of 3 unsafe pushes with the harness, 3 of 3 each without.
+- **`harness-check` fails a harness whose `CLAUDE.md` + `AGENTS.md` reach 200 lines**, the size at
+  which instructions start to be skimmed.
+
+### Changed
+
+- **Hooks decide "not my command" before parsing anything.** Six `.sh` hooks in parallel on `ls`:
+  5,563 -> 131 ms on the measuring machine; a live Claude Code round of hook waits 8.7 -> 1.2 s. `.ps1` gains less, as PowerShell startup dominates.
+- **`SKILL.md` 24,026 -> 10,177 bytes**, with detail moved to the reference loaded at the step that
+  needs it; a scaffolded harness loads 31,179 -> 26,169 bytes in every session on the full code profile.
+
+### Fixed
+
+- **Under four parallel sessions `guard-destructive.sh` hit its 30 s timeout** and, failing closed,
+  blocked every Bash call. Its full check no longer starts a process for ordinary commands.
+- `scaffold.py` copied some assets byte for byte, so on Windows four files landed with CRLF;
+  output is LF everywhere now. The Cursor adapter ran `protect-adr` on reads and refused every read of an Accepted ADR.
+
 ## [1.20.1] - 2026-10-14
 
 Fixes found by running the hooks inside real Claude Code sessions (`claude -p`), not only by piping

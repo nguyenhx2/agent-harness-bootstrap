@@ -2,96 +2,117 @@
 
 **English** · [[日本語|Harness-View-ja]]
 
-A harness you cannot inspect is a harness you are trusting on faith. `harness-view` reads what is
-actually on disk and renders it, scores it, and lets you switch parts of it off.
+A harness you cannot inspect is one you trust on faith. `harness-view` reads what is on disk,
+renders it, scores it, and lets you switch parts of it off.
 
-**No model is involved in any of it.** That is not a limitation, it is the design: a browser and a
-CI run cannot disagree about the answer.
+**No model is involved.** A browser and a CI run therefore cannot disagree about the answer.
 
 ## Install
 
-Prebuilt binaries for Windows, macOS and Linux are attached to
-[every release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest), with
-checksums. Or build from source:
+Prebuilt binaries for Windows, macOS and Linux, with checksums, are attached to
+[every release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest). Or build from
+source:
 
 ```bash
 cargo install --path tools/harness-view
 ```
 
-The source is the contract; the binaries are a convenience.
+On Windows, double-clicking the binary starts `serve` on the current folder.
 
 ## Commands
 
-```bash
-harness-view scan   .    # write .claude/state/harness-graph.json and exit
-harness-view serve  .    # browse the harness at localhost
-harness-view assess .    # score it, and exit non-zero on a failing gate
-harness-view watch  .    # re-scan as files change
+```mermaid
+flowchart TD
+    R[/".claude/, docs/"/]
+    S["scan / watch"]
+    G[/"harness-graph.json"/]
+    V["serve: browser UI"]
+    A["assess: score"]
+    T["Toggle panel"]
+    D[/"disabled.json"/]
+
+    R --> S --> G
+    G --> V
+    G --> A
+    V --> T --> D
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class S,V,A det
+    class T hum
+    class R,G,D art
 ```
 
-`assess` exiting non-zero is what makes it usable in a pipeline: the same check a reviewer runs in
-the browser is the one that can fail a build.
+```bash
+harness-view scan   .    # write .claude/state/harness-graph.json and exit
+harness-view serve  .    # browse the harness at http://127.0.0.1:7420/
+harness-view watch  .    # rebuild the graph as files change
+harness-view assess .    # score it; exit 1 when a high finding is outstanding
+harness-view rubric      # print the rubric every score comes from
+```
+
+`assess` exiting non-zero is what makes it usable in a pipeline: the check a reviewer runs in the
+browser is the one that can fail a build.
 
 ## What the views show
 
-**Flow** lays the control plane out in the order control actually travels: settings, then hooks,
-then rules, then the agent seats, then the merge gate, then the human. It answers "how is a change
-to this repository actually kept in check" in one screen.
+- **Flow** lays the control plane out left to right: rules, hooks and settings, agent seats, the
+  merge gate, the human, commands. It answers "how is a change kept in check" in one screen.
+- **Graph** is the same data as a force layout, for clusters rather than order.
+- **Master plan** appears when the repo has `docs/tasks/master-plan.md`, with each task's board
+  status, or `DRIFT` when the board disagrees with itself.
 
-**Graph** is the same data as a force layout, for when you want to see clusters rather than order.
-
-Every node is a file. Click it and you get the real content, formatted or raw, including task files
-with their owning agent.
+Every node is a file. Click it for the real content, formatted or raw. Selecting an agent also lets
+you edit its `model`, `effort`, `tools` and `description` from pickers, and a command's steps can be
+reordered, switched off or retitled in place.
 
 ## What Assess scores
 
-The engine checks the harness against a published rubric (`tools/harness-view/RUBRIC.md`, also
-printed by `harness-view rubric`) and names each finding with its rule id, the evidence as `file:line`,
-why it matters and a concrete fix. The six categories are safety, cost control, traceability, board
-health, docs quality and contract. Each starts at 100 and loses the weight of every finding in it, so
-the score can be recomputed from the rubric alone. A rule applies to every repository, to code
-repositories, or to non-code ones: the purposes come from the `purpose_*` flags the bootstrap
-recorded, so a research repo is not told to add a code review command.
+Findings come from a published rubric (`tools/harness-view/RUBRIC.md`, or `harness-view rubric`).
+Each names its rule id, the evidence as `file:line`, why it matters and a concrete fix.
 
-Two things make the result actionable. The **worklist** groups findings by rule and orders the rules
-by weight times count over effort, and says what the overall score would be with each rule cleared.
-**`--since prev.json`** (and the viewer, which remembers the last check) shows the findings fixed, the
-findings new and every score that moved.
+- **Six categories:** safety, cost control, traceability, board health, docs quality, contract.
+  Each starts at 100 and loses the weight of every finding, so the score can be recomputed from the
+  rubric alone.
+- **Purpose-aware:** a rule applies to every repo, to code repos or to non-code ones, read from the
+  `purpose_*` flags the bootstrap recorded. A research repo is not told to add a code review command.
+- **Worklist:** findings grouped by rule, ordered by weight times count over effort, with the
+  overall score after each rule is cleared.
+- **`--since prev.json`:** findings fixed, findings new and every score that moved. The viewer
+  remembers the last check and does the same.
 
-Things it will tell you about:
+Typical findings:
 
-- a rule that loads in every session but matches no file in the repository
+- a rule loaded in every session that matches no file
 - an agent seat with no module, or a module with no owner
-- a skill that is installed but wired to nothing
+- a skill installed but wired to nothing
 - a hook that ships but is not registered in `settings.json`
 - an agent with no explicit `model` or `effort`, which silently bills at the caller's tier
 - a reviewer that holds `Edit` or `Write`
-- a task on the board whose owner does not exist
+- a task whose owner does not exist
 - a research or documentation repo with no read-only seat checking its deliverables
 
-Run against three real harnesses it scored the generated one 99, and two hand-maintained ones 79 and
-64. The lower two were driven by things like eighteen rules loading in every session, and agent
-seats renamed without the task board following.
+Against three real harnesses it scored the generated one 99 and two hand-maintained ones 79 and 64,
+mostly for eighteen rules loading in every session and seats renamed without the board following.
 
 ## Where the data comes from
 
-`.claude/state/harness-graph.json`, written by the run itself. The schema is versioned and shared:
-the Python scanner shipped with the skill and the Rust tool produce byte-identical output on the
-same repository, every field included, which `scripts/check_graph_parity.py` checks, because two
-scanners that disagree are worse than one.
+`.claude/state/harness-graph.json`, which the run writes. The schema is versioned and shared: the
+skill's Python scanner and the Rust tool produce byte-identical output on the same repository, and
+`scripts/check_graph_parity.py` checks it.
 
-That file is also why `state` sits at the foot of the overview figure rather than at its entrance.
-It is not an input to the run. It is what the run leaves behind, and it is what the viewer reads.
+That file is not an input to the run. It is what the run leaves behind, which is why `state` sits
+at the foot of the overview figure.
 
 ## Turning things off
 
-The viewer's toggle panel and the `/harness-toggle` command write the same contract: the control
-moves into `.claude/disabled/`, and the change is recorded in the committed `.claude/disabled.json`
-including a hook's `settings.json` registration verbatim, so enabling restores it byte-exactly. One
-contract, two front ends.
+The viewer's toggle panel and `/harness-toggle` write one contract. The control moves into
+`.claude/disabled/`, and the committed `.claude/disabled.json` records the change, including a
+hook's `settings.json` registration verbatim, so enabling restores it byte-exactly.
 
-Safety-critical controls require a typed confirmation phrase rather than a click. Agents cannot
-toggle anything.
+Safety-critical controls need a typed confirmation phrase, not a click. Agents cannot toggle
+anything.
 
 ## See also
 

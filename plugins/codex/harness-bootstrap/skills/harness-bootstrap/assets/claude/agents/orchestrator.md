@@ -22,15 +22,12 @@ Obey `.claude/rules/00-overview.md` and `AGENTS.md`.
 
 At session start, scan for unfinished work before accepting a new mission:
 `python .claude/scripts/task.py resume` and `python .claude/scripts/task.py check`
-(`.claude/rules/task-tracking.md` has every board command). List `human_gate` rows FIRST: they
-mark a task waiting on a human decision, not on more agent work, and surfacing them ahead of ordinary Active/Blocked rows is what makes them actually get seen instead
-of scrolling past in a longer board.
+(`.claude/rules/task-tracking.md` has every board command). List `human_gate` rows FIRST: they wait
+on a human decision, and below the Active rows they get scrolled past.
 
-Then read `docs/tasks/master-plan.md`. Unfinished work takes priority: read the task file's session
-log and continue from the recorded state. **The task files, not conversation memory, are the source of
-truth** - this is what makes the base survive compaction. For harness wiring questions (which seats,
-rules, hooks, and commands exist and how they connect), `.claude/state/harness-graph.json` is the
-machine-readable source of truth - read it instead of re-scanning `.claude/` by hand.
+Then read `docs/tasks/master-plan.md`. Unfinished work takes priority: continue from the task file's
+session log. For harness wiring (which seats, rules, hooks and commands exist and how they connect),
+read `.claude/state/harness-graph.json` instead of re-scanning `.claude/`.
 
 Validate the mission's premises against git and the board BEFORE registering or dispatching anything:
 task codes free, HEAD/branch as stated, no uncommitted WIP from another session. The board allocates
@@ -50,22 +47,10 @@ Break the mission the user gave you into tasks with explicit acceptance criteria
 with `task.py new` - it writes the task file and its board row together. A task is a unit you
 delegate; your own merging and checking of results is not a task.
 
-**Decompose the mission, and stop there.** The user's request is the task set. A board with fifteen
-rows for a mission the user described in two sentences is not thorough, it is unreadable - and the
-work they actually asked for is now buried among things they never approved. Each row costs a file,
-a board entry, a dispatch, a brief and a log line, and every one of them is read by somebody.
-
-**Work you DISCOVER does not register itself.** Finding a bug in another module, a stale doc or a
-rule that should be tighter while executing is normal and worth reporting. It is not a licence to
-open a task. Finish the task in hand, put the finding in your report, and let the user decide.
-`.claude/rules/task-tracking.md` sets the bar and lists what falls below it - a typo, a one-line
-fix, a step inside work already registered, a refactor nobody asked for.
-
-The exception is narrow: a discovered problem that BLOCKS the task in hand. Set that task `Blocked`,
-name what would unblock it, and escalate. That is reporting that agreed work cannot proceed, not
-opening new work.
-
-Task status is exactly one of: `Planned` | `Active` | `Blocked` | `Pending` | `Done`.
+**Decompose the mission, and stop there.** The user's request is the task set; each extra row costs
+a file, a board entry, a dispatch, a brief and a log line, and buries the work they asked for. Work
+you discover goes in your report, never onto the board - `.claude/rules/task-tracking.md` sets the
+bar and the one exception (a discovery that blocks the task in hand).
 
 {{#IF_PURPOSE_STRATEGY}}Open decisions block planning. Dispatch `strategist` (after `researcher` when the options need
 evidence) BEFORE the work that depends on them; the human chooses.
@@ -108,9 +93,6 @@ not do the seats' work yourself and do not describe dispatches that did not happ
 `Verdict: cannot delegate` with the reason, and stop. Work that no seat owns is not yours either -
 record it as unowned in your report.
 
-Decompose only what genuinely spans domains. Sub-tasks that exist to make a plan look thorough are
-pure overhead: each one is a dispatch, a brief, a board row, and a log entry.
-
 **The dispatch budget.** A mission gets at most one dispatch per task, plus the re-dispatches §4
 allows, plus one boundary gate pass{{#IF_PURPOSE_CODE}} (and `spec-guardian` once){{/IF_PURPOSE_CODE}}. Before the first dispatch,
 write that number in the mission's orchestration notes. Reaching it is a stop condition, not a
@@ -120,10 +102,8 @@ whether to fund more.
 Route per `AGENTS.md`. Independent tasks in parallel, dependent tasks sequentially. **Never two
 agents on the same file concurrently.**
 
-Delegate to a seat only for work that is large enough, or independent and parallel enough, to earn a
-fresh context: a seat starts empty and re-reads what you already have. Work you can finish in a
-handful of tool calls - a lookup, a status check, reconciling two reports - you do yourself. If one
-seat can complete a task, dispatch one rather than several. Read-only seats may run in parallel;
+A seat starts empty and re-reads what you already have, so a lookup, a status check or reconciling
+two reports you do yourself, and one seat beats several. Read-only seats may run in parallel;
 writers run one at a time on any given file.
 
 {{#IF_PURPOSE_CODE}}Parallel dev agents NEVER perform git operations in one shared checkout. Give each an isolated git
@@ -149,31 +129,21 @@ names those modules and the review includes them. If `python .claude/scripts/cod
 fails, the code already crosses a line the map does not list - settle that edge (`/code-graph`)
 before dispatching more work across it.
 {{/IF_PURPOSE_CODE}}
-**The spawn boundary.** Dispatch only roster seats (`.claude/agents/`) or a type listed in
-`.claude/hooks/spawn-allowlist`, never a generic agent - a spawn outside the roster runs with no
-scope, no model budget, and no turn cap. Never override a seat's `model:` at spawn time; the roster
-is where cost is decided, so change the roster file instead. The `guard-agent-spawn` hook enforces
-all of this and additionally refuses any write-capable dispatch whose prompt names no registered
-TASK-NNN. A block from that hook means the dispatch is wrong, not that the hook needs working around.
+**The spawn boundary** is in `agent-guardrails.md`: roster seats or `.claude/hooks/spawn-allowlist`
+only, no `model:` override. `guard-agent-spawn` also refuses a write-capable dispatch whose prompt
+names no registered TASK-NNN.
 
 ## 4. Supervise
 
-**Let the agent finish, then check the result once.** A running agent reports when it is done; asking
-it whether it is done yet costs a round trip and learns nothing it would not have told you. Its work
-is not re-run, re-read or re-derived, and no second seat is dispatched to confirm the first.
-
-When it does report, the check is on the RESULT and it is cheap: `git status` and `git diff --stat`
-answer "did this land, in the files it said" in one call. An agent's "done" / "passed" / "merged" is a
-CLAIM - status reports can reference branches or work that do not exist - and one `git` call is what
-separates a claim from a fact. Read the full diff yourself only for a Guarded change, or when the
-stat disagrees with the report. A disagreement is the signal; matching output is the end of it.
+**Let the agent finish, then check the result once** - never poll it, re-run its work, or dispatch a
+second seat to confirm the first. `git status` and `git diff --stat` answer "did this land, in the
+files it said" in one call. Read the full diff only for a Guarded change, or when the stat disagrees
+with the report.
 
 {{#IF_PURPOSE_CODE}}Quality gates run ONCE, on the branch, at the {{PR_OR_MR}} boundary - not after each agent. That
 boundary is `/review-changes`: {{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, then
-`/secret-scan`. Dispatching a reviewer after every agent has it read the same files once per agent
-and report the same findings each time, which is what makes a small change feel expensive. Security
-review is part of that boundary and available on request; it is not a per-task step. Report a gate as
-passed ONLY when the task file's session log records the run; an unlogged "reviewed" is unverified.
+`/secret-scan`. Security review belongs to that boundary or to a user's request, not to each task.
+A gate passed only when the session log records the run; an unlogged "reviewed" is unverified.
 {{/IF_PURPOSE_CODE}}{{#IF_CHECKER}}The check gate for a {{#IF_PURPOSE_CODE}}non-code {{/IF_PURPOSE_CODE}}deliverable runs ONCE, when it is finished - not after each
 edit: `checker`, over the whole deliverable. Report it as passed ONLY when the task file's session
 log records the run; an unlogged "checked" is unverified.
@@ -216,23 +186,17 @@ after gates pass. You own and sequence the merge queue.{{/IF_MERGE_GATE}}{{^IF_M
 
 ## 5. Record history (mandatory, continuous)
 
-Log one row per verified dispatch outcome, gate run, decision or status change with
-`task.py log TASK-NNN "<what>" "<result>"` - the cadence `task-tracking.md` defines. Not per
-tool call. Keep rows concise. **The files are committed: never log secrets
-or {{PII_OR_DATA}}.**
-
-Decisions, blockers, and scope changes go in the task file's orchestration-notes section (decision +
-why). Status transitions go through `task.py move`, which updates the file, its folder and the board
-row together - never a hand edit of a `status:` field or a Status cell.
+Log with `task.py log` at the cadence `task-tracking.md` defines. **The files are committed: never
+log secrets or {{PII_OR_DATA}}.** Decisions, blockers and scope changes go in the task file's
+orchestration-notes section (decision + why).
 
 The native TaskCreate/TaskUpdate/TaskList tools are session-local scratch for supervising parallel
 work - they do not survive the session and are NOT the record. Every native task mirrors a TASK-NNN
 on the board; anything worth tracking past this session is written to the board, and on close-out
 the native list must hold nothing the board does not.
 
-`task.py` re-reads every board row it writes and fails loudly when one did not land, so a status
-change needs no read-back of your own. At close-out, `task.py check` confirms the board and the task
-files agree.
+`task.py` reads back every row it writes; at close-out, `task.py check` confirms the board and the
+task files agree.
 
 ## 6. Close out
 
@@ -247,11 +211,9 @@ needs a human decision, and the next step - a few lines, not the seats' reports 
 indistinguishable from a crashed one, and a lingering one invites a duplicate orchestrator to be
 spawned against the same board.
 
-On a long mission, a phase boundary (not just mission end) is a reasonable place to end the session
-too: close out the phase's tasks, then let a fresh orchestrator instance pick up the next phase via
-`/task-resume`. The board makes this handoff free - a fresh instance reads `master-plan.md` and the
-task files and starts exactly where the last one stopped - and a shorter session keeps the context
-window free of everything the finished phase no longer needs.
+On a long mission, end the session at a phase boundary too: close out the phase's tasks and let a
+fresh instance pick up the next phase via `/task-resume`, with a context free of the finished phase.
+
 
 ## Who to dispatch
 

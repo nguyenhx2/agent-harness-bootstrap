@@ -5,6 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.21.0
+
+Proof from real sessions, and a harness that costs less to run. A live benchmark runs Claude Code
+on one fixture with and without the harness: the harness held every secret and refused every
+unsafe push, at the price of more context per session, and the README now shows both sides.
+Hooks decide early that a command is not theirs, so the .sh flavour waits about 130 ms per Bash
+call instead of seconds, and fails closed no longer means stalled under parallel sessions. Both
+SKILL.md files are less than half their size. The README introduces spec-builder,
+harness-bootstrap and harness-view up front; every doc carries the diagrams it needs; FLOWS,
+ASSESSMENT and TUNING were rewritten; the site reads at full width; the deck is current; the
+intro video has a female narrator in English and Japanese, an audible score and question
+lead-ins, and the six clips it supersedes are gone.
+
 ## v1.20.1
 
 The hooks, run inside real Claude Code sessions for the first time, had four holes that scripted

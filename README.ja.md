@@ -11,7 +11,7 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="ライセンス: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval ワークフロー"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-266%2F266%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 266/266 ケース"></a>
+  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-290%2F290%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 290/290 ケース"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="フック 26 本"></a>
 </p>
@@ -20,18 +20,21 @@
 自分の担当外を書き換え、コンテキストが圧縮されると計画を忘れ、通過済みのレビューをもう一度走らせ、
 根拠もなく「完了しました」と言う。プロンプトでは、どれも止まりません。
 
-このリポジトリは、**コード、調査、戦略、ドキュメントの実務にエージェントを投入するチーム**のための、
-二つの Claude Code スキルとビューアです。`spec-builder` は人も AI も読める契約を書きます。
-`harness-bootstrap` はコードベースを読み、それに合った `.claude/` ハーネスを組み立てます。
-モジュールに合わせた規模のチーム、必要な場所でだけ読み込まれるルール、そして**シェルでブロックする**フック。
-`harness-view` はその結果を表示し採点します。モデルは介在しません。
+**コード、調査、戦略、ドキュメントの実務にエージェントを投入するチーム**のためのもので、
+順に使う三つの構成要素からなります。
+
+| 構成要素 | 種類 | 得られるもの |
+|---|---|---|
+| [**spec-builder**](spec-builder/) | Claude Code スキル | アイデア、議事録、既存資料、書きかけの仕様を一つの契約にまとめます。安定した ID と検証可能な受け入れ基準を持つ要件、人が確認する 1 ページのシート、エージェントが読む索引。書かれていないことは推測せず、必ず明示します。 |
+| [**harness-bootstrap**](harness-bootstrap/) | Claude Code スキル | コードベースと契約を読み、それに合った `.claude/` ハーネスを組み立てます。リポジトリの目的とモジュールに合わせた規模のチーム、必要な場所でだけ読み込まれるルール、そして**シェルでブロックする**フック。 |
+| [**harness-view**](tools/harness-view/) | Rust 製バイナリ (各[リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)に各プラットフォーム版) | ハーネス全体をライブのグラフで描き、公開ルーブリックで採点します。指摘ごとにルール、ファイルと行、直し方を示し、モデルは介在しません。このリポジトリ以外で作られたハーネスも読めます。 |
 
 **なぜ重要か:** 安全の土台は指示文ではなく、シェルスクリプトと終了コードです。フックの判定にモデルは
 関与しないため、エージェントがどのモデルで動いてもガードレールの結果は変わりません。
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">
-    <img src="video/gif/ja/00-intro.gif" alt="イントロ動画: ハーネスのないエージェントが起こす問題、契約を書く spec-builder、リポジトリに合った規模のハーネスを組む harness-bootstrap、それを採点する harness-view" width="860">
+    <img src="video/gif/ja/00-intro.gif" alt="イントロ動画: エージェントを実務に使うチームが尋ねる問い (合ったチーム、無駄のない安全、キー、ループ、仕様、制御、評価) と、それぞれに答える仕組み" width="860">
   </a>
 </p>
 <p align="center"><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">字幕付きの全クリップ</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja">スライド</a></p>
@@ -53,9 +56,17 @@
 /harness-bootstrap   # コードを読んでから .claude/ ハーネスを構築 (または更新) する
 ```
 
+次に、できあがったものを確認します。[最新リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+から使っているプラットフォーム用の `harness-view` を入手して実行します。
+
+```text
+harness-view serve .     # ライブのグラフと Assess タブ (http://127.0.0.1:7420/)
+harness-view assess .    # 同じ採点をターミナルで: 指摘ごとにルール、ファイルと行、直し方
+```
+
 一画面の計画を承認するまで何も書き込まれず、既存のファイルは上書きではなく突き合わせになります。
-Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)。オフライン用のリリース zip と
-バージョン固定は [Getting Started](docs/wiki/Getting-Started.md) と [`docs/tools/`](docs/tools/) を参照してください。
+Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.ja.md`](docs/PLUGIN.ja.md)。オフライン用のリリース zip と
+バージョン固定は [Getting Started](docs/wiki/Getting-Started-ja.md) と [`docs/tools/`](docs/tools/) を参照してください。
 
 <p align="center">
   <img src="docs/assets/harness-overview.ja.svg" alt="全体像。持ち込むもの (アイデア、議事録、既存資料、既存または空のリポジトリ、書きかけの仕様) は spec-builder に流れ、一つの契約になる。harness-bootstrap はその契約とコードベースを読み、六つの部品を組む: パス単位のルール、シェルでブロックするフック、目的に合わせたロースター、Inline・Direct・Standard・Guarded のティアへのルーティング、配線されたスキル、過不足のない検証。作業はタスクボード、実行履歴、チェックポイントとしてディスクに状態を残し、harness-view はハーネスとその状態を読んで表示・採点・切り替え・監視する。" width="960">
@@ -71,8 +82,8 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)
 | 仕組み | 何をするか | 場所 |
 |---|---|---|
 | 目的プロファイル | 最初の質問は、リポジトリが*何のため*にあるか: コード、調査、戦略、ドキュメント、またはその組み合わせ。目的ごとに席とレビューが決まる。非コードの作業には `researcher`、`strategist`、`writer` と、読み取り専用の `checker` | [`roster.md`](harness-bootstrap/reference/roster.md#purpose-profiles---which-seats-a-repo-gets) |
-| 根拠に基づく規模 | ロースターは契約と実在するモジュールから導かれる。実在するモジュールごとに dev 席が一つ。一回の構築で入るのは 18 席のうち 3〜17 席で、既定で全部ということはない | [Tailored Build](docs/wiki/Tailored-Build.md) |
-| 回答済みの質問票 | 既存リポジトリでは先にコードベース解析が走り、答えられる項目はすべて埋まった状態で出てくる。入力するのではなく、確認するだけ。選択式の質問は多くて二回のまとめ聞きに収まる | [`intake.md`](harness-bootstrap/reference/intake.md)、[`QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
+| 根拠に基づく規模 | ロースターは契約と実在するモジュールから導かれる。実在するモジュールごとに dev 席が一つ。一回の構築で入るのは 18 席のうち 3〜17 席で、既定で全部ということはない | [Tailored Build](docs/wiki/Tailored-Build-ja.md) |
+| 回答済みの質問票 | 既存リポジトリでは先にコードベース解析が走り、答えられる項目はすべて埋まった状態で出てくる。入力するのではなく、確認するだけ。選択式の質問は多くて二回のまとめ聞きに収まる | [`intake.md`](harness-bootstrap/reference/intake.md)、[`QUESTIONNAIRES.ja.md`](docs/QUESTIONNAIRES.ja.md) |
 | モジュールごとの `CLAUDE.md` | 各モジュールに担当席、範囲、不変条件を書いた専用ファイル (40 行以内)。エージェントがそこを読むときにだけ読み込まれる | [`SKILL.md`](harness-bootstrap/SKILL.md) のステップ 4 |
 
 ### 2. 「安全にしたい。でも考えすぎやトークンの浪費は困る」
@@ -93,7 +104,7 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)
 | `env-read.py` (常時) | 環境変数を使う正規の手段。名前と形式の確認、または値を読み込んだうえで出力から値を伏せてコマンドを実行する | 同上 |
 | `secret-guard` (`hooks_strict`) | ベンダー形式のキーがプロンプトにあれば送信前にブロック、ツール出力にあればローテーションを促す | [オプトインのフック](harness-bootstrap/assets/claude/hooks/README.md#opt-in-hooks-one-per-scenario) |
 | `guard-egress` (`hooks_strict`) | 許可リストにないホストへのアップロードをブロック。プロンプトインジェクションが必要とする一歩を止める | 同上 |
-| `/secret-scan` (常時) | レビュー前に差分を走査し、検出があればローテーションまで止める | [`FLOWS.md`](docs/FLOWS.md#secret-scan) |
+| `/secret-scan` (常時) | レビュー前に差分を走査し、検出があればローテーションまで止める | [`FLOWS.ja.md`](docs/FLOWS.ja.md#secret-scan) |
 
 ### 4. 「従来の SDLC ではタスクごとに苦労し、AI-DLC は中途半端に終わる」
 
@@ -110,7 +121,7 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)
 `task.py` はタスクのファイル、フォルダ、ボードの行を一つのコマンドで動かし、`task.py checkpoint` は
 次の一手と最後に通ったコミットを書き残すので、新しいセッションは前回止まった場所から再開できます。
 詳しくは [`agentic-loop.md`](spec-builder/reference/agentic-loop.md) と
-[`FLOWS.md` 第 4 節](docs/FLOWS.md#4-one-feature-end-to-end-through-the-generated-harness)。
+[`FLOWS.ja.md` 第 4 節](docs/FLOWS.ja.md#4-生成されたハーネスを通る-1-つの機能)。
 
 ### 5. 「人が確認でき、AI が理解できる仕様がほしい」
 
@@ -132,7 +143,7 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)
 | 仕組み | 何が見えるか | 場所 |
 |---|---|---|
 | `harness-view` | すべてのエージェント、ルール、フック、コマンド、モジュールを、ディスクから読んだライブのグラフで。どの部品も安全にオフにできる | [`tools/harness-view`](tools/harness-view/README.ja.md) |
-| 実行履歴 (常時) | `agent-history` が終了したサブエージェントの実行をすべて保存。詳細度は `/harness-tune` で設定 | [`TUNING.md`](docs/TUNING.md#harness-tune) |
+| 実行履歴 (常時) | `agent-history` が終了したサブエージェントの実行をすべて保存。詳細度は `/harness-tune` で設定 | [`TUNING.ja.md`](docs/TUNING.ja.md#harness-tune) |
 | `agent-trace` (`long`) | どのルールがなぜコンテキストに入ったか、どのサブエージェントが起動したか、auto モードが何を拒否したか | [オプトインのフック](harness-bootstrap/assets/claude/hooks/README.md#opt-in-hooks-one-per-scenario) |
 | `harness-check.py` (常時) | 部品同士のつながりがすべて実在するものを指しているか: 登録済みフックの実体、名前の挙がった席、ティア表と席の一致 | [`harness-check.py`](harness-bootstrap/assets/scripts/harness-check.py) |
 
@@ -146,11 +157,30 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.md`](docs/PLUGIN.md)
 - **公開された採点表。** 各カテゴリは 100 から始まり、自身の計算式 (`100 - COST-01 1x12 = 88`) を表示する。すべての指摘にルール ID、`file:line` の根拠、修正方法が付く。
 
 <p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view の Assess タブ。実際のハーネスを 100 点満点中 100 点と採点し、カテゴリ別のバーと空の指摘一覧を表示している" width="860">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view の Assess タブ。実際のハーネスを 100 点満点中 99 点と採点し、6 つのカテゴリのバーと、ルール、証拠、直し方つきの低重大度の指摘 2 件を優先順に表示している" width="860">
 </p>
 
 スクリーンショットは実際のハーネスで、ノード 219、エッジ 655、採点は 99/100 です。
-[`RUBRIC.ja.md`](tools/harness-view/RUBRIC.ja.md) と [Harness View](docs/wiki/Harness-View.md) を参照してください。
+[`RUBRIC.ja.md`](tools/harness-view/RUBRIC.ja.md) と [Harness View](docs/wiki/Harness-View-ja.md) を参照してください。
+
+<!-- BENCHMARK -->
+## 推定ではなく実測
+
+実際の Claude Code セッション (2.1.299) で、一つのフィクスチャリポジトリに対し同じタスクをハーネスあり・なしで実行し、モデルではなくスクリプトで採点しました。全 42 セッション (タスク・条件ごとに 3 回)、費用は合計 $2.84。Sonnet: bugfix, docs, feature, resume、Haiku: review-twice, risky-git, secret。
+
+| 指標 | ハーネスなし | ハーネスあり | 変化 |
+|---|---:|---:|---:|
+| `.env` の値を漏らしたセッション | 3 / 3 | 0 / 3 | 拒否 |
+| main へのコミットや push をしたセッション | 3 / 3 | 0 / 3 | 拒否 |
+| 完了したコーディングタスク | 100% | 100% | 同じ |
+| タスク再開時に読んだバイト数 | 14,961 | 8,467 | -43% |
+| その再開セッションのコスト | $0.105 | $0.210 | +101% |
+| 最初の呼び出しのコンテキスト (トークン) | 21,842 | 32,786 | +50% |
+| コーディング 1 セッションあたりのコスト | $0.070 | $0.127 | +81% |
+| 「2 回レビューして」の依頼のコスト | $0.008 | $0.140 | +1650% |
+
+ハーネスは無料ではありません。ルールを毎セッション読み込むため、コーディングのセッションは割高になり、`code-reviewer` 席に回したレビューはその席に固定されたモデルで動きます。漏洩と force-push のタスクでは、エージェントがハーネスのルールに従って拒否したため、後ろ盾のフックが発動する必要はありませんでした。ハーネスなしでは毎回従いました。フィクスチャは一つ、OS も一つ、n = 3 です。手法と限界は [`benchmark/results/live-v1.21.0.md`](benchmark/results/live-v1.21.0.md)、生データは [`benchmark/results/live-v1.21.0/raw/`](benchmark/results/live-v1.21.0/raw/) を参照してください。
+<!-- /BENCHMARK -->
 
 ## 自分で確かめる
 
@@ -161,22 +191,47 @@ python scripts/check_numbers.py     # 公開している数値がすべてスク
 ```
 
 ガードレール評価は、フックの系統 (`.sh` と `.ps1`) ごとに `hooks_strict`、`db`、`long` とテスト系の
-フラグを有効にした実際のハーネスを生成し、そこにペイロードを当てます。結果は系統ごとに 250/250
-(110 must-block、156 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
+フラグを有効にした実際のハーネスを生成し、そこにペイロードを当てます。結果は系統ごとに 290/290
+(123 must-block、167 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
 通すことです。エージェントの振る舞いや、既定の構成は測っていません。ケース一覧: [`eval/README.md`](eval/README.md)。
 ベンチマークの注意点: [`benchmark/RESULTS.md`](benchmark/RESULTS.md)。
 
 ## さらに詳しく
 
-| 知りたいこと | 読むもの |
-|---|---|
-| すべてのフローの図と、デリバリーコマンドの一覧 | [`docs/FLOWS.md`](docs/FLOWS.md) |
-| 調整コマンド (`/harness-tune`、`/harness-toggle`、`/harness-update` など) | [`docs/TUNING.md`](docs/TUNING.md) |
-| 各スキルが何を聞くか、その理由 | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
-| メモリ、クラッシュからの再開、強い制御と弱い制御 | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) |
-| これがやらないこと | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) |
-| すべての席、ルール、フック、コマンド、フラグ | [Wiki](https://github.com/nguyenhx2/agent-harness-bootstrap/wiki) |
-| Cursor や Codex でハーネスを動かす | [`docs/tools/`](docs/tools/) |
+ドキュメントは 3 段階に分かれます。仕組みを理解する、運用する、信頼してよいかを判断する。
+
+```mermaid
+flowchart TD
+    subgraph J["信頼する"]
+        A["ASSESSMENT<br/>限界とリスク"]
+        E["eval、benchmark<br/>証拠"]
+    end
+    subgraph O["運用する"]
+        T["TUNING<br/>ハーネスの調整"]
+        TL["docs/tools<br/>Cursor、Codex"]
+        W["Wiki<br/>全体の参照"]
+    end
+    subgraph U["理解する"]
+        F["FLOWS<br/>すべてのフロー"]
+        Q["QUESTIONNAIRES<br/>何を聞くか"]
+        C["CONTEXT-MANAGEMENT<br/>記憶と制御"]
+    end
+
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+
+    class F,Q,C,T,TL,W,A,E art
+```
+
+| 段階 | 知りたいこと | 読むもの |
+|---|---|---|
+| 理解する | すべてのフローの図と、デリバリーコマンドの一覧 | [`docs/FLOWS.ja.md`](docs/FLOWS.ja.md) |
+| 理解する | 各スキルが何を聞くか、その理由 | [`docs/QUESTIONNAIRES.ja.md`](docs/QUESTIONNAIRES.ja.md) |
+| 理解する | メモリ、クラッシュからの再開、強い制御と弱い制御 | [`docs/CONTEXT-MANAGEMENT.ja.md`](docs/CONTEXT-MANAGEMENT.ja.md) |
+| 運用する | どの調整コマンドをいつ使うか (`/harness-tune`、`/harness-toggle`、`/harness-update` など) | [`docs/TUNING.ja.md`](docs/TUNING.ja.md) |
+| 運用する | Cursor や Codex でハーネスを動かす | [`docs/tools/`](docs/tools/) |
+| 運用する | すべての席、ルール、フック、コマンド、フラグ | [Wiki](https://github.com/nguyenhx2/agent-harness-bootstrap/wiki) |
+| 信頼する | これがやらないこと、残るリスク | [`docs/ASSESSMENT.ja.md`](docs/ASSESSMENT.ja.md) |
+| 信頼する | ガードレールとコストの主張をどう測るか | [`eval/README.ja.md`](eval/README.ja.md)、[`benchmark/RESULTS.ja.md`](benchmark/RESULTS.ja.md) |
 
 ## クレジット
 

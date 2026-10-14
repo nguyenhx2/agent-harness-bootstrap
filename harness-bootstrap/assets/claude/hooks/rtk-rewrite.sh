@@ -33,7 +33,19 @@
 
 MIN_VERSION="0.45.0"
 
-payload=$(cat)
+# read_payload: stdin without a fork - this hook starts on every Bash call, and on Windows a
+# subshell costs 50-250 ms. Copied verbatim from guard-destructive.sh (see "Latency" in
+# hooks/README.md).
+read_payload() {
+  payload=
+  # bash reads a pipe one byte per syscall: fine for a shell call's few hundred bytes, slower than
+  # one `cat` past a few KB (an Edit or Write payload), so the rest of a long one goes to cat.
+  if IFS= read -r -d '' -n 4096 payload; then
+    payload+=$(cat)
+  fi
+}
+
+read_payload
 [ -z "$payload" ] && exit 0
 
 # rtk absent is the normal case: the flag ships the hook, the user installs the binary separately.

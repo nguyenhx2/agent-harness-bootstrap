@@ -96,7 +96,7 @@ def title_text(s, fs=52, color=WHITE):
 
 def box(label, fill, stroke, w, h=0.78, fs=20, text_color=WHITE, radius=0.13):
     """chip() but the label is always clamped inside the box (mirrors
-    04-solution.py's local box() helper)."""
+    the retired 04-solution clip's local box() helper)."""
     t = Text(label, font=JFONT, font_size=fs, color=text_color, line_spacing=0.8)
     if t.width > w - 0.4:
         t.scale((w - 0.4) / t.width)

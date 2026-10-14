@@ -2,87 +2,99 @@
 
 [English](cursor.md) · **日本語**
 
-Cursor はスキルを実行しません。スキルが生み出したハーネスを実行します。Cursor は `AGENTS.md` と
-`.cursor/rules/*.mdc` を読みます。強制は `.cursor/hooks.json` と生成されたアダプターを通じて行われます。
-アダプターは Cursor のフックのペイロードを既存の `.claude/hooks/*.sh` が期待する形に変換し、その終了コードを
-逆向きに変換して返します。
+Cursor はスキルを実行しません。スキルが生成したハーネスを動かします。`AGENTS.md` と
+`.cursor/rules/*.mdc` を読み、強制は `.cursor/hooks.json` と生成されたアダプターで行います。アダプターは
+Cursor のフックのペイロードを `.claude/hooks/` が期待する形に変換し、終了コードを Cursor の応答に
+戻します。
 
 ## セットアップ
 
-まず Claude 用のハーネスをスキャフォールドし (リポジトリに `.claude/rules/` と `.claude/hooks/` が必要です)、
-それから移植します。リポジトリのルートで:
+まず Claude のハーネスをスキャフォールドし (リポジトリに `.claude/rules/` と `.claude/hooks/` が
+必要)、リポジトリのルートで移植します:
 
 ```bash
 python ~/.claude/skills/harness-bootstrap/scripts/port.py --target . --tool cursor
 ```
 
-Python 3 と、PATH 上の `bash` が必要です (アダプターは `.sh` のフックをシェル経由で呼びます)。インストールする
-リリースはありません。ポーターはスキルに同梱されています。
+Python 3 と、フックの種類に合ったインタプリタが `PATH` に必要です: `.sh` なら `bash`、`.ps1` なら
+`pwsh` か `powershell`。ポーターはスキルに同梱されています。
 
-## 置かれるもの
+## 呼び出しはどう確かめられるか
+
+```mermaid
+flowchart TD
+    E["Cursor のフックイベント"]
+    A["cursor-adapter.py"]
+    H["該当する .claude/hooks"]
+    D["deny + フックのメッセージ"]
+    OK["allow"]
+
+    E -->|"ペイロード"| A
+    A -->|"Claude 形式"| H
+    H -->|"exit 2"| D
+    H -->|"exit 0"| OK
+    A -->|"インタプリタなし"| D
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
+    class E,A,OK det
+    class H,D gate
+```
+
+| Cursor のイベント | アダプターが実行するフック |
+|---|---|
+| `beforeShellExecution` | `guard-main-commit`、`check-commit-msg`、`protect-secrets` |
+| `beforeReadFile` | `protect-adr`、`protect-secrets` |
+| `afterFileEdit` | `protect-adr`、`protect-secrets` (観察のみ: Cursor は編集を取り消せない) |
+
+実行できないガードは allow ではなく **deny** と答えます。答えを知らないからです。
+
+## 配置されるもの
 
 | パス | 役割 |
 |---|---|
-| `.cursor/rules/*.mdc` | `.claude/rules/*.md` ごとに一つ。`paths:` のないルールは `alwaysApply: true` に、`paths: [glob]` は `globs: glob` になる |
-| `.cursor/hooks.json` | アダプターを `beforeShellExecution` と `beforeReadFile` に登録する |
-| `.cursor/hooks/cursor-adapter.py` | Cursor のペイロードを `{cwd, tool_name, tool_input}` に正規化し、対応する `.claude/hooks/*.sh` を実行して、`{"permission": "allow"\|"deny", ...}` を出力する |
-| `AGENTS.md` | ハーネスがすでに生成済み。Cursor がネイティブに読む (移植の手順なし) |
+| `.cursor/rules/*.mdc` | `.claude/rules/*.md` ごとに一つ。`paths:` なしは `alwaysApply: true`、`paths: [glob]` は `globs: glob` になる |
+| `.cursor/hooks.json` | アダプターを `beforeShellExecution`、`beforeReadFile`、`afterFileEdit` に登録 |
+| `.cursor/hooks/cursor-adapter.py` | ペイロードを `{cwd, tool_name, tool_input}` に正規化し、フックを実行し、`{"permission": "allow"\|"deny", ...}` を出す |
+| `AGENTS.md` | 生成済み。Cursor がそのまま読む |
 
-アダプターはシェルのイベントを Bash のガード (`guard-main-commit`、`check-commit-msg`、`protect-secrets`) に、
-読み取りのイベントを `protect-adr` と `protect-secrets` に対応づけます。フックが終了コード 2 を返すと、その
-フックの stderr をユーザー向けメッセージとする `deny` になり、それ以外は `allow` になります。
+## 強制されるもの、助言だけのもの
 
-## 強制するもの、助言にとどまるもの
+| 統制 | Cursor での効果 |
+|---|---|
+| `protect-secrets` | シェルでもファイル読み取りでも、シークレットの読み取りをブロック |
+| `guard-main-commit` | 既定ブランチへの直接のコミットをブロック |
+| `check-commit-msg` | Conventional Commits に従わない、または AI の帰属表示を含むコミットメッセージをブロック |
+| `protect-adr` | 承認済み ADR の編集を事後に指摘 (制限を参照) |
+| `.cursor/rules/*.mdc` | 助言のみ |
+| その他のフック | 移植されない: `guard-destructive`、ボードのガード、`guard-agent-spawn` とその台帳、strict フックは Claude Code 専用 |
 
-| 制御 | Cursor のイベント | 効果 |
-|---|---|---|
-| `protect-secrets` | `beforeShellExecution` + `beforeReadFile` | 秘密情報の読み取り (シェルまたはファイル) をブロック |
-| `guard-main-commit` | `beforeShellExecution` | 既定ブランチへの直接コミットをブロック |
-| `check-commit-msg` | `beforeShellExecution` | Conventional でない、または AI の帰属表示を含むコミットメッセージをブロック |
-| `protect-adr` | `beforeReadFile` のパス | 読み取り時にブロック。編集前のブロックはベストエフォート (限界を参照) |
-| `specs-reminder` | 移植しない | Cursor には該当しない |
-| `agent-history` | 移植しない | Cursor には該当しない |
-| `.cursor/rules/*.mdc` | Cursor が読み込む | 助言のみ |
+## 正直な制限
 
-シェルコマンドかファイル読み取りを通じて届くものは、すべて Claude Code と同じようにブロックされます。ポーターが
-移植するのはこれらのガードだけです。残りのフック (`guard-destructive`、タスクボードのガード、
-`guard-agent-spawn` 内の検証台帳、オプトインの strict フック) は Claude Code 専用のままです。
-
-## 正直な限界
-
-**ADR のガードは遅れて発火します。** 移植では Cursor の `afterFileEdit` に配線していますが、これは観察専用です。
-そのため Accepted の ADR への編集は、起きる前にブロックされるのではなく、**事後に**指摘されます。Claude Code では
-その編集は事前にブロックされます。
-
-これは Cursor の限界ではなく、移植の限界です。Cursor は現在 `preToolUse` を公開しており、そのペイロード
-(`tool_name`、`tool_input`、`cwd`) は Claude Code のものに十分近く、アダプターの変換はほぼ恒等関数になる
-はずです。配線をそちらに移せば、事前のブロックが戻ります。まだ行っていません。
-
-**起動の境界はまだ移せていません。** `guard-agent-spawn` は移植していません。少し前まで、このリポジトリはその
-理由を Cursor にサブエージェント起動のフックポイントがないためだと書いていましたが、それはもう正しくありません。
-Cursor はサブエージェント種別のマッチャー付きで `subagentStart` と `subagentStop` を出荷しています。ドキュメントは
-このイベントでサブエージェントの作成を許可または拒否できると説明しており、終了コード 2 でブロックされます。
-まだ障害として残っているのは、ペイロードのフィールドが Claude Code と異なること、そしてフックの中心となる確認
-(`.claude/agents/<type>.md` が存在するか) が、名前付きの席の名前を Cursor が渡してくれるかどうかに依存し、
-それが未検証であることです。到達はできるが、まだ同等ではない、という状態です。
-
-**Cursor に相当するものがまったくない制御が 2 つあります。** 席ごとの `tools:` 許可リスト (Cursor が提供するのは
-`readonly` だけで、レビュアーの場合はそれで足りますが、それより細かい指定はできません) と `maxTurns`
-(相当するものが見つかっていません) です。どちらも移植では引き継がれず、配線で取り戻すこともできません。
+- **ADR のガードは遅れて発火します。** `afterFileEdit` は観察のみなので、承認済み ADR の編集は
+  ブロックされず、起きた後に指摘されます。Cursor は今や `preToolUse` を公開しており、そのペイロードは
+  Claude Code に十分近いので、そこに配線すれば事前ブロックを取り戻せます。まだ行っていません。
+- **`protect-adr` は読み取りでも動きます。** `beforeReadFile` で承認済み ADR へのパスを見ると拒否
+  するので、Cursor のエージェントは承認済みの決定を読めません。移植の既知の穴です。
+- **スポーンの境界はまだ移植できません。** Cursor にはサブエージェントを許可または拒否できる
+  `subagentStart` と `subagentStop` があります。足りないのはペイロードの一致です。フックの中心の
+  チェック (`.claude/agents/<type>.md` が存在するか) は、Cursor が席自身の名前を渡すことに依存し、
+  それは未検証です。到達はできるが、まだ同等ではありません。
+- **Cursor に相当するものがない統制が二つあります。** 席ごとの `tools:` 許可リスト (Cursor には
+  `readonly` しかない) と `maxTurns` です。どちらも配線では取り戻せません。
 
 ## 動作を確かめる
 
-アダプターのセルフテストを実行します。文書化されたサンプルペイロードに対して変換を検証します:
-
 ```bash
-python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # expect 32/32
+python ~/.claude/skills/harness-bootstrap/scripts/port.py --self-test    # 32/32 を期待
 ```
 
-`cat .env` を拒否し、`main` へのコミットを拒否し、`npm test` を許可し、`.env` の読み取りを拒否し、`src` の
-読み取りを許可します。同じテストが CI でも走ります。ツールの中では、`.env` を読もうとしたり `main` に
-コミットしようとしたりして、それぞれ拒否されることを確認してください。
+フックの種類ごとに、書き込みの契約、アダプターの配線、六つの振る舞いを確かめます: `cat .env` を
+拒否、`main` へのコミットを拒否、`npm test` を許可、`.env` の読み取りを拒否、`src` の読み取りを
+許可、承認済み ADR への編集イベントを拒否。CI でも同じテストが走ります。ツール自体でも、`.env` を
+読もうとしたり `main` にコミットしようとしたりして、それぞれが拒否されることを確かめてください。
 
 ## 関連
 
 - [メイン README](../../README.ja.md)
-- [AGENTS.md 契約](../../harness-bootstrap/assets/root/AGENTS.md)
+- [AGENTS.md の契約](../../harness-bootstrap/assets/root/AGENTS.md)

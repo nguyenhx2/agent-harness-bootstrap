@@ -5,10 +5,8 @@ Loaded in every session, deliberately: an agent that forgets where state lives w
 ## Task files are the source of truth
 
 This covers registered work - Guarded changes, and anything the user asked to track. Inline, Direct
-and Standard work (the `AGENTS.md` tier table) has no task file by design: its record is the commit
-and the report.
-
-The conversation is not the record; it gets compacted. What survives is written down:
+and Standard work (the `AGENTS.md` tier table) has no task file: its record is the commit and the
+report. The conversation is not the record; it gets compacted.
 
 - `docs/tasks/master-plan.md` - the board, one row per task.
 - `docs/tasks/active/`, `pending/`, `done/` - one file per task: scope, acceptance criteria,
@@ -18,9 +16,8 @@ The conversation is not the record; it gets compacted. What survives is written 
 ## One command changes state
 
 `python .claude/scripts/task.py` is the only way task state changes. Each subcommand writes the
-frontmatter, the folder, the board row and the session-log row together, then reads the row back
-and fails loudly if it did not land. Hand-editing a `status:` field or a Status cell is how the
-board and the files come to disagree.
+frontmatter, the folder, the board row and the session-log row together and reads the row back.
+Never hand-edit a `status:` field or a Status cell.
 
 | When | Command |
 |---|---|
@@ -32,10 +29,8 @@ board and the files come to disagree.
 | Resume, or see the board | `task.py resume [TASK-NNN]`, `task.py check` |
 
 Log one row per completed unit - a dispatch outcome, a gate run, a decision, a status change - not
-per tool call or edit. One line: what was done and the result, not the reasoning behind it. The
-log keeps its newest rows in the task file and archives older ones to `docs/tasks/log/`, so a long
-task stays cheap to resume. **A gate counts as passed only when a log row records the run**; a
-claim in a chat message or an agent's report is a claim.
+per tool call. One line: what was done and the result. Older rows archive to `docs/tasks/log/`.
+**A gate counts as passed only when a log row records the run**; anything else is a claim.
 
 ## What earns a task, and who decides
 
@@ -44,10 +39,9 @@ migration.
 
 - **Executing a task never creates more tasks.** Steps belong in the task file's plan.
 - **The user agrees, directly.** If their own message did not ask for it, `/new-task` asks with
-  `AskUserQuestion` and waits for an explicit yes - from the person, not an agent guessing.
-- **The file records it.** `requested_by:` carries their words or the issue - not `user`, not an
-  agent name. `task.py new` and `guard-task-scope` refuse a task without it, or with fewer than two
-  real acceptance criteria.
+  `AskUserQuestion` and waits for an explicit yes from the person.
+- **The file records it.** `requested_by:` carries their words or the issue, not `user` or an agent
+  name; `task.py new` and `guard-task-scope` refuse a task without it or with fewer than two criteria.
 - **No agent opens a task on its own, subagents included.** What you discover goes in your report.
 
 | Below the bar, so not a task | What to do with it |
@@ -63,9 +57,8 @@ task in hand: `move` it to `Blocked`, name what would unblock it, escalate.
 ## After compaction or an abnormal end
 
 Run `/task-resume TASK-NNN` before anything else. It prints the checkpoint, the open criteria and
-the last few log rows, and flags drift between the file, the board and git. Trust that over
-remembered state; reconcile drift before new work starts.
+the last log rows, and flags drift between the file, the board and git. Trust that over memory;
+reconcile drift before new work starts.
 
-Task files are English, carry no secrets or real personal data (they are committed text), and
-reference requirement IDs rather than restating them. Match their length to what the next reader
-needs - no summary sections, no restated plans.
+Task files are committed text: reference requirement IDs rather than restating them, and match
+their length to what the next reader needs - no summary sections, no restated plans.

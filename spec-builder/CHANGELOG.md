@@ -6,6 +6,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.21.0] - 2026-10-14
+
+### Changed
+
+- **`SKILL.md` 18,993 -> 10,350 bytes**, with detail moved to the references loaded at the step
+  that needs them; a typical read path is 54,001 -> 37,280 bytes.
+
 ## [1.20.1] - 2026-10-14
 
 No functional change. The version moves with `harness-bootstrap`.

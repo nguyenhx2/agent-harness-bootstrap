@@ -5,9 +5,9 @@
 contradicts one. It reads text. The clips under `video/mp4/` and `video/gif/` are pixels, and
 their figures are BURNED IN at render time, so that gate could never see them.
 
-It cost us. `video/gif/04-solution.gif` is the first moving image on the README, and it read
-"guardrail eval 69/69" for three releases while the scene source said 107/107 and every text
-document on the site agreed with the source. The number had moved twice, 69 to 89 to 107, and
+It cost us. `video/gif/04-solution.gif` (since retired) was the first moving image on the README,
+and it read "guardrail eval 69/69" for three releases while the scene source said 107/107 and
+every text document on the site agreed with the source. The number had moved twice, 69 to 89 to 107, and
 the GIF was re-rendered for neither. Two more clips had drifted the same way.
 
 The check a renderer can actually make is provenance, not pixels: an artifact is stale when its
@@ -19,7 +19,7 @@ What this does NOT catch, stated plainly rather than implied:
   - A figure that is wrong in the SOURCE too. That is `check_numbers.py`'s job, and it reads
     these sources - `video/src/**.py` is in its search set.
   - A change to `theme.py` or `jatheme.py`. Those alter every frame of every clip, and hashing
-    them here would demand a fourteen-clip re-render for one colour tweak. A palette change does
+    them here would demand a re-render of every Manim clip for one colour tweak. A palette change does
     not make a published number false, which is the failure this gate exists to stop. Re-render
     deliberately after a theme change; `video/README.md` says so.
 
@@ -48,10 +48,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "video/RENDERED.json"
 
 # artifact (relative to ROOT) -> the scene source it is rendered from.
-CLIPS = [
-    "01-overview", "02-flow", "03-layers", "04-solution",
-    "05-spec-builder", "06-harness-bootstrap", "07-skills-and-view",
-]
+# The Manim clips still shipped. 01 to 06 were retired in v1.21.0: the narrated intro covers their
+# story, and three of them described a harness-bootstrap that no longer exists.
+CLIPS = ["07-skills-and-view"]
 
 
 def pairs() -> dict[str, str]:
@@ -60,9 +59,6 @@ def pairs() -> dict[str, str]:
     for name in CLIPS:
         out[f"video/mp4/{name}.mp4"] = f"video/src/{name}.py"
         out[f"video/mp4/ja/{name}.mp4"] = f"video/src/ja/{name}.py"
-    # The GIFs are transcoded from the MP4 of the same clip, so they carry the same provenance.
-    out["video/gif/04-solution.gif"] = "video/src/04-solution.py"
-    out["video/gif/ja/04-solution.gif"] = "video/src/ja/04-solution.py"
     # The Remotion intro. Its scene source is SCRIPT.md, not the .tsx: the script carries every
     # spoken line, every caption, and the generated block of on-screen figures that
     # video/intro/derive_figures.py writes - so a figure that moves in the repo moves this file,
@@ -246,7 +242,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     # The theme is reported, not enforced, and the difference is deliberate. Hashing it INTO each
-    # clip's provenance would fail the build for a one-colour tweak and demand fourteen re-renders,
+    # clip's provenance would fail the build for a one-colour tweak and demand a re-render of all of them,
     # which is the trade this gate documents refusing. But going silent is its own failure: the
     # whole palette was moved onto the landing page's tokens, every shipped clip became a
     # different drawing from its source, and nothing here had anything to say about it. A warning

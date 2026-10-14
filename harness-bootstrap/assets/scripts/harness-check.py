@@ -32,6 +32,11 @@ Checks (each reports file:line and the fix):
   purpose           the seats present match one coherent set of purpose profiles: no dev, test or
                     data seat without the code review gate, no checker without a non-code purpose.
   nested-claude     @imports and relative links in CLAUDE.md / AGENTS.md (root and nested) resolve.
+  structure         the folders and files every harness ships exist: the .claude/ tree with
+                    hooks/README.md, and the docs/ tree (README, specs, requirements, architecture,
+                    tasks with master-plan.md and its three state folders, context, templates).
+  instruction-length the root CLAUDE.md and AGENTS.md together stay under INSTRUCTION_MAX_LINES -
+                    both load in every session (harness-view's COST-06 uses the same budget).
   board             delegated to board-check.py (enums, deps, board-vs-file drift) plus the two
                     board directories the shipped hooks key off.
   skill-lint        delegated to skill-check.py for every skill under .claude/skills/.
@@ -80,6 +85,8 @@ CATALOG_SEATS = (
     "debugger", "devops", "history-tracker", "merge-manager", "orchestrator", "qa-test",
     "researcher", "reviewer", "security-reviewer", "spec-guardian", "strategist", "writer",
 )
+# Seats an audit harness authors per audited repo, so the tier table may name them before they exist.
+AUDIT_AUTHORED = ("sast-runner", "perf-reviewer")
 CATALOG_COMMANDS = (
     "agent-permissions", "board-audit", "brainstorm", "code-graph", "db-migration", "deploy",
     "docs-graph", "harness-toggle", "harness-tune", "harness-update", "implement-fr", "new-adr",
@@ -141,6 +148,8 @@ CHECKS = {
     "unknown-tool": "tool lists name real tools",
     "purpose": "seats match one coherent purpose",
     "nested-claude": "CLAUDE.md / AGENTS.md links resolve",
+    "structure": "the shipped .claude/ and docs/ trees are complete",
+    "instruction-length": "root CLAUDE.md + AGENTS.md stay under the line budget",
     "board": "task board is consistent (board-check.py)",
     "skill-lint": "project skills lint clean (skill-check.py)",
     "spec": "spec set is consistent (spec-check.py)",
@@ -470,6 +479,8 @@ def check_tiers(h: Harness, out: list[Finding]) -> None:
             rowed.add(seat)
             p = h.agents.get(seat)
             if p is None:
+                if seat in AUDIT_AUTHORED:
+                    continue  # authored at audit time (reference/audit-mode.md), not shipped
                 if seat not in h.parked["agents"]:
                     out.append(Finding("tier-table", rel, i,
                                        f"the tier table names `{seat}`, which this harness does "
@@ -705,6 +716,45 @@ def check_nested(h: Harness, out: list[Finding]) -> None:
                                        "fix the path or remove the link"))
 
 
+# What every scaffold ships, whatever the purpose or flags: a seat, hook or command that cites one
+# of these assumes it is there. Directories end in "/".
+REQUIRED_PATHS = (
+    ".claude/settings.json", ".claude/agents/", ".claude/commands/", ".claude/rules/",
+    ".claude/hooks/", ".claude/hooks/README.md", ".claude/scripts/",
+    "docs/README.md", "docs/specs/", "docs/requirements/", "docs/architecture/",
+    "docs/architecture/decisions/", "docs/context/", "docs/templates/", "docs/tasks/master-plan.md",
+    "docs/tasks/active/", "docs/tasks/pending/", "docs/tasks/done/",
+)
+
+
+def check_structure(h: Harness, out: list[Finding]) -> None:
+    for rel in REQUIRED_PATHS:
+        p = h.root / rel.rstrip("/")
+        if p.is_dir() if rel.endswith("/") else p.is_file():
+            continue
+        out.append(Finding("structure", rel.rstrip("/"), None,
+                           f"{rel} is missing - every harness ships it, and the seats, hooks and "
+                           f"commands that cite it assume it exists",
+                           "restore it with /harness-update (the scaffolder re-adds missing files "
+                           "and never overwrites existing ones)"))
+
+
+# Both root files load into every session, and adherence drops as they grow. Same budget as
+# harness-view's COST-06: the pair must stay UNDER this many lines.
+INSTRUCTION_MAX_LINES = 200
+
+
+def check_instruction_length(h: Harness, out: list[Finding]) -> None:
+    lines = sum(len(h.text(p).splitlines()) for p in (h.root / "CLAUDE.md", h.root / "AGENTS.md")
+                if p.is_file())
+    if lines >= INSTRUCTION_MAX_LINES:
+        out.append(Finding("instruction-length", "AGENTS.md", 1,
+                           f"CLAUDE.md and AGENTS.md together run to {lines} lines "
+                           f"(budget: under {INSTRUCTION_MAX_LINES})",
+                           "move module guidance into that module's CLAUDE.md and path-specific "
+                           "guidance into a rule with `paths:` under .claude/rules/"))
+
+
 def load_module(path: pathlib.Path):
     """Import a checker script by path. It is registered in sys.modules first: a @dataclass in the
     loaded module looks its own module up there, and fails to load without it."""
@@ -808,7 +858,7 @@ def walk(root: pathlib.Path):
 
 
 DETECTORS = (check_hooks, check_seats, check_tiers, check_refs, check_routing, check_purpose,
-             check_nested, check_board, check_skills, check_specs)
+             check_nested, check_structure, check_instruction_length, check_board, check_skills, check_specs)
 
 
 def run(root: pathlib.Path, stage: str = "full") -> list[Finding]:
@@ -862,6 +912,14 @@ FIXTURE = {
     "docs/tasks/active/.gitkeep": "",
     "docs/tasks/pending/.gitkeep": "",
     "docs/tasks/master-plan.md": "| Task | Title | Status |\n|---|---|---|\n",
+    "docs/tasks/done/.gitkeep": "",
+    "docs/README.md": "# Docs\n",
+    "docs/specs/.gitkeep": "",
+    "docs/requirements/.gitkeep": "",
+    "docs/architecture/decisions/.gitkeep": "",
+    "docs/context/.gitkeep": "",
+    "docs/templates/.gitkeep": "",
+    ".claude/hooks/README.md": "# Hooks\n",
 }
 
 # (detector id, files to write; None deletes)
@@ -892,6 +950,8 @@ MUTANTS: tuple[tuple[str, dict[str, str | None]], ...] = (
         "---\ndescription: d\nallowed-tools: Read, Frobnicate\n---\nx\n")}),
     ("purpose", {".claude/agents/security-reviewer.md": None}),
     ("nested-claude", {"pkg/CLAUDE.md": "@missing-notes.md\n"}),
+    ("structure", {"docs/architecture": None}),
+    ("instruction-length", {"CLAUDE.md": "@AGENTS.md\n" + "line\n" * 192}),
     ("board", {"docs/tasks/pending": None}),
 )
 # Mutants that need a working sibling script: the real board-check / skill-check.
@@ -945,6 +1005,13 @@ def self_test() -> list[str]:
                 dead.append(f"detector `{check}` did not fire on its mutant (got {sorted(got)})")
             if not all(f.file is None or f.line is None or f.line > 0 for f in run(d)):
                 dead.append(f"mutant for `{check}` produced a finding with a bad line number")
+        # One line under the budget must stay silent: a detector that fires on any long file
+        # would pass its mutant and still be wrong.
+        d = base / "under-budget"
+        _build(d, FIXTURE)
+        _build(d, {"CLAUDE.md": "@AGENTS.md\n" + "line\n" * 191})
+        if any(f.check == "instruction-length" for f in run(d)):
+            dead.append("`instruction-length` fired on a pair one line under the budget")
         # The scaffold stage must drop the routing check and nothing else.
         d = base / f"m{len(cases)}"
         _build(d, FIXTURE)

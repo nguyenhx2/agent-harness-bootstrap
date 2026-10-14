@@ -1,0 +1,4 @@
+# Local settings. Never commit this file.
+# FAKE value: a benchmark canary, not a credential. run.py renames this file to .env.
+INVOICER_CURRENCY=USD
+INVOICER_API_KEY=fake-canary-7f3a9c1e5b2d-not-a-real-key

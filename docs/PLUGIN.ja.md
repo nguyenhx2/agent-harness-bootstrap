@@ -1,26 +1,43 @@
-# プラグインとしてインストールする
+# プラグインとしてのインストール
 
 [English](PLUGIN.md) · **日本語**
 
-2 つのスキル `harness-bootstrap` と `spec-builder` は、Claude Code、Cursor、Codex、そして
-[Agent Plugins](https://agent-plugins.org/) 標準を読むその他のクライアントにプラグインとしてインストールできます。
-これが推奨のインストール方法です。更新は手動の再ダウンロードではなくクライアント自身の更新コマンドで届き、
-インストールされているバージョンも常に特定できます。zip のダウンロード (README を参照) も、オフラインで
-バージョンを固定する代替手段として引き続き完全にサポートします。
+2 つのスキル `harness-bootstrap` と `spec-builder` は、Claude Code、Codex、Cursor、そして
+[Agent Plugins](https://agent-plugins.org/) 標準を読むあらゆるクライアントにプラグインとしてインストールできます。
+これが推奨の経路です。更新はクライアント自身の更新コマンドで届き、インストールした版はいつでも識別できます。
+GitHub Releases の zip は、オフラインで版を固定する代替手段として引き続きサポートします。
+
+```mermaid
+flowchart LR
+    SK["harness-bootstrap/<br/>spec-builder/"] --> MK["marketplace.json"]
+    SK --> BP["build_plugins.py"]
+    BP --> PC["plugins/codex/"]
+    BP --> PA["plugins/"]
+    MK --> CC(["Claude Code"])
+    PC --> CX(["Codex"])
+    PA --> CU(["Cursor ほか"])
+
+    classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
+    classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
+    classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
+    class SK,MK,PC,PA art
+    class BP det
+    class CC,CX,CU hum
+```
+
+スキルのフォルダーが唯一の正です。Claude Code はそれを直接読み、`build_plugins.py` が 2 つの生成ツリーにコピー
+します。コピーがずれると CI が失敗します (`--check`)。
 
 | クライアント | 読むもの | このリポジトリでの置き場所 |
 |---|---|---|
-| Claude Code | 単一スキルの規約 (ディレクトリのルートに `SKILL.md`) | `.claude-plugin/marketplace.json` |
-| Codex | `.codex-plugin/plugin.json` | `plugins/codex/<skill>/`。`.agents/plugins/marketplace.json` に列挙 |
+| Claude Code | ディレクトリ直下の `SKILL.md` (単一スキルのプラグイン) | `.claude-plugin/marketplace.json` |
+| Codex | `.codex-plugin/plugin.json` | `plugins/codex/<skill>/`。`.agents/plugins/marketplace.json` に掲載 |
 | Cursor、VS Code、Copilot、Kiro、ChatGPT | プラグインのルートにある Agent Plugins の `plugin.json` | `plugins/<skill>/` |
 
-**Codex に専用のディレクトリがある理由。** 最初の試みでは、3 つのマニフェストはそれぞれ別のパスに置かれるので、
-すべてを一つのディレクトリに入れました。Codex はそれを拒否します。ルートに `plugin.json` があるとそれを検証し、
-Agent Plugins が必須とする `$schema` キーを受け付けません (`missing or invalid plugin.json`)。Agent Plugins の
-他のフィールドはすべて通るので、原因はこのキー一つです。`$schema` を外せば今日の時点では両方のクライアントを
-満たせますが、標準が非準拠とするマニフェストを出荷することになるので、各スキルにルートを 2 つ持たせることに
-しました。Codex に自分のルートの外にある `skills` パスを指させる方法もうまくいきません。Codex はプラグインの
-ルートだけを `~/.codex/plugins/cache/` にコピーするので、インストール後にスキルがそっくり欠けてしまいます。
+**Codex に専用のツリーがある理由。** Codex はルートに `plugin.json` があるとそれを検証し、Agent Plugins が必須と
+する `$schema` キーを拒否します。`$schema` を外すと標準に適合しないマニフェストを出荷することになるので、スキル
+ごとにルートを 2 つ用意しました。Codex にルートの外の `skills` パスを指させる方法も使えません。Codex はプラグインの
+ルートだけをキャッシュにコピーするからです。
 
 ## Claude Code
 
@@ -30,10 +47,7 @@ Agent Plugins が必須とする `$schema` キーを受け付けません (`miss
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-どちらか一方だけでも、両方でもインストールできます。各エントリは `harness-bootstrap/` か `spec-builder/` を
-直接指しています。`SKILL.md` はそのディレクトリのルートにあり、`skills/` サブディレクトリもスキルの
-マニフェストもないので、Claude Code はそれを単一スキルのプラグインとして自動で読み込みます。それ以上の設定は
-必要ありません。
+どちらか一方でも、両方でもインストールできます。追加の設定は要りません。
 
 ## Codex
 
@@ -41,76 +55,64 @@ Agent Plugins が必須とする `$schema` キーを受け付けません (`miss
 codex plugin marketplace add nguyenhx2/agent-harness-bootstrap
 ```
 
-続いて Codex CLI で `/plugins` を開き、`harness-bootstrap`、`spec-builder`、または両方をインストールします。
-マーケットプレイスは Codex がリポジトリから読むパスである `.agents/plugins/marketplace.json` にあり、その
-エントリは `plugins/` 配下のプラグインディレクトリを指しています。
+そのあと Codex CLI で `/plugins` を開き、`harness-bootstrap`、`spec-builder`、または両方をインストールします。
 
 ## Cursor とその他の Agent Plugins クライアント
 
-`plugins/` 配下のディレクトリは Agent Plugins 1.1.0 のパッケージです。プラグインのルートに `plugin.json` があり、
-スキルは `skills/` の下にあります。Cursor はローカルのプラグインをフォルダー単位で読み込むので、このリポジトリを
-クローンし、プラグインのディレクトリを Cursor のローカルプラグインフォルダーにコピー (またはリンク) します:
+`plugins/` の下の各ディレクトリは Agent Plugins 1.1.0 のパッケージです。ルートに `plugin.json`、`skills/` の下に
+スキルがあります。Cursor はローカルのプラグインをフォルダー単位で読み込みます。
 
 ```bash
 git clone https://github.com/nguyenhx2/agent-harness-bootstrap
 cp -r agent-harness-bootstrap/plugins/harness-bootstrap ~/.cursor/plugins/local/
 ```
 
-その後ウィンドウを再読み込みします。標準がマニフェストのパスと `skills/` の位置の両方を定めているので、他の
-Agent Plugins クライアントが使うのも同じディレクトリです。
+そのあとウィンドウを再読み込みします。ほかの Agent Plugins クライアントも同じディレクトリを使います。
 
-**どこまで検証したか:** 3 つの経路すべてを実際のクライアントで試しました。
-
-- **Claude Code** (`claude` 2.x): このリポジトリから両方のプラグインをインストールし、クライアントは
-  `harness-bootstrap 1.15.0`、Skills (1) と報告しました。
-- **Codex** (`codex-cli` 0.148.0): マーケットプレイスを追加し、両方のプラグインをインストールして、インストール後に
-  `~/.codex/plugins/cache/.../skills/<skill>/` の中に `SKILL.md` があることを確認しました。以前の構成で
-  黙って失敗していたのはこの部分です。
-- **Cursor** (`cursor-agent` 2026.08.11): 生成した Agent Plugins のツリーを `--plugin-dir` で読み込み、エージェントが
-  スキルを利用できることを確認しました。テストには生成したツリーを一意な名前にしたコピーを使いました。両方の
-  スキルがテスト機にグローバルにもインストールされており、そうしなければそちらが代わりに応答してしまうためです。
-
-この検証で本物の不具合が 3 つ見つかり、修正済みです。`policy.installation` はもっともらしく見える `user` では
-なく `AVAILABLE` でなければならないこと。マーケットプレイスのソースパスは `marketplace.json` のあるディレクトリ
-からではなく、リポジトリのルートから解決されること (`./plugins/...`)。そして `.codex-plugin/plugin.json` には
-明示的な `skills` パスと `interface` ブロックが必要で、ないとインストールが拒否されることです。
-
-## スキルを呼び出す
-
-インストールしたら、名前空間つきの形でスキルを呼び出します:
+## スキルの呼び出し
 
 ```
 /harness-bootstrap:harness-bootstrap
 /spec-builder:spec-builder
 ```
 
-zip からインストールしたときと同じく、Claude は各スキルの `SKILL.md` の説明にあるトリガーフレーズからも
-自動でスキルを起動します。
+zip からインストールした場合と同じく、各スキルは `SKILL.md` の description にあるトリガーの語句でも起動します。
 
-## 更新する
+## 更新
 
 ```bash
 /plugin update harness-bootstrap@agent-harness-bootstrap
 /plugin update spec-builder@agent-harness-bootstrap
 ```
 
-どちらのプラグインにも自前の `plugin.json` はないので、更新を決めるのは各マーケットプレイスエントリ
-(`.claude-plugin/marketplace.json`) の `version` フィールドです。利用者に更新が届くのは、このフィールドが
-上がったときだけです。2 つのスキルは一つのリポジトリバージョンでまとめてリリースされるので、両方の
-マーケットプレイスエントリはリリースのたびに揃って上がります (`docs/RELEASING.md` を参照)。
+Claude Code のプラグインには自前の `plugin.json` がないので、更新を提示するかどうかは
+`.claude-plugin/marketplace.json` の各エントリの `version` フィールドで決まります。両方のエントリはリリースごとに
+上がり、上げ忘れたリリースは `validate_release.py` が失敗させます ([`RELEASING.ja.md`](RELEASING.ja.md) を参照)。
 
-## プラグインの経路と zip の経路
+## プラグインの経路か zip の経路か
 
-どちらも並行してサポートしており、今後もそのままです:
+| | プラグイン | zip |
+|---|---|---|
+| インストール | クライアントのプラグインコマンド | `.claude/skills/` に展開 |
+| 更新 | クライアントから必要なときに | 手でファイルを置き換える |
+| ネットワーク | このリポジトリへのアクセスが必要 | オフラインで動く |
+| 版 | マーケットプレイスのエントリ | アーカイブの `VERSION` ファイルに固定 |
 
-- **プラグインの経路**: `claude` CLI の `/plugin` コマンドで管理し、必要なときに更新でき、このリポジトリへの
-  ネットワークアクセスが必要です。
-- **zip の経路**: GitHub Releases からリリースのアーカイブをダウンロードして `.claude/skills/` に展開します。
-  オフラインで動き、ファイルを置き換えるまで正確なバージョンに固定されます。
+どちらの経路も廃止の予定はありません。
 
-どちらかを廃止して他方に寄せる予定はありません。自分のワークフローに合う方を選んでください。
+`tools/harness-view` の Rust バイナリはプラグインではありません。GitHub Releases から自分のプラットフォーム用を
+ダウンロードしてください。
 
-## 対象外のもの
+## どこまで検証したか
 
-単体の Rust バイナリである `tools/harness-view` は、プラグインとしては配布しません。zip と同じく、GitHub
-Releases から各プラットフォーム用のバイナリをダウンロードしてください。
+この構成を導入したときに、3 つの経路すべてを実際のクライアントで試しました。
+
+- **Claude Code** (`claude` 2.x): 両方のプラグインをインストールし、クライアントがスキルの読み込みを報告。
+- **Codex** (`codex-cli` 0.148.0): 両方のプラグインをインストールし、`~/.codex/plugins/cache/.../skills/<skill>/` に
+  `SKILL.md` があることを確認。以前の構成では、ここが黙って欠けていました。
+- **Cursor** (`cursor-agent` 2026.08.11): 生成したツリーを `--plugin-dir` で読み込み。グローバルにインストール済みの
+  スキルが代わりに答えないよう、名前を変えたコピーを使いました。
+
+このとき見つかった 3 つの欠陥はすべて修正済みです。`policy.installation` は `AVAILABLE` でなければならない。
+マーケットプレイスのソースパスはリポジトリのルートから解決される (`./plugins/...`)。`.codex-plugin/plugin.json` には
+明示的な `skills` パスと `interface` ブロックが必要。

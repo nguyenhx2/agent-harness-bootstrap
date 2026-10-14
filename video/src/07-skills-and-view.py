@@ -283,7 +283,7 @@ class SkillsAndView(Scene):
         funcs = [
             ("Flow / Graph", "every wire, read off disk"),
             ("Assess", "a score, and what is wrong"),
-            ("Toggle", "switch any rule or hook off"),
+            ("Toggle", "switch parts off, safely"),
             ("Watch", "re-scan as files change"),
         ]
         cards = VGroup()
