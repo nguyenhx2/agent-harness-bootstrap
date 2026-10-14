@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.20.1
+
+The hooks, run inside real Claude Code sessions for the first time, had four holes that scripted
+payloads could not show: git global options walked past the commit and destructive-command guards,
+the verification ledger was silently off under Windows PowerShell 5.1, a guard that timed out let
+its command run, and protect-secrets ignored the PowerShell tool. All four are fixed and re-verified
+live. The guardrail eval now runs the ps1 flavour under the same Windows PowerShell the settings
+call, and runs .sh hooks through Git Bash rather than the WSL launcher Windows resolves first.
+
 ## v1.20.0
 
 A harness that fits the repo's purpose, and proportion that is enforced rather than described.

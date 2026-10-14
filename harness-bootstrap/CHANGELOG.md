@@ -6,6 +6,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.20.1] - 2026-10-14
+
+Fixes found by running the hooks inside real Claude Code sessions (`claude -p`), not only by piping
+scripted payloads into them.
+
+### Fixed
+
+- **Git global options walked past four guards.** `git -c k=v commit`, `git -C . commit` and
+  `git --git-dir .git push --force` skipped guard-main-commit, check-commit-msg, guard-destructive and guard-large-file. A commit landed on main live.
+- **The verification ledger was off in the Windows flavour.** Windows PowerShell 5.1 prefixed the
+  payload with a BOM, `json.loads` failed and every dispatch was allowed. Fixed in the hook and in `verify-plan.py`; an unreadable payload now blocks.
+- **Guards failed open under load.** A blocking guard that timed out let `Remove-Item -Recurse
+  -Force .` run. The 18 blocking handlers now carry `onFailure: "block"` (Claude Code 2.1.295+) and a 30 s timeout.
+- **protect-secrets never saw the PowerShell tool,** so `Get-Content .env` there was not checked.
+
+### Changed
+
+- The git-only guards register with `"if": "Bash(*git *)"`, so a plain `ls` starts 2 hook processes
+  instead of 4 on a default harness. Wall time is unchanged: hooks run in parallel and the slowest one decides.
+
 ## [1.20.0] - 2026-10-14
 
 The harness now fits the repo's purpose and enforces proportion instead of describing it. A

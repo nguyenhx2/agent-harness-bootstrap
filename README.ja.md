@@ -11,7 +11,7 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="ライセンス: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval ワークフロー"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-250%2F250%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 250/250 ケース"></a>
+  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-266%2F266%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 266/266 ケース"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="フック 26 本"></a>
 </p>
@@ -162,7 +162,7 @@ python scripts/check_numbers.py     # 公開している数値がすべてスク
 
 ガードレール評価は、フックの系統 (`.sh` と `.ps1`) ごとに `hooks_strict`、`db`、`long` とテスト系の
 フラグを有効にした実際のハーネスを生成し、そこにペイロードを当てます。結果は系統ごとに 250/250
-(101 must-block、149 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
+(110 must-block、156 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
 通すことです。エージェントの振る舞いや、既定の構成は測っていません。ケース一覧: [`eval/README.md`](eval/README.md)。
 ベンチマークの注意点: [`benchmark/RESULTS.md`](benchmark/RESULTS.md)。
 

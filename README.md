@@ -11,7 +11,7 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval workflow"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-250%2F250%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 250/250 cases per hook flavour, on a strict scaffold"></a>
+  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-266%2F266%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 266/266 cases per hook flavour, on a strict scaffold"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="26 hooks"></a>
 </p>
@@ -170,8 +170,8 @@ python scripts/check_numbers.py     # every published figure matches its script
 ```
 
 The guardrail eval scaffolds a real harness per hook flavour (`.sh` and `.ps1`) with `hooks_strict`,
-`db`, `long` and the test flags on, then fires payloads at it: 250/250 per flavour (101 must-block,
-149 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
+`db`, `long` and the test flags on, then fires payloads at it: 266/266 per flavour (110 must-block,
+156 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
 does not measure agent behaviour or a default scaffold. Cases: [`eval/README.md`](eval/README.md).
 Benchmark caveats: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 

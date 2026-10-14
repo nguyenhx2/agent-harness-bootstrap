@@ -192,7 +192,7 @@ need it (`harness-bootstrap/assets/claude/hooks/README.md` has the full table):
 | After an edit | a changed spec, a stale graph, a broken link, an unsourced research claim | reminds |
 
 **The strongest claim in the talk:** `eval/guardrail_eval.py` scaffolds a real harness and fires 250
-payloads at it per hook flavor: 101 must-block, 149 must-allow, 250/250 correct, on a harness scaffolded
+payloads at it per hook flavor: 110 must-block, 156 must-allow, 266/266 correct, on a harness scaffolded
 with the strict hooks, the long-session hooks and the database guard on (`hooks_strict`, `long`, `db`).
 No model is consulted: the guardrails are shell scripts, so the result cannot depend on the model. *"A cheap model cannot commit a secret. Not because it knows
 better, but because the hook exits 2 and the tool call never happens."* Then the honest limit: this
@@ -272,7 +272,7 @@ Every figure comes from a script and `scripts/check_numbers.py` fails CI if a do
 | Write path (bytes the model must author) | 95,064 | 9,439 | -90% |
 
 - 73% of rule content kept out of the default session
-- Guardrail eval 250/250 (`hooks_strict`, `long`, `db` on), no model consulted
+- Guardrail eval 266/266 (`hooks_strict`, `long`, `db` on), no model consulted
 - Scaffold ~0.2s, and a re-run reports `KEPT` for every file
 
 Byte counts are exact; token and cost figures are modelled at 3.6 chars per token.
@@ -326,7 +326,7 @@ Checked by `scripts/check_numbers.py`; re-run it rather than editing a figure by
 
 - 18 agents (+1 dev-agent template), 17 rules, 23 commands, 26 hooks
 - 7 unconditional rules, 10 path-scoped; 73% of rule content stays out of the default session
-- Guardrail eval 250/250 (101 must-block, 149 must-allow) with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 32/32
+- Guardrail eval 266/266 (110 must-block, 156 must-allow) with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 32/32
 - Four routing tiers: Inline, Direct, Standard, Guarded - only Guarded uses the orchestrator
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Four modes: Greenfield, Brownfield, Audit, Update

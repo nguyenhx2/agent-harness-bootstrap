@@ -73,7 +73,7 @@ sys.stdout.write("\0".join(out) + "\0")
 ' "${keys[@]}" 2>/dev/null
     )
   else
-    echo "guard-agent-spawn: no jq/perl/python3 available to parse the hook payload; allowing." >&2
+    echo "guard-agent-spawn: no jq/perl/python3 available to parse the hook payload; the dispatch is checked without its fields and is likely refused. Install one of them." >&2
   fi
   local i
   for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done

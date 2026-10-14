@@ -7,9 +7,9 @@ into `.claude/settings.json`). The two flavors are behaviorally equivalent by co
 | Hook | Event | Matcher | Blocks / does | Flavor note |
 |------|-------|---------|---------------|-------------|
 | `protect-adr` | PreToolUse | `Edit\|Write` | Edits to an ADR whose on-disk `status: Accepted`. ADRs are immutable - supersede with a new one. | Both resolve `file_path` against payload `cwd`. |
-| `guard-main-commit` | PreToolUse | `Bash` | `git commit` / `git push` while the effective branch is `{{DEFAULT_BRANCH}}` or `master`. Resolves the target dir from `cd` / `git -C` so worktrees don't misfire. | Both resolve relative target dirs against payload `cwd`. |
-| `check-commit-msg` | PreToolUse | `Bash` | A `git commit -m` subject that violates conventional-commits: bad type, >72 chars, trailing period, uppercase description. | PS **must** use `-cmatch`/`-cnotmatch`; bash `grep -E` is case-sensitive already. Plain `-match` silently passes `Feat:`. |
-| `protect-secrets` | PreToolUse | `Read\|Edit\|Write\|Bash` | Reads/edits of `.env*` (except `.env.example`), `*.pem/key/pfx/p12`, `secrets?/` + `credentials?/` dirs, service-account JSON; shell commands that read/copy `.env`; destructive DB commands (`{{DB_RESET_PATTERN}}`). | Parity-locked: identical globs, command patterns and block conditions in both flavors. Matching is case-INSENSITIVE on purpose (`-match` / `grep -Ei`). |
+| `guard-main-commit` | PreToolUse | `Bash`, `PowerShell` (`if` `*git *`) | `git commit` / `git push` - also behind git global options (`-c k=v`, `-C dir`, `--no-pager`, `--git-dir`, `--work-tree`) - while the effective branch is `{{DEFAULT_BRANCH}}` or `master`. Resolves the target dir from `cd` / `git -C` so worktrees don't misfire. | Both resolve relative target dirs against payload `cwd`. |
+| `check-commit-msg` | PreToolUse | `Bash`, `PowerShell` (`if` `*git *`) | A `git commit -m` subject (global options before `commit` included) that violates conventional-commits: bad type, >72 chars, trailing period, uppercase description. | PS **must** use `-cmatch`/`-cnotmatch`; bash `grep -E` is case-sensitive already. Plain `-match` silently passes `Feat:`. |
+| `protect-secrets` | PreToolUse | `Read\|Edit\|Write\|Bash\|PowerShell` | Reads/edits of `.env*` (except `.env.example`), `*.pem/key/pfx/p12`, `secrets?/` + `credentials?/` dirs, service-account JSON; shell commands that read/copy `.env`; destructive DB commands (`{{DB_RESET_PATTERN}}`). | Parity-locked: identical globs, command patterns and block conditions in both flavors. Matching is case-INSENSITIVE on purpose (`-match` / `grep -Ei`). |
 | `guard-agent-spawn` | PreToolUse | `Agent\|Task` | Four checks on every subagent dispatch: 1) roster membership - `subagent_type` must have a `.claude/agents/<type>.md` or be on the `spawn-allowlist`; 2) model pinning - a spawn cannot override a roster seat's `model:`; 3) task linkage - a write-capable seat (`Edit`/`Write` in `tools:`) must name a registered `TASK-NNN` in the dispatch prompt; 4) the verification ledger (`verify-plan.py --dispatch-check`, see below) - no re-run on content that passed, at most two dispatches of a seat on one content with no result, two review rounds, no identical brief, and a per-task dispatch budget. | Allowlist is `.claude/hooks/spawn-allowlist` (one type per line, `#` comments); ships with `Explore` and `Plan`. |
 | `guard-agent-scope` | PreToolUse | `Edit\|Write` | Nothing - **advisory, not enforced**. The Edit/Write payload names no calling subagent (see the hook's header and "Gotchas" below), so it cannot block a write to a module a different seat owns. Instead it emits `additionalContext` when a write falls outside the sole Active task's declared "Related files and modules" AND the target module's owner (`.claude/state/code-graph.json`) differs from the task's `owner:`. Silent whenever the picture is ambiguous. | Non-blocking, always exit 0. Needs perl or python3 for the graph comparison; jq alone cannot express it (same call as `agent-history`'s transcript parsing). |
 | `specs-reminder` | PostToolUse | `Edit\|Write` | Nothing. Emits `additionalContext` when `docs/specs/` changes: update `13-revision-history.md`, sync the PRD. | Non-blocking, always exit 0. |
@@ -97,14 +97,44 @@ scaffold or a hand edit brings a disabled hook back, `harness-toggle.py reapply`
 ## Contract
 
 - Payload arrives as JSON on **stdin**. Signal by **exit code**: `2` = BLOCK, with the reason on
-  **stderr** (that text is what Claude sees and acts on); `0` = allow. Any other code is ignored.
-- Fast (< 1s), no network, plain-ASCII messages. Blocking hooks have no side effects.
-- Fail **open**, never closed: an unparseable payload or a missing dependency exits 0 - the
-  `settings.json` deny rules and `rules/agent-guardrails.md` remain the backstop. **One deliberate
-  exception**: `guard-agent-spawn` refuses a dispatch whose payload it cannot read, because an
-  unreadable spawn cannot be shown to name a roster seat, and letting an unverifiable spawn through
-  is precisely the thing that hook exists to stop. The eval pins this so it stays a decision rather
-  than an accident.
+  **stderr** (that text is what Claude sees and acts on); `0` = allow. Any other code is a hook
+  FAILURE - see the next point for what that does.
+- **Requires Claude Code 2.1.295 or later** for `onFailure` (the version the hooks docs name).
+  Use 2.1.295+ for these registrations; an older version is expected to treat both fields as
+  absent - fail-open guards, `if` not applied - but that has not been verified release by
+  release, so do not rely on it.
+- **A blocking guard fails CLOSED when the guard itself fails.** Every guard whose job is to block
+  is registered with `"onFailure": "block"` and `"timeout": 30`: a timeout, a crash or any exit
+  other than 0/2 now blocks the call instead of waving it through. This was found live: under
+  load a `.ps1` guard took 13.2 s, hit the old 10 s timeout, and `Remove-Item -Recurse -Force .`
+  ran. Fail-closed guards: `protect-adr`, `guard-task-scope`, `guard-board`, `protect-secrets`,
+  `protect-repos`, `guard-main-commit`, `check-commit-msg`, `guard-destructive`,
+  `guard-agent-spawn`, and the strict blockers `guard-large-file`, `guard-egress`, `guard-deps`,
+  `guard-migration`, `secret-guard` (on UserPromptSubmit) and `guard-config`. Advisory hooks,
+  loggers, `rtk-rewrite` and the cost guards (`retry-budget`) stay fail-open: a broken reminder
+  must never stop work. (`onFailure` has no effect on Stop/SubagentStop, so `stop-evidence` is
+  unaffected.) The eval's contract suite fails if a blocking guard loses the field or an
+  advisory hook gains it.
+- **A missing tool is not a failure.** When a bash guard finds no jq, perl or python3 to parse its
+  payload, it prints a warning and exits 0. That is deliberate: a missing interpreter would
+  otherwise turn every guard into a wall that blocks all work, and a harness that blocks
+  everything gets switched off. The `settings.json` deny rules and the rules files remain the
+  backstop. **One deliberate exception**: `guard-agent-spawn` refuses a dispatch whose payload it
+  cannot read, because an unreadable spawn cannot be shown to name a roster seat, and letting an
+  unverifiable spawn through is precisely the thing that hook exists to stop. The eval pins this
+  so it stays a decision rather than an accident.
+- Fast, no network, plain-ASCII messages. Blocking hooks have no side effects.
+- **`if` keeps cheap calls cheap.** A handler with `"if": "<permission rule>"` only starts when the
+  tool call matches. The git-only guards (`guard-main-commit`, `check-commit-msg`,
+  `guard-large-file`) carry `Bash(*git *)` / `PowerShell(*git *)`, one handler per tool (an `if`
+  rule names one tool). The leading `*` is deliberate: `Bash(git *)` would match
+  `git -c k=v commit` and `cd x && git commit` (Claude Code checks each subcommand) but NOT
+  `env git commit` or `rtk git commit` - `env` and `rtk` are not among the wrappers Claude Code
+  strips - and the guards exist to catch both. `if` is best-effort: when Claude Code cannot parse
+  a command it runs the hook anyway, which is the safe direction. `guard-destructive` and
+  `protect-secrets` carry no `if`: they must see every command. Effect on a plain `ls` through
+  the Bash tool: 4 hook processes -> 2 in a default harness, 9 -> 6 with `hooks_strict`, `long`
+  and `rtk`.
 
 ## Env files: what a seat may read, and how
 

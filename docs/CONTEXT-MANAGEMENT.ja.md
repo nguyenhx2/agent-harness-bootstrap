@@ -426,7 +426,7 @@ python .claude/scripts/task.py check
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`、`hooks/README.md` - SubagentStop のアーカイブ。
 - `harness-bootstrap/reference/cost-model.md` - パススコープのルール、バイトの安定性、`maxTurns`。
 - `benchmark/RESULTS.md` - 73% という数字。
-- `eval/guardrail_eval.py` - `hooks_strict`、`long`、`db` を有効にしたハーネスでの 250/250 (フラグの組は
+- `eval/guardrail_eval.py` - `hooks_strict`、`long`、`db` を有効にしたハーネスでの 266/266 (フラグの組は
   スクリプトの `VARS`)。
 - `docs/ASSESSMENT.md` - 何が強制され、何が助言にとどまるか、なぜルーティングはフックにできないか。
 

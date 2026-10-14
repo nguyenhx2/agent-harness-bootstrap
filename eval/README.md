@@ -4,7 +4,7 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **250/250 correct (101 must-block, 149 must-allow).**
+`python eval/guardrail_eval.py` -> **250/250 correct (110 must-block, 156 must-allow).**
 
 **What that figure measures.** The eval scaffolds one harness and fires every payload at it, and that
 harness has particular flags on: the `VARS` block at the top of `guardrail_eval.py` is the
@@ -25,7 +25,7 @@ item name, and both graph scripts surviving a malformed `code-graph.json`. See
 [What changed](#what-changed).
 
 Pass `--flavor ps1` to ALSO run the identical payloads through the `.ps1` hooks (Windows parity),
-for **500/500** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+for **532/532** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.

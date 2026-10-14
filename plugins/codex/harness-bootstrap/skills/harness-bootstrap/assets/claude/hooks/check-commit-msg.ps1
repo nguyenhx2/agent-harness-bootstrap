@@ -21,7 +21,12 @@ try {
 
 $cmd = $payload.tool_input.command
 if (-not $cmd) { exit 0 }
-if ($cmd -notmatch '(^|[^a-zA-Z0-9_.-])git\s+commit\b') { exit 0 }
+# git GLOBAL options may sit between `git` and `commit` (`git -c k=v commit`, `git -C . commit`,
+# `git --no-pager commit`, `git --git-dir=.git commit`). Same shape as the bash twin's GIT_PREFIX.
+$gitVal = '(?:[^\s"'']*(?:"[^"]*"|''[^'']*''))+[^\s"'']*|\S+'
+$gitOpt = "-[cC]\s+(?:$gitVal)|--(?:git-dir|work-tree|namespace|config-env)\s+(?:$gitVal)|--[a-z-]+=(?:$gitVal)|-\S+"
+$gitPrefix = "(?:^|[^a-zA-Z0-9_.-])git(?:\s+(?:$gitOpt))*\s+"
+if ($cmd -notmatch ($gitPrefix + 'commit\b')) { exit 0 }
 if ($cmd -match '--amend' -and $cmd -match '--no-edit') { exit 0 }
 
 # AI-attribution trailers, checked FIRST and against the RAW command.

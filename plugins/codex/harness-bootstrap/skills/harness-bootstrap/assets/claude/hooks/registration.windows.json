@@ -6,7 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-adr.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-adr.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
@@ -14,11 +16,15 @@
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-task-scope.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-task-scope.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-board.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-board.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -27,20 +33,47 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-main-commit.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-main-commit.ps1",
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/check-commit-msg.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/check-commit-msg.ps1",
+            "if": "Bash(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
       {
-        "matcher": "Read|Edit|Write|Bash",
+        "matcher": "PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-secrets.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-main-commit.ps1",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/check-commit-msg.ps1",
+            "if": "PowerShell(*git *)",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protect-secrets.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -49,7 +82,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-destructive.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-destructive.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       },
@@ -58,7 +93,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-agent-spawn.ps1"
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/guard-agent-spawn.ps1",
+            "timeout": 30,
+            "onFailure": "block"
           }
         ]
       }

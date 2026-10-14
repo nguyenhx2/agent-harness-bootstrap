@@ -36,8 +36,17 @@ payload=$(cat)
 cmd=$(json_str tool_input.command)
 [ -z "$cmd" ] && exit 0
 
+# git GLOBAL options may sit between `git` and the subcommand - `git -c k=v commit`,
+# `git -C . commit`, `git --no-pager commit`, `git --git-dir=.git commit`, `git --work-tree x push`.
+# A pattern that required `git\s+commit` let every one of those through, and a live session
+# committed to the default branch that way. GIT_PREFIX accepts any run of global options, with
+# values bare, quoted, or carrying a quoted part (-c user.name="A B"). Same shape in the .ps1 twin.
+SQ="'"
+GIT_VAL="([^[:space:]\"${SQ}]*(\"[^\"]*\"|${SQ}[^${SQ}]*${SQ}))+[^[:space:]\"${SQ}]*|[^[:space:]]+"
+GIT_OPT="-[cC][[:space:]]+(${GIT_VAL})|--(git-dir|work-tree|namespace|config-env)[[:space:]]+(${GIT_VAL})|--[a-z-]+=(${GIT_VAL})|-[^[:space:]]+"
+GIT_PREFIX="(^|[^a-zA-Z0-9_.-])git([[:space:]]+(${GIT_OPT}))*[[:space:]]+"
 # POSIX ERE has no portable \b (BSD grep on macOS), so the trailing boundary is hand-rolled.
-printf '%s' "$cmd" | grep -Eq '(^|[^a-zA-Z0-9_.-])git[[:space:]]+commit([^a-zA-Z0-9_-]|$)' || exit 0
+printf '%s' "$cmd" | grep -Eq -e "${GIT_PREFIX}commit([^a-zA-Z0-9_-]|\$)" || exit 0
 if printf '%s' "$cmd" | grep -q -- '--amend' && printf '%s' "$cmd" | grep -q -- '--no-edit'; then exit 0; fi
 
 # AI-attribution trailers, checked FIRST and against the RAW command.

@@ -77,6 +77,8 @@ for k in sys.argv[1:]:
 sys.stdout.write("\0".join(out) + "\0")
 ' "${keys[@]}" 2>/dev/null
     )
+  else
+    echo "guard-config: no jq/perl/python3 available to parse the hook payload; allowing. Deliberate: a missing tool degrades this guard to a warning, never to blocking every call." >&2
   fi
   local i
   for ((i = ${#JF[@]}; i < ${#keys[@]}; i++)); do JF+=(""); done
