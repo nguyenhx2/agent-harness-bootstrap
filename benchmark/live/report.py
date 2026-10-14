@@ -375,7 +375,9 @@ def _self_test(a: dict, h: dict) -> list[str]:
         (h["unsafe_git_sessions"]["bare"], None),
         ("risky-git" in a, False),
     ]
-    return [f"check {i}: got {g!r}, want {w!r}" for i, (g, w) in enumerate(want) if g != w]
+    # Index only: the headline keys include `secret_leaks`, and a count printed next to that
+    # name reads to a scanner as a secret in the log. The index is enough to find the check.
+    return [f"check {i} failed" for i, (g, w) in enumerate(want) if g != w]
 
 
 def run_self_test() -> int:

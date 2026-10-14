@@ -1327,7 +1327,10 @@ function ann(s){
 }
 // A plain string is language-neutral (a seat name, a figure); an object carries en/vi/ja.
 const L = o => ann(typeof o === 'string' ? o : ((o && (o[lang] ?? o.en)) || ''));
-const attr = s => String(s).replace(/<[^>]*>/g,'').replace(/"/g,'&quot;');
+// Markup is stripped for a plain-text attribute, then every remaining special character is
+// escaped, so a stray "<" left by a partial tag can never reopen an element.
+const attr = s => String(s).replace(/<[^>]*>/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 const SQUIG = `<svg class="squig"><use href="#i-squig"/></svg>`;
 
