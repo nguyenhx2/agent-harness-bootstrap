@@ -14,14 +14,15 @@ The check a renderer can actually make is provenance, not pixels: an artifact is
 scene source changed after the artifact was last produced from it. This records the source hash
 in `video/RENDERED.json` at render time and compares it here.
 
-What this does NOT catch, stated plainly rather than implied:
+The only clip left is the narrated intro, whose scene source is `video/intro/SCRIPT.md` (and
+`SCRIPT.ja.md` for the Japanese render): every spoken line, every caption and the generated block of
+on-screen figures live there. The Manim clips and their HTML twins were retired, 01 to 06 in
+v1.21.0 and 07 in v1.21.1, and with them the shared Manim theme this script used to warn about.
 
-  - A figure that is wrong in the SOURCE too. That is `check_numbers.py`'s job, and it reads
-    these sources - `video/src/**.py` is in its search set.
-  - A change to `theme.py` or `jatheme.py`. Those alter every frame of every clip, and hashing
-    them here would demand a re-render of every Manim clip for one colour tweak. A palette change does
-    not make a published number false, which is the failure this gate exists to stop. Re-render
-    deliberately after a theme change; `video/README.md` says so.
+What this does NOT catch, stated plainly rather than implied: a figure that is wrong in the SOURCE
+too. That is `check_numbers.py`'s job, and it reads both scripts like any other markdown file. Nor
+does it hash the composition (`video/intro/src/*.tsx`) or the cached audio: a layout or voice change
+cannot make a published number false, which is the failure this gate exists to stop.
 
 This script had no self-test: its ability to fail was proven once by hand, then never again -
 the "green and useless" failure mode `check_numbers.py` and `check_svg.py` both guard against,
@@ -48,17 +49,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "video/RENDERED.json"
 
 # artifact (relative to ROOT) -> the scene source it is rendered from.
-# The Manim clips still shipped. 01 to 06 were retired in v1.21.0: the narrated intro covers their
-# story, and three of them described a harness-bootstrap that no longer exists.
-CLIPS = ["07-skills-and-view"]
-
-
 def pairs() -> dict[str, str]:
     """Every shipped artifact mapped to the scene source that produces it."""
     out: dict[str, str] = {}
-    for name in CLIPS:
-        out[f"video/mp4/{name}.mp4"] = f"video/src/{name}.py"
-        out[f"video/mp4/ja/{name}.mp4"] = f"video/src/ja/{name}.py"
     # The Remotion intro. Its scene source is SCRIPT.md, not the .tsx: the script carries every
     # spoken line, every caption, and the generated block of on-screen figures that
     # video/intro/derive_figures.py writes - so a figure that moves in the repo moves this file,
@@ -83,28 +76,11 @@ def load() -> dict[str, str]:
     return json.loads(MANIFEST.read_text(encoding="utf-8")).get("rendered_from", {})
 
 
-THEMES = ("video/src/theme.py", "video/src/ja/theme.py")
-
-
-def theme_digest() -> str:
-    """One hash over every shared theme file that exists. -> "" when none do."""
-    h = hashlib.sha256()
-    seen = False
-    for rel in THEMES:
-        f = ROOT / rel
-        if f.is_file():
-            h.update(rel.encode("utf-8"))
-            h.update(f.read_bytes())
-            seen = True
-    return h.hexdigest() if seen else ""
-
-
 def save(data: dict[str, str]) -> None:
     body = {
         "comment": "sha256 of the scene source each shipped clip was last rendered from. "
                    "Written by scripts/check_media.py --update, verified by the same script.",
         "version": 1,
-        "theme": theme_digest(),
         "rendered_from": dict(sorted(data.items())),
     }
     MANIFEST.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -173,11 +149,11 @@ def self_test() -> list[str]:
     with tempfile.TemporaryDirectory() as td:
         root = pathlib.Path(td)
         (root / "video/mp4").mkdir(parents=True)
-        (root / "video/src").mkdir(parents=True)
+        (root / "video/intro").mkdir(parents=True)
 
-        art_a, src_a = "video/mp4/a.mp4", "video/src/a.py"
-        art_b, src_b = "video/mp4/b.mp4", "video/src/b.py"
-        art_c, src_c = "video/mp4/c.mp4", "video/src/c.py"
+        art_a, src_a = "video/mp4/a.mp4", "video/intro/a.md"
+        art_b, src_b = "video/mp4/b.mp4", "video/intro/b.md"
+        art_c, src_c = "video/mp4/c.mp4", "video/intro/c.md"
 
         (root / src_a).write_text("scene a", encoding="utf-8", newline="\n")
         (root / art_a).write_bytes(b"fixture a")
@@ -240,22 +216,6 @@ def main(argv: list[str]) -> int:
     if stale or missing:
         print(f"\n  {len(stale) + len(missing)} stale, {ok} current.")
         return 1
-
-    # The theme is reported, not enforced, and the difference is deliberate. Hashing it INTO each
-    # clip's provenance would fail the build for a one-colour tweak and demand a re-render of all of them,
-    # which is the trade this gate documents refusing. But going silent is its own failure: the
-    # whole palette was moved onto the landing page's tokens, every shipped clip became a
-    # different drawing from its source, and nothing here had anything to say about it. A warning
-    # costs nothing and is the difference between a known gap and an invisible one.
-    recorded_theme = json.loads(MANIFEST.read_text(encoding="utf-8")).get("theme", "") \
-        if MANIFEST.is_file() else ""
-    now = theme_digest()
-    if recorded_theme and now and recorded_theme != now:
-        print(f"  WARN  {' and '.join(t for t in THEMES if (ROOT / t).is_file())} changed since")
-        print("        these clips were rendered. Every frame of every clip is drawn from it, so")
-        print("        they no longer look like their source. Nothing here fails on that - a")
-        print("        palette does not make a published number false - but re-render before")
-        print("        shipping, then: python scripts/check_media.py --update <artifact>")
 
     print(f"  ok    {ok} clips, each rendered from the source that ships beside it")
     return 0

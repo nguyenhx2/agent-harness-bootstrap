@@ -20,7 +20,7 @@ The page leads with the idea - give an AI agent a repo it can actually understan
 it cannot escape - and lets the intro clip carry it before anything is explained. Then it earns
 the claim, mechanism first, and only then asks the visitor to install:
 
-1. **The idea, in one clip** - `00-intro.mp4` inline; the one deeper clip (07, skills and the viewer) behind a disclosure.
+1. **The idea, in one clip** - `00-intro.mp4` inline, with a link to the intro's own page at `/video/`.
 2. **Does any of this sound familiar** - eight symptoms, each with what answers it.
 3. **What answers it** - the three pieces, then N1, the delivery net.
 4. **Process sized to the change** - N4, the four routing tiers; then verification planned from
@@ -44,10 +44,11 @@ better shown at the point of each claim, so each figure now names its script inl
 the colophon states the rule once. **"Where to go from here"** was a six-row link table whose rows
 had all become sections of this page or footer links; it survived as the footer nav.
 
-The video gallery was a separate page at `/video/`. Nobody had a reason to open it, so the clips
-are folded in here: the intro clip plays inline, the other seven sit behind a disclosure and preload
-nothing until it is opened. The `/video/` page still exists and still works; it is simply no longer
-the only place the clips are.
+The intro is the only clip the project ships. The Manim explainers (01 to 07) and their HTML
+animations were retired: every one had drifted from what the skills do, and what only 07
+covered (Skill Discovery and Skill Wire) is now said in the intro. So the disclosure of "deeper
+clips" is gone rather than emptied. The intro plays inline here, and `/video/` is that same clip
+given a page of its own, in both languages, not a gallery.
 
 ## Ink
 
@@ -124,6 +125,18 @@ link and the copy controls are never cut off.
 
 ## Components
 
+- **`.toc`** - the section navigation: one ordered list of the page's ten sections, numbered in
+  mono, then the deck and the intro page. From 64rem it is a sticky column of its own (15.5rem) left
+  of the sheet, the full height under the masthead, and the masthead spans both columns so the
+  brand sits over the list. Below 64rem it is a drawer under the masthead, opened by `.menu`.
+  The section being read carries `aria-current="true"`, set by an IntersectionObserver in
+  `src/main.js`, and is drawn as a 2px field-colour rule down the left edge: no fill, no card.
+- **`.menu`** - the drawer button, `hidden` in the markup and revealed by the script, so a page
+  without JavaScript never shows a button that does nothing; that page shows the list open under
+  the masthead instead. It carries `aria-expanded` and `aria-controls="toc"`. Opening moves focus to
+  the first section and keeps Tab inside the drawer; Escape, the scrim or the button close it and
+  return focus to the button; following a link closes it and leaves focus at the target. The page
+  behind does not scroll while it is open, and widening past 64rem closes it.
 - **`.masthead`** - sticky, hairline-bottomed, opaque. The outbound links never break mid-word; the
   product name may, because at 360px something has to give and it should not be the page width.
 - **`.hero__grid`** - the claim and its lede on the left, the four actions and the four-field
@@ -143,9 +156,8 @@ link and the copy controls are never cut off.
   reader's own voice, and what answers it. Three columns from 56rem, where two measures fit side by
   side; below that the icon keeps its column and the two paragraphs stack.
 - **`.pieces`** - the three parts, each under a 2px accent rule. Not cards: a rule and text.
-- **`.clips`** - the folded-in video gallery. The lead clip spans the grid and preloads metadata;
-  the seven behind `.more` carry `preload="none"`, so a disclosure nobody opens costs nothing.
-- **`.more`** - a `<details>` with its marker replaced by a rotating chevron.
+- **`.clips`** - the intro clip, inline, preloading metadata only. Its links open the MP4, the GIF
+  and the intro's own page.
 - **`.shot`** - a shipped screenshot with its caption. The two `docs/assets/harness-view-*.png`
   files are referenced relatively, carry their real intrinsic size so nothing shifts on load, and
   quote only the figures pinned in `docs/assets/CAPTURED.json`.

@@ -37,7 +37,7 @@
     <img src="video/gif/ja/00-intro.gif" alt="イントロ動画: エージェントを実務に使うチームが尋ねる問い (合ったチーム、無駄のない安全、キー、ループ、仕様、制御、評価) と、それぞれに答える仕組み" width="860">
   </a>
 </p>
-<p align="center"><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">字幕付きの全クリップ</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja">スライド</a></p>
+<p align="center"><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">チャプター付きのイントロ動画</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/?lang=ja">スライド</a></p>
 
 ## インストール
 

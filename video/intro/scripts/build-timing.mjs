@@ -16,12 +16,14 @@
 import {readFileSync, writeFileSync, existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
-import {HERE, AUDIO, LANGS, LEAD_IN, TAIL, gapBefore, readScript, narrationText, sha, alignmentFile, narrationFile} from './script.mjs';
+import {HERE, AUDIO, LANGS, LEAD_IN, TAIL, gapBefore, readScript, narrationText, sha, alignmentFile, narrationFile,
+  isQuestion, questionFile, questionText} from './script.mjs';
 
 const SCENE_LEAD = 0.35; // a scene's picture arrives just ahead of its first word
 const KEEP = 0.55; // the longest pause kept inside a scene, in seconds
 const SILENCE_DB = -40; // silencedetect threshold
 const SILENCE_MIN = 0.3; // shortest silence silencedetect reports
+const TURN = 0.25; // extra pause after a question, when the speaker changes
 
 // Mix targets, in LU relative to the voice. Under speech the music sits UNDER_SPEECH below the
 // voice; in the gaps between scenes, at the open and at the close it comes up to IN_GAPS below.
@@ -137,6 +139,17 @@ function build(lang, music) {
   // ---- the edit: silences from the cached file, shortened; scene gaps inserted.
   const voiceFile = narrationFile(lang);
   const sil = silences(voiceFile);
+
+  // The alignment is character-level, but it hands a pause to the character next to it: the voice
+  // (eleven_v3 especially) gives the silence before a cue to the cue's first letter, so the caption
+  // would land ~0.3 s before the word. Where the detected audio says otherwise, the audio wins: a cue
+  // starts where the silence before it ends, and ends where the silence after it begins.
+  for (const c of raw) {
+    const before = sil.find(([s0, e0]) => s0 <= c.s + 0.05 && e0 > c.s && e0 < c.s + 0.9);
+    if (before) c.s = before[1];
+    const after = sil.find(([s0, e0]) => s0 >= c.e - 0.5 && s0 <= c.e + 0.15 && e0 > s0);
+    if (after && after[0] > c.s) c.e = after[0];
+  }
   const firstWord = raw[0].s;
   const lastWord = raw.at(-1).e;
   const cuts = []; // [from, to] of original time removed
@@ -163,6 +176,40 @@ function build(lang, music) {
     inserts.push([at, gapBefore(s.id, n)]);
   });
 
+  // The questions: the narrator's reading of each quoted cue is cut out and the asker's recording,
+  // trimmed to its speech, takes its place. The pauses around it stay the narrator's own.
+  const asks = [];
+  for (const c of raw) {
+    if (!isQuestion(c.text)) continue;
+    const file = questionFile(lang, c.scene);
+    const want = sha(questionText(c.text));
+    if (!existsSync(file) || manifest.questions?.[lang]?.[c.scene]?.text_sha256 !== want) {
+      console.error(`  FAIL  ${lang}: the question for ${c.scene} is missing or stale. Regenerate it:`);
+      console.error(`        bash render.sh --generate questions ${lang}`);
+      process.exit(1);
+    }
+    const qs = silences(file);
+    const len = duration(file);
+    const lead = qs.find(([s0]) => s0 <= 0.02);
+    const tail = qs.find(([, e0]) => e0 >= len - 0.05);
+    const from = Math.max(0, (lead ? lead[1] : 0) - 0.03);
+    const to = Math.min(len, (tail ? tail[0] : len) + 0.03);
+    // A pause inside the narrator's question would have been shortened; it is gone with the rest.
+    for (let k = cuts.length - 1; k >= 0; k--) if (cuts[k][0] >= c.s && cuts[k][1] <= c.e) cuts.splice(k, 1);
+    cuts.push([c.s, c.e]);
+    inserts.push([c.s, to - from + TURN]); // a breath before the narrator answers
+    asks.push({cue: c, file, from, to, lufs: lufs(file)});
+  }
+  // A question cut can overlap a shortened pause next to it. map() subtracts every cut on its own, so
+  // overlapping cuts would remove the same time twice: merge them first.
+  cuts.sort((x, y) => x[0] - y[0]);
+  for (let k = cuts.length - 1; k > 0; k--) {
+    if (cuts[k][0] <= cuts[k - 1][1]) {
+      cuts[k - 1][1] = Math.max(cuts[k - 1][1], cuts[k][1]);
+      cuts.splice(k, 1);
+    }
+  }
+
   // Original time -> edited time (before LEAD_IN).
   const map = (t) => {
     let out = t;
@@ -183,20 +230,23 @@ function build(lang, music) {
     if (e0 - s0 < 0.02) continue;
     const mid = (s0 + e0) / 2;
     if (cuts.some(([c0, c1]) => mid > c0 && mid < c1)) continue;
-    segments.push({from: r(s0), to: r(e0), at: r(LEAD_IN + map(s0))});
+    segments.push({file: path.basename(voiceFile), from: r(s0), to: r(e0), at: r(LEAD_IN + map(s0)), gain: 1});
   }
+  // Each question plays where its insert opened, just before the narration resumes.
+  for (const q of asks) {
+    const D = q.to - q.from;
+    const at = LEAD_IN + map(q.cue.s) - D - TURN;
+    segments.push({file: path.basename(q.file), from: r(q.from), to: r(q.to), at: r(at), gain: q.lufs});
+    q.cue.at = at;
+    q.cue.D = D;
+  }
+  segments.sort((x, y) => x.at - y.at);
 
-  // The alignment is character-level, but it hands a pause to the character next to it: the voice
-  // (eleven_v3 especially) gives the silence before a cue to the cue's first letter, so the caption
-  // would land ~0.3 s before the word. Where the detected audio says otherwise, the audio wins: a cue
-  // starts where the silence before it ends, and ends where the silence after it begins.
-  for (const c of raw) {
-    const before = sil.find(([s0, e0]) => s0 <= c.s + 0.05 && e0 > c.s && e0 < c.s + 0.9);
-    if (before) c.s = before[1];
-    const after = sil.find(([s0, e0]) => s0 >= c.e - 0.5 && s0 <= c.e + 0.15 && e0 > s0);
-    if (after && after[0] > c.s) c.e = after[0];
-  }
-  const cues = raw.map((c) => ({scene: c.scene, text: c.text, start: r(LEAD_IN + map(c.s)), end: r(LEAD_IN + map(c.e))}));
+  const cues = raw.map((c) =>
+    c.at !== undefined
+      ? {scene: c.scene, text: c.text, start: r(c.at), end: r(c.at + c.D)}
+      : {scene: c.scene, text: c.text, start: r(LEAD_IN + map(c.s)), end: r(LEAD_IN + map(c.e))},
+  );
 
   // Speech intervals: the complement of the detected silences, mapped, merged across pauses shorter
   // than 0.45 s, so the music ducks under each phrase and breathes back up only in real gaps.
@@ -217,6 +267,15 @@ function build(lang, music) {
     if (cursor >= lastWord) break;
   }
   if (cursor < lastWord) pushRun(cursor, lastWord);
+  // The cut moved each question out of the narrator's runs; it is speech too, so the music ducks.
+  for (const q of asks) speech.push([q.cue.at, q.cue.at + q.cue.D]);
+  speech.sort((x, y) => x[0] - y[0]);
+  for (let k = speech.length - 1; k > 0; k--) {
+    if (speech[k][0] - speech[k - 1][1] < 0.45) {
+      speech[k - 1][1] = Math.max(speech[k - 1][1], speech[k][1]);
+      speech.splice(k, 1);
+    }
+  }
 
   const voiceEnd = LEAD_IN + map(lastWord);
   const total = r(voiceEnd + TAIL);
@@ -242,13 +301,16 @@ function build(lang, music) {
   let voiceGain = 1;
   let low = db(voiceLufs - UNDER_SPEECH - music);
   let high = db(voiceLufs - IN_GAPS - music);
-  const peak = high * db(Math.max(0, ...musicTrim));
+  // The asker is matched to the narrator's loudness, one gain per recording.
+  for (const g of segments) g.gain = g.gain === 1 ? 1 : db(voiceLufs - g.gain);
+  const peak = Math.max(high * db(Math.max(0, ...musicTrim)), ...segments.map((g) => g.gain));
   if (peak > 1) {
     // Remotion's volume tops out at 1; turn the voice down instead. The final loudnorm restores level.
     voiceGain = 1 / peak;
     low /= peak;
     high /= peak;
   }
+  for (const g of segments) g.gain = r(g.gain * voiceGain);
 
   if (musicLength < total) {
     console.error(`  FAIL  ${lang}: the music bed is ${r(musicLength)}s, the clip ${total}s. Regenerate it:`);

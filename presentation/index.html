@@ -1276,8 +1276,7 @@ const S = [
       vi:"Mọi clip đều có phụ đề, nên không cần bật tiếng.",
       ja:"すべてのクリップに字幕があるため、音声は不要です。"},
  clips:[
-  {f:"00-intro", t:{en:"The introduction, narrated", ja:"イントロダクション (ナレーション付き)"}},
-  {f:"07-skills-and-view", t:{en:"Skills and the viewer", vi:"Skill và viewer", ja:"スキルとビューア"}}],
+  {f:"00-intro", t:{en:"The introduction, narrated", vi:"Phần giới thiệu, có thuyết minh", ja:"イントロダクション (ナレーション付き)"}}],
  nav:{en:"Videos", vi:"Video", ja:"動画"}},
 
 /* ============ GET STARTED ============ */
@@ -1313,8 +1312,8 @@ let cur = 0, vidIdx = 0;
 // Japanese README embedding the English GIF. There is no Vietnamese render, so vi falls
 // back to English deliberately rather than 404ing.
 const vdir = () => lang === 'ja' ? '../video/mp4/ja/' : '../video/mp4/';
-// The gallery has EN and JA only, so vi links to the English one rather than to a
-// ?lang=vi the gallery would ignore, leaving whatever the reader last chose.
+// The video page has EN and JA only, so vi links to the English one rather than to a
+// ?lang=vi the page would ignore, leaving whatever the reader last chose.
 const vgal = () => lang === 'ja' ? '../video/?lang=ja' : '../video/';
 const icon = (id, cls) => `<svg class="${cls||''}"><use href="#${id}"/></svg>`;
 
@@ -1380,7 +1379,7 @@ function slideHTML(s){
           <p class="lead">${L(s.lead)}</p>
           <div class="cta">
             <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
-            <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
+            <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Intro video</a>
           </div>
         </div>
         <img class="art" src="img/cover-harness.png" alt="">
@@ -1470,8 +1469,10 @@ function slideHTML(s){
       `<div class="stat ${x.cls||''}"><b>${x.v}</b><span>${L(x.l)}</span></div>`).join('')}</div>`;
   }
   if(s.kind==='video'){
-    body = `<div class="vtabs" id="vtabs">${s.clips.map((c,i)=>
-        `<button data-v="${i}" class="${i===vidIdx?'on':''}">${L(c.t)}</button>`).join('')}</div>
+    // One clip ships today, so a single tab would be a button that does nothing: tabs only
+    // appear once there is a second clip to switch to.
+    body = (s.clips.length > 1 ? `<div class="vtabs" id="vtabs">${s.clips.map((c,i)=>
+        `<button data-v="${i}" class="${i===vidIdx?'on':''}">${L(c.t)}</button>`).join('')}</div>` : '') + `
       <div class="vidwrap"><video id="vid" src="${vdir()}${s.clips[vidIdx].f}.mp4"
         controls autoplay muted loop playsinline preload="auto"></video></div>`;
   }
@@ -1508,7 +1509,7 @@ function slideHTML(s){
       <pre class="cmd"><span class="c"># ${c1}</span>\n/spec-builder\n\n<span class="c"># ${c2}</span>\n/harness-bootstrap</pre></div>
       <div class="cta">
         <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" target="_blank" rel="noopener">${icon('i-gh')}GitHub</a>
-        <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Video gallery</a>
+        <a class="ghost" href="${vgal()}" target="_blank" rel="noopener">${icon('i-play')}Intro video</a>
       </div>`;
   }
   return `<div class="wrap stag"><div class="head">${step}${title}${sub}</div><div class="body">${body}${note}</div></div>`;

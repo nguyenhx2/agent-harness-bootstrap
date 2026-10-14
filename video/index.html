@@ -3,151 +3,384 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Harness Bootstrap - explainer clips</title>
+<title>Intro Video - Agent Harness Bootstrap</title>
+<meta name="description" content="The narrated introduction to Agent Harness Bootstrap, in English and Japanese, with chapters.">
+<link rel="icon" href="../docs/assets/logo-mark.svg" type="image/svg+xml">
 <style>
-  :root { color-scheme: dark; }
+  /* Tokens match the landing page (site/src/style.css), so the two read as one site. */
+  :root {
+    color-scheme: light dark;
+    --paper: #eceff3;
+    --paper-2: #ffffff;
+    --ink: #0f141b;
+    --ink-2: #3d4956;
+    --ink-3: #566270;
+    --line: #ccd4dc;
+    --accent-text: #22318c;
+    --field: #182a7a;
+    --on-field: #eef1fb;
+    --live: #ffc94d;
+    --focus: #22318c;
+    --serif: 'Andada Pro', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    --body: var(--serif);
+    --radius: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0b0e14;
+      --paper-2: #131824;
+      --ink: #e8edf4;
+      --ink-2: #a3aebd;
+      --ink-3: #7e8996;
+      --line: #232b39;
+      --accent-text: #93a4ee;
+      --field: #131f5e;
+      --on-field: #e4eafb;
+      --focus: #93a4ee;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0b0e14;
+    --paper-2: #131824;
+    --ink: #e8edf4;
+    --ink-2: #a3aebd;
+    --ink-3: #7e8996;
+    --line: #232b39;
+    --accent-text: #93a4ee;
+    --field: #131f5e;
+    --on-field: #e4eafb;
+    --focus: #93a4ee;
+  }
+  :root:lang(ja) {
+    --body: 'Andada Pro', 'Hiragino Mincho ProN', 'Yu Mincho', YuMincho, 'Noto Serif JP', 'Yu Gothic', serif;
+  }
+
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; background: #0d1117; color: #e6edf3;
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 48px 20px 80px;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.6 var(--body);
   }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  .brandrow { display: flex; align-items: center; gap: 14px; margin: 0 0 6px; }
-  .brandrow img { width: 40px; height: 40px; flex: none; }
-  h1 { font-size: 28px; margin: 0; }
-  .sub { color: #9aa7b4; margin: 0 0 40px; }
-  h2.group {
-    font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: #6b7684;
-    border-bottom: 1px solid #2c3440; padding-bottom: 8px; margin: 52px 0 28px;
+  :lang(ja) body, body:lang(ja) { line-height: 1.9; word-break: auto-phrase; line-break: strict; }
+  a { color: var(--accent-text); text-underline-offset: 0.18em; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
   }
-  .clip { margin: 0 0 48px; }
-  .clip h3 { font-size: 20px; margin: 0 0 4px; }
-  .clip p { color: #9aa7b4; margin: 0 0 14px; }
-  .clip.flagship {
-    border: 1px solid #3E6E93; border-radius: 14px; padding: 24px; background: #0f151c;
-    margin-bottom: 8px;
+  header.top .wrap {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 60px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px;
   }
-  .badge {
-    display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .09em;
-    color: #52B788; border: 1px solid #2D6A4F; border-radius: 999px; padding: 2px 10px;
-    margin-bottom: 10px;
+  .brand {
+    display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none;
+    font-weight: 700; letter-spacing: -0.01em;
   }
-  .dur { color: #6b7684; font-size: 13px; font-weight: normal; }
-  video {
-    width: 100%; border-radius: 12px; background: #12141a;
-    border: 1px solid #2c3440; display: block;
+  .brand img { width: 28px; height: 28px; flex: none; }
+  .tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-family: var(--mono); font-size: 14px; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .lang button {
+    font: inherit; border: 0; background: var(--paper-2); color: var(--ink-2);
+    padding: 6px 12px; cursor: pointer; min-height: 36px;
   }
-  .links { margin-top: 12px; }
+  .lang button[aria-pressed="true"] { background: var(--field); color: var(--on-field); }
+
+  main { padding: 36px 0 56px; }
+  h1 {
+    font-size: clamp(28px, 4.2vw, 44px); line-height: 1.12; letter-spacing: -0.032em;
+    margin: 0 0 12px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-2); margin: 0 0 28px; max-width: 50rem; text-wrap: pretty; }
+
+  .stage {
+    display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start;
+  }
+  .player {
+    background: #000; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  }
+  .player video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0;
+    font-family: var(--mono); font-size: 13px; color: var(--ink-3);
+  }
+
+  .chapters h2 {
+    font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 8px;
+  }
+  .chapters ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .chapters li { border-bottom: 1px solid var(--line); }
+  .chapters button {
+    display: grid; grid-template-columns: 3.4em 1fr; gap: 10px; width: 100%;
+    text-align: left; font: inherit; font-size: 15px; line-height: 1.4; color: var(--ink);
+    background: transparent; border: 0; padding: 10px 6px; cursor: pointer;
+  }
+  .chapters button:hover { background: var(--paper-2); }
+  .chapters button[aria-current="true"] { background: var(--paper-2); box-shadow: inset 3px 0 0 var(--accent-text); }
+  .chapters .t { font-family: var(--mono); font-size: 13px; color: var(--ink-3); padding-top: 2px; }
+  .chapters .empty { color: var(--ink-3); font-size: 15px; padding: 10px 0; margin: 0; }
+
+  .links {
+    display: flex; flex-wrap: wrap; gap: 10px; margin: 36px 0 0; padding: 0; list-style: none;
+  }
   .links a {
-    display: inline-block; margin-right: 10px; padding: 7px 14px; border-radius: 8px;
-    text-decoration: none; color: #A8DADC; border: 1px solid #3E6E93;
-    font-size: 14px;
+    display: inline-block; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 8px 14px; text-decoration: none; background: var(--paper-2); font-size: 15px;
   }
-  .links a:hover { background: #16202b; }
-  footer {
-    color: #6b7684; font-size: 13px; border-top: 1px solid #2c3440;
-    padding-top: 20px; margin-top: 56px;
+  .links a:hover { border-color: var(--accent-text); }
+
+  footer { border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; }
+  footer .wrap { padding-top: 18px; padding-bottom: 28px; }
+  footer p { margin: 0; max-width: 50rem; }
+
+  @media (max-width: 860px) {
+    .stage { grid-template-columns: minmax(0, 1fr); }
   }
-  footer a { color: #6FA0C0; }
-  .langtoggle { display: flex; gap: 8px; margin: 0 0 20px; }
-  .langtoggle button {
-    font: inherit; font-size: 13px; cursor: pointer; padding: 7px 16px; border-radius: 999px;
-    border: 1px solid #3E6E93; background: transparent; color: #A8DADC;
+  @media (max-width: 480px) {
+    body { font-size: 16px; }
+    main { padding-top: 24px; }
+    .brand span { font-size: 15px; }
   }
-  .langtoggle button.active { background: #1D3557; color: #fff; border-color: #A8DADC; }
-  .langsec { display: none; }
-  .langsec.on { display: block; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="brandrow">
-    <img src="../docs/assets/logo.svg" alt="Agent Harness Bootstrap logo" width="40" height="40">
-    <h1>Agent Harness Bootstrap</h1>
-  </div>
-  <div class="langtoggle" role="group" aria-label="Language">
-    <button type="button" id="btn-en" class="active" onclick="setLang('en')">EN</button>
-    <button type="button" id="btn-ja" onclick="setLang('ja')">日本語</button>
-  </div>
-
-  <div id="sec-en" class="langsec on">
-  <p class="sub">A narrated introduction and one explainer clip. They play here in the browser - no download needed. Both are captioned, so sound is not required.</p>
-
-  <div class="clip flagship">
-    <span class="badge">Start here</span>
-    <h3>The introduction <span class="dur">~164s, narrated</span></h3>
-    <p>The questions teams putting agents on real work keep asking, each introduced, asked, and then answered by the mechanism that handles it: a team that fits the project, safety without overthinking or burning tokens, keys that stay secret, an agentic loop with ceremony matched to the change, specs a human can confirm and an AI can read, seeing and controlling how the agents work, and harness-view turning a vague score into a worklist with one-click fixes and a published rubric. Voiced, with a music bed, and captioned for muted playback.</p>
-    <video src="mp4/00-intro.mp4" poster="gif/00-intro-poster.png" controls preload="metadata" playsinline></video>
-    <div class="links">
-      <a href="mp4/00-intro.mp4">Open the MP4</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" id="home" href="../">
+      <img src="../docs/assets/logo.svg" alt="" width="28" height="28">
+      <span>Agent Harness Bootstrap</span>
+    </a>
+    <div class="tools">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+      </div>
+      <a href="https://github.com/nguyenhx2/agent-harness-bootstrap" data-i18n="repo">Repository</a>
     </div>
   </div>
+</header>
 
-  <h2 class="group">In depth</h2>
+<main>
+  <div class="wrap">
+    <h1 data-i18n="title">The idea, in one clip</h1>
+    <p class="lede" data-i18n="lede">Give an AI agent a repo it can actually understand, and a harness it can't escape. The questions teams ask once agents do real work, each answered by the mechanism that handles it.</p>
 
-  <div class="clip">
-    <h3>Tailoring, skills and the viewer <span class="dur">~44s</span></h3>
-    <p>What the introduction leaves out. The operating flow end to end, then a roster derived from the contract and the modules that exist, rather than every agent and a hundred skills installed before anyone read the code. Then the mechanisms that keep it honest, each with the problem it solves: Skill Discovery reads this project's manifests to find skills that match its stack, Skill Wire connects a chosen skill to the agent seat that needs it, and harness-view answers whether any of it is actually wired right.</p>
-    <video src="mp4/07-skills-and-view.mp4" controls preload="metadata" playsinline></video>
-    <div class="links">
-      <a href="html/07-skills-and-view.html">Open the HTML animation</a>
-      <a href="mp4/07-skills-and-view.mp4">Open the MP4</a>
+    <div class="stage">
+      <div>
+        <div class="player">
+          <video id="vid" src="mp4/00-intro.mp4" poster="gif/00-intro-poster.png"
+                 controls preload="metadata" playsinline></video>
+        </div>
+        <p class="meta">
+          <span id="dur"></span>
+          <span data-i18n="captions">Captions are burned in, so sound is optional.</span>
+        </p>
+      </div>
+
+      <nav class="chapters" aria-labelledby="ch-h">
+        <h2 id="ch-h" data-i18n="chapters">Chapters</h2>
+        <ol id="chapters"></ol>
+        <p class="empty" id="ch-empty" hidden data-i18n="noChapters">Chapters load when the page is served over the web.</p>
+      </nav>
     </div>
-  </div>
-  </div>
 
-  <div id="sec-ja" class="langsec">
-  <p class="sub">ナレーション付きのイントロダクションと、解説クリップ1本。ブラウザでそのまま再生できます - ダウンロード不要。どちらも字幕付きなので、音声がなくても内容を追えます。</p>
-
-  <div class="clip flagship">
-    <span class="badge">まずここから</span>
-    <h3>イントロダクション <span class="dur">~167秒、日本語ナレーション・日本語字幕</span></h3>
-    <p>エージェントを実務に使うチームが繰り返し尋ねる問いを、前置き、問い、それに答える仕組みの順で紹介します。プロジェクトに合ったチーム、考えすぎやトークンの浪費のない安全、キーの保護、変更に見合った手続きのエージェント的なループ、人が確認でき AI が読める仕様、エージェントの動きを見て制御すること、そして曖昧な点数をワンクリック修正付きの作業リストと公開された採点表に変える harness-view。音楽付きで、音声なしでも追えるよう字幕を焼き込んでいます。</p>
-    <video src="mp4/ja/00-intro.mp4" poster="gif/ja/00-intro-poster.png" controls preload="metadata" playsinline></video>
-    <div class="links">
-      <a href="mp4/ja/00-intro.mp4">MP4を開く</a>
-    </div>
+    <ul class="links">
+      <li><a id="mp4" href="mp4/00-intro.mp4" data-i18n="mp4">Open the MP4</a></li>
+      <li><a id="deck" href="../presentation/" data-i18n="deck">The slides</a></li>
+      <li><a id="landing" href="../" data-i18n="landing">Back to the site</a></li>
+    </ul>
   </div>
+</main>
 
-  <h2 class="group">さらに詳しく</h2>
-
-  <div class="clip">
-    <h3>テーラーメイド構築・スキル・ビューア <span class="dur">~44秒</span></h3>
-    <p>イントロで触れない部分です。運用フローの全体像、続いて、誰かがコードを読む前にエージェント全種とスキル百個を入れるのではなく、契約と実在するモジュールから導くロースター。さらに、それを健全に保つ仕組みを、それぞれが解く課題とともに。スキル探索はこのプロジェクトのマニフェストを読んでスタックに合うスキルを見つけ、スキル配線は選ばれたスキルを必要とするエージェントの席につなぎ、harness-view は本当に正しく配線されているのかに答えます。</p>
-    <video src="mp4/ja/07-skills-and-view.mp4" controls preload="metadata" playsinline></video>
-    <div class="links">
-      <a href="html/ja/07-skills-and-view.html">HTMLアニメーションを開く</a>
-      <a href="mp4/ja/07-skills-and-view.mp4">MP4を開く</a>
-    </div>
+<footer>
+  <div class="wrap">
+    <p data-i18n="footer">Narration, captions and scene cuts all come from one script per language, video/intro/SCRIPT.md and SCRIPT.ja.md. Every figure on screen is derived from the repository, never typed.</p>
   </div>
-  </div>
+</footer>
 
-  <footer>
-    Part of <a href="https://github.com/nguyenhx2/agent-harness-bootstrap">agent-harness-bootstrap</a>.
-    Sources and how to regenerate: <a href="README.md">video/README.md</a>.
-  </footer>
-</div>
 <script>
-  function setLang(lang){
-    document.getElementById('sec-en').classList.toggle('on', lang==='en');
-    document.getElementById('sec-ja').classList.toggle('on', lang==='ja');
-    document.getElementById('btn-en').classList.toggle('active', lang==='en');
-    document.getElementById('btn-ja').classList.toggle('active', lang==='ja');
-    document.documentElement.lang = lang;
-    try{ localStorage.setItem('ahb-video-lang', lang); }catch(e){}
+(function () {
+  'use strict';
+
+  // Page text. The English strings are also in the markup, so the page reads without script.
+  var T = {
+    en: {
+      title: 'The idea, in one clip',
+      lede: "Give an AI agent a repo it can actually understand, and a harness it can't escape. The questions teams ask once agents do real work, each answered by the mechanism that handles it.",
+      captions: 'Captions are burned in, so sound is optional.',
+      chapters: 'Chapters',
+      noChapters: 'Chapters load when the page is served over the web.',
+      repo: 'Repository',
+      mp4: 'Open the MP4',
+      deck: 'The slides',
+      landing: 'Back to the site',
+      footer: 'Narration, captions and scene cuts all come from one script per language, video/intro/SCRIPT.md and SCRIPT.ja.md. Every figure on screen is derived from the repository, never typed.',
+      length: 'Length',
+      // Scenes that are not a question get a fixed name; a question scene is named by its question.
+      scene: {open: 'The idea', frame: 'The questions', lean: 'Without the waste', close: 'The idea, again'}
+    },
+    ja: {
+      title: '1本のクリップで伝える考え方',
+      lede: '本当に理解できるリポジトリと、抜け出せないハーネスを AI エージェントに。エージェントに実務を任せたチームが抱く問いに、それを解決する仕組みで一つずつ答えます。',
+      captions: '字幕は映像に焼き込まれているため、音声なしでも視聴できます。',
+      chapters: 'チャプター',
+      noChapters: 'チャプターは Web 経由で表示したときに読み込まれます。',
+      repo: 'リポジトリ',
+      mp4: 'MP4 を開く',
+      deck: 'スライド',
+      landing: 'サイトに戻る',
+      footer: 'ナレーション、字幕、場面の切り替えは、言語ごとに 1 本の台本 (video/intro/SCRIPT.md と SCRIPT.ja.md) から作られます。画面上の数値はすべてリポジトリから導出され、手入力はしていません。',
+      length: '長さ',
+      scene: {open: 'コンセプト', frame: 'よくある問い', lean: '無駄なく', close: 'もう一度、コンセプト'}
+    }
+  };
+  var SRC = {
+    en: {mp4: 'mp4/00-intro.mp4', poster: 'gif/00-intro-poster.png', timing: 'intro/src/timing.en.json',
+         home: '../', deck: '../presentation/'},
+    ja: {mp4: 'mp4/ja/00-intro.mp4', poster: 'gif/ja/00-intro-poster.png', timing: 'intro/src/timing.ja.json',
+         home: '../index.ja.html', deck: '../presentation/?lang=ja'}
+  };
+
+  var vid = document.getElementById('vid');
+  var list = document.getElementById('chapters');
+  var empty = document.getElementById('ch-empty');
+  var dur = document.getElementById('dur');
+  var lang = 'en';
+  var marks = [];
+
+  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } }
+  function recall(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  function mmss(s) {
+    s = Math.max(0, Math.round(s));
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
   }
-  (function(){
-    // ?lang= wins over the remembered choice, so a page in one language can link
-    // straight into this gallery in that same language. Without it every link out
-    // of README.ja.md landed here in English, whatever the reader had chosen.
-    var q = null;
-    try{ q = new URLSearchParams(location.search).get('lang'); }catch(e){}
-    if(q === 'ja' || q === 'en'){ setLang(q); return; }
-    var saved = null;
-    try{ saved = localStorage.getItem('ahb-video-lang'); }catch(e){}
-    if(saved === 'ja') setLang('ja');
-  })();
+
+  // A cue in quotes is the viewer's question (the same rule the composition uses).
+  function question(text) {
+    return /^["「]/.test(text) ? text.replace(/^["「]|["」]$/g, '') : null;
+  }
+
+  // Chapters are derived from the committed timing file the clip was rendered with, so a
+  // re-scripted or re-timed intro can never leave this page pointing at the wrong second.
+  function chapters(tm) {
+    var names = T[lang].scene;
+    return tm.scenes.map(function (s) {
+      var title = names[s.id];
+      if (!title) {
+        var cues = tm.cues.filter(function (c) { return c.scene === s.id; });
+        var q = null;
+        for (var i = 0; i < cues.length && !q; i++) q = question(cues[i].text);
+        title = q || (cues[0] ? cues[0].text : s.id);
+      }
+      return {id: s.id, start: s.start, title: title};
+    });
+  }
+
+  function render(items) {
+    list.textContent = '';
+    marks = items;
+    items.forEach(function (c) {
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.start = String(c.start);
+      var t = document.createElement('span');
+      t.className = 't';
+      t.textContent = mmss(c.start);
+      var n = document.createElement('span');
+      n.textContent = c.title;
+      b.appendChild(t);
+      b.appendChild(n);
+      b.addEventListener('click', function () {
+        vid.currentTime = c.start + 0.05;
+        var p = vid.play();
+        if (p && p.catch) p.catch(function () { /* autoplay refused; the seek still applies */ });
+      });
+      li.appendChild(b);
+      list.appendChild(li);
+    });
+    empty.hidden = items.length > 0;
+    highlight();
+  }
+
+  function highlight() {
+    var t = vid.currentTime || 0, at = -1;
+    for (var i = 0; i < marks.length; i++) if (t + 0.01 >= marks[i].start) at = i;
+    var bs = list.querySelectorAll('button');
+    for (var j = 0; j < bs.length; j++) bs[j].setAttribute('aria-current', j === at ? 'true' : 'false');
+  }
+
+  function load() {
+    var want = lang;
+    if (!window.fetch) { render([]); return; }
+    fetch(SRC[want].timing).then(function (r) {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    }).then(function (tm) {
+      if (want !== lang) return;
+      render(chapters(tm));
+      dur.textContent = T[lang].length + ' ' + mmss(tm.total);
+    }).catch(function () {
+      if (want === lang) render([]);
+    });
+  }
+
+  function setLang(l) {
+    if (!T[l]) l = 'en';
+    lang = l;
+    document.documentElement.lang = l;
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var k = nodes[i].getAttribute('data-i18n');
+      if (typeof T[l][k] === 'string') nodes[i].textContent = T[l][k];
+    }
+    var btns = document.querySelectorAll('.lang button');
+    for (var j = 0; j < btns.length; j++) {
+      btns[j].setAttribute('aria-pressed', btns[j].getAttribute('data-lang') === l ? 'true' : 'false');
+    }
+    var s = SRC[l];
+    if (vid.getAttribute('src') !== s.mp4) {
+      vid.pause();
+      vid.setAttribute('poster', s.poster);
+      vid.setAttribute('src', s.mp4);
+      vid.load();
+    }
+    document.getElementById('mp4').href = s.mp4;
+    document.getElementById('home').href = s.home;
+    document.getElementById('landing').href = s.home;
+    document.getElementById('deck').href = s.deck;
+    document.title = l === 'ja'
+      ? 'イントロ動画 - Agent Harness Bootstrap'
+      : 'Intro Video - Agent Harness Bootstrap';
+    dur.textContent = '';
+    load();
+  }
+
+  document.querySelector('.lang').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var l = b.getAttribute('data-lang');
+    store('ahb-video-lang', l);
+    var u = new URL(window.location.href);
+    if (l === 'ja') u.searchParams.set('lang', 'ja'); else u.searchParams.delete('lang');
+    history.replaceState(null, '', u.toString());
+    setLang(l);
+  });
+  vid.addEventListener('timeupdate', highlight);
+  vid.addEventListener('seeked', highlight);
+
+  // ?lang= wins (the Japanese README and the deck link with it), then the remembered choice.
+  var q = new URLSearchParams(window.location.search).get('lang');
+  setLang(q || recall('ahb-video-lang') || 'en');
+})();
 </script>
 </body>
 </html>

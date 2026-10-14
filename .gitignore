@@ -11,8 +11,6 @@ notes.md
 video/**/node_modules/
 video/**/out/
 video/.remotion/
-media/
-video/media/
 
 # Motion-skills installed for building the intro videos (build tool, not a deliverable)
 .agents/*

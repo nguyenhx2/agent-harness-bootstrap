@@ -26,6 +26,14 @@ export const scriptFile = (lang) => path.join(HERE, lang === 'en' ? 'SCRIPT.md' 
 export const narrationFile = (lang) => path.join(AUDIO, `narration.${lang}.mp3`);
 export const alignmentFile = (lang) => path.join(AUDIO, `narration.${lang}.alignment.json`);
 
+// A cue in quotes is the viewer's question. The narrator's own reading of it stays in the cached
+// narration, but it is cut out at timing and replaced by the same words in a second voice, recorded
+// one question per file, so the question is heard as someone asking rather than as more narration.
+export const isQuestion = (cue) => /^["「]/.test(cue);
+export const questionFile = (lang, scene) => path.join(AUDIO, `question.${lang}.${scene}.mp3`);
+/** The words the second voice speaks: the cue without its quote marks. */
+export const questionText = (cue) => cue.replace(/^["「]|["」]$/g, '').trim();
+
 export function readScript(lang = 'en') {
   const md = readFileSync(scriptFile(lang), 'utf8').replace(/\r\n/g, '\n');
   const scenes = [];

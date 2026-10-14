@@ -30,5 +30,5 @@
 ---
 - [Repository](https://github.com/nguyenhx2/agent-harness-bootstrap)
 - [Landing page](https://nguyenhx2.github.io/agent-harness-bootstrap/)
-- [Intro clips](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
+- [Intro video](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
 - [Releases](https://github.com/nguyenhx2/agent-harness-bootstrap/releases)

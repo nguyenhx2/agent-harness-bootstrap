@@ -6,6 +6,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.21.1] - 2026-10-14
+
+No functional change. The version moves with the repo release, which changes only the intro
+video, the video page and the landing page.
+
 ## [1.21.0] - 2026-10-14
 
 Faster hooks, a smaller footprint, and a benchmark run in real Claude Code sessions rather than

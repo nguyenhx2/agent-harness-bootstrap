@@ -1,15 +1,12 @@
 {
   "comment": "sha256 of the scene source each shipped clip was last rendered from. Written by scripts/check_media.py --update, verified by the same script.",
   "version": 1,
-  "theme": "9d62527e00ed771258f74fa7b210312020b10788e53171b7d69f67324928dce6",
   "rendered_from": {
-    "video/gif/00-intro-poster.png": "690fd9d9ff9d71a454d9d548f4a7444b381a3bb2df16c0e051650e46dcda7caf",
-    "video/gif/00-intro.gif": "690fd9d9ff9d71a454d9d548f4a7444b381a3bb2df16c0e051650e46dcda7caf",
-    "video/gif/ja/00-intro-poster.png": "ee08835ff92a7ca95dda3b16dc8836a6cc930b962451d86bca76849bacea68b0",
-    "video/gif/ja/00-intro.gif": "ee08835ff92a7ca95dda3b16dc8836a6cc930b962451d86bca76849bacea68b0",
-    "video/mp4/00-intro.mp4": "690fd9d9ff9d71a454d9d548f4a7444b381a3bb2df16c0e051650e46dcda7caf",
-    "video/mp4/07-skills-and-view.mp4": "89590f556337ad242122f198f3ce9d7a8e81caebc774189e710a41a62aaecde2",
-    "video/mp4/ja/00-intro.mp4": "ee08835ff92a7ca95dda3b16dc8836a6cc930b962451d86bca76849bacea68b0",
-    "video/mp4/ja/07-skills-and-view.mp4": "70859a526f6bb1af0727c49f766dec272097861ad03960a551afcc836ad23c2e"
+    "video/gif/00-intro-poster.png": "704ac7dc66b60b2465d1bace0cd0afd95f0bba1edfdadd4d93b9c1f2b8c94622",
+    "video/gif/00-intro.gif": "704ac7dc66b60b2465d1bace0cd0afd95f0bba1edfdadd4d93b9c1f2b8c94622",
+    "video/gif/ja/00-intro-poster.png": "46281e6e253490b26a91e30f7bff37995d3c9fa41e280adb5b98d0fb7160bc28",
+    "video/gif/ja/00-intro.gif": "46281e6e253490b26a91e30f7bff37995d3c9fa41e280adb5b98d0fb7160bc28",
+    "video/mp4/00-intro.mp4": "704ac7dc66b60b2465d1bace0cd0afd95f0bba1edfdadd4d93b9c1f2b8c94622",
+    "video/mp4/ja/00-intro.mp4": "46281e6e253490b26a91e30f7bff37995d3c9fa41e280adb5b98d0fb7160bc28"
   }
 }

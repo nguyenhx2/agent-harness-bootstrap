@@ -79,13 +79,14 @@ have to hunt for every mention by hand: run `py -3.13 scripts/check_numbers.py` 
 file and line whose figure disagrees with the assets directory, with the value it expects. Fix the
 doc (or the code, if the doc turns out to be right) until the script is clean.
 
-The same script also guards the MEDIA: `presentation/index.html` and the `video/` sources bake the
-counts and the eval badge, and they drifted on every release until they entered the scan. Two rules
+The same script also guards the MEDIA: `presentation/index.html`, the landing pages and the intro
+video's scripts bake the counts and the eval badge, and they drifted on every release until they entered the scan. Two rules
 follow. **One**: when skill content changes, the presentation and intro videos are part of the
 change - a repo hook (`.claude/hooks/media-sync-reminder.sh`) reminds the session, and
 `check_numbers.py` fails the build on baked-count drift, but wording, diagrams, and slide claims
-only a read can verify. **Two**: a re-render of `video/mp4` + `video/gif` follows any change to
-`video/src` - the rendered artifact carries the numbers a viewer actually sees.
+only a read can verify. **Two**: a re-render of `video/mp4` + `video/gif` (`bash video/intro/render.sh`)
+follows any change to `video/intro/SCRIPT.md` or `SCRIPT.ja.md` - the rendered artifact carries the
+numbers a viewer actually sees, and `scripts/check_media.py` fails until it is re-rendered.
 
 ## Releasing
 

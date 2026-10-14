@@ -94,20 +94,20 @@ const Soundtrack: React.FC<{stem: Stem}> = ({stem}) => {
   const {lang, tm} = useL();
   const cue = useCue();
   const scene = useScene();
-  const voice = `narration.${lang}.mp3`;
   return (
     <>
       {stem !== 'voice' ? <Audio src={staticFile('music.mp3')} volume={(f) => musicGain(tm, f / fps)} /> : null}
       {stem !== 'music'
         ? tm.segments.map((g, i) => (
             // The narration, piece by piece: each piece of the cached file plays at the time the
-            // timing build placed it, so trimmed pauses and scene gaps never touch a word.
+            // timing build placed it, so trimmed pauses and scene gaps never touch a word. A
+            // question is a piece of its own file, in the asker's voice, at a matched gain.
             <Sequence key={i} from={Math.round(g.at * fps)} layout="none">
               <Audio
-                src={staticFile(voice)}
+                src={staticFile(g.file)}
                 trimBefore={Math.round(g.from * fps)}
                 trimAfter={Math.round(g.to * fps)}
-                volume={tm.mix.voiceGain}
+                volume={g.gain}
               />
             </Sequence>
           ))
@@ -519,11 +519,13 @@ const Team: React.FC<{t: number}> = ({t}) => {
   const at = useAt();
   const a = cue('team', 1);
   const b = cue('team', 2);
+  const k = cue('team', 3);
   return (
     <>
       <Kicker t={t} at={cue('team', 1) - 0.4} id="team" />
       <Question t={t} id="team" />
       <Stage>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
         <div style={{display: 'flex', gap: 40, alignItems: 'stretch'}}>
           <Card color={C.green} style={{width: 470, ...enter(t, a, 0.5)}}>
             <Icon name="magnifying-glass" size={64} color={C.green} />
@@ -563,6 +565,15 @@ const Team: React.FC<{t: number}> = ({t}) => {
             <div style={{fontSize: 26, color: C.dim, marginTop: 14, whiteSpace: 'pre-line'}}>{S.rosterSub}</div>
             <div style={{fontSize: 26, color: C.green, marginTop: 6, ...enter(t, at('team', 2, 0.7), 0.4)}}>{S.rosterNever}</div>
           </Card>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 24, marginTop: 32, fontSize: 28, ...enter(t, k, 0.5)}}>
+          <Icon name="magnifying-glass" size={40} color={C.green} />
+          <span style={{fontWeight: 700}}>{S.skillFind}</span>
+          <span style={{color: C.dim}}>{S.skillFindSub}</span>
+          <Icon name="link" size={40} color={C.green} style={enter(t, at('team', 3, 0.5), 0.4)} />
+          <span style={{fontFamily: MONO, color: C.green, ...enter(t, at('team', 3, 0.5), 0.4)}}>/skill-wire</span>
+          <span style={{color: C.dim, ...enter(t, at('team', 3, 0.5), 0.4)}}>{S.skillWireSub}</span>
+        </div>
         </div>
       </Stage>
     </>
