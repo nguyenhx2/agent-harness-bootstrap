@@ -54,9 +54,9 @@ tags: [specs, assumptions, constraints, open-issues, {{PROJECT_SLUG}}]
 
 | ID | Question | Blocks | Owner | Needed by | Status |
 |----|----------|--------|-------|-----------|--------|
-| OI-01 {#oi-01} | <the question, stated so it can be answered yes or no, or with a number> | [FR-01](05-functional-requirements.md#fr-01) | <named role> | <milestone or date> | Open |
-| OI-02 {#oi-02} | <question> | [NFR-SEC-14](07-non-functional-requirements.md#nfr-security) | <named role> | <milestone> | Open |
-
+| OI-01 {#oi-01} | <the question, stated so it can be answered yes or no, or with a number> | {{^IF_LIGHT_CONTRACT}}[FR-01](05-functional-requirements.md#fr-01){{/IF_LIGHT_CONTRACT}}{{#IF_LIGHT_CONTRACT}}<the FR-nn it blocks, linked into 05>{{/IF_LIGHT_CONTRACT}} | <named role> | <milestone or date> | Open |
+{{^IF_LIGHT_CONTRACT}}| OI-02 {#oi-02} | <question> | [NFR-SEC-14](07-non-functional-requirements.md#nfr-security) | <named role> | <milestone> | Open |
+{{/IF_LIGHT_CONTRACT}}
 ### Resolved issues
 
 <!-- Keep them. The resolution is the record of who decided what, and it is what stops the same

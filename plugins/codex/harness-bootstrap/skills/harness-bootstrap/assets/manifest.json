@@ -1,20 +1,19 @@
 {
-  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR; 'when_not' skips when ANY listed flag is set. Flags: ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests, deploy_ask, long, solo_review, terse, rtk, pr_cli, target_cursor, target_codex, and exactly one of windows|posix. target_cursor/target_codex gate no entry here - they are recorded so /harness-update knows what to re-port. claude/agents/dev-agent.md is intentionally absent - it is a per-domain template instantiated once per dev agent, not a file to copy.",
+  "_comment": "Drives scripts/scaffold.py. 'when' is AND over flags; 'when_any' is OR; 'when_not' skips when ANY listed flag is set. Flags: the purpose profiles purpose_code, purpose_research, purpose_strategy, purpose_docs (one or more; none means purpose_code), ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests, deploy_ask, long, solo_review, merge_gate, terse, rtk, hooks_strict, pr_cli, target_cursor, target_codex, and exactly one of windows|posix. 'checker' is DERIVED (set whenever a non-code purpose is) and never written in vars.json. target_cursor/target_codex gate no entry here - they are recorded so /harness-update knows what to re-port. claude/agents/dev-agent.md and root/module-CLAUDE.md are intentionally absent - per-domain templates instantiated once per dev agent and once per vars.json \"modules\" entry, not files to copy.",
   "files": [
     {
       "src": "claude/agents/ba-analyst.md",
-      "dest": ".claude/agents/ba-analyst.md"
-    },
-    {
-      "src": "claude/agents/brainstormer.md",
-      "dest": ".claude/agents/brainstormer.md",
+      "dest": ".claude/agents/ba-analyst.md",
       "when": [
-        "long"
+        "purpose_code"
       ]
     },
     {
       "src": "claude/agents/code-reviewer.md",
       "dest": ".claude/agents/code-reviewer.md",
+      "when": [
+        "purpose_code"
+      ],
       "when_not": [
         "solo_review"
       ]
@@ -44,11 +43,17 @@
     },
     {
       "src": "claude/agents/debugger.md",
-      "dest": ".claude/agents/debugger.md"
+      "dest": ".claude/agents/debugger.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/agents/devops.md",
-      "dest": ".claude/agents/devops.md"
+      "dest": ".claude/agents/devops.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/agents/history-tracker.md",
@@ -60,11 +65,45 @@
     },
     {
       "src": "claude/agents/merge-manager.md",
-      "dest": ".claude/agents/merge-manager.md"
+      "dest": ".claude/agents/merge-manager.md",
+      "when": [
+        "merge_gate"
+      ]
     },
     {
       "src": "claude/agents/orchestrator.md",
       "dest": ".claude/agents/orchestrator.md"
+    },
+    {
+      "src": "claude/agents/checker.md",
+      "dest": ".claude/agents/checker.md",
+      "when": [
+        "checker"
+      ]
+    },
+    {
+      "src": "claude/agents/researcher.md",
+      "dest": ".claude/agents/researcher.md",
+      "when_any": [
+        "long",
+        "purpose_research",
+        "purpose_strategy"
+      ]
+    },
+    {
+      "src": "claude/agents/strategist.md",
+      "dest": ".claude/agents/strategist.md",
+      "when_any": [
+        "long",
+        "purpose_strategy"
+      ]
+    },
+    {
+      "src": "claude/agents/writer.md",
+      "dest": ".claude/agents/writer.md",
+      "when": [
+        "purpose_docs"
+      ]
     },
     {
       "src": "claude/agents/qa-test.md",
@@ -83,19 +122,18 @@
     {
       "src": "claude/agents/security-reviewer.md",
       "dest": ".claude/agents/security-reviewer.md",
+      "when": [
+        "purpose_code"
+      ],
       "when_not": [
         "solo_review"
       ]
     },
     {
       "src": "claude/agents/spec-guardian.md",
-      "dest": ".claude/agents/spec-guardian.md"
-    },
-    {
-      "src": "claude/agents/tech-researcher.md",
-      "dest": ".claude/agents/tech-researcher.md",
+      "dest": ".claude/agents/spec-guardian.md",
       "when": [
-        "long"
+        "purpose_code"
       ]
     },
     {
@@ -200,11 +238,17 @@
     },
     {
       "src": "claude/commands/deploy.md",
-      "dest": ".claude/commands/deploy.md"
+      "dest": ".claude/commands/deploy.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/commands/implement-fr.md",
-      "dest": ".claude/commands/implement-fr.md"
+      "dest": ".claude/commands/implement-fr.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/commands/new-adr.md",
@@ -212,7 +256,10 @@
     },
     {
       "src": "claude/commands/new-spec-section.md",
-      "dest": ".claude/commands/new-spec-section.md"
+      "dest": ".claude/commands/new-spec-section.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/commands/new-task.md",
@@ -224,7 +271,10 @@
     },
     {
       "src": "claude/commands/scaffold-feature.md",
-      "dest": ".claude/commands/scaffold-feature.md"
+      "dest": ".claude/commands/scaffold-feature.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/commands/board-audit.md",
@@ -248,11 +298,18 @@
     },
     {
       "src": "claude/commands/code-graph.md",
-      "dest": ".claude/commands/code-graph.md"
+      "dest": ".claude/commands/code-graph.md",
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "claude/commands/skill-wire.md",
       "dest": ".claude/commands/skill-wire.md"
+    },
+    {
+      "src": "claude/commands/new-skill.md",
+      "dest": ".claude/commands/new-skill.md"
     },
     {
       "src": "claude/commands/docs-graph.md",
@@ -450,7 +507,8 @@
       "when": [
         "posix",
         "rtk"
-      ]
+      ],
+      "exec": true
     },
     {
       "src": "claude/hooks/rtk-rewrite.ps1",
@@ -492,11 +550,54 @@
     {
       "src": "scripts/code-graph.py",
       "dest": ".claude/scripts/code-graph.py",
-      "subst": false
+      "subst": false,
+      "when": [
+        "purpose_code"
+      ]
     },
     {
       "src": "scripts/board-check.py",
       "dest": ".claude/scripts/board-check.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/task.py",
+      "dest": ".claude/scripts/task.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/verify-plan.py",
+      "dest": ".claude/scripts/verify-plan.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/skill-check.py",
+      "dest": ".claude/scripts/skill-check.py",
+      "subst": false
+    },
+    {
+      "src": "scripts/harness-check.py",
+      "dest": ".claude/scripts/harness-check.py",
+      "subst": false
+    },
+    {
+      "src": "skill-template/SKILL.md.tmpl",
+      "dest": ".claude/templates/skill/SKILL.md",
+      "subst": false
+    },
+    {
+      "src": "skill-template/references/REFERENCE.md",
+      "dest": ".claude/templates/skill/references/REFERENCE.md",
+      "subst": false
+    },
+    {
+      "src": "skill-template/scripts/validate.py",
+      "dest": ".claude/templates/skill/scripts/validate.py",
+      "subst": false
+    },
+    {
+      "src": "skill-template/evals/trigger-cases.md",
+      "dest": ".claude/templates/skill/evals/trigger-cases.md",
       "subst": false
     },
     {
@@ -619,6 +720,267 @@
       "dest": ".claude/hooks/protect-repos.sh",
       "when": [
         "audit",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-board.ps1",
+      "dest": ".claude/hooks/guard-board.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-board.sh",
+      "dest": ".claude/hooks/guard-board.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-destructive.ps1",
+      "dest": ".claude/hooks/guard-destructive.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-destructive.sh",
+      "dest": ".claude/hooks/guard-destructive.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-large-file.ps1",
+      "dest": ".claude/hooks/guard-large-file.ps1",
+      "when": [
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-large-file.sh",
+      "dest": ".claude/hooks/guard-large-file.sh",
+      "when": [
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-egress.ps1",
+      "dest": ".claude/hooks/guard-egress.ps1",
+      "when": [
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-egress.sh",
+      "dest": ".claude/hooks/guard-egress.sh",
+      "when": [
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/stop-evidence.ps1",
+      "dest": ".claude/hooks/stop-evidence.ps1",
+      "when": [
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/stop-evidence.sh",
+      "dest": ".claude/hooks/stop-evidence.sh",
+      "when": [
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-deps.ps1",
+      "dest": ".claude/hooks/guard-deps.ps1",
+      "when": [
+        "purpose_code",
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-deps.sh",
+      "dest": ".claude/hooks/guard-deps.sh",
+      "when": [
+        "purpose_code",
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-migration.ps1",
+      "dest": ".claude/hooks/guard-migration.ps1",
+      "when": [
+        "db",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-migration.sh",
+      "dest": ".claude/hooks/guard-migration.sh",
+      "when": [
+        "db",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/compact-checkpoint.ps1",
+      "dest": ".claude/hooks/compact-checkpoint.ps1",
+      "when": [
+        "long",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/compact-checkpoint.sh",
+      "dest": ".claude/hooks/compact-checkpoint.sh",
+      "when": [
+        "long",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/session-context.ps1",
+      "dest": ".claude/hooks/session-context.ps1",
+      "when": [
+        "long",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/session-context.sh",
+      "dest": ".claude/hooks/session-context.sh",
+      "when": [
+        "long",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/retry-budget.ps1",
+      "dest": ".claude/hooks/retry-budget.ps1",
+      "when": [
+        "long",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/retry-budget.sh",
+      "dest": ".claude/hooks/retry-budget.sh",
+      "when": [
+        "long",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/research-sources.ps1",
+      "dest": ".claude/hooks/research-sources.ps1",
+      "when": [
+        "purpose_research",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/research-sources.sh",
+      "dest": ".claude/hooks/research-sources.sh",
+      "when": [
+        "purpose_research",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/docs-links.ps1",
+      "dest": ".claude/hooks/docs-links.ps1",
+      "when": [
+        "purpose_docs",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/docs-links.sh",
+      "dest": ".claude/hooks/docs-links.sh",
+      "when": [
+        "purpose_docs",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/egress-allowlist",
+      "dest": ".claude/hooks/egress-allowlist",
+      "when": [
+        "hooks_strict"
+      ],
+      "subst": false
+    },
+    {
+      "src": "claude/hooks/secret-guard.ps1",
+      "dest": ".claude/hooks/secret-guard.ps1",
+      "when": [
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/secret-guard.sh",
+      "dest": ".claude/hooks/secret-guard.sh",
+      "when": [
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/guard-config.ps1",
+      "dest": ".claude/hooks/guard-config.ps1",
+      "when": [
+        "hooks_strict",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/guard-config.sh",
+      "dest": ".claude/hooks/guard-config.sh",
+      "when": [
+        "hooks_strict",
+        "posix"
+      ],
+      "exec": true
+    },
+    {
+      "src": "claude/hooks/agent-trace.ps1",
+      "dest": ".claude/hooks/agent-trace.ps1",
+      "when": [
+        "long",
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/agent-trace.sh",
+      "dest": ".claude/hooks/agent-trace.sh",
+      "when": [
+        "long",
         "posix"
       ],
       "exec": true

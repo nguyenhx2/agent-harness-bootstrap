@@ -207,10 +207,10 @@ class Solution(Scene):
         a4 = down_arrow(reads.get_bottom(), claude.get_top())
 
         grid = VGroup(
-            box("16 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("16 rules\n7 always, 9 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("22 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("11 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("18 agents\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("17 rules\n7 always, 10 scoped", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("23 commands", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("26 hooks", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  a board that survives a crash", NEUTRAL, WHITE, w=6.8, h=0.7, fs=19).move_to(
@@ -266,7 +266,7 @@ class Solution(Scene):
         w2l = Text("records progress", font=FONT, font_size=18, color=DIM).next_to(w2, UP, buff=0.12)
 
         self.play(Create(w1), FadeIn(w1l), run_time=0.45)
-        caption(self, "The orchestrator dispatches scoped specialists against the board.", hold=1.0, y=-3.4, size=23)
+        caption(self, "Guarded work goes through the orchestrator, which dispatches scoped specialists.", hold=1.0, y=-3.4, size=23)
         self.play(Create(w2), FadeIn(w2l), run_time=0.45)
         caption(self, "The board on disk records progress as the agent works.", hold=1.1, y=-3.4, size=23)
 
@@ -295,8 +295,8 @@ class Solution(Scene):
         caption(self, "Contract, enforcement, durable state, a chosen bill.", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("guardrail eval 122/122", GREEN_HI, fs=20),
-            tag("Opus -> Haiku: byte-identical safety", GREEN_HI, fs=20),
+            tag("guardrail eval 250/250", GREEN_HI, fs=20),
+            tag("no model is consulted when a hook decides", GREEN_HI, fs=20),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
             "shell scripts + glob rules  |  ports to Claude Code, Cursor and Codex with enforcement",

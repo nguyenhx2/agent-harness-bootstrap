@@ -16,14 +16,39 @@ Each agent file hardcodes its `model:` in frontmatter (the runtime reads it ther
 the DECISION RECORD behind those values: the tier states what kind of work the seat does, and the
 tier - not analogy or habit - decides which model each seat gets.
 
-| Seat tier | The work | Seats (as fielded) | Model |
+| Seat tier | The work | Seat (`effort:`) | Model |
 |---|---|---|---|
-| Judgment | Consequential calls under incomplete information, or catching another agent's mistakes: planning, decomposition, root-cause, review gates | `orchestrator`, `debugger`{{#IF_SOLO_REVIEW}}, `reviewer`{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}, `code-reviewer`, `security-reviewer`{{/IF_SOLO_REVIEW}}, `merge-manager` | `opus` |
-| Implementation | Producing code, tests, docs, or structured output against a settled contract | the `<domain>-dev` seats{{#IF_TESTS}}, `qa-test`{{/IF_TESTS}}{{#IF_DB}}, `data-modeler`{{#IF_DB_ENGINEER}}, `db-engineer`{{/IF_DB_ENGINEER}}{{/IF_DB}}, `devops`, `ba-analyst`, `spec-guardian` | `sonnet` |
-| Mechanical | Low-judgment, high-volume, fixed procedure: archiving, summarising an append-only log, running a pinned pipeline | {{#IF_LONG}}`history-tracker`{{/IF_LONG}}{{#IF_DB}}{{#IF_DB_SEEDER}}{{#IF_LONG}}, {{/IF_LONG}}`db-seeder`{{/IF_DB_SEEDER}}{{/IF_DB}}{{#IF_AUDIT}}, `sast-runner`{{/IF_AUDIT}} | `haiku` |
+| Judgment | Planning, decomposition, dispatch | `orchestrator` (high) | `opus` |
+{{#IF_PURPOSE_CODE}}| Judgment | Root cause under incomplete information | `debugger` (xhigh) | `opus` |
+{{#IF_SOLO_REVIEW}}| Judgment | Review gate, quality and security in one pass | `reviewer` (high) | `opus` |
+{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}| Judgment | Review gate, code quality | `code-reviewer` (high) | `opus` |
+| Judgment | Review gate, security | `security-reviewer` (high) | `opus` |
+{{/IF_SOLO_REVIEW}}| Implementation | Code against a settled contract | `<domain>-dev` (medium) | `sonnet` |
+{{#IF_TESTS}}| Implementation | Tests against stated criteria | `qa-test` (medium) | `sonnet` |
+{{/IF_TESTS}}{{#IF_DB}}| Implementation | Schema and data model | `data-modeler` (high) | `sonnet` |
+{{#IF_DB_ENGINEER}}| Implementation | Migrations and queries | `db-engineer` (medium) | `sonnet` |
+{{/IF_DB_ENGINEER}}{{#IF_DB_SEEDER}}| Mechanical | Synthetic seed data | `db-seeder` (low) | `haiku` |
+{{/IF_DB_SEEDER}}{{/IF_DB}}| Implementation | CI, build and infrastructure | `devops` (medium) | `sonnet` |
+| Implementation | Requirements and specs | `ba-analyst` (high) | `sonnet` |
+| Implementation | Scope and acceptance-criteria lock | `spec-guardian` (medium) | `sonnet` |
+{{/IF_PURPOSE_CODE}}{{#IF_MERGE_GATE}}| Judgment | Serialized merges that must drop nothing | `merge-manager` (medium) | `opus` |
+{{/IF_MERGE_GATE}}{{#IF_CHECKER}}| Judgment | Attacking claims, sources and reasoning in finished prose | `checker` (high) | `opus` |
+{{/IF_CHECKER}}{{#IF_LONG}}| Judgment | Framing a decision and recommending an option | `strategist` (high) | `opus` |
+| Implementation | Evidence with cited sources | `researcher` (medium) | `sonnet` |
+{{/IF_LONG}}{{^IF_LONG}}{{#IF_PURPOSE_STRATEGY}}| Judgment | Framing a decision and recommending an option | `strategist` (high) | `opus` |
+| Implementation | Evidence with cited sources | `researcher` (medium) | `sonnet` |
+{{/IF_PURPOSE_STRATEGY}}{{^IF_PURPOSE_STRATEGY}}{{#IF_PURPOSE_RESEARCH}}| Implementation | Evidence with cited sources | `researcher` (medium) | `sonnet` |
+{{/IF_PURPOSE_RESEARCH}}{{/IF_PURPOSE_STRATEGY}}{{/IF_LONG}}{{#IF_PURPOSE_DOCS}}| Implementation | Documents against an outline and a reader | `writer` (medium) | `sonnet` |
+{{/IF_PURPOSE_DOCS}}{{#IF_LONG}}| Mechanical | Archiving the run history | `history-tracker` (low) | `haiku` |
+{{/IF_LONG}}{{^IF_LONG}}{{#IF_AUDIT}}| Mechanical | Archiving the run history | `history-tracker` (low) | `haiku` |
+{{/IF_AUDIT}}{{/IF_LONG}}{{#IF_AUDIT}}| Mechanical | Running a pinned scanner pipeline | `sast-runner` (low) | `haiku` |
+{{/IF_AUDIT}}
+Judgment: consequential calls under incomplete information, or catching another agent's mistakes.
+Implementation: output against a settled contract. Mechanical: low-judgment, fixed procedure. The
+effort in brackets is each seat's `effort:` line; change it here first, like the model.
 
 Seats this project did not field carry no row; the tier is the contract, the names are just this
-roster's instantiation of it. A new agent is classified by the questions in the middle column, not by
+roster's instantiation of it. A new agent is classified by the tier definitions under the table, not by
 analogy to the closest-sounding name.
 
 **Changing provider, or moving a seat between tiers, starts as an edit to THIS table.** The

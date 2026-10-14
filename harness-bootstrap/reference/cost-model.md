@@ -40,6 +40,18 @@ compounds.
 | `xhigh` | The hardest coding and agentic work: a cross-cutting refactor, a root-cause hunt | Best setting for coding/agentic on Opus 4.8 and Sonnet 5. Do **not** reach for it reflexively |
 | `max` | Effectively never, in a generated roster | Prone to overthinking, diminishing returns. Reserve for a human deciding a specific hard case |
 
+**Dev seats run at `medium`, not `high`.** A `<domain>-dev` seat in this harness works against a
+settled contract by construction: in the Guarded flow `spec-guardian` has locked the acceptance
+criteria and the design step has named the modules, interfaces and edge cases before the first
+line; in Direct work the change is one reversible module. That is the `medium` row, and current
+models hold quality at `medium` for that kind of step. The judgment the seat still needs is
+supplied by the brief, not by thinking depth - and the anti-loop rule already spends capability
+where it pays: the third attempt re-dispatches one tier of `effort:` higher with what the first two
+got wrong (`task-control.md`). So the default is `medium`, raised to `high` per seat only when its
+attempts show it (repeated `scope` failures on clear briefs), and recorded in `model-tiers.md`.
+Seats that make the calls - `ba-analyst`, `data-modeler`, the reviewers, `strategist`, `checker` -
+stay at `high`.
+
 Two traps worth stating plainly:
 
 - **Do not default everything to `xhigh`.** On Opus 4.8 the intelligence ceiling is high enough that
@@ -85,6 +97,22 @@ tokens the agent never calls. `disallowedTools` strips MCP servers an agent has 
 **Bound the runaway.** `maxTurns` is a circuit breaker: a looping agent burns the full context every
 turn, and the cost of a stuck agent is unbounded. Set it on the mechanical seats, where a high turn
 count means something already went wrong.
+
+**Verify in proportion to the diff.** The most expensive habit is not a tier choice, it is
+verification nobody needed: three reviewers over a README edit, the full suite after every step, an
+end-to-end run for a rename. The generated harness decides this per diff with
+`.claude/scripts/verify-plan.py` - security review only when the paths touch auth, secrets, input
+parsing, data handling, AI tool calls, dependencies or infrastructure; end to end only for a named
+critical flow; docs and config get the secret scan and nothing else - and every skipped gate is one
+logged line with its reason. Current models also verify their own work unprompted, so a brief that
+says "double-check" or "add a final verification step" buys a second pass that learns nothing.
+Write the check into the gate once, never into every brief.
+
+**Keep resumable state compact.** A task that is resumed re-reads its state each time. The task
+file carries a three-line checkpoint (next step, last green commit, open questions) that
+`task.py resume` prints with the last few log rows, and the session log keeps only its newest rows
+in the file - older ones are archived beside it, still committed. Resuming costs the digest, not
+the history.
 
 ### 3. Model tier - still real, but a smaller dial than it used to be
 

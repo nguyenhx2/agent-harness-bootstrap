@@ -1,5 +1,7 @@
 # Installing as a plugin
 
+**English** · [日本語](PLUGIN.ja.md)
+
 Both skills, `harness-bootstrap` and `spec-builder`, install as plugins in Claude Code,
 Cursor, Codex, and any other client that reads the
 [Agent Plugins](https://agent-plugins.org/) standard. This is the recommended install path:

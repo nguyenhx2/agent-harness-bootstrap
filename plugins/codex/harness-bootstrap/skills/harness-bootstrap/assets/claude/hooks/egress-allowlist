@@ -1,0 +1,16 @@
+# egress-allowlist - hosts guard-egress treats as known. One host per line; `#` starts a comment.
+# Entries are EXACT hosts: github.com does not cover api.github.com or gist.github.com. Name every
+# host you mean - a subdomain is often a different service with a different owner (or an upload API).
+# localhost, 127.0.0.1, ::1 and 0.0.0.0 are always allowed and need no entry.
+#
+# What being listed means:
+#   - a shell upload (curl -d/-F/-T, wget --post-*, Invoke-WebRequest -Body/-InFile) to the host
+#     is allowed; to any other host it is BLOCKED
+#   - a WebFetch from the host carries no untrusted-content reminder
+# Add your own API, CI and artifact hosts here. Keep it short: every entry is a place data may go.
+github.com
+registry.npmjs.org
+pypi.org
+files.pythonhosted.org
+crates.io
+proxy.golang.org

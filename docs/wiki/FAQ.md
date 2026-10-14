@@ -1,5 +1,7 @@
 # FAQ
 
+**English** · [[日本語|FAQ-ja]]
+
 ## Does this only work with Claude Code?
 
 It is built for Claude Code, and it ports. `python harness-bootstrap/scripts/port.py --target . --tool all`
@@ -22,8 +24,11 @@ a silent gap, and never a guess.
 
 ## Does the safety depend on which model I use?
 
-No, and that is the central claim. The guardrails are shell scripts and exit codes. Swap every agent
-from Opus to Haiku and `python eval/guardrail_eval.py` returns a byte-identical result.
+No, and that is the central claim. The guardrails are shell scripts and exit codes, so no model is
+consulted and the result cannot depend on the model. `python eval/guardrail_eval.py` fires its
+payloads at a harness scaffolded with the strict hooks, the long-session hooks and the database guard
+on (`hooks_strict`, `long`, `db`); a default install carries fewer hooks than that, and
+`guard-destructive` is the one strict-class guard it ships by default.
 
 What a cheaper model does change is the quality of the code written and the depth of the review.
 That is the ceiling, and the eval does not measure it. The floor is what is model-independent.
@@ -45,9 +50,9 @@ and a `CONFLICT` is yours to resolve. Nothing you wrote is deleted without you a
 ## Why so few agents? Other kits ship far more.
 
 That is the point rather than a shortfall. See [[Tailored Build]]. A seat nobody routes work to is a
-context bill and a harder-to-read routing table, not capability in reserve. A run installs 7 to 15 of
-the 16 seats depending on what the contract and the codebase justify, plus one dev agent per module
-that actually exists.
+context bill and a harder-to-read routing table, not capability in reserve. A run installs 3 to 17 of
+the 18 seats depending on what the repo is for, what the contract and the codebase justify, plus one
+dev agent per module that actually exists.
 
 ## Do I have to use both skills?
 
@@ -74,7 +79,8 @@ something off is a reviewable change rather than a silent one.
 ## Is this over-engineering for a small project?
 
 Possibly, and the questionnaire has a lightweight answer for exactly that: minimal ceremony, no
-methodology rule, the review gate kept. The leanest build is seven seats. If that is still too much,
+methodology rule, the review gate kept. The leanest code build is six seats, and a research or documentation repo needs as few as three.
+If that is still too much,
 `rm -rf .claude/` and the repo is as it was.
 
 ## Does it send my code anywhere?

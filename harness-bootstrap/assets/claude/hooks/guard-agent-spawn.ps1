@@ -8,6 +8,11 @@
 #   2. Overriding a roster seat's model at spawn time. The roster is where cost and capability are
 #      decided; change the roster file, not the spawn.
 #
+# And, through .claude/scripts/verify-plan.py --dispatch-check (see guard-agent-spawn.sh), the
+# content-keyed checks: no re-run on content that passed, at most two dispatches of a seat on one
+# content with no result, two review rounds, no identical brief, and a per-task budget. The human
+# overrides are documented in .claude/hooks/README.md, never in a block message.
+#
 # Read-only built-in types may be permitted in .claude/hooks/spawn-allowlist (one name per line,
 # '#' comments). The shipped default allows Explore and Plan - both read-only - and nothing else.
 #
@@ -76,6 +81,26 @@ if ($override -and (Test-Path $seatFile)) {
     }
 }
 
+# --- ledger, rounds and budget (roster seats only) -------------------------
+# Runs last, on every allow path, so a refused dispatch is never recorded as run. No interpreter
+# or no script: allow - the other checks still hold.
+function Invoke-LedgerCheck {
+    $vp = Join-Path $baseCwd '.claude/scripts/verify-plan.py'
+    if (-not ((Test-Path $seatFile) -and (Test-Path $vp))) { return }
+    $py = $null; $pre = @()
+    foreach ($n in 'python', 'python3') {
+        $c = Get-Command $n -ErrorAction SilentlyContinue
+        if ($c) { $py = $c.Source; break }
+    }
+    if (-not $py) {
+        $c = Get-Command py -ErrorAction SilentlyContinue
+        if ($c) { $py = $c.Source; $pre = @('-3') }
+    }
+    if (-not $py) { return }
+    $raw | & $py @pre $vp --target $baseCwd --dispatch-check
+    if ($LASTEXITCODE -eq 2) { exit 2 }
+}
+
 # --- 3. task linkage for write-capable seats ------------------------------
 # A dispatch to a seat that can Edit or Write must name a registered task, or the work is an
 # orphan the board cannot see. Read-only seats may be dispatched freely.
@@ -91,7 +116,7 @@ if (Test-Path $seatFile) {
         # A dispatch that says "TIER: direct" or "TIER: standard" and names no task passes;
         # see guard-agent-spawn.sh for why the marker is a visible claim rather than a hole.
         $prompt = [string]$payload.tool_input.prompt
-        if ($prompt -notmatch 'TASK-\d{1,5}' -and $prompt -match '(?i)(^|[^A-Za-z])TIER:\s*(direct|standard)([^A-Za-z]|$)') { exit 0 }
+        if ($prompt -notmatch 'TASK-\d{1,5}' -and $prompt -match '(?i)(^|[^A-Za-z])TIER:\s*(direct|standard)([^A-Za-z]|$)') { Invoke-LedgerCheck; exit 0 }
         $activeDir = Join-Path $baseCwd 'docs/tasks/active'
         # Parity with the .sh flavor: a missing board is a refusal, not a skip. The old
         # Test-Path gate made this arm inert on every fresh bootstrap, because the scaffolder
@@ -115,4 +140,5 @@ if (Test-Path $seatFile) {
     }
 }
 
+Invoke-LedgerCheck
 exit 0

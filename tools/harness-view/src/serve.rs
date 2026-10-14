@@ -257,10 +257,13 @@ fn resolve_file(root: &Path, rel: &str) -> Result<PathBuf, String> {
     // recognise the exact path in the table, and what gets joined below is then
     // rebuilt from that table entry rather than from the string that matched it.
     let instr = crate::instruction::from_rel(&cleaned);
-    if !READABLE.contains(&first) && instr.is_none() {
+    // The orchestrator-kit task board lives in `.agent-base/`, beside `.claude/`;
+    // its task files are graph nodes, so the preview must be able to open them.
+    let board = first == ".agent-base";
+    if !READABLE.contains(&first) && instr.is_none() && !board {
         return Err(format!(
-            "refused: only .claude/, docs/ and the known instruction files are readable, \
-             not {first}/"
+            "refused: only .claude/, docs/, .agent-base/ and the known instruction files are \
+             readable, not {first}/"
         ));
     }
     let root_c = root.canonicalize().map_err(|e| format!("root: {e}"))?;
@@ -606,6 +609,12 @@ pub fn serve_with(server: Server, port: u16, root: PathBuf) -> Result<(), String
     if !root.join(".claude").is_dir() {
         println!("harness-view: no harness here yet - choose a folder in the browser");
     }
+    // The previous assessment (and its graph) per root, so a re-check answers
+    // "what changed since last time" without the page keeping a second copy of
+    // the rules. In memory only: it lives as long as this server does, and
+    // nothing is written into the repository being viewed.
+    let mut last_assess: std::collections::HashMap<PathBuf, (serde_json::Value, serde_json::Value)> =
+        std::collections::HashMap::new();
     for mut request in server.incoming_requests() {
         let raw_url = request.url().to_string();
         // route on the path only - a cache-busting query string still matches
@@ -688,13 +697,27 @@ pub fn serve_with(server: Server, port: u16, root: PathBuf) -> Result<(), String
                 match resolve_root(requested.as_deref(), &root) {
                     Ok(target) => {
                         let graph = scan::scan(&target);
-                        let report = assess::assess(&target, &graph);
+                        let mut report = assess::assess(&target, &graph);
+                        if let Some((prev, prev_graph)) = last_assess.get(&target) {
+                            let mut d = assess::diff(prev, &report);
+                            d["graph"] = assess::graph_diff(prev_graph, &graph);
+                            report["since"] = d;
+                        }
+                        let mut stored = report.clone();
+                        if let Some(o) = stored.as_object_mut() {
+                            o.remove("since");
+                        }
+                        last_assess.insert(target.clone(), (stored, graph));
                         Response::from_string(scan::to_canonical_json(&report))
                             .with_header(header("Content-Type", "application/json"))
                     }
                     Err(e) => root_error(&e),
                 }
             }
+            // The published rubric, both languages: what every finding and every
+            // score on the Assess tab is derived from.
+            (Method::Get, "/rubric") => Response::from_string(crate::rubric::to_json().to_string())
+                .with_header(header("Content-Type", "application/json")),
             (Method::Get, "/paths") => {
                 // Read-only, and names only - see list_paths for why the graph
                 // cannot answer this and what keeps the walk contained.
@@ -1174,6 +1197,24 @@ mod tests {
         assert!(resolve_file(&tmp, ".claude/agents/nope.md").is_err());
 
         let _ = std::fs::remove_file(&outside);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    /// Board task files are graph nodes, so the preview opens them - and only
+    /// them: `.agent-base/` is admitted, a sibling directory still is not, and a
+    /// `..` out of the board is refused like any other.
+    #[test]
+    fn resolve_file_admits_the_task_board() {
+        let tmp = std::env::temp_dir().join(format!("hv-serve-board-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(tmp.join(".agent-base/tasks/active")).unwrap();
+        std::fs::create_dir_all(tmp.join(".agent-other")).unwrap();
+        std::fs::write(tmp.join(".agent-base/tasks/active/TASK-001.md"), "t").unwrap();
+        std::fs::write(tmp.join(".agent-other/x.md"), "no").unwrap();
+        std::fs::write(tmp.join("SECRET.md"), "no").unwrap();
+        assert!(resolve_file(&tmp, ".agent-base/tasks/active/TASK-001.md").is_ok());
+        assert!(resolve_file(&tmp, ".agent-other/x.md").is_err());
+        assert!(resolve_file(&tmp, ".agent-base/../SECRET.md").is_err());
         let _ = std::fs::remove_dir_all(&tmp);
     }
 

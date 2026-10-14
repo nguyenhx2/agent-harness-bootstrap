@@ -113,6 +113,11 @@ def check(path: pathlib.Path) -> list[str]:
     return problems
 
 
+# The overview figures whose boxes form a flow, by file-name prefix (the .ja
+# variants included). Only these get the orphan-box check.
+FLOW_FIGURES = ("harness-overview",)
+
+
 def orphan_boxes(path: pathlib.Path) -> list[str]:
     """Every labelled box must be touched by at least one path endpoint.
 
@@ -272,7 +277,7 @@ def main() -> int:
     problems: list[str] = list(dead)
     for f in files:
         found = check(f)
-        if f.name.startswith("harness-loom"):
+        if f.name.startswith(FLOW_FIGURES):
             found += orphan_boxes(f)
         problems += found
         print(f"  {'FAIL' if found else 'ok  '}  {f.name}")

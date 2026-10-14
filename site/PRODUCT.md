@@ -24,18 +24,19 @@ A second audience reads the same page in Japanese.
 ## Product Purpose
 
 Give an AI agent a repo it can actually understand, and a harness it cannot escape. The landing
-page is an introduction, and it follows the README's argument in the README's order: the symptoms
-first, then what answers them, then how to install it, how to move to a new version, how to run it,
-and only then the mechanism underneath. Success is a visitor who installs, watches the intro, or
+page leads with that idea and lets the intro clip carry it, then earns it: the symptoms, what
+answers them, how work is routed, how the roster is sized, where a request is stopped, how the
+viewer reads it back, and only then how to install, run and tune it. Every section has to earn its
+place; anything a visitor would not miss is cut. Success is a visitor who installs, watches the intro, or
 opens the deck, in either language, from any device.
 
 ## Positioning
 
 The mechanism a neighbouring product cannot truthfully copy: the guardrails are shell scripts and
-exit codes, not model instructions. Swap every agent from Opus to Haiku and the safety result is
-byte-identical, and `python eval/guardrail_eval.py` proves it. Second differentiator: the roster is
-derived from the contract and the repo's real modules, so a run installs 7 to 15 of 16 seats rather
-than a fixed cast. Third: `harness-view` reads the harness off disk with no model in the loop, so a
+exit codes, not model instructions. No model is consulted, so the safety result cannot depend on the
+model, and `python eval/guardrail_eval.py` proves it. Second differentiator: the roster is
+sized to the repo's purpose (code, research, strategy, docs) and derived from the contract and the
+repo's real modules, so a run installs 3 to 17 of the 18 seats rather than a fixed cast. Third: `harness-view` reads the harness off disk with no model in the loop, so a
 browser and a CI run cannot disagree about the score.
 
 ## Operating Context
@@ -44,8 +45,9 @@ The product is three parts that hand off to each other: `spec-builder` (a skill)
 (a skill), and `harness-view` (a native viewer plus local web UI). The plugin route is the first
 install path offered and the one with working updates; the release zip is the offline, pinned
 alternative. Both are portable to Cursor and Codex. The landing page sits beside a slide deck
-(`presentation/`) and the GitHub repository, served from the same GitHub Pages site; the seven
-explainer clips are played in the landing page itself rather than only on the `video/` page.
+(`presentation/`) and the GitHub repository, served from the same GitHub Pages site; the intro
+clip and the seven explainer clips play in the landing page itself rather than only on the
+`video/` page.
 
 ## Capabilities and Constraints
 
@@ -71,14 +73,15 @@ and mean it. Every claim on the surface is answered by a script in the repositor
 
 Real, derived, and re-runnable by the visitor:
 
-- guardrail eval 122/122 per hook flavour, 244/244 across both hook flavours
-- the guardrail suite splits into 44 must-block and 68 must-allow cases
+- guardrail eval 250/250 per hook flavour, on both hook flavours, measured on a harness scaffolded with
+  the `hooks_strict`, `long` and `db` flags on (`VARS` in `eval/guardrail_eval.py` names the set)
+- the guardrail suite splits into 101 must-block and 149 must-allow cases
 - Cursor and Codex port adapter self-test 32/32
-- a bare repository blocks 0/22 benchmark payloads; the same repository, harnessed, blocks all 22
-- 68% of rule content stays out of the default session, because 10 of 16 rules are path-scoped
-- a run installs 7 to 15 of 16 seats
-- `harness-view` scored 100/100 on a real harness, over 219 nodes and 655 edges, with an empty
-  findings list (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
+- a bare repository blocks 0/67 benchmark payloads; the same repository, harnessed, blocks all 67
+- 73% of rule content stays out of the default session, because 10 of 17 rules are path-scoped
+- a run installs 3 to 17 of the 18 seats (docs-only repo at the low end)
+- `harness-view` scored 99/100 on a real harness, over 219 nodes and 655 edges, with two findings
+  worth one point each (SAF-02 and COST-06) (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
 - the delivery pipeline, the tailoring step and the five control layers, each of which the page
   draws itself as a live diagram rather than importing as a picture
 - outbound proof surfaces: `presentation/`, `video/`, the GitHub repository, the releases page

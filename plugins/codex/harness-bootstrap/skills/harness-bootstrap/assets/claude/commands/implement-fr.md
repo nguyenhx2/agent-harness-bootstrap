@@ -9,16 +9,27 @@ This is the Guarded flow from `AGENTS.md`: it locks scope, registers a task, and
 gate. That is right for an FR and wrong for a one-module fix - if the work turns out to be Direct,
 say so and hand it to the owning agent instead of running the ceremony around it.
 
-If $1 is empty, list the functional requirements that have no task yet and ask which one to
-implement. Do not guess.
+A change that leaves every criterion's outcome unchanged needs no FR work at all; new behaviour
+inside an FR already agreed needs one appended criterion, not this flow. Use it for a new promise:
+one a stakeholder reading the confirmation sheet would see as different.
 
-1. Read FR $1 in `docs/specs/05-functional-requirements.md`: inputs, outputs, business rules,
-   acceptance criteria, use case. Read the matching PRD in `docs/requirements/` if one exists.
+If $1 is empty, list the FRs in `docs/specs/index.json` with `status` Confirmed, `decision` yes,
+no `open_issues` and no `tasks`, and ask which one to implement. Do not guess.
+
+1. Read FR $1's entry in `docs/specs/index.json` first, then only its block at the entry's `file`
+   and `anchor` - not the whole section - plus the matching PRD in `docs/requirements/` if one
+   exists. Without an index (no `.claude/scripts/spec-check.py` here), read the FR in
+   `docs/specs/05-functional-requirements.md`.
+
+   **Stop unless the entry says `status` Confirmed and `decision` yes** - a Draft FR, or one the
+   confirmation sheet (`docs/specs/confirmation.md`) does not answer "yes", is a promise nobody
+   agreed to. Name what is missing and ask; do not implement around it. An entry with
+   `open_issues` stops here too.
 2. Dispatch `spec-guardian` to lock the scope and the acceptance criteria before any code is
    written. An FR with no observable acceptance criteria is not ready to implement: stop and
    escalate.
-3. Register the work with `/new-task` (it starts at `status: Planned`), then set it to `Active`
-   when implementation begins.
+3. Register the work with `/new-task` (it starts `Planned`), then
+   `python .claude/scripts/task.py move TASK-NNN Active` when implementation begins.
 4. Assign the specialist agent per the routing table:
 
 {{ROUTING_TABLE}}
@@ -57,8 +68,10 @@ implement. Do not guess.
    working software first - but the review gate below is never skipped.
 {{/IF_LIGHT}}
 7. Comply with `.claude/rules/`. The change is a proposal: a human reviews and decides.
-8. When the whole FR is implemented - not after each step - run `/review-changes` once. It runs
-   {{#IF_TESTS}}the suites, {{/IF_TESTS}}the reviews and the secret scan over the branch; do not run {{#IF_TESTS}}`/test` or {{/IF_TESTS}}a
+8. When the whole FR is implemented - not after each step - run `/review-changes TASK-NNN` once.
+   It runs {{#IF_TESTS}}the test layers, {{/IF_TESTS}}the reviews and the secret scan this diff needs; do not run {{#IF_TESTS}}`/test` or {{/IF_TESTS}}a
    reviewer separately first.
-9. Do not deploy. Append the session-log rows to the task file and report which acceptance
-   criteria are now met and which are not.
+9. Do not deploy. Close with the evidence map - one line per criterion ID from the index entry
+   (`AC-nn.n`): the test name, the command and its output, or the screen that proves it. A
+   criterion with no evidence is not met; say so rather than close. Tick the met ones, write the
+   checkpoint (`task.py checkpoint`), and report the map.

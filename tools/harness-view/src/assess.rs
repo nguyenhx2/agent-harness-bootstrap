@@ -1,19 +1,30 @@
 //! Deterministic harness assessment. No model, no network, no heuristics that
 //! need judgment: every finding is a rule that reads the scanned graph plus a
-//! few files on disk and reports what it saw, with the file or node that proves
+//! few files on disk and reports what it saw, with the file and line that prove
 //! it.
 //!
 //! The rules are NOT invented here. They are the quality gate that
 //! `harness-bootstrap/SKILL.md` already asserts, restated as code so a harness
 //! can be checked after it drifts rather than only at the moment it is built.
-//! Where a rule below has no counterpart in that gate it is marked `info` and
-//! carries no score, because scoring something the project never promised would
-//! be inventing a standard and then grading against it.
+//! Each one is published in `src/rubric.rs` (and RUBRIC.md, generated from it)
+//! with its id, weight, effort, the purposes it applies to, and - in English and
+//! Japanese - what full marks means, why it matters and how to fix it. Nothing
+//! here writes a title or a reason of its own: a finding is a rubric entry plus
+//! the evidence.
+//!
+//! Beyond the findings, an assessment carries:
+//!   - `scores` with the derivation per category, so the number can be redone by hand
+//!   - `worklist`: the rules to fix first, by weight times count divided by effort
+//!   - `purposes`: what the repository is for, which decides the rules that apply
+//!   - `action` on a finding the viewer can fix in one click through `POST /agent`
 
 use serde_json::{json, Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
+
+pub use crate::rubric::Sev;
+use crate::rubric::{self, Applies};
 
 /// Rules that load in every session by design. SKILL.md names exactly these six;
 /// any OTHER rule without `paths:` is a permanent context tax on every agent.
@@ -26,79 +37,111 @@ const ALWAYS_ON_RULES: &[&str] = &[
     "task-tracking",
 ];
 
-/// Seats the gate requires to be read-only. "Reviewers have no Edit or Write.
-/// Not usually - none."
-const REVIEW_SEATS: &[&str] = &[
-    "code-reviewer",
-    "merge-manager",
-    "reviewer",
-    "security-reviewer",
-    "spec-guardian",
-];
+/// Seats the gate requires to be read-only. The role is matched by
+/// `scan::is_review_seat`, so a `security-privacy-reviewer` or a `fact-checker`
+/// is held to the same rule. An `editor` counts as the review gate of a writing
+/// repository but is not held read-only: an editor that corrects copy is doing
+/// the job, not self-approving.
+fn read_only_seat(name: &str) -> bool {
+    crate::scan::is_review_seat(name) && name != "editor"
+}
 
 /// Destructive operations the gate expects `permissions.deny` to cover. Matched
 /// as substrings against the deny list, because the real command is
-/// project-specific (the DB reset of a Prisma repo is not that of a Django one).
-const DENY_EXPECT: &[(&str, &str)] = &[
-    ("force push", "push --force"),
-    ("recursive delete", "rm -rf"),
-    ("secret read", ".env"),
+/// project-specific. (label, needle, the entry the fix suggests)
+const DENY_EXPECT: &[(&str, &str, &str)] = &[
+    ("force push", "push --force", "Bash(git push --force *)"),
+    ("recursive delete", "rm -rf", "Bash(rm -rf *)"),
+    ("secret read", ".env", "Read(./**/.env)"),
 ];
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Sev {
-    Info,
-    Low,
-    Medium,
-    High,
-}
+/// Seats that only exist in a code repository. Used to infer the purpose when
+/// `.claude/state/vars.json` does not record it.
+const CODE_SEATS: &[&str] = &[
+    "qa-test", "code-reviewer", "security-reviewer", "reviewer", "merge-manager",
+    "spec-guardian", "devops", "debugger", "data-modeler", "db-engineer", "db-seeder",
+];
 
-impl Sev {
-    fn as_str(self) -> &'static str {
-        match self {
-            Sev::High => "high",
-            Sev::Medium => "medium",
-            Sev::Low => "low",
-            Sev::Info => "info",
-        }
-    }
-    /// Rank for worst-first ordering.
-    fn rank(self) -> u8 {
-        match self {
-            Sev::High => 0,
-            Sev::Medium => 1,
-            Sev::Low => 2,
-            Sev::Info => 3,
-        }
-    }
-}
-
-/// One thing that is true about this harness, with the evidence for it.
+/// One thing that is true about this harness: a rubric entry, what it is about,
+/// and where the proof is.
 pub struct Finding {
     pub check: &'static str,
-    pub category: &'static str,
-    pub sev: Sev,
-    /// What is wrong, in one line.
-    pub title: String,
-    /// Why it matters. One sentence, no hedging.
-    pub why: &'static str,
+    /// Substituted for `{name}` in the rubric templates.
+    pub name: String,
+    /// Substituted for `{extra}`.
+    pub extra: String,
     /// The node this is about, so the UI can select it in the graph.
     pub node: Option<String>,
-    /// The file that proves it.
+    /// The file that proves it, and the line in it.
     pub file: Option<String>,
+    pub line: Option<usize>,
+    /// A one-click fix the viewer can apply: `{"endpoint", "label", "label_ja", "body"}`.
+    pub action: Option<Value>,
 }
 
 impl Finding {
+    fn new(check: &'static str, name: impl Into<String>, extra: impl Into<String>) -> Self {
+        Finding {
+            check,
+            name: name.into(),
+            extra: extra.into(),
+            node: None,
+            file: None,
+            line: None,
+            action: None,
+        }
+    }
+    fn node(mut self, n: impl Into<String>) -> Self {
+        self.node = Some(n.into());
+        self
+    }
+    fn at(mut self, file: Option<String>, line: Option<usize>) -> Self {
+        self.file = file;
+        self.line = line;
+        self
+    }
+    fn action(mut self, a: Option<Value>) -> Self {
+        self.action = a;
+        self
+    }
+    pub fn rule(&self) -> &'static rubric::Rule {
+        rubric::rule(self.check)
+    }
+    /// Identity across two assessments of the same repository.
+    pub fn key(&self) -> String {
+        format!("{}|{}|{}|{}", self.check, self.node.as_deref().unwrap_or(""), self.name, self.extra)
+    }
     fn to_json(&self) -> Value {
-        json!({
-            "check": self.check,
-            "category": self.category,
-            "severity": self.sev.as_str(),
-            "title": self.title,
-            "why": self.why,
+        let r = self.rule();
+        let t = |i: usize| rubric::render(r.title[i], &self.name, &self.extra);
+        let w = |i: usize| rubric::render(r.why[i], &self.name, &self.extra);
+        let fx = |i: usize| rubric::render(r.fix[i], &self.name, &self.extra);
+        let evidence = match (&self.file, self.line) {
+            (Some(f), Some(l)) => Some(format!("{f}:{l}")),
+            (Some(f), None) => Some(f.clone()),
+            _ => None,
+        };
+        let mut o = json!({
+            "rubric": r.id,
+            "check": r.check,
+            "category": r.category,
+            "category_ja": rubric::category_ja(r.category),
+            "severity": r.sev.as_str(),
+            "weight": r.sev.weight(),
+            "effort": r.effort,
+            "title": t(0), "title_ja": t(1),
+            "why": w(0), "why_ja": w(1),
+            "fix": fx(0), "fix_ja": fx(1),
             "node": self.node,
             "file": self.file,
-        })
+            "line": self.line,
+            "evidence": evidence,
+            "key": self.key(),
+        });
+        if let Some(a) = &self.action {
+            o["action"] = a.clone();
+        }
+        o
     }
 }
 
@@ -131,131 +174,188 @@ impl<'a> Ctx<'a> {
     fn file(n: &Value) -> Option<String> {
         n.get("file").and_then(|x| x.as_str()).map(String::from)
     }
+    fn list(n: &Value, k: &str) -> Vec<String> {
+        match Ctx::meta(n, k) {
+            Some(Value::Array(a)) => a.iter().filter_map(|x| x.as_str().map(String::from)).collect(),
+            _ => Vec::new(),
+        }
+    }
+    fn text(&self, rel: &str) -> String {
+        fs::read_to_string(self.root.join(rel)).unwrap_or_default()
+    }
+}
+
+// ------------------------------------------------------------------ evidence
+
+/// 1-based line of the first line `pred` accepts.
+fn line_where(text: &str, pred: impl Fn(&str) -> bool) -> Option<usize> {
+    text.lines().position(pred).map(|i| i + 1)
+}
+
+/// Where a frontmatter key is, or - when it is missing - the closing `---`,
+/// which is where it would be added. Line 1 for a file with no frontmatter.
+fn fm_line(text: &str, key: &str) -> usize {
+    let lines: Vec<&str> = text.lines().collect();
+    if lines.first().map(|l| l.trim_start_matches('\u{feff}').trim()) != Some("---") {
+        return 1;
+    }
+    for (i, l) in lines.iter().enumerate().skip(1) {
+        if l.trim() == "---" {
+            return i + 1;
+        }
+        if l.starts_with(&format!("{key}:")) {
+            return i + 1;
+        }
+    }
+    1
+}
+
+/// A tool name the agent editor accepts. A one-click fix is only offered when
+/// every tool it would write passes, because the server refuses anything else
+/// (`Bash(git diff:*)` included) and a button that always fails is worse than
+/// none.
+fn tool_ok(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 64
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' || c == ':')
+}
+
+fn agent_action(seat: &str, label: [&str; 2], change: Value) -> Value {
+    let mut body = json!({ "name": seat });
+    if let (Some(b), Some(c)) = (body.as_object_mut(), change.as_object()) {
+        for (k, v) in c {
+            b.insert(k.clone(), v.clone());
+        }
+    }
+    json!({ "endpoint": "agent", "label": label[0], "label_ja": label[1], "body": body })
 }
 
 // --------------------------------------------------------------------- checks
 
-/// Cost control: an unset `model:` inherits the caller's tier, so mechanical
-/// work silently bills at the most expensive model in the roster.
-fn check_agent_model(c: &Ctx, out: &mut Vec<Finding>) {
+/// Cost control: model, effort, turns and the tool list, one seat at a time.
+fn check_agent_budget(c: &Ctx, out: &mut Vec<Finding>) {
     for n in c.of_type("agent") {
         if Ctx::disabled(n) {
             continue;
         }
-        let name = Ctx::name(n);
+        let name = Ctx::name(n).to_string();
+        let file = Ctx::file(n);
+        let text = file.as_deref().map(|f| c.text(f)).unwrap_or_default();
+        let id = format!("agent:{name}");
         let model = Ctx::meta(n, "model").and_then(|v| v.as_str()).unwrap_or("");
         if model.is_empty() || model == "inherit" {
-            out.push(Finding {
-                check: "agent-model",
-                category: "Cost control",
-                sev: Sev::Medium,
-                title: format!("agent `{name}` does not pin a model"),
-                why: "An unset model inherits the caller's tier, so mechanical work bills at the \
-                      most expensive model in the roster.",
-                node: Some(format!("agent:{name}")),
-                file: Ctx::file(n),
-            });
+            out.push(
+                Finding::new("agent-model", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "model")))
+                    .action(Some(agent_action(&name, ["Set model: sonnet", "model: sonnet にする"],
+                                              json!({"model": "sonnet"})))),
+            );
         }
         if Ctx::meta(n, "effort").and_then(|v| v.as_str()).unwrap_or("").is_empty() {
-            out.push(Finding {
-                check: "agent-effort",
-                category: "Cost control",
-                sev: Sev::Low,
-                title: format!("agent `{name}` does not pin an effort level"),
-                why: "Effort is the second half of the cost decision; unset means the caller's \
-                      level applies to work that may not need it.",
-                node: Some(format!("agent:{name}")),
-                file: Ctx::file(n),
-            });
+            out.push(
+                Finding::new("agent-effort", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "effort")))
+                    .action(Some(agent_action(&name, ["Set effort: medium", "effort: medium にする"],
+                                              json!({"effort": "medium"})))),
+            );
         }
-    }
-}
-
-/// Cost control and safety: omitting `tools:` grants every tool, including every
-/// MCP server, at full schema cost on every request.
-fn check_agent_tools(c: &Ctx, out: &mut Vec<Finding>) {
-    for n in c.of_type("agent") {
-        if Ctx::disabled(n) {
-            continue;
+        if Ctx::meta(n, "maxTurns").is_none() {
+            out.push(
+                Finding::new("agent-maxturns", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "maxTurns"))),
+            );
         }
-        let name = Ctx::name(n);
-        let empty = match Ctx::meta(n, "tools") {
-            Some(Value::Array(a)) => a.is_empty(),
-            _ => true,
-        };
-        if empty {
-            out.push(Finding {
-                check: "agent-tools",
-                category: "Cost control",
-                sev: Sev::High,
-                title: format!("agent `{name}` grants no explicit tool list"),
-                why: "Omitting tools inherits every tool including every MCP server, at full \
-                      schema cost on every request and with no scope limit.",
-                node: Some(format!("agent:{name}")),
-                file: Ctx::file(n),
-            });
+        if Ctx::list(n, "tools").is_empty() {
+            out.push(
+                Finding::new("agent-tools", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "tools")))
+                    .action(Some(agent_action(
+                        &name,
+                        ["Set tools: Read, Grep, Glob", "tools: Read, Grep, Glob にする"],
+                        json!({"tools": ["Read", "Grep", "Glob"]}),
+                    ))),
+            );
         }
     }
 }
 
 /// Safety: a reviewer that can write is not a gate, it is another author.
-fn check_reviewer_readonly(c: &Ctx, out: &mut Vec<Finding>) {
+fn check_review_seats(c: &Ctx, out: &mut Vec<Finding>) {
     for n in c.of_type("agent") {
-        let name = Ctx::name(n);
-        if !REVIEW_SEATS.contains(&name) || Ctx::disabled(n) {
+        let name = Ctx::name(n).to_string();
+        if !read_only_seat(&name) || Ctx::disabled(n) {
             continue;
         }
-        let tools: Vec<String> = match Ctx::meta(n, "tools") {
-            Some(Value::Array(a)) => a
+        let file = Ctx::file(n);
+        let text = file.as_deref().map(|f| c.text(f)).unwrap_or_default();
+        let id = format!("agent:{name}");
+        let tools = Ctx::list(n, "tools");
+        let writes = |t: &str| {
+            ["Edit", "Write", "NotebookEdit"]
                 .iter()
-                .filter_map(|x| x.as_str())
-                .map(|s| s.to_string())
-                .collect(),
-            _ => vec![],
+                .any(|b| t == *b || t.starts_with(&format!("{b}(")))
         };
-        for bad in ["Edit", "Write", "NotebookEdit"] {
-            if tools.iter().any(|t| t == bad || t.starts_with(&format!("{bad}("))) {
-                out.push(Finding {
-                    check: "reviewer-readonly",
-                    category: "Safety",
-                    sev: Sev::High,
-                    title: format!("review seat `{name}` holds `{bad}`"),
-                    why: "A reviewer that can write is not a gate; it can fix what it was \
-                          supposed to report and the review becomes self-approval.",
-                    node: Some(format!("agent:{name}")),
-                    file: Ctx::file(n),
-                });
-            }
+        let kept: Vec<String> = tools.iter().filter(|t| !writes(t)).cloned().collect();
+        let fixable = !kept.is_empty() && kept.iter().all(|t| tool_ok(t));
+        for bad in tools.iter().filter(|t| writes(t)) {
+            out.push(
+                Finding::new("reviewer-readonly", &name, bad.clone())
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "tools")))
+                    .action(fixable.then(|| {
+                        agent_action(
+                            &name,
+                            ["Remove the write tools", "書き込み系ツールを外す"],
+                            json!({ "tools": kept }),
+                        )
+                    })),
+            );
+        }
+        let dis = Ctx::list(n, "disallowedTools");
+        if !(dis.iter().any(|t| t == "Edit") && dis.iter().any(|t| t == "Write")) {
+            out.push(
+                Finding::new("reviewer-disallowed", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "disallowedTools"))),
+            );
+        }
+        if Ctx::meta(n, "memory").is_some() {
+            out.push(
+                Finding::new("reviewer-memory", &name, "")
+                    .node(&id)
+                    .at(file.clone(), Some(fm_line(&text, "memory"))),
+            );
         }
     }
 }
 
-/// Safety: only the orchestrator may hold `Agent`, or any seat can fan out and
-/// the spawn boundary stops meaning anything.
+/// Safety: only the orchestrator may hold a bare `Agent`. `Agent(a, b)` is
+/// already bounded and is not reported.
 fn check_spawn_boundary(c: &Ctx, out: &mut Vec<Finding>) {
     for n in c.of_type("agent") {
-        let name = Ctx::name(n);
+        let name = Ctx::name(n).to_string();
         if name == "orchestrator" || Ctx::disabled(n) {
             continue;
         }
-        let holds = match Ctx::meta(n, "tools") {
-            Some(Value::Array(a)) => a
-                .iter()
-                .filter_map(|x| x.as_str())
-                .any(|t| t == "Agent" || t == "Task"),
-            _ => false,
-        };
-        if holds {
-            out.push(Finding {
-                check: "spawn-boundary",
-                category: "Safety",
-                sev: Sev::High,
-                title: format!("agent `{name}` can spawn subagents"),
-                why: "Only the orchestrator should hold Agent; otherwise any seat can fan out \
-                      and the spawn allowlist no longer bounds what runs.",
-                node: Some(format!("agent:{name}")),
-                file: Ctx::file(n),
-            });
+        let tools = Ctx::list(n, "tools");
+        if tools.iter().any(|t| t == "Agent" || t == "Task") {
+            let file = Ctx::file(n);
+            let text = file.as_deref().map(|f| c.text(f)).unwrap_or_default();
+            let kept: Vec<String> =
+                tools.iter().filter(|t| *t != "Agent" && *t != "Task").cloned().collect();
+            let fixable = !kept.is_empty() && kept.iter().all(|t| tool_ok(t));
+            out.push(
+                Finding::new("spawn-boundary", &name, "")
+                    .node(format!("agent:{name}"))
+                    .at(file, Some(fm_line(&text, "tools")))
+                    .action(fixable.then(|| {
+                        agent_action(&name, ["Remove Agent", "Agent を外す"], json!({ "tools": kept }))
+                    })),
+            );
         }
     }
 }
@@ -270,274 +370,216 @@ fn check_rule_scoping(c: &Ctx, out: &mut Vec<Finding>) {
         let name = Ctx::name(n);
         let scoped = Ctx::meta(n, "scoped").and_then(|v| v.as_bool()).unwrap_or(false);
         if !scoped && !ALWAYS_ON_RULES.contains(&name) {
-            out.push(Finding {
-                check: "rule-scoping",
-                category: "Cost control",
-                sev: Sev::Medium,
-                title: format!("rule `{name}` loads in every session"),
-                why: "A rule without paths frontmatter is a permanent context tax on every agent \
-                      in every session, whether or not the work touches it.",
-                node: Some(format!("rule:{name}")),
-                file: Ctx::file(n),
-            });
+            out.push(Finding::new("rule-scoping", name, "").node(format!("rule:{name}")).at(Ctx::file(n), Some(1)));
         }
     }
 }
 
 /// Safety: a registration pointing at a hook file that does not exist is a
-/// guardrail that silently never fires. This is the exact failure a mistyped
-/// OS flag used to produce.
+/// guardrail that silently never fires, and a hook file nothing registers is a
+/// control that enforces nothing.
 fn check_hook_wiring(c: &Ctx, out: &mut Vec<Finding>) {
     let hooks_dir = c.root.join(".claude/hooks");
-
-    // Read the registrations from settings.json rather than from the graph: a
-    // registration whose script is missing produces NO node (the scanner builds
-    // hook nodes from files on disk), which is exactly the case that matters
-    // most. Trusting the node list here would make this check unable to see the
-    // failure it exists to catch.
-    let text = fs::read_to_string(c.root.join(".claude/settings.json")).unwrap_or_default();
-    let mut registered_names: BTreeSet<String> = BTreeSet::new();
-    if let Ok(v) = serde_json::from_str::<Value>(&text) {
-        if let Some(events) = v.get("hooks").and_then(|h| h.as_object()) {
-            for (_event, groups) in events {
-                for g in groups.as_array().into_iter().flatten() {
-                    for h in g.get("hooks").and_then(|x| x.as_array()).into_iter().flatten() {
-                        let cmd = h.get("command").and_then(|x| x.as_str()).unwrap_or("");
-                        let norm = cmd.replace('\\', "/");
-                        if let Some(i) = norm.rfind("hooks/") {
-                            let tail = &norm[i + "hooks/".len()..];
-                            let name: String = tail
-                                .chars()
-                                .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '-' || *ch == '_')
-                                .collect();
-                            if !name.is_empty() {
-                                registered_names.insert(name);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Registrations are read from settings.json and the seats' frontmatter rather
+    // than from the graph: a registration whose script is missing produces NO
+    // node, which is exactly the case that matters most.
+    let settings_text = c.text(".claude/settings.json");
+    let mut regs: Vec<crate::scan::HookReg> = serde_json::from_str::<Value>(&settings_text)
+        .ok()
+        .and_then(|v| v.get("hooks").map(|h| crate::scan::hook_regs("settings", h)))
+        .unwrap_or_default();
+    regs.extend(crate::scan::agent_hook_regs(c.root));
+    let registered_names: BTreeSet<String> = regs.iter().filter_map(|r| r.hook.clone()).collect();
+    // Any flavour on disk satisfies a registration: `.sh`, `.ps1`, or a `.py`
+    // hook the graph does not draw as a node.
+    let on_disk_stems: BTreeSet<String> = fs::read_dir(&hooks_dir)
+        .map(|rd| {
+            rd.flatten()
+                .filter(|e| e.path().is_file())
+                .filter_map(|e| e.path().file_stem().and_then(|x| x.to_str()).map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
     for name in &registered_names {
-        let on_disk = ["sh", "ps1"]
-            .iter()
-            .any(|e| hooks_dir.join(format!("{name}.{e}")).is_file());
-        if !on_disk {
-            out.push(Finding {
-                check: "hook-missing-file",
-                category: "Safety",
-                sev: Sev::High,
-                title: format!("hook `{name}` is registered but has no file on disk"),
-                why: "settings.json runs a script that is not there, so the guardrail never \
-                      fires and nothing reports it.",
-                node: None,
-                file: Some(".claude/settings.json".into()),
-            });
+        if on_disk_stems.contains(name) {
+            continue;
         }
+        let src = regs
+            .iter()
+            .find(|r| r.hook.as_deref() == Some(name.as_str()))
+            .map(|r| match r.source.strip_prefix("agent:") {
+                Some(a) => format!(".claude/agents/{a}.md"),
+                None => ".claude/settings.json".to_string(),
+            });
+        let line = src.as_deref().and_then(|f| {
+            let t = c.text(f).replace('\\', "/");
+            line_where(&t, |l| l.contains(&format!("hooks/{name}")))
+        });
+        out.push(Finding::new("hook-missing-file", name, "").at(src, line));
     }
 
     for n in c.of_type("hook") {
         let name = Ctx::name(n);
         let registered = registered_names.contains(name);
-        let on_disk = ["sh", "ps1"]
-            .iter()
-            .any(|e| hooks_dir.join(format!("{name}.{e}")).is_file());
+        let on_disk = ["sh", "ps1"].iter().any(|e| hooks_dir.join(format!("{name}.{e}")).is_file());
         // A helper that registered hooks source (`_lib.sh`) is not meant to be
         // registered; the scan marks it `library`.
         let library = Ctx::meta(n, "library").and_then(|v| v.as_bool()) == Some(true);
         if !registered && on_disk && !library && !Ctx::disabled(n) {
-            out.push(Finding {
-                check: "hook-unregistered",
-                category: "Safety",
-                sev: Sev::Medium,
-                title: format!("hook `{name}` exists but is not registered"),
-                why: "A hook file that settings.json never invokes is inert; it looks like a \
-                      control and enforces nothing.",
-                node: Some(format!("hook:{name}")),
-                file: Ctx::file(n),
-            });
+            out.push(Finding::new("hook-unregistered", name, "").node(format!("hook:{name}")).at(Ctx::file(n), Some(1)));
         }
     }
 }
 
 /// Safety: the four layers the gate requires. Missing any one is reported
 /// individually so the fix is obvious.
-fn check_guardrail_layers(c: &Ctx, out: &mut Vec<Finding>) {
-    let settings = c.root.join(".claude/settings.json");
-    let text = fs::read_to_string(&settings).unwrap_or_default();
+fn check_guardrail_layers(c: &Ctx, out: &mut Vec<Finding>, purposes: &[String]) {
+    let settings_rel = ".claude/settings.json";
+    let text = c.text(settings_rel);
     let deny: Vec<String> = serde_json::from_str::<Value>(&text)
         .ok()
         .and_then(|v| {
             v.get("permissions")
                 .and_then(|p| p.get("deny"))
                 .and_then(|d| d.as_array())
-                .map(|a| {
-                    a.iter()
-                        .filter_map(|x| x.as_str())
-                        .map(|s| s.to_string())
-                        .collect()
-                })
+                .map(|a| a.iter().filter_map(|x| x.as_str()).map(|s| s.to_string()).collect())
         })
         .unwrap_or_default();
-
+    let settings_file = Some(settings_rel.to_string());
     if deny.is_empty() {
-        out.push(Finding {
-            check: "deny-list",
-            category: "Safety",
-            sev: Sev::High,
-            title: "settings.json has no permissions.deny entries".into(),
-            why: "The deny list is the first of the four guardrail layers; without it every \
-                  destructive command reaches the hook layer or nothing at all.",
-            node: Some("settings".into()),
-            file: Some(".claude/settings.json".into()),
-        });
+        let line = line_where(&text, |l| l.contains("\"permissions\"")).or(Some(1));
+        out.push(Finding::new("deny-list", "", "").node("settings").at(settings_file.clone(), line));
     } else {
-        for (label, needle) in DENY_EXPECT {
+        let line = line_where(&text, |l| l.contains("\"deny\""));
+        for (label, needle, entry) in DENY_EXPECT {
             if !deny.iter().any(|d| d.contains(needle)) {
-                out.push(Finding {
-                    check: "deny-coverage",
-                    category: "Safety",
-                    sev: Sev::Low,
-                    title: format!("deny list does not mention {label}"),
-                    why: "Deny rules are prefix matches and only a speed bump, but an absent one \
-                          is not even that.",
-                    node: Some("settings".into()),
-                    file: Some(".claude/settings.json".into()),
-                });
+                out.push(Finding::new("deny-coverage", *label, *entry).node("settings").at(settings_file.clone(), line));
             }
         }
     }
 
-    let blocking = c
+    // A Stop or UserPromptSubmit hook can block too, but not a tool call, and
+    // stopping a tool call is the layer this finding is about.
+    let gating = c
         .of_type("hook")
         .iter()
         .filter(|n| {
-            Ctx::meta(n, "blocking").and_then(|v| v.as_bool()).unwrap_or(false)
-                && !Ctx::disabled(n)
+            let ev = Ctx::meta(n, "event").and_then(|v| v.as_str()).unwrap_or("");
+            let more = Ctx::list(n, "events");
+            let gates = crate::scan::TOOL_GATE_EVENTS.contains(&ev)
+                || more.iter().any(|x| {
+                    crate::scan::TOOL_GATE_EVENTS
+                        .iter()
+                        .any(|g| x == g || x.starts_with(&format!("{g} ")))
+                });
+            gates && !Ctx::disabled(n)
         })
         .count();
-    if blocking == 0 {
-        out.push(Finding {
-            check: "no-blocking-hook",
-            category: "Safety",
-            sev: Sev::High,
-            title: "no blocking (PreToolUse) hook is active".into(),
-            why: "Hooks are the layer that actually stops a tool call; with none active the \
-                  guardrails are advice.",
-            node: None,
-            file: Some(".claude/settings.json".into()),
-        });
+    if gating == 0 {
+        let line = line_where(&text, |l| l.contains("\"hooks\""));
+        out.push(Finding::new("no-blocking-hook", "", "").at(settings_file.clone(), line));
     }
 
     if !c.root.join(".claude/rules/agent-guardrails.md").is_file() {
-        out.push(Finding {
-            check: "no-guardrail-rule",
-            category: "Safety",
-            sev: Sev::Medium,
-            title: "agent-guardrails.md is not installed".into(),
-            why: "It is the always-loaded rule that states the boundaries the hooks enforce; \
-                  without it agents get the enforcement but never the reasoning.",
-            node: None,
-            file: Some(".claude/rules/agent-guardrails.md".into()),
-        });
+        out.push(Finding::new("no-guardrail-rule", "", "").at(Some(".claude/rules/agent-guardrails.md".into()), None));
     }
 
-    // Match the ROLE, not one project's spelling of it. The scaffolder ships
-    // `/review-changes`, but a real harness may call the same gate `/review-pr`
-    // or `/review-mr`; asserting the literal name reported a missing review gate
-    // on a repo that plainly had one.
+    // Match the ROLE, not one project's spelling of it: `/review-changes`,
+    // `/review-pr` and `/mr-review` are all the same gate.
     let has_review_cmd = c.of_type("command").iter().any(|n| {
         let name = Ctx::name(n);
         !Ctx::disabled(n) && (name.starts_with("review") || name.ends_with("-review"))
     });
-    let has_reviewer_seat = c
-        .of_type("agent")
-        .iter()
-        .any(|n| REVIEW_SEATS.contains(&Ctx::name(n)) && !Ctx::disabled(n));
+    let agents: Vec<&Value> = c.of_type("agent").into_iter().filter(|n| !Ctx::disabled(n)).collect();
+    let has_reviewer_seat = agents.iter().any(|n| crate::scan::is_review_seat(Ctx::name(n)));
     if !has_review_cmd && !has_reviewer_seat {
-        out.push(Finding {
-            check: "no-review-gate",
-            category: "Safety",
-            sev: Sev::High,
-            title: "no review command and no review seat".into(),
-            why: "The review gate is the fourth guardrail layer and the only one that reads the \
-                  diff as a whole.",
-            node: None,
-            file: Some(".claude/commands/".into()),
-        });
+        out.push(Finding::new("no-review-gate", "", "").at(Some(".claude/agents/".into()), None));
     } else if !has_review_cmd {
-        out.push(Finding {
-            check: "no-review-command",
-            category: "Safety",
-            sev: Sev::Low,
-            title: "a review seat exists but no command invokes it".into(),
-            why: "A reviewer nobody routes work to is only enforced by whoever remembers to \
-                  dispatch it by hand.",
-            node: None,
-            file: Some(".claude/commands/".into()),
+        out.push(Finding::new("no-review-command", "", "").at(Some(".claude/commands/".into()), None));
+    }
+
+    // A deliverable that is not code still needs a seat that only reads it.
+    if purposes.iter().any(|p| p != "code") {
+        let read_only_checker = agents.iter().any(|n| {
+            let tools = Ctx::list(n, "tools");
+            crate::scan::is_review_seat(Ctx::name(n))
+                && !tools.is_empty()
+                && !tools.iter().any(|t| {
+                    ["Edit", "Write", "NotebookEdit"]
+                        .iter()
+                        .any(|b| t == b || t.starts_with(&format!("{b}(")))
+                })
         });
+        if !read_only_checker {
+            out.push(Finding::new("noncode-checker", "", "").at(Some(".claude/agents/".into()), None));
+        }
     }
 }
 
 /// Traceability: a task owned by a seat that was never fielded has nobody to do
 /// it, and the board will not say so.
 fn check_task_owners(c: &Ctx, out: &mut Vec<Finding>) {
-    let agents: BTreeSet<String> = c
-        .of_type("agent")
-        .iter()
-        .map(|n| Ctx::name(n).to_string())
-        .collect();
+    let agents: BTreeSet<String> =
+        c.of_type("agent").iter().map(|n| Ctx::name(n).to_string()).collect();
     for n in c.of_type("task") {
         let owner = Ctx::meta(n, "owner").and_then(|v| v.as_str()).unwrap_or("");
         if owner.is_empty() || owner == "-" {
             continue;
         }
+        let file = Ctx::file(n);
+        let text = file.as_deref().map(|f| c.text(f)).unwrap_or_default();
+        let line = line_where(&text, |l| l.starts_with("owner:") || l.starts_with("agent:"));
         for seat in owner.split('+').map(str::trim).filter(|s| !s.is_empty()) {
             if !agents.contains(seat) {
-                out.push(Finding {
-                    check: "task-owner-missing",
-                    category: "Traceability",
-                    sev: Sev::Medium,
-                    title: format!("task `{}` is owned by `{seat}`, which is not on the roster", Ctx::name(n)),
-                    why: "Work assigned to a seat that does not exist cannot be dispatched and \
-                          will sit on the board unnoticed.",
-                    node: Some(format!("task:{}", Ctx::name(n))),
-                    file: Ctx::file(n),
-                });
+                out.push(
+                    Finding::new("task-owner-missing", Ctx::name(n), seat)
+                        .node(format!("task:{}", Ctx::name(n)))
+                        .at(file.clone(), line),
+                );
             }
         }
     }
 }
 
-/// Board health: Blocked with no recorded dependency is a task nothing will ever
-/// unblock.
+/// Board health: blocked with no unblocker, no status at all, and an
+/// orchestrator-kit board that disagrees with itself.
 fn check_board(c: &Ctx, out: &mut Vec<Finding>) {
     for n in c.of_type("task") {
+        let name = Ctx::name(n);
         let status = Ctx::meta(n, "status").and_then(|v| v.as_str()).unwrap_or("");
         let deps = Ctx::meta(n, "deps").and_then(|v| v.as_str()).unwrap_or("");
+        let file = Ctx::file(n);
+        let text = file.as_deref().map(|f| c.text(f)).unwrap_or_default();
+        let id = format!("task:{name}");
         if status.eq_ignore_ascii_case("blocked") && (deps.is_empty() || deps == "-") {
-            out.push(Finding {
-                check: "blocked-no-unblocker",
-                category: "Board health",
-                sev: Sev::Medium,
-                title: format!("task `{}` is Blocked with no dependency recorded", Ctx::name(n)),
-                why: "Nothing names what would unblock it, so it cannot be picked up when the \
-                      blocker clears.",
-                node: Some(format!("task:{}", Ctx::name(n))),
-                file: Ctx::file(n),
-            });
+            out.push(
+                Finding::new("blocked-no-unblocker", name, "")
+                    .node(&id)
+                    .at(file.clone(), line_where(&text, |l| l.starts_with("status:"))),
+            );
+        }
+        // orchestrator-kit keeps a task's state in three places - its folder,
+        // its `status:` and its TASKS.md row - and `task.sh check` fails when they
+        // disagree. The scan records each disagreement.
+        let drift = Ctx::list(n, "drift");
+        if !drift.is_empty() {
+            // a task with no file is a TASKS.md row; point at that row instead
+            let (f, l) = match &file {
+                Some(_) => (file.clone(), line_where(&text, |l| l.starts_with("status:"))),
+                None => {
+                    let board = Ctx::meta(n, "board").and_then(|b| b.as_str()).unwrap_or(".agent-base/tasks");
+                    let idx = format!("{board}/TASKS.md");
+                    let t = c.text(&idx);
+                    let l = line_where(&t, |l| l.contains(&format!("| {name} ")));
+                    (Some(idx), l)
+                }
+            };
+            for d in drift {
+                out.push(Finding::new("board-drift", name, d).node(&id).at(f.clone(), l));
+            }
         }
         if status.is_empty() {
-            out.push(Finding {
-                check: "task-no-status",
-                category: "Board health",
-                sev: Sev::Low,
-                title: format!("task `{}` has no status", Ctx::name(n)),
-                why: "A task with no status is invisible to every board sweep that filters by it.",
-                node: Some(format!("task:{}", Ctx::name(n))),
-                file: Ctx::file(n),
-            });
+            out.push(Finding::new("task-no-status", name, "").node(&id).at(file.clone(), Some(fm_line(&text, "status"))));
         }
     }
 }
@@ -545,37 +587,33 @@ fn check_board(c: &Ctx, out: &mut Vec<Finding>) {
 /// Traceability: a command that runs a script which is not installed fails at
 /// the moment someone needs it.
 fn check_dangling_scripts(c: &Ctx, out: &mut Vec<Finding>) {
-    let ids: BTreeSet<&str> = c
-        .nodes
-        .iter()
-        .filter_map(|n| n.get("id").and_then(|x| x.as_str()))
-        .collect();
+    let ids: BTreeSet<&str> = c.nodes.iter().filter_map(|n| n.get("id").and_then(|x| x.as_str())).collect();
     for e in c.edges {
         if e.get("type").and_then(|x| x.as_str()) != Some("runs") {
             continue;
         }
         let to = e.get("to").and_then(|x| x.as_str()).unwrap_or("");
         let from = e.get("from").and_then(|x| x.as_str()).unwrap_or("");
-        if !ids.contains(to) {
-            out.push(Finding {
-                check: "dangling-script",
-                category: "Traceability",
-                sev: Sev::Medium,
-                title: format!("`{from}` runs `{to}`, which is not installed"),
-                why: "The command names a script that is not in .claude/scripts, so it fails the \
-                      first time it is used.",
-                node: Some(from.to_string()),
-                file: None,
-            });
+        if ids.contains(to) {
+            continue;
         }
+        let script = to.strip_prefix("script:").unwrap_or(to);
+        let file = c
+            .nodes
+            .iter()
+            .find(|n| n.get("id").and_then(|x| x.as_str()) == Some(from))
+            .and_then(|n| Ctx::file(n));
+        let line = file.as_deref().and_then(|f| {
+            let t = c.text(f).replace('\\', "/");
+            line_where(&t, |l| l.contains(&format!("scripts/{script}")))
+        });
+        out.push(Finding::new("dangling-script", from, to).node(from).at(file, line));
     }
 }
 
-/// Docs quality: a blank line inside a GFM table ends it, so the remaining rows
-/// render as a paragraph of pipes. Correct per spec, confusing on screen, and
-/// nearly always unintended.
-/// A skill sitting in `.claude/skills/` that no seat declares is procedural text
-/// nobody follows. /skill-wire exists precisely because installing is not wiring.
+/// Traceability: a skill sitting in `.claude/skills/` that no seat declares is
+/// procedural text nobody follows, and a seat declaring a skill that is not
+/// installed promises a procedure that is not there.
 fn check_skill_wiring(c: &Ctx, out: &mut Vec<Finding>) {
     let wired: BTreeSet<&str> = c
         .edges
@@ -583,76 +621,45 @@ fn check_skill_wiring(c: &Ctx, out: &mut Vec<Finding>) {
         .filter(|e| e.get("type").and_then(|x| x.as_str()) == Some("uses"))
         .filter_map(|e| e.get("to").and_then(|x| x.as_str()))
         .collect();
-    let ids: BTreeSet<&str> = c
-        .nodes
-        .iter()
-        .filter_map(|n| n.get("id").and_then(|x| x.as_str()))
-        .collect();
-
-    for n in c.nodes.iter() {
-        if n.get("type").and_then(|x| x.as_str()) != Some("skill") {
-            continue;
-        }
+    for n in c.of_type("skill") {
         let id = n.get("id").and_then(|x| x.as_str()).unwrap_or("");
         if wired.contains(id) {
             continue;
         }
         let label = n.get("label").and_then(|x| x.as_str()).unwrap_or(id);
-        out.push(Finding {
-            check: "skill-not-wired",
-            category: "Traceability",
-            sev: Sev::Low,
-            title: format!("skill `{label}` is installed but nothing in the harness names it"),
-            why: "An unwired skill still costs review and update attention while changing \
-                  nothing about how the harness behaves.",
-            node: Some(id.to_string()),
-            file: n.get("file").and_then(|x| x.as_str()).map(|f| f.to_string()),
-        });
+        out.push(Finding::new("skill-not-wired", label, "").node(id).at(Ctx::file(n), Some(1)));
     }
 
     // A wire to an uninstalled skill produces no edge, by design, so the graph
-    // cannot reveal it. Read the seat files directly, as the hook check reads
-    // settings.json for the same reason.
-    let _ = &ids;
-    let agents_dir = c.root.join(".claude/agents");
-    let mut seats: Vec<String> = Vec::new();
-    if let Ok(rd) = std::fs::read_dir(&agents_dir) {
-        for e in rd.flatten() {
-            let p = e.path();
-            if p.extension().and_then(|x| x.to_str()) == Some("md") {
-                if let Some(stem) = p.file_stem().and_then(|x| x.to_str()) {
-                    seats.push(stem.to_string());
-                }
-            }
-        }
-    }
-    seats.sort();
+    // cannot reveal it. Read the seat files directly.
     let installed: BTreeSet<String> = c
-        .nodes
+        .of_type("skill")
         .iter()
-        .filter(|n| n.get("type").and_then(|x| x.as_str()) == Some("skill"))
         .filter_map(|n| n.get("label").and_then(|x| x.as_str()).map(|s| s.to_string()))
         .collect();
-
+    let agents_dir = c.root.join(".claude/agents");
+    let mut seats: Vec<String> = fs::read_dir(&agents_dir)
+        .map(|rd| {
+            rd.flatten()
+                .map(|e| e.path())
+                .filter(|p| p.extension().and_then(|x| x.to_str()) == Some("md"))
+                .filter_map(|p| p.file_stem().and_then(|x| x.to_str()).map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    seats.sort();
     for seat in seats {
-        let text =
-            std::fs::read_to_string(agents_dir.join(format!("{seat}.md"))).unwrap_or_default();
-        for line in text.lines() {
+        let rel = format!(".claude/agents/{seat}.md");
+        let text = c.text(&rel);
+        for (i, line) in text.lines().enumerate() {
             if let Some(val) = crate::scan::skill_decl_value(line) {
                 for tok in crate::scan::slug_tokens(val) {
                     if !installed.contains(&tok) {
-                        out.push(Finding {
-                            check: "skill-wire-missing",
-                            category: "Traceability",
-                            sev: Sev::Medium,
-                            title: format!(
-                                "`{seat}` declares skill `{tok}`, which is not installed"
-                            ),
-                            why: "The seat's instructions promise a capability the repo cannot \
-                                  supply, so the model follows a procedure that is not there.",
-                            node: Some(format!("agent:{seat}")),
-                            file: Some(format!(".claude/agents/{seat}.md")),
-                        });
+                        out.push(
+                            Finding::new("skill-wire-missing", &seat, tok)
+                                .node(format!("agent:{seat}"))
+                                .at(Some(rel.clone()), Some(i + 1)),
+                        );
                     }
                 }
             }
@@ -660,6 +667,8 @@ fn check_skill_wiring(c: &Ctx, out: &mut Vec<Finding>) {
     }
 }
 
+/// Docs quality: a blank line inside a GFM table ends it, so the remaining rows
+/// render as a paragraph of pipes.
 fn check_broken_tables(c: &Ctx, out: &mut Vec<Finding>) {
     let mut checked = 0usize;
     for n in c.of_type("task").into_iter().chain(c.of_type("doc")) {
@@ -670,109 +679,66 @@ fn check_broken_tables(c: &Ctx, out: &mut Vec<Finding>) {
         let Ok(text) = fs::read_to_string(c.root.join(&rel)) else { continue };
         checked += 1;
         if let Some(line) = blank_line_in_table(&text) {
-            out.push(Finding {
-                check: "table-blank-line",
-                category: "Docs quality",
-                sev: Sev::Low,
-                title: format!("{rel}: blank line inside a table at line {line}"),
-                why: "A blank line terminates a table in GitHub-flavoured Markdown, so every row \
-                      after it renders as plain text here and on GitHub.",
-                node: n.get("id").and_then(|x| x.as_str()).map(String::from),
-                file: Some(rel),
-            });
+            out.push(
+                Finding::new("table-blank-line", &rel, line.to_string())
+                    .node(n.get("id").and_then(|x| x.as_str()).unwrap_or(""))
+                    .at(Some(rel.clone()), Some(line)),
+            );
         }
     }
-    for extra in ["docs/tasks/master-plan.md"] {
-        if let Ok(text) = fs::read_to_string(c.root.join(extra)) {
-            if let Some(line) = blank_line_in_table(&text) {
-                out.push(Finding {
-                    check: "table-blank-line",
-                    category: "Docs quality",
-                    sev: Sev::Low,
-                    title: format!("{extra}: blank line inside a table at line {line}"),
-                    why: "A blank line terminates a table in GitHub-flavoured Markdown, so every \
-                          row after it renders as plain text here and on GitHub.",
-                    node: None,
-                    file: Some(extra.into()),
-                });
-            }
+    let extra = "docs/tasks/master-plan.md";
+    if let Ok(text) = fs::read_to_string(c.root.join(extra)) {
+        if let Some(line) = blank_line_in_table(&text) {
+            out.push(Finding::new("table-blank-line", extra, line.to_string()).at(Some(extra.into()), Some(line)));
         }
     }
 }
 
-/// The contract itself. `AGENTS.md` is the one file every tool in the roster
-/// reads - it is the only reason a harness scaffolded for Claude Code means
-/// anything in Codex, Cursor or Antigravity - and a repository without it has
-/// enforcement with nothing to enforce.
-///
-/// The routing tiers are a separate, softer finding. They arrived in v1.18.0, so
-/// an older AGENTS.md legitimately predates them; it is `info` because a harness
-/// generated before that release never promised to have them.
+/// The contract itself, its routing tiers, per-folder stubs and its length.
 fn check_instruction_files(c: &Ctx, out: &mut Vec<Finding>) {
     let instr = c.of_type("instruction");
     let has = |key: &str| {
-        instr
-            .iter()
-            .any(|n| n.get("id").and_then(|x| x.as_str()) == Some(&format!("instr:{key}")))
+        instr.iter().any(|n| n.get("id").and_then(|x| x.as_str()) == Some(&format!("instr:{key}")))
     };
     if !has("agents") {
-        out.push(Finding {
-            check: "instruction-contract",
-            category: "Contract",
-            sev: Sev::Medium,
-            title: "no AGENTS.md at the repository root".into(),
-            why: "AGENTS.md is the vendor-neutral contract every tool but Claude Code reads; \
-                  without it the rules under .claude/ reach one client and nothing else.",
-            node: None,
-            file: None,
-        });
+        out.push(Finding::new("instruction-contract", "", "").at(Some("AGENTS.md".into()), None));
         return;
     }
-    let tiered = instr.iter().any(|n| {
-        n.get("tiers")
-            .and_then(|t| t.as_array())
-            .map(|a| !a.is_empty())
-            .unwrap_or(false)
-    });
+    let tiered = instr
+        .iter()
+        .any(|n| n.get("tiers").and_then(|t| t.as_array()).map(|a| !a.is_empty()).unwrap_or(false));
     if !tiered {
-        out.push(Finding {
-            check: "instruction-tiers",
-            category: "Contract",
-            sev: Sev::Info,
-            title: "AGENTS.md states no routing tiers".into(),
-            why: "Without the Direct / Standard / Guarded table there is nothing that says which \
-                  changes go straight to the owning agent and which earn the orchestrator, so \
-                  every change costs the heaviest process or none of it.",
-            node: Some("instr:agents".into()),
-            file: Some("AGENTS.md".into()),
-        });
+        out.push(Finding::new("instruction-tiers", "", "").node("instr:agents").at(Some("AGENTS.md".into()), Some(1)));
     }
-
-    // Per-folder contracts. A nested CLAUDE.md governs its own subtree, which makes an empty one
-    // worse than none: the directory reads as governed, and a reader who opens the file to find
-    // out how stops looking. This is the only claim about them that can be checked from the
-    // outside - whether the rules inside are RIGHT is not something a scanner can know.
+    // Per-folder contracts. A nested CLAUDE.md governs its own subtree, which
+    // makes an empty one worse than none.
     for n in &instr {
         let file = n.get("file").and_then(|x| x.as_str()).unwrap_or("");
-        if !file.contains('/') {
-            continue; // the root copies are covered above
+        // Only a nested CLAUDE.md / AGENTS.md / GEMINI.md governs a subtree. A
+        // `.cursor/rules/x.mdc` or `.kiro/steering/x.md` is a rule file of its
+        // tool, not a per-folder contract, and short is a fine size for a rule.
+        let id = n.get("id").and_then(|x| x.as_str()).unwrap_or("");
+        let key = id.strip_prefix("instr:").and_then(|r| r.split('/').next()).unwrap_or("");
+        if !file.contains('/') || !matches!(key, "claude" | "agents" | "gemini") {
+            continue;
         }
-        let bytes = n
-            .get("meta")
-            .and_then(|m| m.get("bytes"))
-            .and_then(|b| b.as_u64())
-            .unwrap_or(u64::MAX);
+        let bytes = n.get("meta").and_then(|m| m.get("bytes")).and_then(|b| b.as_u64()).unwrap_or(u64::MAX);
         if bytes < 120 {
-            out.push(Finding {
-                check: "instruction-nested-stub",
-                category: "Contract",
-                sev: Sev::Low,
-                title: format!("{file} governs a subtree and says almost nothing"),
-                why: "A per-folder contract applies to every change under its directory. An empty                       one is worse than none: the folder reads as governed, and whoever opens the                       file to learn how stops looking.",
-                node: n.get("id").and_then(|x| x.as_str()).map(|s| s.to_string()),
-                file: Some(file.to_string()),
-            });
+            out.push(
+                Finding::new("instruction-nested-stub", file, "")
+                    .node(n.get("id").and_then(|x| x.as_str()).unwrap_or(""))
+                    .at(Some(file.to_string()), Some(1)),
+            );
         }
+    }
+    // Both load in every session; the gate puts the pair under ~200 lines.
+    let lines = c.text("CLAUDE.md").lines().count() + c.text("AGENTS.md").lines().count();
+    if lines >= 200 {
+        out.push(
+            Finding::new("instruction-length", "", lines.to_string())
+                .node("instr:agents")
+                .at(Some("AGENTS.md".into()), Some(1)),
+        );
     }
 }
 
@@ -803,6 +769,74 @@ pub fn blank_line_in_table(text: &str) -> Option<usize> {
     None
 }
 
+// ------------------------------------------------------------------ purposes
+
+/// What the repository is for: `code`, `research`, `strategy`, `docs`, in that
+/// order, and where that came from. The scaffolder records its `purpose_*`
+/// flags in the vars.json `/harness-update` reuses; without one the roster
+/// says it - a `researcher` means research, a dev or review seat means code.
+/// Nothing recognisable means code, the scaffolder's own default.
+pub fn purposes(root: &Path, graph: &Value) -> (Vec<String>, &'static str) {
+    const ORDER: &[&str] = &["code", "research", "strategy", "docs"];
+    let order = |set: BTreeSet<String>| -> Vec<String> {
+        ORDER.iter().filter(|p| set.contains(**p)).map(|p| p.to_string()).collect()
+    };
+    if let Ok(t) = fs::read_to_string(root.join(".claude/state/vars.json")) {
+        if let Ok(v) = serde_json::from_str::<Value>(&t) {
+            let set: BTreeSet<String> = v
+                .get("flags")
+                .and_then(|f| f.as_array())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|x| x.as_str())
+                        .filter_map(|x| x.strip_prefix("purpose_").map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            if !set.is_empty() {
+                return (order(set), "vars.json");
+            }
+        }
+    }
+    let mut set = BTreeSet::new();
+    for n in graph.get("nodes").and_then(|n| n.as_array()).map(|a| a.as_slice()).unwrap_or(&[]) {
+        if n.get("type").and_then(|t| t.as_str()) != Some("agent") || Ctx::disabled(n) {
+            continue;
+        }
+        let name = Ctx::name(n);
+        if name.ends_with("-dev") || CODE_SEATS.contains(&name) {
+            set.insert("code".to_string());
+        }
+        match name {
+            "researcher" => {
+                set.insert("research".to_string());
+            }
+            "strategist" => {
+                set.insert("strategy".to_string());
+            }
+            "writer" | "editor" => {
+                set.insert("docs".to_string());
+            }
+            _ => {}
+        }
+    }
+    if root.join(".claude/state/code-graph.json").is_file() {
+        set.insert("code".to_string());
+    }
+    if set.is_empty() {
+        return (vec!["code".to_string()], "default");
+    }
+    (order(set), "roster")
+}
+
+fn applies(r: &rubric::Rule, purposes: &[String]) -> bool {
+    match r.applies {
+        Applies::All => true,
+        Applies::Code => purposes.iter().any(|p| p == "code"),
+        Applies::NonCode => purposes.iter().any(|p| p != "code"),
+    }
+}
+
 // ---------------------------------------------------------------- statistics
 
 fn statistics(c: &Ctx) -> Value {
@@ -820,23 +854,17 @@ fn statistics(c: &Ctx) -> Value {
     }
     let mut by_model: BTreeMap<String, usize> = BTreeMap::new();
     for n in c.of_type("agent") {
-        let m = Ctx::meta(n, "model")
-            .and_then(|v| v.as_str())
-            .filter(|s| !s.is_empty())
-            .unwrap_or("(unset)");
+        let m = Ctx::meta(n, "model").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("(unset)");
         *by_model.entry(m.to_string()).or_insert(0) += 1;
     }
     let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
     for n in c.of_type("task") {
-        let s = Ctx::meta(n, "status")
-            .and_then(|v| v.as_str())
-            .filter(|s| !s.is_empty())
-            .unwrap_or("(none)");
+        let s = Ctx::meta(n, "status").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("(none)");
         *by_status.entry(s.to_string()).or_insert(0) += 1;
     }
 
-    // The session tax this project cares about: bytes of rule text that load
-    // unconditionally, measured from the files rather than estimated.
+    // The session tax: bytes of rule text that load unconditionally, measured
+    // from the files rather than estimated.
     let (mut always_bytes, mut scoped_bytes, mut always_n, mut scoped_n) = (0usize, 0usize, 0, 0);
     for n in c.of_type("rule") {
         let scoped = Ctx::meta(n, "scoped").and_then(|v| v.as_bool()).unwrap_or(false);
@@ -853,7 +881,7 @@ fn statistics(c: &Ctx) -> Value {
         }
     }
     let total = always_bytes + scoped_bytes;
-    let kept_out = if total > 0 { scoped_bytes * 100 / total } else { 0 };
+    let kept_out = (scoped_bytes * 100).checked_div(total).unwrap_or(0);
 
     let hooks = c.of_type("hook");
     let blocking = hooks
@@ -877,52 +905,181 @@ fn statistics(c: &Ctx) -> Value {
 
 // --------------------------------------------------------------------- scores
 
-/// Category scores, each the share of its checks that passed, weighted by
-/// severity. Deliberately NOT a single headline number by default: one number
-/// invites gaming and hides which half is broken. The overall figure is the
-/// plain mean of the categories and the UI shows that derivation.
+/// Overall score of a set of findings: the method in `rubric::METHOD`.
+fn overall_of(findings: &[&Finding]) -> u32 {
+    let n = rubric::CATEGORIES.len() as u32;
+    let sum: u32 = rubric::CATEGORIES
+        .iter()
+        .map(|(cat, _)| {
+            let penalty: u32 =
+                findings.iter().filter(|f| f.rule().category == *cat).map(|f| f.rule().sev.weight()).sum();
+            100u32.saturating_sub(penalty.min(100))
+        })
+        .sum();
+    sum.checked_div(n).unwrap_or(100)
+}
+
+/// Category scores with their derivation: which rules took how much, so the
+/// number can be checked against RUBRIC.md by hand.
 fn scores(findings: &[Finding]) -> Value {
-    const CATS: &[&str] = &["Safety", "Cost control", "Traceability", "Board health", "Docs quality"];
-    let weight = |s: Sev| match s {
-        Sev::High => 12u32,
-        Sev::Medium => 5,
-        Sev::Low => 2,
-        Sev::Info => 0,
-    };
-    let mut out = Map::new();
-    let mut sum = 0u32;
-    let mut n = 0u32;
-    for cat in CATS {
-        let penalty: u32 = findings
+    let mut cats = Map::new();
+    for (cat, cat_ja) in rubric::CATEGORIES {
+        let mine: Vec<&Finding> = findings.iter().filter(|f| f.rule().category == *cat).collect();
+        let mut by_rule: BTreeMap<&str, (u32, u32)> = BTreeMap::new();
+        for f in &mine {
+            let e = by_rule.entry(f.rule().id).or_insert((0, f.rule().sev.weight()));
+            e.0 += 1;
+        }
+        let penalty: u32 = by_rule.values().map(|(n, w)| n * w).sum();
+        let derivation: Vec<Value> = by_rule
             .iter()
-            .filter(|f| f.category == *cat)
-            .map(|f| weight(f.sev))
-            .sum();
-        let score = 100u32.saturating_sub(penalty.min(100));
-        out.insert(
+            .filter(|(_, (_, w))| *w > 0)
+            .map(|(id, (n, w))| json!({"rubric": id, "count": n, "weight": w, "points": n * w}))
+            .collect();
+        cats.insert(
             cat.to_string(),
             json!({
-                "score": score,
-                "findings": findings.iter().filter(|f| f.category == *cat).count(),
-                "penalty": penalty
+                "score": 100u32.saturating_sub(penalty.min(100)),
+                "findings": mine.len(),
+                "penalty": penalty,
+                "label_ja": cat_ja,
+                "derivation": derivation,
             }),
         );
-        sum += score;
-        n += 1;
     }
-    let overall = if n > 0 { sum / n } else { 100 };
+    let all: Vec<&Finding> = findings.iter().collect();
     json!({
-        "categories": Value::Object(out),
-        "overall": overall,
-        "method": "Each category starts at 100 and loses 12 per high finding, 5 per medium, \
-                   2 per low, floored at 0. Overall is the plain mean of the five categories. \
-                   The weights are a stated convention, not a measurement.",
-        "not_measured": [
-            "whether the rules say anything useful for this codebase",
-            "whether the agents' scopes match how the code is really organised",
-            "whether a hook that exists actually blocks what it claims to",
-            "code quality, test quality, or the depth of any review"
-        ]
+        "categories": Value::Object(cats),
+        "overall": overall_of(&all),
+        "method": rubric::METHOD[0],
+        "method_ja": rubric::METHOD[1],
+        "not_measured": rubric::NOT_MEASURED.iter().map(|x| x[0]).collect::<Vec<_>>(),
+        "not_measured_ja": rubric::NOT_MEASURED.iter().map(|x| x[1]).collect::<Vec<_>>(),
+    })
+}
+
+/// The rules to fix first. One entry per rubric rule with findings, ordered by
+/// `points * 6 / effort` (points = weight times count; 6 keeps efforts 1, 2 and
+/// 3 integral), then severity, then id. `gain` is what the overall score would
+/// become with that rule's findings gone - honest about the floor at 0.
+fn worklist(findings: &[Finding]) -> Value {
+    let all: Vec<&Finding> = findings.iter().collect();
+    let now = overall_of(&all);
+    let mut groups: BTreeMap<&str, Vec<&Finding>> = BTreeMap::new();
+    for f in findings {
+        groups.entry(f.rule().id).or_default().push(f);
+    }
+    let mut rows: Vec<(u32, u8, &str, Value)> = Vec::new();
+    for (id, fs_) in groups {
+        let r = fs_[0].rule();
+        let points = r.sev.weight() * fs_.len() as u32;
+        if points == 0 {
+            continue;
+        }
+        let rest: Vec<&Finding> = all.iter().copied().filter(|f| f.rule().id != id).collect();
+        let after = overall_of(&rest);
+        let priority = points * 6 / u32::from(r.effort.max(1));
+        let one_click = fs_.iter().filter(|f| f.action.is_some()).count();
+        // One finding: its fix verbatim. Several: the fix with the subject left
+        // as a placeholder, and the subjects listed beside it.
+        let single = fs_.len() == 1;
+        let fix = |i: usize| {
+            let (n, e) = if single {
+                (fs_[0].name.clone(), fs_[0].extra.clone())
+            } else {
+                (["<name>", "<名前>"][i].to_string(), ["<value>", "<値>"][i].to_string())
+            };
+            rubric::render(r.fix[i], &n, &e)
+        };
+        let mut names: Vec<String> = fs_.iter().map(|f| f.name.clone()).filter(|n| !n.is_empty()).collect();
+        names.dedup();
+        rows.push((
+            priority,
+            r.sev.rank(),
+            r.id,
+            json!({
+                "rubric": r.id, "check": r.check, "severity": r.sev.as_str(),
+                "category": r.category, "category_ja": rubric::category_ja(r.category),
+                "title": r.title[0], "title_ja": r.title[1], "full": r.full[0], "full_ja": r.full[1],
+                "fix": fix(0), "fix_ja": fix(1), "names": names,
+                "count": fs_.len(), "effort": r.effort, "points": points, "priority": priority,
+                "one_click": one_click,
+                "overall_after": after, "gain": after.saturating_sub(now),
+                "keys": fs_.iter().map(|f| f.key()).collect::<Vec<_>>(),
+            }),
+        ));
+    }
+    rows.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)).then(a.2.cmp(b.2)));
+    Value::Array(rows.into_iter().map(|r| r.3).collect())
+}
+
+// ----------------------------------------------------------------------- diff
+
+/// What changed between two assessments of the same repository: findings fixed
+/// and introduced (matched by `key`), and every score that moved. `prev` and
+/// `cur` are `assess()` outputs; a previous one from an older version without
+/// keys simply reports everything as new.
+pub fn diff(prev: &Value, cur: &Value) -> Value {
+    let index = |a: &Value| -> BTreeMap<String, Value> {
+        a.get("findings")
+            .and_then(|f| f.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|f| f.get("key").and_then(|k| k.as_str()).map(|k| (k.to_string(), f.clone())))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let (p, c) = (index(prev), index(cur));
+    let fixed: Vec<Value> = p.iter().filter(|(k, _)| !c.contains_key(*k)).map(|(_, v)| v.clone()).collect();
+    let new: Vec<Value> = c.iter().filter(|(k, _)| !p.contains_key(*k)).map(|(_, v)| v.clone()).collect();
+    let unchanged = c.keys().filter(|k| p.contains_key(*k)).count();
+    let score = |a: &Value, path: &[&str]| -> Value {
+        let mut v = a;
+        for s in path {
+            v = v.get(*s).unwrap_or(&Value::Null);
+        }
+        v.clone()
+    };
+    let mut cats = Map::new();
+    for (cat, _) in rubric::CATEGORIES {
+        let from = score(prev, &["scores", "categories", cat, "score"]);
+        let to = score(cur, &["scores", "categories", cat, "score"]);
+        if from != to {
+            cats.insert(cat.to_string(), json!({"from": from, "to": to}));
+        }
+    }
+    json!({
+        "fixed": fixed,
+        "new": new,
+        "unchanged": unchanged,
+        "overall": {"from": score(prev, &["scores", "overall"]), "to": score(cur, &["scores", "overall"])},
+        "categories": cats,
+    })
+}
+
+/// Nodes added and removed between two scans, by id.
+pub fn graph_diff(prev: &Value, cur: &Value) -> Value {
+    let ids = |g: &Value| -> BTreeSet<String> {
+        g.get("nodes")
+            .and_then(|n| n.as_array())
+            .map(|a| a.iter().filter_map(|n| n.get("id").and_then(|i| i.as_str()).map(String::from)).collect())
+            .unwrap_or_default()
+    };
+    let edges = |g: &Value| -> BTreeSet<String> {
+        g.get("edges")
+            .and_then(|n| n.as_array())
+            .map(|a| a.iter().map(|e| format!("{} -{}-> {}", e["from"].as_str().unwrap_or(""),
+                                               e["type"].as_str().unwrap_or(""), e["to"].as_str().unwrap_or(""))).collect())
+            .unwrap_or_default()
+    };
+    let (a, b) = (ids(prev), ids(cur));
+    let (ea, eb) = (edges(prev), edges(cur));
+    json!({
+        "nodes_added": b.difference(&a).collect::<Vec<_>>(),
+        "nodes_removed": a.difference(&b).collect::<Vec<_>>(),
+        "edges_added": eb.difference(&ea).collect::<Vec<_>>(),
+        "edges_removed": ea.difference(&eb).collect::<Vec<_>>(),
     })
 }
 
@@ -930,92 +1087,166 @@ fn scores(findings: &[Finding]) -> Value {
 
 /// Assess a scanned graph. `graph` is the value `scan::scan` produced.
 pub fn assess(root: &Path, graph: &Value) -> Value {
+    assess_with(root, graph, None)
+}
+
+/// Assess with the purposes given rather than detected (`--purpose`).
+pub fn assess_with(root: &Path, graph: &Value, purpose_override: Option<Vec<String>>) -> Value {
     let empty = vec![];
-    let nodes: Vec<&Value> = graph
-        .get("nodes")
-        .and_then(|n| n.as_array())
-        .unwrap_or(&empty)
-        .iter()
-        .collect();
-    let edges: &[Value] = graph
-        .get("edges")
-        .and_then(|e| e.as_array())
-        .map(|v| v.as_slice())
-        .unwrap_or(&[]);
+    let nodes: Vec<&Value> = graph.get("nodes").and_then(|n| n.as_array()).unwrap_or(&empty).iter().collect();
+    let edges: &[Value] = graph.get("edges").and_then(|e| e.as_array()).map(|v| v.as_slice()).unwrap_or(&[]);
     let c = Ctx { root, nodes, edges };
+    let (purposes, source) = match purpose_override {
+        Some(p) if !p.is_empty() => (p, "given"),
+        _ => purposes(root, graph),
+    };
 
     let mut f: Vec<Finding> = Vec::new();
-    check_agent_model(&c, &mut f);
-    check_agent_tools(&c, &mut f);
-    check_reviewer_readonly(&c, &mut f);
+    check_agent_budget(&c, &mut f);
+    check_review_seats(&c, &mut f);
     check_spawn_boundary(&c, &mut f);
     check_rule_scoping(&c, &mut f);
     check_hook_wiring(&c, &mut f);
-    check_guardrail_layers(&c, &mut f);
+    check_guardrail_layers(&c, &mut f, &purposes);
     check_task_owners(&c, &mut f);
     check_board(&c, &mut f);
     check_dangling_scripts(&c, &mut f);
     check_skill_wiring(&c, &mut f);
     check_broken_tables(&c, &mut f);
     check_instruction_files(&c, &mut f);
+    // A rule about code does not grade a research repository, and a rule about
+    // deliverables does not grade a code one.
+    f.retain(|x| applies(x.rule(), &purposes));
+    // an empty node id is "about no node"
+    for x in f.iter_mut() {
+        if x.node.as_deref() == Some("") {
+            x.node = None;
+        }
+    }
 
     f.sort_by(|a, b| {
-        a.sev
+        a.rule()
+            .sev
             .rank()
-            .cmp(&b.sev.rank())
-            .then_with(|| a.check.cmp(b.check))
-            .then_with(|| a.title.cmp(&b.title))
+            .cmp(&b.rule().sev.rank())
+            .then_with(|| a.rule().id.cmp(b.rule().id))
+            .then_with(|| a.key().cmp(&b.key()))
     });
 
+    let count = |s: Sev| f.iter().filter(|x| x.rule().sev == s).count();
     let counts = json!({
-        "high": f.iter().filter(|x| x.sev == Sev::High).count(),
-        "medium": f.iter().filter(|x| x.sev == Sev::Medium).count(),
-        "low": f.iter().filter(|x| x.sev == Sev::Low).count(),
-        "info": f.iter().filter(|x| x.sev == Sev::Info).count(),
+        "high": count(Sev::High), "medium": count(Sev::Medium),
+        "low": count(Sev::Low), "info": count(Sev::Info),
     });
+    let skipped: Vec<&str> = rubric::RULES.iter().filter(|r| !applies(r, &purposes)).map(|r| r.id).collect();
 
+    // Without the strip a canonicalized Windows path printed as `//?/D:/...`.
+    let shown = root.display().to_string();
+    let root_text = shown.strip_prefix(r"\\?\").unwrap_or(&shown).replace('\\', "/");
     json!({
         "version": 1,
-        "root": root.display().to_string().replace('\\', "/"),
+        "root": root_text,
+        "purposes": {"list": purposes, "source": source, "rules_not_applied": skipped},
         "counts": counts,
         "scores": scores(&f),
+        "worklist": worklist(&f),
         "statistics": statistics(&c),
         "findings": f.iter().map(|x| x.to_json()).collect::<Vec<_>>(),
     })
 }
 
+/// CLI options for `assess`.
+#[derive(Default)]
+pub struct CliOpts {
+    pub json: bool,
+    pub ja: bool,
+    pub since: Option<std::path::PathBuf>,
+    pub purposes: Option<Vec<String>>,
+}
+
 /// CLI entry: assess a path and print a report or JSON.
-pub fn assess_cli(root: &Path, as_json: bool) -> Result<i32, String> {
+pub fn assess_cli(root: &Path, o: &CliOpts) -> Result<i32, String> {
     let graph = crate::scan::scan(root);
-    let a = assess(root, &graph);
-    if as_json {
+    let mut a = assess_with(root, &graph, o.purposes.clone());
+    let since = match &o.since {
+        Some(p) => {
+            let t = fs::read_to_string(p).map_err(|e| format!("--since {}: {e}", p.display()))?;
+            let prev: Value = serde_json::from_str(&t).map_err(|e| format!("--since {}: {e}", p.display()))?;
+            Some(diff(&prev, &a))
+        }
+        None => None,
+    };
+    if o.json {
+        if let Some(d) = since {
+            a["since"] = d;
+        }
         println!("{}", serde_json::to_string_pretty(&a).unwrap_or_default());
         return Ok(0);
     }
+    let i = usize::from(o.ja);
+    let pick = |v: &Value, k: &str| -> String {
+        let key = if o.ja { format!("{k}_ja") } else { k.to_string() };
+        v[key.as_str()].as_str().or(v[k].as_str()).unwrap_or("").to_string()
+    };
     let counts = &a["counts"];
-    println!("harness assessment: {}", a["root"].as_str().unwrap_or(""));
+    let purposes = a["purposes"]["list"].as_array().map(|p| {
+        p.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>().join(", ")
+    }).unwrap_or_default();
+    println!("{}: {}", ["harness assessment", "ハーネス評価"][i], a["root"].as_str().unwrap_or(""));
+    println!("  {}: {purposes} ({})", ["purposes", "目的"][i], a["purposes"]["source"].as_str().unwrap_or(""));
     println!(
-        "  overall {}/100   high {}  medium {}  low {}",
-        a["scores"]["overall"], counts["high"], counts["medium"], counts["low"]
+        "  {} {}/100   high {}  medium {}  low {}",
+        ["overall", "総合"][i], a["scores"]["overall"], counts["high"], counts["medium"], counts["low"]
     );
     if let Some(cats) = a["scores"]["categories"].as_object() {
         for (k, v) in cats {
-            println!("    {:<14} {:>3}/100  ({} findings)", k, v["score"], v["findings"]);
+            let label = if o.ja { v["label_ja"].as_str().unwrap_or(k).to_string() } else { k.clone() };
+            println!("    {:<16} {:>3}/100  ({} {})", label, v["score"], v["findings"], ["findings", "件"][i]);
+        }
+    }
+    if let Some(d) = &since {
+        println!(
+            "\n  {}: {} -> {}   {} {}, {} {}",
+            ["since the previous assessment", "前回の評価から"][i],
+            d["overall"]["from"], d["overall"]["to"],
+            d["fixed"].as_array().map(|x| x.len()).unwrap_or(0), ["fixed", "件解消"][i],
+            d["new"].as_array().map(|x| x.len()).unwrap_or(0), ["new", "件新規"][i],
+        );
+        for f in d["new"].as_array().into_iter().flatten() {
+            println!("    + [{}] {}", f["rubric"].as_str().unwrap_or(""), pick(f, "title"));
+        }
+        for f in d["fixed"].as_array().into_iter().flatten() {
+            println!("    - [{}] {}", f["rubric"].as_str().unwrap_or(""), pick(f, "title"));
+        }
+    }
+    if let Some(w) = a["worklist"].as_array() {
+        if !w.is_empty() {
+            println!("\n  {}", ["fix these first:", "まずこれを直す:"][i]);
+        }
+        for (n, x) in w.iter().take(3).enumerate() {
+            println!(
+                "    {}. [{}] {} x{}  ({} {}, {} {})",
+                n + 1, x["rubric"].as_str().unwrap_or(""), pick(x, "full"), x["count"],
+                ["effort", "手間"][i], x["effort"], ["overall after", "解消後の総合"][i], x["overall_after"],
+            );
         }
     }
     if let Some(list) = a["findings"].as_array() {
         if !list.is_empty() {
-            println!("\n  findings, worst first:");
+            println!("\n  {}", ["findings, worst first:", "指摘（重い順）:"][i]);
         }
         for x in list.iter().take(40) {
             println!(
-                "    [{}] {}",
-                x["severity"].as_str().unwrap_or("?"),
-                x["title"].as_str().unwrap_or("")
+                "    [{} {}] {}",
+                x["severity"].as_str().unwrap_or("?"), x["rubric"].as_str().unwrap_or(""), pick(x, "title")
             );
+            if let Some(e) = x["evidence"].as_str() {
+                println!("        {}: {e}", ["at", "根拠"][i]);
+            }
+            println!("        {}: {}", ["fix", "修正"][i], pick(x, "fix"));
         }
         if list.len() > 40 {
-            println!("    ... and {} more", list.len() - 40);
+            println!("    ... {} {}", list.len() - 40, ["more", "件省略"][i]);
         }
     }
     // exit 1 when anything high is outstanding, so CI can gate on it

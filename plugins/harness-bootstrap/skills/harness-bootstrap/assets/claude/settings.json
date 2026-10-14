@@ -1,9 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-{{#IF_RTK}}  "env": {
-    "RTK_TELEMETRY_DISABLED": "1"
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "2",
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "4"{{#IF_RTK}},
+    "RTK_TELEMETRY_DISABLED": "1"{{/IF_RTK}}
   },
-{{/IF_RTK}}  "permissions": {
+  "permissions": {
     "allow": [
       "Read",
       "Grep",
@@ -47,11 +49,9 @@
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(git reset --hard:*)",
-      "Bash(rm -rf:*)",
-{{^IF_DEPLOY_ASK}}
-      "Bash({{DEPLOY_CMD}}:*)",
-{{/IF_DEPLOY_ASK}}
-      "Bash({{DB_RESET_CMD}}:*)"
+{{#IF_DB}}      "Bash({{DB_RESET_CMD}}:*)",
+{{/IF_DB}}{{^IF_DEPLOY_ASK}}      "Bash({{DEPLOY_CMD}}:*)",
+{{/IF_DEPLOY_ASK}}      "Bash(rm -rf:*)"
     ],
     "ask": [
 {{#IF_PR_CLI}}      "Bash({{PR_CLI}} create:*)",
@@ -77,6 +77,11 @@
           {
             "type": "command",
             "command": "{{HOOK_RUNNER}} .claude/hooks/guard-task-scope.{{HOOK_EXT}}",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-board.{{HOOK_EXT}}",
             "timeout": 10
           }
         ]
@@ -122,6 +127,66 @@
         ]
       },
       {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-destructive.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{#IF_HOOKS_STRICT}}      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-large-file.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-egress.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{#IF_PURPOSE_CODE}}      {
+        "matcher": "Edit|Write|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-deps.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_PURPOSE_CODE}}{{/IF_HOOKS_STRICT}}{{#IF_DB}}      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-migration.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_DB}}{{#IF_LONG}}      {
+        "matcher": "Bash|PowerShell|Edit|MultiEdit|Write|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/retry-budget.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_LONG}}      {
         "matcher": "Agent|Task",
         "hooks": [
           {
@@ -133,7 +198,47 @@
       }
     ],
     "PostToolUse": [
-      {
+{{#IF_HOOKS_STRICT}}      {
+        "matcher": "Bash|PowerShell|Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/secret-guard.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_HOOKS_STRICT}}{{#IF_HOOKS_STRICT}}      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-egress.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_HOOKS_STRICT}}{{#IF_PURPOSE_RESEARCH}}      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/research-sources.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_PURPOSE_RESEARCH}}{{#IF_PURPOSE_DOCS}}      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/docs-links.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_PURPOSE_DOCS}}      {
         "matcher": "Edit|Write",
         "hooks": [
           {
@@ -149,8 +254,123 @@
         ]
       }
     ],
-    "SubagentStop": [
+{{#IF_LONG}}    "PostToolUseFailure": [
       {
+        "matcher": "Bash|PowerShell|Edit|MultiEdit|Write|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/retry-budget.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/compact-checkpoint.{{HOOK_EXT}}",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/session-context.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/agent-trace.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/agent-trace.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/agent-trace.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+{{/IF_LONG}}{{#IF_HOOKS_STRICT}}    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/stop-evidence.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/secret-guard.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "user_settings|project_settings|local_settings",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/guard-config.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+{{/IF_HOOKS_STRICT}}    "SubagentStop": [
+{{#IF_HOOKS_STRICT}}      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/stop-evidence.{{HOOK_EXT}}",
+            "timeout": 10
+          }
+        ]
+      },
+{{/IF_HOOKS_STRICT}}      {
         "matcher": "*",
         "hooks": [
           {

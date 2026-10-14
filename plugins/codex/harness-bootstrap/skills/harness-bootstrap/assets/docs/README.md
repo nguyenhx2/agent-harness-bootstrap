@@ -30,7 +30,9 @@ filenames stay English regardless.
 
 A task is in exactly one of five states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`. They
 are defined in the frontmatter of `templates/TASK.md`, which is the single source of truth for the
-state machine. The task file's `status:` and its row in `tasks/master-plan.md` must always agree.
+state machine. The task file's `status:` and its row in `tasks/master-plan.md` must always agree,
+so both change only through `python .claude/scripts/task.py move`. Archived session-log rows live
+in `tasks/log/`.
 
 ## Conventions
 

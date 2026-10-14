@@ -1,5 +1,7 @@
 # Tailored Build
 
+**English** · [[日本語|Tailored-Build-ja]]
+
 `spec-builder` ends with a contract. `harness-bootstrap` begins with a codebase. **The step between
 them is where the team gets decided**, and it is the step most agent kits do not have at all.
 
@@ -31,14 +33,15 @@ codebase analysis says what is already here. The roster comes from those two and
 | Decided from | What it decides |
 |---|---|
 | The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
-| The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
+| The repo's purpose | Code, research, strategy or docs, in any combination. A research repo gets `researcher` and `checker`, a docs repo `writer` and `checker`, and none of them gets a test suite or a code review gate it has no use for. |
+| The contract and your answers | Which of the 18 seats are filled. A run installs **3 to 17 of the 18 seats**, never all of them by default. |
 | The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
 | The paths that exist | Which rules are path-scoped, which is what keeps most rule content out of the default session. |
 
 ## The numbers are measured, not claimed
 
-Scaffold with the leanest answers and you get 7 seats. Answer yes to databases, tests and a
-long-lived project and you get 15.
+Scaffold with the leanest answers and you get 3 seats (a documentation or research repo). Answer yes
+to databases, tests and a long-lived project on a code repo and you get 17.
 
 That range is not a figure somebody wrote down. `scripts/check_numbers.py` computes it using the
 **scaffolder's own selection function**, over every combination of the flags that gate an agent, so
@@ -60,7 +63,9 @@ installs unless you pick it.
 
 **Skill Wire** answers *installed is not the same as reachable*. `/skill-wire` connects a chosen
 skill to the agent seat or command that will use it, and records that connection as a node in the
-graph rather than a convention in a document.
+graph rather than a convention in a document. When nothing found fits a recurring workflow,
+`/new-skill` first decides whether it earns a project skill at all (refusing is a normal outcome),
+then scaffolds it and lints it with `skill-check.py`: find, then create, then wire.
 
 Because the wire is a node, `harness-view` can show which skills are wired and which are merely
 sitting on disk, and `assess` reports the difference as a finding rather than leaving you to notice
@@ -76,7 +81,7 @@ harness-view assess .
 ```
 
 That is the point of stating the claim as a number instead of an adjective. "Tailored" is a word
-anyone can put in a README. *Seven to fifteen of sixteen, and here is the finding when a seat has no
+anyone can put in a README. *Three to seventeen of eighteen, and here is the finding when a seat has no
 module* is something you can check.
 
 ## See also

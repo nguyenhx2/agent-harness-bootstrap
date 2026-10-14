@@ -1,5 +1,7 @@
 # Publishing the wiki
 
+**English** · [日本語](README-publishing.ja.md)
+
 The pages in this directory are the SOURCE for the GitHub wiki. The wiki itself is a separate git
 repository (`<repo>.wiki.git`) and nothing in CI reads it, which is exactly why wikis rot: the counts
 inside them go stale and no check ever notices.

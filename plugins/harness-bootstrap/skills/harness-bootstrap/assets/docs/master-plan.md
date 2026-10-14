@@ -22,7 +22,8 @@ equal the `status:` in the task file's frontmatter. The five valid states are de
 |------|-------|-------|------|----------|-------|--------|
 | TASK-001 | <first task> | <owner agent> | - | P0 | 1 | Planned |
 
-<!-- Update the Status column on EVERY status change, in the same change as the task file. -->
+<!-- Never edit the Status column by hand: `python .claude/scripts/task.py move TASK-NNN <state>`
+     changes it together with the task file, and `task.py check` finds any drift. -->
 
 <!-- This is the most conflict-prone file in the repository: every task branch edits one row of it,
      so the rows collide constantly, and a merge that resolves the collision by taking one side

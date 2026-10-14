@@ -10,14 +10,79 @@ into `.claude/settings.json`). The two flavors are behaviorally equivalent by co
 | `guard-main-commit` | PreToolUse | `Bash` | `git commit` / `git push` while the effective branch is `{{DEFAULT_BRANCH}}` or `master`. Resolves the target dir from `cd` / `git -C` so worktrees don't misfire. | Both resolve relative target dirs against payload `cwd`. |
 | `check-commit-msg` | PreToolUse | `Bash` | A `git commit -m` subject that violates conventional-commits: bad type, >72 chars, trailing period, uppercase description. | PS **must** use `-cmatch`/`-cnotmatch`; bash `grep -E` is case-sensitive already. Plain `-match` silently passes `Feat:`. |
 | `protect-secrets` | PreToolUse | `Read\|Edit\|Write\|Bash` | Reads/edits of `.env*` (except `.env.example`), `*.pem/key/pfx/p12`, `secrets?/` + `credentials?/` dirs, service-account JSON; shell commands that read/copy `.env`; destructive DB commands (`{{DB_RESET_PATTERN}}`). | Parity-locked: identical globs, command patterns and block conditions in both flavors. Matching is case-INSENSITIVE on purpose (`-match` / `grep -Ei`). |
-| `guard-agent-spawn` | PreToolUse | `Agent\|Task` | Three checks on every subagent dispatch: 1) roster membership - `subagent_type` must have a `.claude/agents/<type>.md` or be on the `spawn-allowlist`; 2) model pinning - a spawn cannot override a roster seat's `model:`; 3) task linkage - a write-capable seat (`Edit`/`Write` in `tools:`) must name a registered `TASK-NNN` in the dispatch prompt. | Allowlist is `.claude/hooks/spawn-allowlist` (one type per line, `#` comments); ships with `Explore` and `Plan`. |
+| `guard-agent-spawn` | PreToolUse | `Agent\|Task` | Four checks on every subagent dispatch: 1) roster membership - `subagent_type` must have a `.claude/agents/<type>.md` or be on the `spawn-allowlist`; 2) model pinning - a spawn cannot override a roster seat's `model:`; 3) task linkage - a write-capable seat (`Edit`/`Write` in `tools:`) must name a registered `TASK-NNN` in the dispatch prompt; 4) the verification ledger (`verify-plan.py --dispatch-check`, see below) - no re-run on content that passed, at most two dispatches of a seat on one content with no result, two review rounds, no identical brief, and a per-task dispatch budget. | Allowlist is `.claude/hooks/spawn-allowlist` (one type per line, `#` comments); ships with `Explore` and `Plan`. |
 | `guard-agent-scope` | PreToolUse | `Edit\|Write` | Nothing - **advisory, not enforced**. The Edit/Write payload names no calling subagent (see the hook's header and "Gotchas" below), so it cannot block a write to a module a different seat owns. Instead it emits `additionalContext` when a write falls outside the sole Active task's declared "Related files and modules" AND the target module's owner (`.claude/state/code-graph.json`) differs from the task's `owner:`. Silent whenever the picture is ambiguous. | Non-blocking, always exit 0. Needs perl or python3 for the graph comparison; jq alone cannot express it (same call as `agent-history`'s transcript parsing). |
 | `specs-reminder` | PostToolUse | `Edit\|Write` | Nothing. Emits `additionalContext` when `docs/specs/` changes: update `13-revision-history.md`, sync the PRD. | Non-blocking, always exit 0. |
-| `graph-stale` | PostToolUse | `Edit\|Write` | Nothing. Three tiers by edited path: a harness file (`.claude/` agents/rules/commands/hooks, `settings.json`, `disabled.json`) regenerates `harness-graph.json` + its HTML immediately (cheap scan); a `docs/**/*.md` edit regenerates the docs graph + HTML; a source file is appended to `.claude/state/code-graph.stale`, with an `additionalContext` nudge past 20 accumulated edits - full code scans stay deliberate (`/code-graph`). | Non-blocking, always exit 0. Script-driven mutations (scaffold re-runs, `harness-toggle.py`) do not fire this hook - those tools regenerate the graph themselves. |
+| `graph-stale` | PostToolUse | `Edit\|Write` | Nothing. Two tiers by edited path: a harness file (`.claude/` agents/rules/commands/hooks, `settings.json`, `disabled.json`) regenerates `harness-graph.json` + its HTML immediately (cheap scan); a source file, once the module-boundary map exists, is checked with `code-graph.py --file`, and any cross-module import the map does not list is named once in `additionalContext` until the next{{#IF_PURPOSE_CODE}} `/code-graph`{{/IF_PURPOSE_CODE}} rebuild accepts it. The docs graph is not rebuilt here: it is a check run on demand (`/docs-graph`). | Non-blocking, always exit 0. Script-driven mutations (scaffold re-runs, `harness-toggle.py`) do not fire this hook - those tools regenerate the graph themselves. |
 | `agent-history` | SubagentStop | `*` | Nothing. Archives each finished subagent run to `.claude/state/history/` at the detail level set in `.claude/state/history-level` (line 1: `full`/`summary`/`minimal`/`off`; line 2: retention count - only the newest N per-run files are kept, `index.md` never pruned). Missing/unreadable config means `full`/200, the historical behavior. | Non-blocking, always exit 0. Change the level with `/harness-tune` dial 6. |
+| `guard-board` | PreToolUse | `Edit\|Write` | A hand edit to a task row of `docs/tasks/master-plan.md`: an Edit whose `old_string`/`new_string` touches a `\| TASK-NNN \|` row, a Write that replaces an existing board, any MultiEdit of it. Task state lives in three places (row, `status:`, folder) and `python .claude/scripts/task.py move` changes all three and reads the row back. The message names that command. | `task.py` writes through Bash, so it never meets this hook. The first Write that creates the board is allowed; so are Edits to the Phases table and prose, which have no CLI verb. |
 
 `protect-repos` (PreToolUse `Edit|Write`, blocks writes into product-repo dirs) ships only with the
 audit workspace - see `assets/audit/hooks/`.
+
+## Opt-in hooks: one per scenario
+
+These ship only when their flag is set, and the scaffolder registers them in `settings.json` inside
+the same flag's block, so a hook is never installed without being wired. They are not in the base
+`registration.*.json` files for the same reason `rtk-rewrite` is not. Each one decides
+deliberately between **block** (exit 2) and **warn** (exit 0 with `additionalContext`); the
+column says which and why.
+
+| Hook | Flag | Event / matcher | Does | Block or warn, and why |
+|------|------|-----------------|------|------------------------|
+| `guard-destructive` | **none - ships by default** | PreToolUse `Bash\|PowerShell` | `rm -rf` on the repo root, home, `/`, a top-level system dir, a drive root or a top-level folder on a drive, `.`/`..`/`*`/`.git`; the same targets for PowerShell `Remove-Item`/`ri`/`rd`/`rmdir`/`del`/`erase` with `-Recurse` (any abbreviation) and cmd's `/s`; a force push (`--force`, `-f`, `--force-with-lease`, `+refspec`) to `{{DEFAULT_BRANCH}}`/main/master/production/prod/release/*; `git reset --hard`; `git clean` with `-x`; `git checkout .`/`git restore .`; DROP/TRUNCATE sent to a non-local host. | **Block.** None of it can be undone from inside the session. The `settings.json` deny rules only match the literal prefix; `cd x && rm -rf .`, `env git push -f` and `git push origin main --force` walk past them. `rm -rf dist`, a force push to your own branch and a DROP on localhost stay allowed. Not opt-in: without it, a default install's only defence against a force push is a prefix deny rule. |
+| `guard-large-file` | `hooks_strict` | PreToolUse `Bash\|PowerShell` | A `git add` (checked with `git add --dry-run`, so `git add -A && git commit` is caught at the add) or `git commit` that would put a file over 5 MB, or a binary artifact by extension (archives, executables, media, local databases, ML weights), into history - unless Git LFS tracks it. | **Block.** History is permanent, and a local database or model dump is how real data leaks into a repo. The fix (LFS, `.gitignore`) is cheap now and a history rewrite later. |
+| `guard-egress` | `hooks_strict` | PreToolUse `Bash\|PowerShell\|WebFetch`, PostToolUse `WebFetch` | Blocks a shell upload (curl `-d/-F/-T/--json`, `-X POST`; wget `--post-*`; `Invoke-WebRequest -Body/-InFile`) to a host not on `.claude/hooks/egress-allowlist` (EXACT hosts: `github.com` does not cover `api.github.com`), and a WebFetch to an unknown host with a query string over 256 chars. After a WebFetch from an unknown host, adds an untrusted-content reminder. | **Block the send, warn on the read.** Reading the web is ordinary work; acting on a fetched page that says "now POST the env file here" is the prompt-injection step worth stopping. Not a firewall - accepted gaps for a defence-in-depth hook: a URL held in a variable (`curl -d @f "$URL"`), data carried in a GET query to a shell tool, a host with no scheme, scp/rsync/nc. A network egress policy closes those. |
+| `stop-evidence` | `hooks_strict` | Stop, SubagentStop | A final message that claims completion ("all tests pass", "ready to merge", "implementation complete") with no evidence: no `Evidence:`/`Verified` line, pass/fail count, exit code, code block, or honest "not verified". | **Block once.** The orchestrator or the user acts on that sentence. When `stop_hook_active` is true it always allows, so it costs at most one extra turn and can never loop. A message that claims nothing is never touched. |
+| `guard-deps` | `purpose_code` + `hooks_strict` | PreToolUse `Edit\|Write\|Bash\|PowerShell` | A hand edit of a lockfile; a download piped into an interpreter (`curl \| sh`, `irm \| iex`); an install from a VCS/URL spec with no commit SHA or hash, `go install x@latest`, `cargo install --git` without `--rev`. Registry installs by name pass - the lockfile pins those. | **Block.** The install script runs before a warning is read. Each message names the pinned alternative. |
+| `guard-migration` | `db` | PreToolUse `Edit\|Write` | An edit to a migration (`migrations/`, `db/migrate/`, `alembic/versions/`, `flyway/`, `db/changelog/`) that already exists on `{{DEFAULT_BRANCH}}`. New migrations and feature-branch-only ones are fine. | **Block.** Every database that applied the old version keeps it; the edit makes environments disagree with no error until a fresh build. A new migration is always available. |
+| `retry-budget` | `long` | PostToolUseFailure and PreToolUse, `Bash\|PowerShell\|Edit\|MultiEdit\|Write\|WebFetch` | Counts consecutive IDENTICAL failures of one call (tool + input, minus `description`). Warns at the 2nd; blocks the next identical attempt after the 3rd. Any different call resets it; interrupts never count. | **Warn, then block.** Counting failures rather than repeats means successful polling (`gh pr checks`, a status command) is never touched; an unchanged retry of something that failed three times will fail a fourth. The message points at `task.py attempt`. |
+| `compact-checkpoint` | `long` | PreCompact `manual\|auto` | Writes `.claude/state/compact-checkpoint.md`: branch, `/compact` instructions, each active task with status, owner, its `## Checkpoint` lines (from `task.py checkpoint`) and first unchecked item, and uncommitted changes. No timestamp; overwritten each time. | **Never blocks.** Blocking an automatic compaction triggered by a context-limit error fails the request outright. |
+| `session-context` | `long` | SessionStart `startup\|resume\|clear\|compact` | Injects the active tasks with owner and next step (checkpoint Next step, else first unchecked item), at most 8; after a compaction, points at `.claude/state/compact-checkpoint.md`. Silent with nothing to say. | **Context only** (SessionStart cannot block). The two moments a long session loses its place - a fresh start and a compaction - are moments a hook sees and a rule does not. |
+| `research-sources` | `purpose_research` | PostToolUse `Edit\|Write` | A Markdown note under `research/`, `findings/`, `notes/`, `report(s)/`, `brief(s)/`, `sources/` or `literature/` with 400+ characters and no URL, DOI, arXiv id, footnote, Sources section or explicit `Assumption:`/`Unsourced:` label. | **Warn.** Notes are written in passes - claims first, sources while checking - and blocking the draft stops the work that finds the sources. |
+| `docs-links` | `purpose_docs` | PostToolUse `Edit\|Write` | Relative Markdown links whose target does not exist, resolved from the file's own directory (fenced code, schemes, `#anchors` and `/site-absolute` paths skipped). Names up to 5. | **Warn.** A restructure breaks links between its steps; blocking each write would stop the restructure. A full link check belongs in CI. |
+| `secret-guard` | `hooks_strict` | UserPromptSubmit; PostToolUse `Bash\|PowerShell\|Read\|Grep` | Vendor-format keys (AWS, GitHub, GitLab, Slack, Anthropic, OpenAI, ElevenLabs, Groq, xAI, Hugging Face, npm, PyPI, SendGrid, DigitalOcean, Shopify, Stripe live, Google API and OAuth client secrets) and PEM private-key headers, in a prompt or in tool output. No generic `password=` rule. | **Block the prompt** (exit 2: it is never sent, and the user - not Claude - sees why). **Warn on output**: it is already in the transcript, so the warning stops it spreading and asks for rotation. |
+| `guard-config` | `hooks_strict` | ConfigChange `user_settings\|project_settings\|local_settings` | A mid-session settings change that sets `disableAllHooks`, sets `defaultMode: bypassPermissions`, adds an allow rule that pre-approves any command (bare `Bash`/`PowerShell`; wildcard-only specifiers such as `Bash(**)`, `Bash(*:*)`, `Bash( *)`; a shell or wrapper by name such as `Bash(bash:*)`, `Bash(sh -c:*)`, `Bash(env:*)`), removes any rule from `permissions.deny` (compared with the last accepted list in `.claude/state/config-guard/`, or the committed HEAD version of project settings), unregisters a hook still installed in `.claude/hooks/`, or deletes `.claude/settings.json`. | **Block.** It switches a guard off while the work it watches is running. The change stays on disk and loads next session; `/harness-toggle` passes because it moves the file and the registration together. Claude Code shows a blocked ConfigChange to nobody, so each refusal is logged to `.claude/state/config-guard.log`. |
+| `agent-trace` | `long` | SubagentStart `*`, InstructionsLoaded, PermissionDenied `*` | One line per event in `.claude/state/trace.log`: subagent starts, every rule or memory file that entered context and why (`path_glob_match`, `session_start`...), and what auto mode refused. Keeps the newest 1500 lines. | **Log only**, never in context. The only direct evidence that a path-scoped rule fired; nothing here needs Claude to act. |
+
+Not shipped, on purpose:
+
+- **Notification, MessageDisplay**: the exit code is ignored and they cannot reach Claude; a desktop
+  ping is per-machine taste that belongs in user settings.
+- **TaskCreated / TaskCompleted**: they track the TaskCreate/TaskUpdate tool list and agent teams,
+  not the board. Board completion already needs a result: `task.py move <TASK-NNN> Done --note`.
+- **FileChanged on env files**: it cannot block and Claude never sees it; `protect-secrets` already
+  stops the reads, and `secret-guard` catches a value that gets printed anyway.
+- **A turn budget**: seats carry `maxTurns`, Claude Code caps stop-hook continuations, and
+  `retry-budget` covers the expensive case (the same failing call, again).
+- **SubagentStop logging**: `agent-history` already archives every finished run.
+
+## Hook map: event, flag, and when to turn it on
+
+| Hook | Lifecycle event | Flag | Turn it on when |
+|------|-----------------|------|-----------------|
+| `protect-secrets` | PreToolUse | always | Always - it is the floor. |
+| `guard-agent-spawn` | PreToolUse | always | Always. |
+| `guard-main-commit`, `check-commit-msg` | PreToolUse | always | Always. |
+| `protect-adr`, `guard-task-scope`, `guard-board` | PreToolUse | always | Always. |
+| `guard-agent-scope`, `specs-reminder`, `graph-stale` | PreToolUse / PostToolUse | always | Always (advisory only). |
+| `agent-history` | SubagentStop | always | Always; tune detail with `/harness-tune`. |
+| `rtk-rewrite` | PreToolUse | `rtk` | You installed `rtk` and want smaller command output. |
+| `protect-repos` | PreToolUse | `audit` | Audit workspaces only. |
+| `guard-destructive` | PreToolUse | always | Always - irreversible operations are baseline safety, and the deny rules are only prefix matches. |
+| `guard-large-file` | PreToolUse | `hooks_strict` | The repo must stay clonable, or it sits near local databases or model files. |
+| `guard-egress` | PreToolUse, PostToolUse | `hooks_strict` | Agents read the web or untrusted files and can also run `curl`. |
+| `secret-guard` | UserPromptSubmit, PostToolUse | `hooks_strict` | Anyone works with live credentials nearby. |
+| `guard-config` | ConfigChange | `hooks_strict` | You rely on the hooks holding for a whole session (long runs, auto mode). |
+| `stop-evidence` | Stop, SubagentStop | `hooks_strict` | You act on "done" without re-checking it. |
+| `guard-deps` | PreToolUse | `hooks_strict` + `purpose_code` | A code repo with a lockfile, or any supply-chain exposure. |
+| `guard-migration` | PreToolUse | `db` | Automatically with a database. |
+| `retry-budget` | PostToolUseFailure, PreToolUse | `long` | Sessions run long enough to loop on a failing command. |
+| `compact-checkpoint` | PreCompact | `long` | Sessions run long enough to compact. |
+| `session-context` | SessionStart | `long` | Work spans sessions, or compactions. |
+| `agent-trace` | SubagentStart, InstructionsLoaded, PermissionDenied | `long` | You want to see which rules loaded and what ran in parallel. |
+| `research-sources` | PostToolUse | `purpose_research` | A research repo. |
+| `docs-links` | PostToolUse | `purpose_docs` | A documentation repo. |
 
 ## Disabling a hook
 
@@ -99,6 +164,26 @@ allow cases in the guardrail eval before shipping it.
   who X is. `guard-agent-scope` is written the way it is - advisory, keyed off the task board and
   the code graph instead of an identity the payload does not carry - because of this gap.
 
+- **A Stop hook that blocks can loop.** Exit 2 on `Stop` makes Claude continue, and the next stop
+  fires the hook again. `stop-evidence` allows unconditionally when the payload's
+  `stop_hook_active` is true, so it bounces a turn at most once. Claude Code also caps consecutive
+  stop-hook continuations, but a hook that leans on that cap burns eight turns where one is enough.
+- **A PreCompact hook must not fail.** Blocking an automatic compaction that was triggered to
+  recover from a context-limit error fails the request. `compact-checkpoint` exits 0 on every path.
+- **Booleans need their own branch in the JSON fallback.** perl's `JSON::PP` decodes `true` to an
+  object, so the field reader the older hooks share prints nothing for it. The newer hooks print
+  `true`/`false` explicitly; without that, `stop_hook_active` would always read as false.
+- **TAB is IFS whitespace.** `IFS=$'\t' read a b c` collapses an empty middle field and shifts the
+  rest. Hooks that split parsed fields use `\037` (unit separator) instead.
+- **A perl one-liner interpolates `"@name"`.** `retry-budget` first compared a key against
+  `"@sig"`, which perl reads as an empty array, so every call hashed to the same signature. It is
+  `q{@sig}` now, and the eval's reset case is what caught it.
+- **Windows sessions may run commands through a `PowerShell` tool, not `Bash`.** The shell guards
+  above register `Bash|PowerShell` and read `tool_input.command` from either.
+- **A side effect in a PreToolUse hook is deliberate only in `retry-budget`**, which deletes its
+  own state file when a different call resets the count. It writes nothing else and never touches
+  the tool call.
+
 ## Template variables
 
 The hook bodies are parameterised at scaffold time with the default branch, the commit-types
@@ -117,3 +202,21 @@ read **`$LASTEXITCODE`**, never `$?` (`$?` is a boolean, so it never equals 2):
 ```bash
 echo '{"tool_input":{"file_path":".env"}}' | bash .claude/hooks/protect-secrets.sh; echo $?
 ```
+
+## Overriding the verification ledger (for the user, not the agent)
+
+`guard-agent-spawn` refuses verification that would learn nothing: a review or suite on content that
+already passed, a third review round, a dispatch past the task's budget. The block message tells the
+agent to stop and ask you; it never names the override, because a hook that teaches its bypass to the
+agent it blocks has no override, only a password everyone knows.
+
+When you decide a re-run is worth it, tell the agent to add one of these lines to the dispatch brief:
+
+- `REVERIFY: <your reason>` - one forced re-run of that seat on that exact content. It is spent once
+  used: a second forced re-run on the same content is refused too. Change the code, or decide
+  something else.
+- `BUDGET: <your reason>` - one dispatch past the task's budget. The budget is
+  `dispatch_budget` in `.claude/verify-map.json` (default 24 per task).
+
+Every dispatch, forced or not, is a line in `.claude/state/verify-ledger.jsonl`, and the agent-history
+archive keeps the brief, so who forced what stays on the record.

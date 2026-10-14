@@ -14,11 +14,15 @@ pub fn watch(root: PathBuf) -> Result<(), String> {
     watcher
         .watch(&root.join(".claude"), RecursiveMode::Recursive)
         .map_err(|e| e.to_string())?;
-    let docs = root.join("docs");
-    if docs.is_dir() {
-        watcher
-            .watch(&docs, RecursiveMode::Recursive)
-            .map_err(|e| e.to_string())?;
+    // docs/ holds the task board and specs; .agent-base/ holds the
+    // orchestrator-kit board. Either may be absent.
+    for sub in ["docs", ".agent-base"] {
+        let dir = root.join(sub);
+        if dir.is_dir() {
+            watcher
+                .watch(&dir, RecursiveMode::Recursive)
+                .map_err(|e| e.to_string())?;
+        }
     }
     println!("harness-view: watching {} (Ctrl+C to stop)", root.display());
     let state_dir = root.join(".claude").join("state");

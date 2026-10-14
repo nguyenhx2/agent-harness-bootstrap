@@ -1,5 +1,7 @@
 # Assessment
 
+**English** · [日本語](ASSESSMENT.ja.md)
+
 How this repo scores against the thesis it is built on, including where it falls short. Any claim not
 backed by a file or a runnable script in this repo is marked as not delivered.
 
@@ -8,14 +10,14 @@ backed by a file or a runnable script in this repo is marked as not delivered.
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acknowledged and acted on | `reference/cost-model.md` was rebuilt on current pricing. Opus 4.8 is 1.67x Sonnet 5, not 5x. The old "cheap model everywhere except the review gate" advice was written for a 5x gap and is largely obsolete; the roster no longer relies on it. |
-| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 122 payloads (50 must-block, 72 must-allow) at it: 122/122 correct, 244/244 when both hook flavors (`sh` and `ps1`) run. Every block is a shell script and an exit code. Swap Opus for Haiku and the result is byte-identical. The safety floor is model-independent, and the claim is re-runnable. The must-block set now includes the spawn boundary itself (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
-| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -45%, write path -80%). The read-path number moved from -54% to -45% this cycle because the skill grew real capability (tech-presets catalogue, wider skill sourcing, more intake coverage) faster than compression could claw it back - see `benchmark/RESULTS.md` Goal 2 for the trade. Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
+| Advantage is the harness | Delivered, and falsifiable | `eval/guardrail_eval.py` scaffolds a harness and fires 250 payloads (101 must-block, 149 must-allow) at it: 250/250 correct, 500/500 when both hook flavors (`sh` and `ps1`) run. That is a harness scaffolded with the `hooks_strict`, `long` and `db` flags on (alongside `ui`, `ai`, `ddd`, `tests`, `unit`, `e2e`, `pr_cli`, `rtk` and `target_cursor`; the exact set is `VARS` in the script), so the opt-in strict hooks, the long-session hooks and the migration guard are all inside the figure, and a default install carries fewer hooks than the harness measured. No model is consulted: the guardrails are shell scripts and an exit code, so the result cannot depend on the model. The claim is re-runnable. The must-block set includes the spawn boundary and the verification ledger (see below); what the harness still leaves to prose rather than a gate is Gap 4. |
+| ROI | Half delivered | Cost is modelled per roster profile (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`: read path -24%, write path -90%, against the predecessor skill). The read-path number has fallen from -45% at the last assessment because the skill grew real capability (purpose profiles, the verification ledger, intake questionnaires, more reference docs) faster than compression could claw it back - see the predecessor comparison in `benchmark/RESULTS.md` for the trade. Value is not measured at all. Cost-per-feature without value-per-feature is not ROI. |
 | Data under control (privacy) | Delivered | `security-privacy.md` (secrets, PII), enforced by `protect-secrets` hooks and settings deny rules, both tested. Audit mode makes product source technically read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: dependency licence allow/deny by family, the AGPL-on-SaaS trigger, provenance risk on reproduced blocks, a runnable diff check for the reviewers. |
 | Governance: model sovereignty | Enforced for data at rest; advisory beyond it | Gap 1 below. Partially closed. |
 | Many models -> one system | Not delivered | Gap 2 below. Now has a concrete, sharper edge: the spawn boundary is Claude-Code-only by construction. |
-| Enterprise context | Partial | The docs tree, specs, ADRs, glossary, business rules and the task board are real and are wired into the agents. New today: a generated code knowledge graph (`docs/context/code-graph.md`, module fan-in/fan-out) agents consult before a cross-module change, and DDD as the default methodology (TDD stays available, opt-in and composable) (flag `ddd`) binding the glossary to each dev agent's bounded context. Also new: a vetted path to extend a seat with a third-party skill - discovery across four source types now, not one (skills.sh, GitHub topic search, Anthropic's own repos, plugin marketplaces), a trust rubric (install count, publisher allow-list, audit status, mandatory content read) in `reference/skill-discovery.md`, and `/skill-wire` to attach one to a seat with a re-review, a diff, and a changelog record. That closes "no vetted way to extend seats with third-party skills"; see Gap 4 for what the review still leaves advisory. Intake grew three questions (internationalization, authorization model, operations posture), closing a questionnaire-coverage gap without adding a defaulted answer to any of them. `reference/tech-presets.md` gives codebase analysis a version-currency catalogue instead of relying on training-data memory, with an explicit rule that installed reality always wins over the preset - see Gap 5 for what keeps that catalogue honest. The sanctioned `env-read.py` path (list/check/diff/run, values never printed) closes the "devops/db/qa seats had no safe way to read local env files" gap; see Gap 4 for what it does not enforce. `.claude/.gitignore` is now shipped nested under `.claude/`, closing the edge case where per-task worktrees or machine state could get committed because the root `.gitignore` never mentioned them. Absent: any integration with the systems an enterprise actually runs on - ticketing, SSO, a CMDB, an internal package registry. |
-| Workflow integration | Partial | Slash commands, hooks, a task board that survives compaction, and now a post-bootstrap maintenance layer: `/harness-update` (idempotent re-run - `CONFLICT` queue, never clobbers), `/board-audit` (orphaned Active tasks, unlogged runs, attempt-cap breaches, unknown worktrees, stale graph), `/harness-tune` (deploy rights, deny/ask lists, spawn allowlist, attempt caps - diff shown, confirmed before landing), `/agent-permissions` (per-seat tool grants). Deployment control level (human-only / agent-with-approval / agent-non-prod, flag `deploy_ask`) is now an intake question, not a fixed posture. Still absent: CI pipeline templates, PR automation, ticket sync. `devops` is a seat with no shipped pipeline. |
+| Enterprise context | Partial | The docs tree, specs, ADRs, glossary, business rules and the task board are real and are wired into the agents. New today: a committed module-boundary map (`docs/context/code-graph.md`: per module its owner, what it depends on and what depends on it) whose rows are the allowed cross-module imports, with the `graph-stale` hook naming a new edge on the edit that adds it, and DDD as the default methodology (TDD stays available, opt-in and composable) (flag `ddd`) binding the glossary to each dev agent's bounded context. Also new: a vetted path to extend a seat with a third-party skill - discovery across four source types now, not one (skills.sh, GitHub topic search, Anthropic's own repos, plugin marketplaces), a trust rubric (install count, publisher allow-list, audit status, mandatory content read) in `reference/skill-discovery.md`, and `/skill-wire` to attach one to a seat with a re-review, a diff, and a changelog record. That closes "no vetted way to extend seats with third-party skills"; see Gap 4 for what the review still leaves advisory. Intake grew three questions (internationalization, authorization model, operations posture), closing a questionnaire-coverage gap without adding a defaulted answer to any of them. `reference/tech-presets.md` gives codebase analysis a version-currency catalogue instead of relying on training-data memory, with an explicit rule that installed reality always wins over the preset - see Gap 5 for what keeps that catalogue honest. The sanctioned `env-read.py` path (list/check/diff/run, values never printed) closes the "devops/db/qa seats had no safe way to read local env files" gap; see Gap 4 for what it does not enforce. `.claude/.gitignore` is now shipped nested under `.claude/`, closing the edge case where per-task worktrees or machine state could get committed because the root `.gitignore` never mentioned them. Absent: any integration with the systems an enterprise actually runs on - ticketing, SSO, a CMDB, an internal package registry. |
+| Workflow integration | Partial | Slash commands, hooks, a task board that survives compaction, and now a post-bootstrap maintenance layer: `/harness-update` (idempotent re-run - `CONFLICT` queue, never clobbers), `/board-audit` (orphaned Active tasks, unlogged runs, attempt-cap breaches, unknown worktrees, stale graph), `/harness-tune` (reads the run archive, blocks, retry and attempt caps, verify-plan logs and the `harness-view` assessment, proposes at most four ranked changes to deploy rights, deny/ask lists, spawn allowlist, caps, model and effort, review gates and agent-history detail - asked once, each change proved by a check, closed by `harness-check.py`), `/harness-toggle` (a rule, command, hook or seat off and on, recorded), `/agent-permissions` (per-seat tool grants), `/new-skill` (a project skill, linted by `skill-check.py`). Deployment control level (human-only / agent-with-approval / agent-non-prod, flag `deploy_ask`) is now an intake question, not a fixed posture. Still absent: CI pipeline templates, PR automation, ticket sync. `devops` is a seat with no shipped pipeline. |
 
 ## The thesis being scored
 
@@ -85,7 +87,7 @@ Two things partially mitigate it, and neither is sufficient:
   so.
 - The seat-tier table in `model-tiers.md` (judgment / implementation / mechanical -> model) is the
   right shape for portability: it is the one file a provider swap would edit, instead of a sweep
-  across sixteen agent files. But it currently maps to Anthropic aliases, and nothing generates from
+  across every agent file. But it currently maps to Anthropic aliases, and nothing generates from
   it - the agent files still name the model directly. The scaffolder does now check that the two
   agree (`seat_problems` in `scaffold.py` fails a seat whose `model:` contradicts its row), so a
   half-done sweep is caught, but that is a consistency check, not an abstraction.
@@ -128,8 +130,8 @@ shape, not a missing capability in the tools.
 ## Gap 3 - ROI has no numerator
 
 The repo measures what the harness costs and what it saves. It does not measure what it produces.
-`benchmark/model_cost.py` will tell you a feature costs about $2.38 on the default roster and about
-$0.61 on an all-Haiku roster. It cannot tell you whether the Haiku feature is worth shipping.
+`benchmark/model_cost.py` will tell you a feature costs about $2.52 on the default roster and about
+$0.65 on an all-Haiku roster. It cannot tell you whether the Haiku feature is worth shipping.
 
 That is the question that decides whether the thesis holds. If a good harness makes a cheap model
 produce acceptable work, the thesis is right and model choice really is commoditised. If it does not,
@@ -220,36 +222,45 @@ verify on a schedule" shape `/board-audit` already uses for task-board drift.
 
 ## What the repo supports today
 
-1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 112/112
-   (224/224 across both hook flavors).
+1. **The harness's safety properties do not depend on the model.** Proven, re-runnable, 250/250
+   (500/500 across both hook flavors), measured on a harness scaffolded with `hooks_strict`, `long`
+   and `db` on - the flag set is `VARS` in `eval/guardrail_eval.py`.
 2. **The harness itself is cheap to install and cheap to carry, though less so than last cycle.**
-   Measured: 45% less to read (down from 54% - the skill grew capability faster than compression
-   could recover it, see `benchmark/RESULTS.md`), 85% less to author, 68% of rule content kept out
-   of the default session, ~0.2s to scaffold.
+   Measured: 24% less to read (down from 45% - the skill grew capability faster than compression
+   could recover it, see `benchmark/RESULTS.md`), 90% less to author, 73% of rule content kept out
+   of the default session, under a second to scaffold.
 3. **Cost is a decision, not a default.** Every agent carries an explicit `model:` and `effort:`.
    Unset `model:` means `inherit`, which silently bills mechanical work at the caller's tier; the
    quality gate treats that as a bug.
-4. **The default roster is deliberately not the cheapest.** `sonnet-only` is ~19% cheaper. The
+4. **The default roster is deliberately not the cheapest.** `sonnet-only` (high) is ~20% cheaper. The
    default spends the difference on Opus review gates, on the argument that the seat whose entire job
    is catching what a generation pass got wrong is the worst place to economise. That is a bet, it is
    stated as a bet, and the table lets you take the other side of it.
 5. **Governance is written down, versioned, and diffable.** The parts that can be enforced
    deterministically (secrets, PII, destructive ops, immutable ADRs, commit hygiene) are enforced by
-   hooks.
+   hooks. `guard-destructive` ships by default; the stricter set (large files, egress, unpinned
+   dependencies, secrets in prompts and output, mid-session config changes, evidence-free "done") is
+   opt-in behind the `hooks_strict` flag, and the eval measures a harness with it on.
 6. **The spawn boundary and anti-loop discipline are gates, not advice.** `guard-agent-spawn` blocks
    spawning a type outside the roster, overriding a roster seat's model at spawn time, and dispatching
    a write-capable seat that names neither a registered `TASK-NNN` nor a `TIER: direct` / `TIER: standard`
    marker (Direct and Standard work has no task file by design; Guarded work still needs a registered
-   task) - three of the eval's must-block cases, with a matching allow case each. An `attempts:` cap (3, then `Blocked`) and `maxTurns` on every seat bound
-   how long a stuck agent can run before a human has to look. `/board-audit` sweeps for the failure
+   task), each with a matching allow case in the eval. It also reads the verification ledger
+   (`.claude/state/verify-ledger.jsonl`, through `verify-plan.py --dispatch-check`): no review or suite
+   re-run on content that already passed, no third review round, no identical brief, and a per-task
+   dispatch budget (`dispatch_budget`, default 24, in `.claude/verify-map.json`). The environment caps
+   `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` and `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` bound fan-out. An
+   `attempts:` cap (3, then `Blocked`), `maxTurns` on every seat, and the `retry-budget` hook under
+   the `long` flag bound how long a stuck agent can run before a human has to look. `/board-audit` sweeps for the failure
    modes those controls don't catch by construction: orphaned Active tasks, unlogged completions, and
    worktrees the board never registered. `guard-agent-scope` is the honest sibling of the spawn
    boundary: a nudge, not a gate, and documented as structurally unable to become one - see Gap 4.
 7. **Post-bootstrap operation is a maintained workflow, not a one-time scaffold.** `/harness-update`
    re-runs the scaffolder against a changed codebase and never overwrites a differing file - conflicts
-   queue for a human to resolve, they do not get silently resolved for you. `/harness-tune` changes
-   control-level dials (deploy rights, deny/ask lists, spawn allowlist, attempt caps) only after showing
-   the diff and getting a yes.
+   queue for a human to resolve, they do not get silently resolved for you. `/harness-tune` starts from
+   the record of what actually happened and changes control-level dials (deploy rights, deny/ask lists,
+   spawn allowlist, caps, review gates) only after showing the diff and getting a yes. Both end on
+   `harness-check.py`, which must exit 0.
 8. **A seat can be extended with a third-party skill through a vetted path, not a blind drop.**
    `reference/skill-discovery.md`'s rubric (install count, publisher allow-list, duplicate and audit
    checks, a mandatory content read) gates install; `/skill-wire` re-reviews at wire time, refuses a

@@ -7,6 +7,22 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.20.0] - 2026-10-14
+
+### Added
+
+- **Every deduction explains itself:** a rule ID, `file:line` evidence, why it matters and the fix,
+  with five one-click fixes. `RUBRIC.md` and `RUBRIC.ja.md` are generated from the rules and each category shows its arithmetic.
+- **A "fix these first" worklist and a since-last-check diff,** so a re-check after a fix is fast.
+- **orchestrator-kit installs and non-code repos:** the `.agent-base/tasks` board with drift
+  detection, every subagent frontmatter field, hooks on every event, purpose-aware scoring. A Japanese UI and docs.
+
+### Fixed
+
+- Hooks declared in agent frontmatter were reported as unregistered; `tools: Agent(a, b)` was split
+  at the comma; a BOM hid a file's frontmatter; a docs repo got a false "no review gate".
+- Auto-refresh re-laid out the page every tick; DOMPurify 3.1.6 -> 3.4.16 for its published XSS advisories.
+
 ## [1.19.3] - 2026-10-13
 
 No functional change. The version moves with the skills.

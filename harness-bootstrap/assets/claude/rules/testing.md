@@ -96,18 +96,19 @@ suite green - a changed approved output goes back to the human.
 ## When to run what
 
 Tests are verification for a finished piece of work, not a ritual after every edit.
+`python .claude/scripts/verify-plan.py` decides which layers a diff needs; this is what it encodes.
 
 - **While building**: run only the tests that touch the code you just changed, and only when you
-  need the answer to continue. Not after every edit, not the whole suite.
-- **When the feature is complete**: run the full suite once. That run is the evidence the gate
-  reads.
-- **Never twice on the same commit.** A green run recorded in the session log at the current commit
-  is cited, not repeated - nothing changed, so a second run learns nothing.
-- **A change with no behavior** (docs, comments, config that nothing reads at runtime) runs no
-  suite at all.
+  need the answer to continue.
+- **When the feature is complete**: run the full suite once, then
+  `task.py checkpoint TASK-NNN --green` records the commit and a ledger line for the files it
+  covered.
+- **Never twice on the same content.** A suite that passed on these bytes is cited by its ledger
+  line (`.claude/state/verify-ledger.jsonl`), not repeated; `guard-agent-spawn` refuses a
+  `qa-test` dispatch that would repeat it.
+- **A change with no behavior** (docs, comments, config nothing reads at runtime, generated code)
+  runs no suite at all.
+- **End to end only for a named critical flow** - a flow listed in `.claude/verify-map.json` whose
+  paths the diff touches, or one the user asks for. Never by default.
 
-## Before opening a pull request
-
-Run the suite once over the finished branch, unless a green run is already logged at its current
-commit. Record the result in the task file's session log - a gate counts as passed only when the log
-records the run (task-tracking.md). A red suite is never merged and never skipped in CI.
+A red suite is never merged and never skipped in CI.

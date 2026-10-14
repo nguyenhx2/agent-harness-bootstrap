@@ -288,7 +288,7 @@ function agIconBtn(iconName, label, onclick) {
 // permission flag, and the permission flag is warm-coloured when the tool
 // prompts - that is the one property of a grant a reader scans for.
 const AG_CHIP = {
-  fontSize: "10px", padding: "1px 6px", borderRadius: "999px",
+  fontSize: "11px", padding: "1px 6px", borderRadius: "999px",
   border: "1px solid var(--line)", color: "var(--dim)", whiteSpace: "nowrap",
 };
 const AG_CHIP_WARM = { borderColor: "#f59e0b", color: "#b45309" };
@@ -401,8 +401,8 @@ function agAgentBody(node, reference, ctx) {
     host.textContent = "";
 
     const grid = agEl("div", { display: "grid", gridTemplateColumns: "82px 1fr", gap: "8px 10px", alignItems: "start" });
-    const lab = t => agEl("label", { color: "var(--dim)", paddingTop: "5px", fontSize: "12px" }, t);
-    const field = () => agEl("select", { font: "inherit", fontSize: "12px", width: "100%", padding: "5px 6px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit" });
+    const lab = t => agEl("label", { color: "var(--dim)", paddingTop: "5px", fontSize: "14px" }, t);
+    const field = () => agEl("select", { font: "inherit", fontSize: "14px", width: "100%", padding: "5px 6px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit" });
 
     // vendor - the repo's own port.py targets Cursor and Codex too, so the
     // roster is not assumed to be Claude's.
@@ -479,7 +479,7 @@ function agAgentBody(node, reference, ctx) {
       grid.append(esel);
       readEffort = () => esel.value || state.effort;
     } else {
-      grid.append(agEl("div", { color: "var(--dim)", fontSize: "12px", paddingTop: "6px" },
+      grid.append(agEl("div", { color: "var(--dim)", fontSize: "14px", paddingTop: "6px" },
         "this vendor lists no effort levels, so the field is not offered"));
       readEffort = () => state.effort;
     }
@@ -487,7 +487,7 @@ function agAgentBody(node, reference, ctx) {
     // description
     grid.append(lab("description"));
     dta = agEl("textarea", {
-      font: "inherit", fontSize: "12px", width: "100%", minHeight: "76px", padding: "6px 8px",
+      font: "inherit", fontSize: "14px", width: "100%", minHeight: "76px", padding: "6px 8px",
       borderRadius: "6px", border: "1px solid var(--line)", background: "var(--panel)",
       color: "inherit", lineHeight: "1.45", resize: "vertical", boxSizing: "border-box",
     });
@@ -498,7 +498,7 @@ function agAgentBody(node, reference, ctx) {
 
     // tools
     const th = agEl("div", { display: "flex", alignItems: "center", gap: "8px", margin: "14px 0 6px" });
-    th.append(agEl("strong", { fontSize: "12px" }, "tools"));
+    th.append(agEl("strong", { fontSize: "14px" }, "tools"));
     const count = agEl("span", { color: "var(--dim)", fontSize: "11px" }, "");
     th.append(count);
     host.append(th);
@@ -521,7 +521,7 @@ function agAgentBody(node, reference, ctx) {
       row.append(cb);
       const right = agEl("div");
       const top2 = agEl("div", { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" });
-      top2.append(agEl("code", { fontSize: "12px", wordBreak: "break-all" }, t.name));
+      top2.append(agEl("code", { fontSize: "14px", wordBreak: "break-all" }, t.name));
       if (t.category) top2.append(agChip(t.category));
       if (t.permission) {
         const asks = String(t.permission) === "yes";
@@ -538,7 +538,7 @@ function agAgentBody(node, reference, ctx) {
     state.strangers.forEach(n => addRow({ name: n, checked: true }, true));
     state.tools.forEach(t => addRow(t, false));
     if (!boxes.length) {
-      list.append(agEl("div", { padding: "10px", color: "var(--dim)", fontSize: "12px" },
+      list.append(agEl("div", { padding: "10px", color: "var(--dim)", fontSize: "14px" },
         "this vendor lists no tools yet - add them under Reference"));
     }
     count.textContent = boxes.filter(b => b.checked).length + " of " + boxes.length + " selected";
@@ -623,8 +623,8 @@ function agReferenceBody(reference, vendorId, ctx) {
     { models: [], tools: [], efforts: [] };
 
   const top = agEl("div", { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "4px" });
-  top.append(agEl("label", { color: "var(--dim)", fontSize: "12px" }, "vendor"));
-  const vsel = agEl("select", { font: "inherit", fontSize: "12px", padding: "5px 6px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit", flex: "1 1 auto" });
+  top.append(agEl("label", { color: "var(--dim)", fontSize: "14px" }, "vendor"));
+  const vsel = agEl("select", { font: "inherit", fontSize: "14px", padding: "5px 6px", borderRadius: "6px", border: "1px solid var(--line)", background: "var(--panel)", color: "inherit", flex: "1 1 auto" });
   agentVendorList(reference).forEach(v => {
     const o = agEl("option", null, v.label + " (" + v.id + ")" +
       (v.custom ? "  [added here]" : v.edited ? "  [edited here]" : ""));
@@ -646,7 +646,7 @@ function agReferenceBody(reference, vendorId, ctx) {
   const section = (kind, entries) => {
     const spec = AG_KINDS[kind];
     const h = agEl("div", { display: "flex", alignItems: "center", gap: "8px", margin: "12px 0 5px" });
-    h.append(agEl("strong", { fontSize: "12px" }, spec.bucket + " (" + entries.length + ")"));
+    h.append(agEl("strong", { fontSize: "14px" }, spec.bucket + " (" + entries.length + ")"));
     h.append(agEl("span", { flex: "1 1 auto" }));
     h.append(agBtn("edit", "Add " + kind, () => agRowIntent(ctx, "add", { kind: kind })));
     host.append(h);
@@ -666,7 +666,7 @@ function agReferenceBody(reference, vendorId, ctx) {
       });
       const left = agEl("div");
       const line = agEl("div", { display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" });
-      line.append(agEl("code", { fontSize: "12px", wordBreak: "break-all" }, e[spec.idField]));
+      line.append(agEl("code", { fontSize: "14px", wordBreak: "break-all" }, e[spec.idField]));
       if (kind === "tool" && e.category) line.append(agChip(e.category));
       if (kind === "tool" && e.permission) line.append(agChip(String(e.permission) === "yes" ? "asks permission" : "no prompt", String(e.permission) === "yes"));
       agMarks(line, e);
@@ -683,7 +683,7 @@ function agReferenceBody(reference, vendorId, ctx) {
       list.append(row);
     });
     if (!entries.length) {
-      list.append(agEl("div", { padding: "10px", color: "var(--dim)", fontSize: "12px" }, "none yet"));
+      list.append(agEl("div", { padding: "10px", color: "var(--dim)", fontSize: "14px" }, "none yet"));
     }
     host.append(list);
   };

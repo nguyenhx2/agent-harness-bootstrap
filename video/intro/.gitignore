@@ -1,0 +1,6 @@
+node_modules/
+out/
+.cache/
+.remotion/
+*.log
+audio/*.paced.mp3

@@ -249,7 +249,7 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
         print("  ! bash not found; skipping Baseline A (the .sh hooks cannot run)", file=sys.stderr)
         return None
 
-    workdir = HERE / ".benchmark-workdir"
+    workdir = pathlib.Path(os.environ.get("HARNESS_BENCH_WORKDIR") or HERE / ".benchmark-workdir")
     if workdir.exists():
         def _force(fn, p, _exc):
             os.chmod(p, 0o700)
@@ -269,16 +269,23 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
         bare = workdir / "repo-bare"
         build_bare_repo(bare, ev)
 
-        must_block = [e for e in ev.suite(harnessed.as_posix(), feature.as_posix())
-                      if e[2] == 2]
+        # The whole suite is replayed IN ORDER against the harness, as the eval runs it, and only
+        # the must-block outcomes are counted. Some blocks are stateful by design - the
+        # verification ledger refuses the third dispatch on unchanged content - and fire only
+        # after the allowed dispatches before them; replaying the must-block payloads alone would
+        # report a working guard as a miss.
+        entries = ev.suite(harnessed.as_posix(), feature.as_posix())
+        must_block = [e for e in entries if e[2] == 2]
 
         harness_blocked = 0
         bare_blocked = 0
         bare_no_hook = 0
         per_case = []
-        for entry in must_block:
+        for entry in entries:
             name, hook, want, payload = entry[:4]
             assertions = entry[4] if len(entry) > 4 else {}
+            for rel in assertions.get("delete_files", []):
+                (harnessed / rel).unlink(missing_ok=True)
             for rel, content in assertions.get("setup_files", {}).items():
                 f = harnessed / rel
                 f.parent.mkdir(parents=True, exist_ok=True)
@@ -291,6 +298,8 @@ def measure_guardrails(new_root: pathlib.Path) -> dict | None:
                 hb = pr.returncode == 2
             else:
                 hb = False
+            if want != 2:
+                continue
             harness_blocked += 1 if hb else 0
 
             # The bare repo: is there any hook at all that would receive this payload?
@@ -539,7 +548,158 @@ def measure_process(new_root: pathlib.Path, c: Counter) -> dict:
                              repo / ".claude/commands/review-changes.md"])
             out["guarded_dispatches"] = DISPATCH.findall(flow)
             out["guarded_suite_steps"] = len(SUITE_STEP.findall(flow))
+    out["review_by_change"] = measure_review_plan(new_root)
+    out["resume"] = measure_resume(new_root, c)
+    out["mission"] = measure_mission(new_root)
     return out
+
+
+# Representative diffs, one per change class. The review gate dispatches a seat only for a gate
+# verify-plan.py marks REQUIRED, so this is how many reviewers each kind of change actually pays for.
+REVIEW_SAMPLES = {
+    "docs only": ["README.md", "docs/guide.md"],
+    "config only": [".editorconfig", "config/settings.yaml"],
+    "one source file": ["src/report/format.ts"],
+    "auth code": ["src/auth/session.ts"],
+    "dependency bump": ["package.json", "package-lock.json"],
+}
+REVIEW_SEATS = ("code-review", "security-review", "spec-check")
+
+
+def measure_review_plan(new_root: pathlib.Path) -> dict | None:
+    """Review seats and suite runs per change class, read from the shipped verify-plan.py."""
+    script = new_root / "assets/scripts/verify-plan.py"
+    if not script.is_file():
+        return None
+    out = {}
+    for label, paths in REVIEW_SAMPLES.items():
+        r = subprocess.run([sys.executable, str(script), "--json", "--files", *paths],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit(f"benchmark: verify-plan failed on {label}: {r.stderr[-300:]}")
+        req = {g["gate"] for g in json.loads(r.stdout)["gates"] if g["required"]}
+        out[label] = {"seats": sorted(req & set(REVIEW_SEATS)), "suite": "full-suite" in req,
+                      "e2e": "e2e" in req}
+    return out
+
+
+# The gate dispatches an orchestrator without a ledger makes on one mission: three units, each
+# reviewed and tested as it lands; a "final check" of the branch before the PR; one fix round on
+# unit B; then a re-review of the fix "to be sure". (seat, brief, edit before it, or None).
+MISSION = [
+    ("code-reviewer", "TASK-001 review src/report/a.ts", ("src/report/a.ts", "export const a = 1;\n")),
+    ("security-reviewer", "TASK-001 review src/report/a.ts", None),
+    ("qa-test", "TASK-001 run the suite after src/report/a.ts", None),
+    ("code-reviewer", "TASK-001 review src/report/b.ts", ("src/report/b.ts", "export const b = 1;\n")),
+    ("security-reviewer", "TASK-001 review src/report/b.ts", None),
+    ("qa-test", "TASK-001 run the suite after src/report/b.ts", None),
+    ("code-reviewer", "TASK-001 review src/auth/c.ts", ("src/auth/c.ts", "export const c = 1;\n")),
+    ("security-reviewer", "TASK-001 review src/auth/c.ts", None),
+    ("qa-test", "TASK-001 run the suite after src/auth/c.ts", None),
+    ("code-reviewer", "TASK-001 final review of the whole branch", None),
+    ("security-reviewer", "TASK-001 final security pass over the branch", None),
+    ("qa-test", "TASK-001 final full suite before the PR", None),
+    ("code-reviewer", "TASK-001 review the fix in src/report/b.ts", ("src/report/b.ts", "export const b = 2;\n")),
+    ("qa-test", "TASK-001 run the suite after the fix in src/report/b.ts", None),
+    ("code-reviewer", "TASK-001 double-check the fix in src/report/b.ts", None),
+    ("security-reviewer", "TASK-001 double-check the fix in src/report/b.ts", None),
+    ("qa-test", "TASK-001 re-run the suite on src/report/b.ts to be sure", None),
+]
+
+
+def measure_mission(new_root: pathlib.Path) -> dict | None:
+    """Gate runs on a simulated mission, without and with the verification ledger.
+
+    Runs the shipped verify-plan.py dispatch check - the code guard-agent-spawn calls - against a
+    real git repo, recording a pass after every dispatch it allows, as /review-changes does. The
+    "without" column is every dispatch attempted; "with" is what the check lets through."""
+    import importlib.util
+    script = new_root / "assets/scripts/verify-plan.py"
+    if not script.is_file() or shutil.which("git") is None:
+        return None
+    spec = importlib.util.spec_from_file_location("verify_plan_bench", script)
+    vp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vp)
+    if not hasattr(vp, "dispatch_check"):
+        return None
+    base = os.environ.get("HARNESS_BENCH_WORKDIR")
+    if base:
+        pathlib.Path(base).mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=base) as td:
+        root = pathlib.Path(td)
+
+        def git(*args: str) -> None:
+            subprocess.run(["git", "-c", "user.email=b@b", "-c", "user.name=b", *args], cwd=root,
+                           capture_output=True, check=True)
+
+        for seat in ("code-reviewer", "security-reviewer", "qa-test"):
+            f = root / ".claude/agents" / f"{seat}.md"
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("---\nname: x\n---\n", encoding="utf-8")
+        (root / "README.md").write_text("x\n", encoding="utf-8")
+        git("init", "-q", "-b", "main")
+        git("add", "-A")
+        git("commit", "-qm", "init")
+        git("checkout", "-qb", "work")
+        allowed, refused = [], []
+        for seat, brief, edit in MISSION:
+            if edit:
+                f = root / edit[0]
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_text(edit[1], encoding="utf-8")
+            code, msg = vp.dispatch_check(root, {"tool_input": {"subagent_type": seat,
+                                                                 "prompt": brief}}, {})
+            if code:
+                refused.append((seat, brief, msg.split(" (")[0].split(":")[0]))
+                continue
+            allowed.append((seat, brief))
+            last = vp.read_ledger(root)[-1][1]
+            for gate, g in (last.get("gates") or {}).items():
+                vp.record(root, gate, "pass", "TASK-001", g.get("files") or [])
+    return {"attempted": len(MISSION), "ran": len(allowed), "refused": len(refused)}
+
+
+def measure_resume(new_root: pathlib.Path, c: Counter) -> dict | None:
+    """What resuming a long-running task costs: the whole task file plus the board (the old
+    /task-resume read both end to end) against the `task.py resume` digest, on a task with a
+    session log long enough to have been bounded."""
+    script = new_root / "assets/scripts/task.py"
+    if not script.is_file():
+        return None
+    rows = 40
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "docs/templates").mkdir(parents=True)
+        (root / "docs/tasks/active").mkdir(parents=True)
+        shutil.copy(new_root / "assets/docs/templates/TASK.md", root / "docs/templates/TASK.md")
+        shutil.copy(new_root / "assets/docs/master-plan.md", root / "docs/tasks/master-plan.md")
+
+        def task(*args: str) -> str:
+            r = subprocess.run([sys.executable, str(script), "--target", str(root), *args],
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                raise SystemExit(f"benchmark: task.py {args[0]} failed: {r.stderr[-300:]}")
+            return r.stdout
+
+        task("new", "Split billing module", "--owner", "backend-dev", "--requested-by",
+             "user: split the billing module", "--criterion", "invoices render per tenant",
+             "--criterion", "totals match the ledger")
+        task("move", "TASK-001", "Active")
+        for i in range(rows):
+            task("log", "TASK-001", f"unit {i}: implemented and ran the scoped tests for step {i}",
+                 "green")
+        task("checkpoint", "TASK-001", "--next", "wire totals into the invoice view",
+             "--green", "abc1234", "--question", "rounding mode per currency?")
+        digest = task("resume", "TASK-001")
+        f = next((root / "docs/tasks/active").glob("TASK-001-*.md"))
+        bounded = read_all([f, root / "docs/tasks/master-plan.md"])
+        archive = read_all(sorted((root / "docs/tasks/log").glob("*.md")))
+    # Without the bound, the file would carry every row: add the archived rows back.
+    unbounded = len(bounded) + len(archive)
+    return {"log_rows": rows, "unbounded_bytes": unbounded,
+            "bounded_bytes": len(bounded), "digest_bytes": len(digest),
+            "unbounded_tokens": c.tokens(bounded + archive),
+            "digest_tokens": c.tokens(digest)}
 
 
 # ---------------------------------------------------------- legacy: the predecessor comparison
@@ -739,9 +899,31 @@ def main() -> int:
     for name, who in process["tiers"]:
         print(f"    {name:<10} {who[:72]}")
     print(f"  Guarded flow (/implement-fr + /review-changes): "
-          f"{len(process['guarded_dispatches'])} subagent dispatches "
+          f"up to {len(process['guarded_dispatches'])} subagent dispatches "
           f"({', '.join(process['guarded_dispatches'])}) plus the implementing seat;")
     print(f"    {process['guarded_suite_steps']} step(s) that run the full suite.")
+    if process.get("review_by_change"):
+        print(f"  The review gate per change class (verify-plan.py; the gate has "
+              f"{len(REVIEW_SEATS)} review seats, the secret scan always runs):")
+        for label, e in process["review_by_change"].items():
+            seats = ", ".join(e["seats"]) or "none"
+            print(f"    {label:<18} {len(e['seats'])} seat(s) ({seats}); full suite: "
+                  f"{'yes' if e['suite'] else 'no'}; e2e: {'yes' if e['e2e'] else 'no'}")
+    if process.get("mission"):
+        m = process["mission"]
+        print(f"  Simulated mission (3 units, a final check, a fix round, a re-review), "
+              f"review and suite dispatches:")
+        print(f"    without the verification ledger  {m['attempted']:>3} gate runs")
+        print(f"    with it (guard-agent-spawn)       {m['ran']:>3} gate runs, "
+              f"{m['refused']} refused with a ledger line to cite")
+    if process.get("resume"):
+        r = process["resume"]
+        print(f"  Resuming a task with {r['log_rows']} session-log rows:")
+        print(f"    read the task file and board whole  {r['unbounded_bytes']:>7,} bytes  "
+              f"(~{r['unbounded_tokens']:,} tokens)")
+        print(f"    same, log bounded by task.py        {r['bounded_bytes']:>7,} bytes")
+        print(f"    task.py resume digest               {r['digest_bytes']:>7,} bytes  "
+              f"(~{r['digest_tokens']:,} tokens)")
 
     # ---- scaffold
     print("\n  SCAFFOLD - the deterministic path that replaces model generation")

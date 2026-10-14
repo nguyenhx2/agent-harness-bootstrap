@@ -1,10 +1,10 @@
 ---
-description: Build or refresh the code knowledge graph - modules, files, and import edges - that agents consult before any cross-module change. Also reports staleness.
+description: Build or refresh the module-boundary map - which modules may import which - and check the code against it. A new cross-module import is an interface decision; this is where it gets accepted.
 allowed-tools: Read, Grep, Glob, Bash(python:*), Bash(python3:*), Bash(git diff:*), Bash(git status)
 ---
 
-Maintain the code knowledge graph of the repo you are currently in. The graph is how an agent
-answers "what depends on the thing I am about to change" without reading the whole tree.
+Maintain the module-boundary map of the repo you are currently in. It answers one question
+deterministically: does the code import across a module line that nobody agreed to?
 
 **Preflight.** Needs `.claude/scripts/code-graph.py`. If it is missing, stop and say whether the
 repo was never bootstrapped (run the `harness-bootstrap` skill) or predates the script
@@ -12,47 +12,40 @@ repo was never bootstrapped (run the `harness-bootstrap` skill) or predates the 
 
 What exists:
 
-- `.claude/state/code-graph.json` - machine-readable: modules, files per module, import edges with
-  reference counts, module owner (matched from the roster's scopes).
-- `docs/context/code-graph.md` - agent-readable: a mermaid module graph plus a fan-in/fan-out
-  table. This is the file to read before dispatching or accepting a cross-module task.
-- `.claude/state/code-graph.stale` - the invalidation log. The `graph-stale` hook appends every
-  source-file edit here, so a non-empty file means the graph lags the code.
+- `docs/context/code-graph.md` - COMMITTED. One row per module: owner, the modules it depends on,
+  the modules that depend on it. That list is the set of ALLOWED cross-module edges.
+- `.claude/state/code-graph.json` - machine state (gitignored): modules, files per module, edges
+  with reference counts, module owner. `guard-agent-scope`, `/new-task` and the harness graph
+  read it.
+
+What keeps it honest, without anyone reading it:
+
+- The `graph-stale` hook runs `code-graph.py --file` on every source edit and names, once, any
+  cross-module import that the map does not list - on the edit that adds it.
+- `python .claude/scripts/code-graph.py --check` exits 1 when the code has an edge the map lacks.
+  Run it in review or CI.
 
 Procedure:
 
-1. Check first: `python .claude/scripts/code-graph.py --check`. Up to date: say so, stop.
-2. Rebuild with the recorded engine (builtin: `python .claude/scripts/code-graph.py`; external:
-   the MCP tool, writing the same files). This rewrites both outputs and clears the stale log.
-   Show the module/edge counts. Then refresh the canonical wiring graph and the HTML exports:
-   `python .claude/scripts/harness-graph.py`, then `python .claude/scripts/graph-html.py`.
-3. Read the regenerated `docs/context/code-graph.md` and report anything structural that CHANGED
-   since the last build (`git diff docs/context/code-graph.md`): a new cross-module edge, a module
-   whose fan-in jumped, a module that appeared or vanished. A new surprise edge is either a missing
-   interface or a boundary violation - name it, do not shrug at it.
+1. Check first: `python .claude/scripts/code-graph.py --check`. Clean and the map exists: say so,
+   stop.
+2. Each NEW edge it lists is a decision, not a refresh. Find the import it names, then either
+   remove it (reach the module through its published interface) or accept it. Accepting is
+   rebuilding: `python .claude/scripts/code-graph.py`. Then refresh the wiring graph:
+   `python .claude/scripts/harness-graph.py --html` (module owners feed into it).
+3. Report what the rebuild changed (`git diff docs/context/code-graph.md`): every added module or
+   edge, by name. That diff is what review approves.
 
-How agents use it (this is the point of the graph):
+How agents use it:
 
-- The **orchestrator** checks the target module's fan-in before dispatch: high fan-in means the
-  task brief must name the dependents, and review must include them.
-- A **dev agent** consults the graph before accepting a change that touches an edge, and refuses
-  cross-module edits as ever - the graph shows why the refusal matters.
-- `/harness-bootstrap:board-audit` treats a stale graph as a finding.
+- The **orchestrator** reads the target module's row before dispatch: its "Used by" list is the
+  blast radius the brief names and the review includes.
+- A **dev agent** does not need to read it: the hook speaks up when an edit crosses a line the map
+  does not list, and the agent then stops and reports instead of shipping the edge.
+- `/harness-bootstrap:board-audit` treats a failing `--check` as a finding.
 
-Two graphs, two purposes: this command maps DEPENDENCY (what breaks if I change this module);
-`/harness-bootstrap:docs-graph` maps TRACEABILITY (which documents talk about the same
-requirement). Run both; `graph-html.py` exports both as self-contained interactive HTML
-(`docs/context/harness-graph.html` + `docs/context/specs-graph.html`).
-
-Engine choice - ask the user once and record it in `docs/context/tool-changelog.md`:
-
-- **builtin** (default): the stdlib regex extractor in `.claude/scripts/code-graph.py`. Zero
-  install, runs anywhere the harness runs, best-effort static edges.
-- **GitNexus / codegraph**: if such an MCP server is available in this session, it may replace the
-  extraction - richer call-level edges, real symbol resolution. The contract does not change:
-  whatever engine runs must write the same `.claude/state/code-graph.json` shape and
-  `docs/context/code-graph.md`, because the files, not the extractor, are what agents and hooks
-  depend on.
-
-Limits, stated honestly: builtin edges are static regex extraction - a missing edge is absence of
-evidence, not evidence of isolation.
+Limits, stated honestly: edges are static imports resolved to repo paths - relative paths,
+workspace package names (`package.json`, `go.mod`, `Cargo.toml`), Python modules that exist on
+disk, and the `@/` and `~/` aliases. Imports assembled at runtime, other path aliases and C#
+`using` are not seen. A missing edge is absence of evidence, not evidence of isolation; for "who
+uses this symbol", grep is still the tool.

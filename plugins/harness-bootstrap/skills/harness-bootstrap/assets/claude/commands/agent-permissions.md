@@ -15,8 +15,8 @@ Procedure:
 
 Invariants (refusals, not warnings):
 
-- **Reviewers never gain `Edit` or `Write`.** `code-reviewer`, `security-reviewer`, `reviewer`, and
-  `spec-guardian` are gates; a gate that edits is a dev agent that lost its independence. If review
+- **Reviewers never gain `Edit` or `Write`.** The review seats - {{#IF_PURPOSE_CODE}}`code-reviewer`, `security-reviewer`, `reviewer`, `spec-guardian`{{/IF_PURPOSE_CODE}}{{#IF_CHECKER}}{{#IF_PURPOSE_CODE}}, {{/IF_PURPOSE_CODE}}`checker`{{/IF_CHECKER}} -
+  are gates; a gate that edits is a dev agent that lost its independence. If review
   findings should be auto-applied, that is a dev agent's task, dispatched with the findings.
 - **Only the orchestrator holds `Agent`.** A second spawner is a second uncontrolled dispatch point;
   the scaffolder itself fails the build on it.

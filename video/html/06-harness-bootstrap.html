@@ -308,8 +308,8 @@
       <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">Smoke-test the loop</span>
       <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
       <div class="col" style="max-width:23%">
-        <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">Build both graphs</span>
-        <span class="sub" style="font-size:clamp(7px,1vw,13px)">code-graph.py + docs-graph.py, then graph-html.py: harness-graph.html + specs-graph.html</span>
+        <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">Build the maps</span>
+        <span class="sub" style="font-size:clamp(7px,1vw,13px)">code-graph.py: module boundaries; docs-graph.py --check: orphan IDs; harness-graph.py --html</span>
       </div>
       <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
       <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">Port to your tools</span>
@@ -372,7 +372,7 @@
                       [3000,'Then the model wires orchestration and seeds Phase 1 from the analysis gaps.']]},
     {s:9,d:7200,caps:[[500,'A quality gate checks structure, cost, safety, grounding and handoff.'],
                       [2200,'All green: the loop is smoke-tested end to end - a real task, a session-log row, /task-resume.'],
-                      [4200,'Then both knowledge graphs are built and exported as interactive HTML - code dependency and docs traceability.'],
+                      [4200,'Then the maps: a module-boundary check, orphan spec IDs, and the harness graph as HTML.'],
                       [6400,'Finally it ports to the tools you selected.']],
      fn:function(){var e=q('done');e.classList.remove('grow');
        setTimeout(function(){e.classList.add('grow')},5000);}},

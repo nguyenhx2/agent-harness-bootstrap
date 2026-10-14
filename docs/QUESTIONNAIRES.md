@@ -1,5 +1,7 @@
 # Questionnaires
 
+**English** · [日本語](QUESTIONNAIRES.ja.md)
+
 What each skill's question set actually explores, and why - so you know what you are being asked
 before you are asked it. Full source: [`intake.md`](../harness-bootstrap/reference/intake.md) for
 `harness-bootstrap`, [`elicitation.md`](../spec-builder/reference/elicitation.md) and

@@ -51,7 +51,7 @@ class SkillsAndView(Scene):
     """概要図の運用フローと、それを健全に保つ3つの仕組み:
     スキル探索、スキル配線、harness-view。
 
-    docs/assets/harness-loom.ja.svg と同じ順序で進むため、図と映像が
+    docs/assets/harness-overview.ja.svg と同じ順序で進むため、図と映像が
     別々の話をし始めることはない。
     """
 
@@ -175,7 +175,7 @@ class SkillsAndView(Scene):
         fit = RoundedRectangle(width=5.6, height=2.5, corner_radius=0.14, fill_color=BG,
                                fill_opacity=1.0, stroke_color=GREEN_HI, stroke_width=2)
         fit.move_to([3.4, -0.85, 0])
-        fit_t = Text("16席のうち7〜15席", font=JFONT, font_size=20, color=GREEN_HI)
+        fit_t = Text("18席のうち3〜17席", font=JFONT, font_size=20, color=GREEN_HI)
         fit_t.move_to(fit.get_center() + 0.72 * UP)
         fit_lines = VGroup(*[Text(s, font=JFONT, font_size=15, color=DIM)
                              for s in ["契約から導かれ",

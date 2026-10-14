@@ -121,7 +121,7 @@ class Flow(Scene):
         d_label = Text("起動する", font=JFONT, font_size=18, color=DIM).next_to(dispatch, LEFT, buff=0.05).shift(UP*0.1)
         r_label = Text("記録する", font=JFONT, font_size=18, color=DIM).next_to(record, UP, buff=0.05)
         self.play(Create(dispatch), FadeIn(d_label), run_time=0.5)
-        caption(self, "オーケストレーターがスコープを絞った専門エージェントを起動する。", hold=0.9, y=-3.5, size=24)
+        caption(self, "小さな作業はメインセッションのまま。Guardedの作業はオーケストレーターへ。", hold=0.9, y=-3.5, size=24)
         self.play(Create(record), FadeIn(r_label), run_time=0.5)
 
         # hooks block a bad action

@@ -6,7 +6,8 @@
         "hooks": [
           { "type": "command", "command": "bash .claude/hooks/protect-adr.sh" },
           { "type": "command", "command": "bash .claude/hooks/guard-agent-scope.sh" },
-          { "type": "command", "command": "bash .claude/hooks/guard-task-scope.sh" }
+          { "type": "command", "command": "bash .claude/hooks/guard-task-scope.sh" },
+          { "type": "command", "command": "bash .claude/hooks/guard-board.sh" }
         ]
       },
       {
@@ -20,6 +21,12 @@
         "matcher": "Read|Edit|Write|Bash",
         "hooks": [
           { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/guard-destructive.sh" }
         ]
       },
       {

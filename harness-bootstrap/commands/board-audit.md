@@ -10,11 +10,10 @@ silently.
 If `docs/tasks/` is missing, stop: there is no board here. If only the script is missing, say so
 and run the sweeps below without it, flagging that frontmatter validity was not checked.
 
-Run `python .claude/scripts/board-check.py` FIRST, before any sweep below. It validates every
-task file's frontmatter enums (`status`, `attempts`, `priority`, `human_gate`) and detects
-dependency cycles in `deps:` chains, stdlib only. A non-zero exit means the board itself is
-malformed - report its findings list verbatim before continuing, because the sweeps below assume
-well-formed frontmatter and are unreliable against a board that fails this check.
+Run `python .claude/scripts/board-check.py` FIRST, before any sweep below. It checks
+every task file's frontmatter enums, `deps:` cycles, and drift - folder vs `status:`, file vs
+board row, rows with no file - so no sweep below re-reads files to find those. A non-zero exit
+means the board is malformed: report its findings verbatim before continuing.
 
 Then run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTION`:
 
@@ -24,17 +23,17 @@ Then run these sweeps and report each finding as `WHAT | WHERE | SUGGESTED ACTIO
 2. **Unlogged completions.** Every file in `.claude/state/history/` newer than the last session-log
    row of the task its prompt names. That run finished; nobody collected it. Quote the task code and
    the archive filename.
-3. **Board drift.** Tasks whose frontmatter `status:` disagrees with their master-plan row, files in
-   `active/` marked Done or Pending, files in `done/` not marked Done.
+3. **Board drift.** Covered by `board-check.py` above; do not re-derive it by reading files.
 4. **Attempt-cap breaches.** Any task with `attempts:` of 3 or more still marked `Active` - by the
    repo's task-control rule it must be `Blocked` with an escalation note.
 5. **Unknown worktrees and branches.** `git worktree list` and `git branch --list` entries no
    Active/Planned task references. Work is happening (or died) outside the board.
 6. **Blocked with no unblocker.** `status: Blocked` files whose notes name no owner or condition
    that would unblock them - those never resurface on their own.
-7. **Stale code graph.** `.claude/state/code-graph.stale` is non-empty, or
-   `python .claude/scripts/code-graph.py --check` exits 1: dispatch decisions are being made on an
-   outdated module map. Fix is `/harness-bootstrap:code-graph`, not ignoring it.
+7. **Unreviewed module edge.** `python .claude/scripts/code-graph.py --check` exits 1: the code
+   imports across a module line that `docs/context/code-graph.md` does not list. Name each edge it
+   prints. Fix is a decision per edge - remove the import, or accept it with `/harness-bootstrap:code-graph` - never
+   ignoring it.
 
 End with a one-line verdict: `BOARD CLEAN` or `N findings - board needs reconciliation`, and if
 findings exist, the single next action that clears the most of them.

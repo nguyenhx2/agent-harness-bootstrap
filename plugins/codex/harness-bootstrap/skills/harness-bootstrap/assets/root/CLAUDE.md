@@ -19,16 +19,18 @@ table there before dispatching anything, then:
   in the prompt and no task file (`guard-agent-spawn` accepts the marker in place of a TASK-NNN).
   Read its report, check `git diff --stat`, done.
 - **Guarded** - the `orchestrator`. For a long mission, start the session as it
-  (`claude --agent orchestrator`) rather than dispatching it, so the plan and the dispatches share
-  one context instead of two.
+  (`claude --agent orchestrator`): the plan and the dispatches then share one context.
 
-Never dispatch the orchestrator to route single-domain work: it hands it back, and both of you
-have paid to read the same files.
+Never dispatch the orchestrator for single-seat work. When it answers `Verdict: no orchestration
+needed`, follow the route it names; `Verdict: cannot delegate`, do the work yourself at that tier; a
+`Blocked` task with a human decision, ask the user and resume the same TASK-NNN. Nesting depth and
+fan-out are capped in `.claude/settings.json` `env`, so a delegation loop ends even when a prompt
+does not stop it.
 
 ### Hooks, settings, commands
 
 The hooks in `.claude/hooks/` (listed in `.claude/hooks/README.md`) enforce what `AGENTS.md`
 states. A hook that blocks you is a rule you were about to break: fix the action, never route
 around it, disable it, or reach for a shell equivalent. Changing `.claude/settings.json`, a rule,
-an agent or a hook needs the owner's approval, never an agent's own initiative. `/deploy` is
-excluded from model invocation: it runs only when the user types it.
+an agent or a hook needs the owner's approval, never an agent's own initiative.{{#IF_PURPOSE_CODE}} `/deploy` is
+excluded from model invocation: it runs only when the user types it.{{/IF_PURPOSE_CODE}}

@@ -1,5 +1,7 @@
 # Releasing
 
+**English** · [日本語](RELEASING.ja.md)
+
 Two skills, `harness-bootstrap` and `spec-builder`, released together under one repo version
 (`vX.Y.Z`). This is CHANGELOG-driven: each skill's own `CHANGELOG.md` is the source of truth for
 what shipped in it, and the GitHub release body is assembled from those files, not written by

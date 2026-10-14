@@ -29,11 +29,11 @@ jobs:
     name: guardrail eval (both hook flavors)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       # Run once, keep the output, then assert the run covered what the badge claims. The eval
       # skips the .ps1 half CLEANLY and still exits 0 when no PowerShell is found, so a green
@@ -60,7 +60,7 @@ jobs:
       # unless told, and it downloads its own otherwise. Point it at the installed browser so the
       # step does not spend a minute fetching a second copy.
       - name: Set up Chrome for the mermaid renderer
-        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         id: chrome
         with:
           chrome-version: stable
@@ -108,6 +108,21 @@ jobs:
       # now it is a gate, landed BEFORE the change that widens the regex.
       - name: The requirement-ID table and the docs-graph regex must agree
         run: python scripts/check_id_table.py
+
+      # Each asset can be right on its own and the harness still not hang together: a command
+      # naming a seat its flags never field, a tier row for a seat that does not exist, a hook
+      # registered under a name that was renamed. This scaffolds every purpose profile crossed
+      # with the roster flags on both hook flavors and runs the checker each harness ships
+      # (.claude/scripts/harness-check.py) over the result, then checks that every asset is a
+      # manifest entry or a recorded exclusion.
+      - name: Every scaffolded harness must hang together
+        run: python scripts/check_integration.py
+
+      # spec-check generates the one-page confirmation sheet and the agent index from a spec set
+      # and proves they still match it. Its self-test builds a clean fixture plus one mutant per
+      # detector, so a detector that stopped firing fails here rather than in a user's repo.
+      - name: spec-check detectors must still fire
+        run: python spec-builder/assets/scripts/spec-check.py --self-test
 
       # The source router decides which tool reads which document, and its most important branch
       # is knowing when a source CANNOT be read (a scanned PDF under 80 chars/page). Its policy
@@ -172,11 +187,11 @@ jobs:
           - os: windows-latest
             flavor: windows
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       # The scaffolder must produce a complete, variable-free harness on both hook flavors.
       # An unresolved {{VAR}} makes it exit non-zero, so this catches a placeholder shipped

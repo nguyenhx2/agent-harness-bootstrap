@@ -49,6 +49,10 @@ import re
 import shutil
 import sys
 
+# Importing a sibling script must not leave bytecode in .claude/scripts/: a stray .pyc there
+# is an untracked file, and verify-plan.py would ask for a review of it.
+sys.dont_write_bytecode = True
+
 KINDS = ("rule", "command", "hook", "agent")
 DIRS = {"rule": "rules", "command": "commands", "hook": "hooks",
         "agent": "agents"}

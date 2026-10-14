@@ -28,8 +28,11 @@ Status lives in **two** places and they must always agree:
 - the task file's frontmatter `status:` field, and
 - the Status column of that task's row in `docs/tasks/master-plan.md`.
 
-Every status change writes both, in the same step. `Blocked` and `Pending` are not synonyms: a
-blocked task wants to move and cannot; a pending task could move and has been told not to.
+Every status change writes both, in the same step - which is why it goes through one command,
+`python .claude/scripts/task.py move TASK-NNN <state>`: it rewrites `status:`, moves the file to
+its folder, flips the board row, logs the change, and reads the row back, failing loudly if the
+write did not land. `Blocked` and `Pending` are not synonyms: a blocked task wants to move and
+cannot; a pending task could move and has been told not to.
 
 ## Phase 1 - analyze the requirement
 
@@ -40,7 +43,7 @@ Before creating any task:
 2. Map the incoming requirement to the project's functional requirements where they exist. One
    mission may span several.
 3. Identify scope boundaries: which agents, which modules, which decisions are still open. **Open
-   decisions block planning** - dispatch the decision agents (`brainstormer` with `tech-researcher`
+   decisions block planning** - dispatch the decision agents (`strategist`, after `researcher`
    for evidence, where fielded) BEFORE creating implementation tasks, and capture stack-affecting
    outcomes in an ADR first. A decision resting on an UNMEASURED assumption gets a timeboxed
    measurement spike first: a measured result routinely overturns a plausible guess.
@@ -68,40 +71,41 @@ artifacts, they are different tasks. Never bundle unrelated work into one task.
 
 ## Phase 3 - register and create the task file
 
-1. Create the task file from `docs/templates/TASK.md` via `/new-task`. Fill in title, goal,
-   owner, deps, priority, phase, created date, acceptance criteria. Frontmatter starts at
-   `status: Planned`.
-2. Add the row to the index table in `docs/tasks/master-plan.md`: TASK code, title, owner, deps,
-   priority, phase, status. Status starts `Planned`, flipping to `Active` on dispatch.
-3. Append the first session-log row immediately:
-   `| <date> | orchestrator | Task created and registered in master-plan | Planned |`
-4. Task files are committed. They travel with the code: task-file updates ship in the same PR/MR as
+1. `/new-task`, which runs `task.py new`: it allocates the code, fills the template (title, goal,
+   owner, deps, priority, phase, `requested_by`, at least two acceptance criteria), adds the board
+   row at `Planned`, logs the first session row, and verifies the row. It refuses the same things
+   `guard-task-scope` refuses.
+2. Task files are committed. They travel with the code: task-file updates ship in the same PR/MR as
    the work they describe.
 
 ## Phase 4 - drive the lifecycle
 
 **During work:**
 
-- After every meaningful unit of work, append a row to the task file's session-log table: Date,
-  Agent, What was done, Result.
+- After every meaningful unit of work, `task.py log TASK-NNN "<what>" "<result>"`. One line, the
+  outcome, not the reasoning. The file keeps the newest rows; older ones move to
+  `docs/tasks/log/log-TASK-NNN.md`, still committed, so a long task stays cheap to resume.
+- Before stopping, handing off, or after a green suite: `task.py checkpoint TASK-NNN --next "..."
+  [--green] [--question "..."]`. The checkpoint is three lines - next step, last green commit, open
+  questions - rewritten, never appended, and it is what the resume protocol reads first.
 - When a decision is made, add a bullet under the task file's orchestration-notes with the decision
   and its rationale.
-- When a blocker appears: set `Blocked` in BOTH locations and record what is missing and who can
-  unblock it, in the session log and the notes. If it needs a human DECISION rather than more agent
-  work - a policy call, a requirement trade-off, an owner-only trigger from Phase 1 - also write
-  `human_gate: <reason>` in the frontmatter, so the board tells "waiting on a human" apart from a
-  technical block. `board-check.py` rejects `human_gate` on any task not `Blocked`.
-- When it clears: back to `Active` in BOTH locations, remove `human_gate` if it was set, with a
-  session-log row noting the resolution.
+- When a blocker appears: `task.py move TASK-NNN Blocked --note "<what is missing, who can
+  unblock it>"`. If it needs a human DECISION rather than more agent work - a policy call, a
+  requirement trade-off, an owner-only trigger from Phase 1 - add `--human-gate "<reason>"`, so the
+  board tells "waiting on a human" apart from a technical block.
+- When it clears: `task.py move TASK-NNN Active` - it removes `human_gate` and logs the change.
 - When an environment workaround is discovered (a compiler wrapper, a sandbox blocking loopback, a
   parallelism flag avoiding an OOM): record it in `docs/context/known-issues.md` the FIRST time,
   capturing the WORKAROUND, not just the symptom - otherwise every agent rediscovers the same gotcha.
-- Frontmatter enums (`status`, `attempts`, `priority`, `human_gate`) and `deps:` cycles are
-  machine-checked: `python .claude/scripts/board-check.py` (stdlib) exits 1 with findings on any
-  violation. `/board-audit` runs it before its own sweeps - a malformed board makes them unreliable.
+- Frontmatter enums (`status`, `attempts`, `priority`, `human_gate`), `deps:` cycles, and drift
+  between folder, `status:` and board row are machine-checked: `python .claude/scripts/board-check.py`
+  (stdlib, also `task.py check`) exits 1 with findings on any violation. `/board-audit` runs it before its own sweeps - a malformed board makes them unreliable.
 
-**Attempt discipline (the anti-loop rule).** Every dispatch increments the task's `attempts:`
-frontmatter field and is logged with that number. A failed attempt may be re-dispatched ONCE to the
+**Attempt discipline (the anti-loop rule).** A failed dispatch is recorded with
+`task.py attempt TASK-NNN --reason infra|scope|env --note "..."`, which applies the taxonomy below:
+`scope` increments `attempts:` and blocks the task at the cap, `env` blocks at once, `infra` only
+logs. A failed attempt may be re-dispatched ONCE to the
 same agent, and the new brief must state what changed - an identical brief is a loop, not a retry,
 and is never sent. At `attempts: 3` the task goes `Blocked` in both places with a record of what was
 tried, and the orchestrator escalates to the user. No exceptions: what three briefs could not land, a
@@ -133,29 +137,32 @@ criteria, or leave the task Pending until you can.
   `attempts:` - no brief fixes an environment the agent cannot change.
 
 **Resume protocol (mandatory at every session start).** Before continuing any task in a new or
-compacted session, run `/task-resume TASK-NNN`: read `master-plan.md` for position and deps, then
-the task file's session log and orchestration-notes. Trust files over conversation memory, and
-verify the working tree (`git status` / `git diff`) - files record intent, the tree records reality.
+compacted session, run `/task-resume TASK-NNN`, which prints `task.py resume`: the board row, the
+checkpoint, the open criteria, the last few log rows, and drift against git. Read further into the
+task file only for what that does not answer. Trust files over conversation memory, and the working
+tree over both - files record intent, the tree records reality.
 Then reconcile the subagent archive: a `.claude/state/history/` entry newer than a task's last
 session-log row is a finished run nobody logged - log it before dispatching anything new.
 
-**Quality gates before `Done`.** `qa-test` (tests green, where fielded) → `code-reviewer` +
-`security-reviewer` in parallel (or the merged `reviewer`) → `/secret-scan` → PR/MR opened. Never
-skip a gate. Report a gate as passed ONLY when the task file's session log records the run: "done" /
+**Quality gates before `Done`.** `/review-changes TASK-NNN` once, on the finished branch: it runs
+`verify-plan.py`, which decides from the diff's paths which gates apply - the secret scan always;
+code review, security review, the test layers and the spec check only when the diff touches what
+each one guards - then the PR/MR is opened. Never skip a gate the plan requires, and never add one
+it does not without a reason: each skip is recorded in the plan's one-line `log:` row. Report a gate as passed ONLY when the task file's session log records the run: "done" /
 "passed" / "merged" is a CLAIM to verify against git and the task file, never a fact - orchestrators
 have reported "all gates green" over a log with no reviewer rows. Verify every claim before acting.
 
 ## Phase 5 - close out
 
-1. Fill the task file's Outcome section: the PR/MR or commit SHA, what was delivered, follow-ups.
-2. Set `status: Done` in the frontmatter AND in the `master-plan.md` row.
-3. Append the final session-log row: `| <date> | orchestrator | Task closed out | Done - PR #NN |`
-4. Move the file from `docs/tasks/active/` to `docs/tasks/done/`.
-5. **Clean up git**: remove the task's worktree, delete the merged branch locally and on the remote
+1. Fill the task file's Result section: the PR/MR or commit SHA, what was delivered, follow-ups.
+   As long as the next reader needs, no longer - no restated plan, no summary of the log.
+2. `task.py move TASK-NNN Done --note "PR #NN"`: status, folder, board row and the final log row in
+   one step. It refuses while acceptance criteria are unchecked unless `--force` and a reason.
+3. **Clean up git**: remove the task's worktree, delete the merged branch locally and on the remote
    (`git push origin --delete`), then `git fetch --prune` - long missions silently accumulate stale
    worktrees and branches.
-6. **Clean up the environment.** `git status` never shows the debris agents leave *outside* the
-   repo, and step 5 never catches it. Sweep for and delete: out-of-repo build outputs (redirected
+4. **Clean up the environment.** `git status` never shows the debris agents leave *outside* the
+   repo, and step 3 never catches it. Sweep for and delete: out-of-repo build outputs (redirected
    build/target dirs in sibling or scratch paths - often gigabytes), large blobs fetched to ad-hoc
    locations (models, datasets, fixtures - the app re-downloads to its real cache on demand), and
    throwaway wrappers, logs, diffs, and extracted dependency trees. Standing rule: **whoever
@@ -165,10 +172,10 @@ have reported "all gates green" over a log with no reviewer rows. Verify every c
    confirm each is genuinely agent-created scratch - never user data, never the live repo - and only
    then delete. On Windows a blanket `rm -rf` may be denied by the guardrails; use the native remove
    on explicitly enumerated paths.
-7. Deliver a final summary: tasks completed (with codes), test and review status, open follow-ups and
+5. Deliver a final summary: tasks completed (with codes), test and review status, open follow-ups and
    where their history lives.
-8. Business-rule or tool changes discovered along the way → `/sync-context`.
-9. If this close-out ends the whole MISSION (no `Active` or `Blocked` tasks left in scope), write the
+6. Business-rule or tool changes discovered along the way → `/sync-context`.
+7. If this close-out ends the whole MISSION (no `Active` or `Blocked` tasks left in scope), write the
    completion marker and terminate - see below.
 
 ## Crash recovery and single-instance discipline
@@ -212,7 +219,8 @@ completion or escalated - never stashed, discarded, or clobbered. When premises 
 ask rather than reconcile destructively.
 
 **Verify every board write.** A registration or status write can silently fail even while the work
-ships. After every board write, read the row back; at close-out at the latest, audit that
+ships. `task.py` reads every row back itself; a hand edit has to be read back by hand. At close-out
+at the latest, audit that
 `docs/tasks/done/` and the `Done` board rows agree 1:1.
 
 **Another active writer.** Commits you did not make on the mainline, or branches and worktrees you

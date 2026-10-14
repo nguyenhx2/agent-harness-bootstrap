@@ -197,6 +197,35 @@ stakeholder.
 Every NFR carries a number and the way it is measured. "Fast" and "secure" are adjectives, and an
 adjective cannot fail a test either.
 
+## Acceptance criteria and FR status
+
+Criteria are read by three things that are not the author - a person confirming the spec, a test
+that uses one as its oracle, and `spec-check.py` - so their form is fixed:
+
+- One list item per criterion, ID first: `- [ ] AC-03.2 Given ..., when ..., then ...`. The number
+  before the dot is the FR's (`AC-03.n` lives under `FR-03`, also in module form under
+  `FR-BLG-03`); the number after it is never reused.
+- **Given / when / then** for behaviour with a trigger. **Done when** for a deliverable with no
+  trigger (a report, a document, a decision memo).
+- The keywords stay English in every language, like the table headers; the clauses are in the
+  spec's language: `AC-01.1 Given 承認待ちの申請, when 承認者が理由なしで却下する, then 却下は拒否される。`
+- At least one negative case per FR. `spec-check.py` warns on an FR with a single criterion.
+- `AC-nn.n` is scoped to its FR, so it is not a row of the ID table above and the docs graph does
+  not trace it on its own; the FR is the traced unit.
+
+Every FR block carries `**Status**:` - `Draft` until the confirmation sheet comes back yes, then
+`Confirmed`; `Withdrawn` or `Superseded` when it is retired (the block and the ID stay). Like
+priority, the value is English whatever the prose language.
+
+## Generated files
+
+`docs/specs/confirmation.md` (the one-page sheet a person answers) and `docs/specs/index.json` (what
+an agent reads first) are written by `python .claude/scripts/spec-check.py --write`, never by hand.
+In the sheet only the reply columns - Decision, Comment, Answer, Confirmed - belong to the reader;
+they survive every regeneration, keyed by ID. Every other cell is rewritten from the spec, so a
+correction typed into one is lost: make it in the section, then regenerate. The sheet's headings
+follow `--lang` (`en`, `ja`); its content is the spec's own text, in the spec's language.
+
 ## Cells are never blank
 
 An empty table cell reads as "no constraint" to whoever implements it - which is how a permission

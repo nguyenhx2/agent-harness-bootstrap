@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "src": "light/README.md",
+      "dest": "docs/specs/README.md",
+      "subst": true
+    },
+    {
+      "src": "light/05-functional-requirements.md",
+      "dest": "docs/specs/05-functional-requirements.md",
+      "subst": true
+    },
+    {
+      "src": "specs/11-assumptions-constraints.md",
+      "dest": "docs/specs/11-assumptions-constraints.md",
+      "subst": true
+    },
+    {
+      "src": "specs/13-revision-history.md",
+      "dest": "docs/specs/13-revision-history.md",
+      "subst": true
+    },
+    {
+      "src": "commands/spec-ingest.md",
+      "dest": ".claude/commands/spec-ingest.md",
+      "subst": false
+    },
+    {
+      "src": "commands/spec-retract.md",
+      "dest": ".claude/commands/spec-retract.md",
+      "subst": false
+    },
+    {
+      "src": "scripts/spec-check.py",
+      "dest": ".claude/scripts/spec-check.py",
+      "subst": false,
+      "exec": true
+    }
+  ]
+}

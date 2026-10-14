@@ -26,19 +26,23 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Resolve version from the tag
         id: v
+        # The dispatch input reaches the shell through env, never by template expansion, so a
+        # crafted version string is data, not script.
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
+          if [ -n "$INPUT_VERSION" ]; then
             # Strip a leading v here too - a "v1.8.0" dispatch input would otherwise produce
             # artifact names like harness-bootstrap-vv1.8.0.zip and fail the VERSION assert.
-            V="${{ github.event.inputs.version }}"
+            V="$INPUT_VERSION"
             V="${V#v}"
           else
             V="${GITHUB_REF_NAME#v}"
@@ -170,14 +174,16 @@ jobs:
             ext: ""
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Resolve version from the tag
         id: v
         shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            V="${{ github.event.inputs.version }}"; V="${V#v}"
+          if [ -n "$INPUT_VERSION" ]; then
+            V="$INPUT_VERSION"; V="${V#v}"
           else
             V="${GITHUB_REF_NAME#v}"
           fi

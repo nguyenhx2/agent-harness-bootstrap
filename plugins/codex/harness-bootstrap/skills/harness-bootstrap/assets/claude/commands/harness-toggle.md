@@ -26,11 +26,11 @@ Safety tiers the script enforces (do not try to route around them):
   compose it for them, never paraphrase it into the flag.
 - **SOFT** (`guard-main-commit`, `check-commit-msg`, `protect-adr`, `ai-governance`): pass
   `--yes` only after the user explicitly confirmed.
-- **Agents** park like anything else, but every seat is at least SOFT - the orchestrator's
+- **Agents** park like anything else, but every seat is at least SOFT - the `AGENTS.md`
   routing table still lists it, so a parked seat leaves a dispatch pointing at nothing. Fix the
-  routing row in the same change. `orchestrator` and the reviewer seats (`code-reviewer`,
-  `security-reviewer`, `reviewer`, `spec-guardian`) are HARD: only the orchestrator spawns, and
-  the review seats ARE the code-review gate. Parking a seat is reversible; ADDING or RETIRING one
+  routing row in the same change. `orchestrator` and the review seats
+  ({{#IF_PURPOSE_CODE}}`code-reviewer`, `security-reviewer`, `reviewer`, `spec-guardian`{{/IF_PURPOSE_CODE}}{{#IF_CHECKER}}{{#IF_PURPOSE_CODE}}, {{/IF_PURPOSE_CODE}}`checker`{{/IF_CHECKER}}) are HARD: only the orchestrator spawns, and the review
+  seats ARE the review gate. Parking a seat is reversible; ADDING or RETIRING one
   is still `/harness-update`.
 
 If a scaffold re-run or hand edit resurrected something that should be off, run

@@ -1,5 +1,7 @@
 # The harness in Codex
 
+**English** · [日本語](codex.ja.md)
+
 Codex does not run the skills. It runs the harness the skills produce. Its hook payload is
 **identical** to Claude Code's, so the porter registers the existing hooks directly in
 `.codex/hooks.json` - no adapter.
@@ -47,7 +49,9 @@ and `protect-secrets`; the `apply_patch` matcher runs `protect-secrets`. Hooks a
 | `agent-history` | not ported | Not applicable in Codex |
 | `AGENTS.md` | Read natively | Advice; Codex self-complies with the rules it cannot enforce |
 
-The Bash-based guards run unchanged and are exact.
+The Bash-based guards run unchanged and are exact. The porter ports only these guards: the rest of the
+hook set (`guard-destructive`, the task-board guards, the verification ledger inside
+`guard-agent-spawn`, the opt-in strict hooks) stays Claude Code only.
 
 ## Honest limit
 

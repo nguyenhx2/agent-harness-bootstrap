@@ -185,10 +185,10 @@
         <span class="arrow">&#8595;</span>
         <span class="mono">.claude/</span>
         <div class="grid2">
-          <span class="chip green">エージェント16<br>model + effort</span>
-          <span class="chip green">ルール16<br>常時7、スコープ9</span>
-          <span class="chip green">コマンド22</span>
-          <span class="chip green">フック10</span>
+          <span class="chip green">エージェント18<br>model + effort</span>
+          <span class="chip green">ルール17<br>常時7、スコープ10</span>
+          <span class="chip green">コマンド23</span>
+          <span class="chip green">フック26</span>
         </div>
         <span class="chip neutral">docs/tasks/ - クラッシュを生き延びるボード</span>
         <div class="foot"><span class="a">スキャフォルド: 約0.2秒</span><span class="b">突き合わせる、決して上書きしない</span></div>
@@ -225,8 +225,8 @@
       <span class="chip green">請求額は選ばれる、押し付けられない</span>
     </div>
     <div class="evrow" id="evrow">
-      <span class="tag g">ガードレール評価 122/122</span>
-      <span class="tag g">Opus -&gt; Haiku: バイト単位で同一の安全性</span>
+      <span class="tag g">ガードレール評価 250/250</span>
+      <span class="tag g">フックの判定にモデルは関与しない</span>
     </div>
     <div class="ports" id="ports">シェルスクリプト + グロブルール | Claude Code・Cursor・Codexへ強制ごと移植</div>
   </section>
@@ -331,7 +331,7 @@
       ['w-dispatch','w-record','w-bad'].forEach(function(id){q(id).classList.remove('on')});
       q('hooks').style.opacity=0;q('blk').style.opacity=0;
       at(500,function(){q('w-dispatch').classList.add('on');
-        say('オーケストレーターがボードに対しスコープを絞った専門エージェントを起動する。')});
+        say('Guardedの作業はオーケストレーターが受け、スコープを絞った専門エージェントを起動する。')});
       at(3000,function(){q('w-record').classList.add('on');
         say('ディスク上のボードが、作業中の進捗を記録する。')});
       at(5800,function(){

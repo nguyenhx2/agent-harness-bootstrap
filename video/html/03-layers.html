@@ -101,12 +101,12 @@
   <!-- Scene 1: model independence -->
   <section class="scene" data-s="1">
     <div class="insight">The guardrails are shell scripts and glob rules</div>
-    <div class="byte" id="byte">byte-identical safety</div>
+    <div class="byte" id="byte">No model is consulted when a hook decides</div>
     <div class="swap" style="margin-top:12px">
       <span class="sub" id="swaplab">&nbsp;</span>
       <span class="chip purple" id="model">Opus</span>
       <span class="arrow">&#8595;</span>
-      <span class="chip green" id="result">122 / 122</span>
+      <span class="chip green" id="result">250 / 250</span>
       <span class="sub">guardrail eval</span>
     </div>
   </section>
@@ -141,7 +141,7 @@
   function q(id){return document.getElementById(id)}
   var TL=[
     {s:0,d:8600,cap:'Five guardrail layers: deny list, hooks, the spawn boundary, path-scoped rules, review gates.',capAt:2800,reveal:true},
-    {s:1,d:9000,cap:'Swap Opus to Haiku: byte-identical result. Control does not depend on the model.',capAt:4200,swap:true},
+    {s:1,d:9000,cap:'Swap Opus for Haiku: the same result. No model is consulted when a hook decides.',capAt:4200,swap:true},
     {s:2,d:8000,cap:'Control does not depend on the model.',capAt:600,green:true},
     {s:3,d:2400,cap:null},
   ];

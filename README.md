@@ -6,185 +6,42 @@
 
 <p align="center"><b>English</b> · <a href="README.ja.md">日本語</a></p>
 
-[![eval](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg)](https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml) [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md) [![Agents: 16](https://img.shields.io/badge/agents-16%20%2B%201%20template-blue.svg)](harness-bootstrap/assets/claude/agents/)
-[![Guardrail eval: 122/122](https://img.shields.io/badge/guardrail%20eval-122%2F122-brightgreen.svg)](eval/guardrail_eval.py) [![Claude Code compatible](https://img.shields.io/badge/Claude%20Code-compatible-5A189A.svg)](https://claude.com/claude-code) [![Release](https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver)](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
+<p align="center">
+  <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest"><img src="https://img.shields.io/github/v/release/nguyenhx2/agent-harness-bootstrap?display_name=tag&sort=semver" alt="Latest release"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
+  <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval workflow"></a>
+  <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
+  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-250%2F250%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 250/250 cases per hook flavour, on a strict scaffold"></a>
+  <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
+  <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="26 hooks"></a>
+</p>
 
-📊 [Slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/) · 🎥 [Video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/) · 📦 [Latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) · 📚 [Docs map](#-docs-map)
+An AI agent on a real repository fails in predictable ways: it reads what it should not, edits what
+it does not own, forgets the plan when the context compacts, re-runs a review that already passed,
+and calls work "done" with no evidence. Prompts do not stop any of that.
 
----
+This repo is two Claude Code skills and a viewer for **teams putting agents on real code, research,
+strategy or documentation work**. `spec-builder` writes a contract both a human and an AI can read.
+`harness-bootstrap` reads your codebase and builds the `.claude/` harness that fits it: a team sized
+to your modules, rules that load only where they apply, and hooks that **block in the shell**.
+`harness-view` shows and scores the result, with no model in the loop.
 
-## 🤔 Does any of this sound familiar?
-
-If you have put an AI agent on a real repository, you have probably hit at least three of these.
-Each one is answered by something in this repo, not by advice.
-
-| | What happens | What answers it |
-|---|---|---|
-| 🔥 | *"I asked for one feature. It touched 14 files across 3 modules and force-pushed to `main`."* | Scoped agents, path-based rules, and a **hook** that exits 2 and refuses the push before it lands |
-| 🧠 | *"The session compacted and it forgot the plan it was three steps into."* | The task board and its session log live on disk, so a fresh session resumes where the last one stopped |
-| 🔑 | *"It opened `.env` while 'just fixing a bug'."* | Those paths are denied before the read happens. It cannot leak what it was never allowed to open |
-| 📄 | *"The 40th generated doc quietly contradicts the spec."* | Every requirement gets a stable ID, and the traceability graph names the document that drifted |
-| 🧩 | *"The kit installed 40 agents and a hundred skills my project never needed."* | The roster is derived from your contract and your real modules: [**7 to 15 of 16 seats**](#-tailored-not-comprehensive), never all of them by default |
-| 🧪 | *"It wrote tests that pass no matter what the code does."* | A test's expected value must come from the acceptance criterion, [not from running the code](harness-bootstrap/assets/claude/rules/testing.md) |
-| 📎 | *"It 'read' my scanned PDF and wrote a spec from the three words it got."* | Every source routes to a reader that can actually read it - a scanned PDF goes to a vision pass, and an unreadable file becomes a [named open issue, never a guess](spec-builder/reference/source-routing.md) |
-| 🤷 | *"I cannot tell what my `.claude/` actually enforces any more."* | [`harness-view`](#-harness-view---the-optional-native-viewer) reads it off disk, scores it, and names every unwired part |
+**Why it matters:** the safety floor is shell scripts and exit codes, not instructions. No model is
+consulted when a hook decides, so the guardrail result cannot depend on which model an agent runs.
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
-    <img src="video/gif/04-solution.gif" alt="The complete solution: the pain points, spec-builder writing the contract, harness-bootstrap building the harness, the delivery loop running inside it, and the payoff" width="860">
+    <picture>
+      <source media="(prefers-reduced-motion: reduce)" srcset="video/gif/00-intro-poster.png">
+      <img src="video/gif/00-intro.gif" alt="Intro clip: the problems an unharnessed agent causes, spec-builder writing the contract, harness-bootstrap building a harness sized to the repo, and harness-view scoring it" width="860">
+    </picture>
   </a>
 </p>
+<p align="center"><a href="video/mp4/00-intro.mp4">Watch the intro as MP4</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">All clips, captioned</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/">Slides</a></p>
 
-<p align="center"><i>The whole product in one clip.</i> <b><a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">Watch the full set</a></b> - seven clips, captioned, no download.</p>
+## Install
 
-## 🧰 What it is
-
-Two Claude Code skills and a viewer. You can use any one of them alone.
-
-| | | |
-|---|---|---|
-| 📐 | **[`spec-builder`](spec-builder/)** | Turns an idea, a transcript, a pile of legacy docs, or a bare repo into **one contract** written to international standards, with stable requirement IDs. It never invents a requirement: anything unstated becomes a flagged open issue. [What it produces](#-what-spec-builder-produces) |
-| 🏗️ | **[`harness-bootstrap`](harness-bootstrap/)** | Reads your code first, then builds the `.claude/` harness that **fits it**: agents with a named scope, rules scoped to paths that exist, and hooks that block rather than advise. [What you get](#-what-you-get) |
-| 🔭 | **[`harness-view`](#-harness-view---the-optional-native-viewer)** | Reads the result and renders it. Scores it. Lets you switch any part off. **No model in the loop**, so a browser and a CI run cannot disagree |
-
-**The floor does not depend on the model.** The guardrails are shell scripts and exit codes, so
-swapping every agent from Opus to Haiku leaves the safety result byte-identical.
-`python eval/guardrail_eval.py` proves it: 112/112 per hook flavour, 244/244 across both.
-
-<p align="center">
-  <img src="docs/assets/ai-dlc-flow.svg" alt="AI-DLC flow: spec-builder produces the contract, harness-bootstrap builds the harness, then the delivery loop runs inside it" width="820">
-</p>
-
----
-
-## 🧩 Tailored, not comprehensive
-
-The usual way to ship an agent kit is to ship all of it: every agent, a hundred skills, every rule
-and every hook, installed before anyone has read the codebase. It looks generous. What it actually
-does is hand you a team you did not pick, for a project it has never seen.
-
-That costs more than it looks like it costs:
-
-- **You pay context for all of it, in every session.** A rule that matches no file in your repo is
-  not free. It is a tax on every request, forever.
-- **Seats end up with no owner.** An agent nobody routes work to is not capability held in reserve.
-  It is a name in a routing table that makes the table harder to read.
-- **The advice goes generic.** Guidance written to be true in any repository is rarely specific
-  enough to act on in yours.
-- **You cannot tell what is load-bearing.** When everything is installed, nothing signals that it
-  was chosen, so nobody can safely remove anything.
-
-Completeness gets mistaken for fit. They are not the same thing, and only one of them is worth
-paying for.
-
-<p align="center">
-  <img src="docs/assets/tailored-build.svg" alt="A figure in two halves. The top half shows the step joining spec-builder to harness-bootstrap: the contract with its FR, NFR and BR identifiers, and the codebase analysis with modules, detected stack and risky operations, both feeding a step labelled TAILOR whose job is to decide the team from evidence rather than a catalogue. Out of it come the roster, 7 to 15 of the 16 seats plus one dev agent per module that exists; the skills, only what the manifests justify and only if chosen; and the rules, scoped to paths that exist. Those three become the harness. The bottom half compares the kit approach, which installs everything before reading the codebase and so pays context for all of it and ends up with orphan seats and generic advice, against the tailored build, whose roster comes from the contract and the real modules and where everything installed has a named owner." width="960">
-</p>
-
-### The step in the middle
-
-`spec-builder` ends with a contract. `harness-bootstrap` begins with a codebase. **The step between
-them is where the team gets decided**, and it is the step most kits do not have at all.
-
-Both sides are evidence. The contract says what has to be built, in numbered requirements. The
-codebase analysis says what is already here: the modules, the stack it detected, the operations that
-are dangerous. The roster is derived from those two, and from nothing else:
-
-| Decided from | What it decides |
-|---|---|
-| The modules that actually exist | One dev agent each, scoped to real paths. No module, no seat. |
-| The contract and your answers | Which of the 16 seats are filled. A run installs **7 to 15 of the 16 seats**, never all of them by default. |
-| The manifests in your repo | Which skills are even proposed. You choose from that shortlist, and `/skill-wire` connects each one to the agent that will use it. |
-| The paths that exist | Which rules are path-scoped, which keeps **68%** of rule content out of the default session. |
-
-The numbers above are measured, not claimed: scaffold with the leanest answers and you get 7 seats;
-answer yes to databases, tests and a long-lived project and you get 15. Nothing installs itself, and
-`harness-view assess` will name any seat without a module, any rule without a path, and any skill
-without an agent.
-
----
-
-## 🧵 How it all fits together
-
-<p align="center">
-  <img src="docs/assets/harness-loom.svg" alt="The harness drawn as a loom. On the left, input arrives as the forms it really comes in: a one-line idea, a meeting transcript, legacy documents, an existing repo, an empty repo, half-written specs. Tangled threads carry them into spec-builder, which routes any format into one contract. Inside the harness-bootstrap frame, rules and hooks come down into the agents, while a skill rail on the right finds skills that match the project's tech stack and wires a chosen one to the agent that needs it. Three ordered outputs leave below - docs with a graph, a plan, and code with a graph - state at the foot of the frame holds the prompt, run history and task board, and the harness viewer underneath reads that state to show, score, toggle and watch the whole control plane" width="960">
-</p>
-
-A loom is the honest picture. Threads go in tangled and cloth comes out, and nothing about that is
-magic: the frame is what makes the difference. Everything inside the blue box is frame.
-`spec-builder` sits outside it and does one job, turning whatever you brought (an idea, a
-transcript, legacy docs, a bare repo) into one contract written to international standards. Inside,
-rules and hooks come down into the agents, state and skills feed in from either side, and what
-leaves the waist is the same three things every time, all carrying stable IDs.
-
-The point of the drawing is the colour. Going in, every thread is a different colour and none of
-them are parallel. Coming out they are one colour, running the same direction. That is the whole
-claim of this repo, and it is a claim about the frame, not about the model.
-
-### Seeing the weave
-
-The harness is not a diagram you take on trust. `harness-view` renders the real thing from
-`.claude/state/harness-graph.json`, and every node is a file you can open.
-
-<p align="center">
-  <img src="docs/assets/harness-view-flow.png" alt="harness-view Flow view of a real project: rules on the left feeding through hooks into agent seats and converging on a merge gate" width="900">
-</p>
-
-<p align="center">
-  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 100 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and an empty findings list" width="900">
-</p>
-
-Both are a real harness, not a mock-up: 219 nodes, 655 edges, scored 100/100 by the deterministic
-assess engine. No model is involved in that score, so a browser and a CI run cannot disagree
-about it.
-
----
-
-## 📋 What `spec-builder` produces
-
-Not prose retyped from scratch each time - a fixed structure of numbered sections under
-`docs/specs/`, installed from real template files so the shape never drifts between projects. The
-core six (overview, glossary, functional requirements, NFRs, revision history, plus the index)
-always exist; up to eight optional sections (stakeholders, business flows, access control, data
-model, integrations, UI wireframes, assumptions, feasibility) and a design-system appendix
-(`14-design-system.md` - design tokens `DT-nn`, component inventory `DS-nn`) are selected by what
-the input material actually contains, so a backend batch service never ships an empty wireframes
-file:
-
-- **Stable requirement IDs, each with one defining home** - `FR-` (functional requirements, section
-  05), `NFR-` (non-functional, 07), `BR-` (business rules, 05), `US-`/`UC-` (user stories and use
-  cases, 05), and more. Every other document links back to the defining section instead of restating
-  the requirement.
-- **The blank-cell-with-question rule** - an unknown never becomes an invented fact. It becomes either
-  an assumption (`AS-nn`, with what breaks if it's wrong) or an open issue (`OI-nn`, with a named
-  owner) in `11-assumptions-constraints.md` - never a guessed default standing in for a real answer.
-- **A verifiable quality gate** - every FR must appear in the feasibility table (12), carry an
-  acceptance criterion with at least one negative case, and trace back to something a stakeholder
-  actually said. Each check in the gate is a grep command against the files, not a vibe check.
-- **The specs graph** - `docs/context/specs-graph.html`, a self-contained interactive export (open in
-  any browser, no server needed) of how sections, requirements, ADRs, and tasks reference each other,
-  with orphan IDs called out.
-
-**Document standards it generates against** - an opinionated synthesis, not a certified
-implementation:
-
-- **ISO/IEC/IEEE 29148:2018** - the SRS content model and what makes a requirement well-formed
-- **ISO/IEC 25010:2023** - the NFR taxonomy behind section 07's PERF/SEC/REL/USE/SCA/MNT categories
-- **BABOK v3** - elicitation discipline and requirements traceability
-- **MoSCoW** - the Must/Should/Could/Won't priority column
-- **Cockburn use cases + Gherkin** - the UC blocks and Given/When/Then acceptance criteria
-- **C4 (context level) + arc42 (context and scope)** - the one architecture diagram in 01
-- **OWASP ASVS 5.0 + OWASP LLM Top 11 (2025)** - section 07's mandatory, never-TBD security NFRs
-
-Full depth, including which section draws on which standard and the honest limits:
-[`spec-builder/SKILL.md`](spec-builder/SKILL.md) ·
-[`ba-standards.md`](spec-builder/reference/ba-standards.md).
-
----
-
-## 🚀 Quickstart
-
-**Install as a plugin** (recommended). In **Claude Code**:
+In **Claude Code**:
 
 ```text
 /plugin marketplace add nguyenhx2/agent-harness-bootstrap
@@ -192,386 +49,162 @@ Full depth, including which section draws on which standard and the honest limit
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
-In **Codex**:
-
-```bash
-codex plugin marketplace add nguyenhx2/agent-harness-bootstrap
-```
-
-**Cursor, VS Code, Copilot, Kiro** and every other client that reads the
-[Agent Plugins](https://agent-plugins.org/) standard install the packages under
-[`plugins/`](plugins/). Updates arrive through the client's own update command when a release
-bumps the version - no re-download, no stale copy. Per-client steps:
-[`docs/PLUGIN.md`](docs/PLUGIN.md).
-
-**Or install from the release zip** - the offline, pinned path. Requires **Python 3**.
-
-**macOS / Linux** (bash):
-
-```bash
-curl -fsSL https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/agent-harness-bootstrap.zip -o skills.zip \
-  && unzip -o skills.zip -d ~/.claude/skills/ \
-  && rm skills.zip
-```
-
-**Windows** (PowerShell):
-
-```powershell
-irm https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest/download/agent-harness-bootstrap.zip -OutFile "$env:TEMP\skills.zip"
-Expand-Archive "$env:TEMP\skills.zip" "$env:USERPROFILE\.claude\skills" -Force
-Remove-Item "$env:TEMP\skills.zip"
-```
-
-**Or let the agent install it** - paste this into any Claude Code session:
+Then, in your repo:
 
 ```text
-Install the two skills from the latest release of
-https://github.com/nguyenhx2/agent-harness-bootstrap into ~/.claude/skills/:
-download agent-harness-bootstrap.zip from the latest release, verify it against the
-SHA256SUMS asset from the same release, extract it so that each skill directory
-(harness-bootstrap/, spec-builder/) sits directly under ~/.claude/skills/, confirm both
-SKILL.md files exist, and tell me the installed version from their VERSION files.
+/spec-builder        # starting from an idea, notes or legacy docs: write the contract first
+/harness-bootstrap   # read the code, then build (or update) the .claude/ harness
 ```
 
-Then, inside Claude Code:
+Nothing is written until you approve a one-screen plan, and existing files are reconciled, never
+overwritten. Codex, Cursor, VS Code, Copilot and Kiro: [`docs/PLUGIN.md`](docs/PLUGIN.md). The
+offline release zip and pinned versions: [Getting Started](docs/wiki/Getting-Started.md) and
+[`docs/tools/`](docs/tools/).
 
-```text
-/spec-builder           # write the specs first, if you're starting from an idea
-/harness-bootstrap      # build (or update) the .claude harness for this repo
-```
+<p align="center">
+  <img src="docs/assets/harness-overview.svg" alt="How it all fits together. What you bring - an idea, transcripts, legacy docs, an existing or empty repo, half-written specs - flows into spec-builder, which writes one contract. harness-bootstrap reads that contract and the codebase and builds six parts: path-scoped rules, hooks that block in the shell, a roster sized to the repo's purpose, routing across the Inline, Direct, Standard and Guarded tiers, wired skills, and proportionate verification. Work writes state to disk - the task board, run history and checkpoints - and harness-view reads the harness and that state to show, score, toggle and watch it." width="960">
+</p>
 
-If the repo already has code, run `/harness-bootstrap` on its own - it reads the code first and
-pre-fills the intake with what it found. Existing files are **reconciled, not overwritten**: anything
-that conflicts is reported and left for you to merge. Nothing is written until you approve the plan.
+## The problems it solves
 
-**One skill at a time, a pinned version, checksums, from source, or running the harness in Cursor and
-Codex instead of Claude Code:** see [`docs/tools/`](docs/tools/) -
-[Claude Code](docs/tools/claude-code.md) · [Cursor](docs/tools/cursor.md) · [Codex](docs/tools/codex.md).
+Seven questions teams actually ask, each answered by a mechanism you can open and read. Where an
+answer depends on an intake flag, the flag is named.
 
----
+### 1. "I want an agent team that fits my project, not a generic roster."
 
-## 💬 What you will be asked
-
-Both skills interview you before they write anything, **in the language you write to them in** -
-open in Vietnamese and the questions come back in Vietnamese. Closed choices arrive as pick-lists,
-batched up to four at a time; open questions stay in chat. Nothing is generated until you approve a
-one-screen plan.
-
-**`harness-bootstrap` - eight batches, and most of them are confirmations.** On an existing repo it
-reads the code first and pre-fills every answer it can, so you are correcting findings rather than
-typing from scratch.
-
-| Batch | Decides | Mostly |
+| Mechanism | What it does | Where |
 |---|---|---|
-| A identity | Name, docs language, whether specs exist, which AI tools must run it | Asked |
-| B stack | Language, DB, integrations, environments, authorization, dev OS | Confirmed from the code |
-| C git | Platform, commit identity, default branch, commit convention | Confirmed from git |
-| D quality and safety | Roster shape, testing, methodology, data sensitivity, effort, control level | Asked |
-| E database | Which DB agents, the real reset command | Only if there is a DB |
-| F frontend | Brand assets, icon policy, accessibility target | Only if there is UI |
-| G audit | Repos in scope, scanners, who fixes | Only in audit mode |
-| H governance | Model sovereignty, residency, licences, gated actions | Asked, never defaulted |
+| Purpose profiles | The first question is what the repo is *for*: code, research, strategy, docs, or a mix. Each fields its own seats and its own review: `researcher`, `strategist`, `writer`, and a read-only `checker` for non-code work | [`roster.md`](harness-bootstrap/reference/roster.md#purpose-profiles---which-seats-a-repo-gets) |
+| Sizing from evidence | The roster is derived from the contract and the modules that exist: one dev seat per real module, and a run installs **3 to 17 of the 18 seats**, never all by default | [Tailored Build](docs/wiki/Tailored-Build.md) |
+| A pre-answered questionnaire | On an existing repo, codebase analysis runs first and pre-fills every answer it can; you confirm findings instead of typing them. The closed choices fit in at most two question batches | [`intake.md`](harness-bootstrap/reference/intake.md), [`QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
+| Per-module `CLAUDE.md` | Each module gets its own owner, scope and invariants (at most 40 lines), loaded only when an agent reads files there | [`SKILL.md`](harness-bootstrap/SKILL.md) step 4 |
 
-Batch H is the one place nothing is ever guessed: each answer is a policy position only your
-organisation can hold, and an invented one would be believed. "We do not know yet" is a valid
-answer and becomes a registered task.
+### 2. "I want it safe, without it overthinking or burning tokens."
 
-**In a hurry?** Say so and you get the **express path**: only the questions with no safe default
-(project identity, deployment rights, and all of batch H), with every other answer defaulted and
-shown to you as one table to confirm. Audit mode is never express - scope cannot be guessed.
-
-**`spec-builder` - four batches plus a setup question.** If you hand it files instead of
-prose (PDF, Word, Excel, PowerPoint, images, URLs), it reads them FIRST and shows you a
-one-line plan per source - which reader it chose and why, or that a file is unreadable and
-what would fix it - before asking anything. A scanned PDF is detected (under 80 characters a
-page) and routed to a vision pass instead of being "summarized" from almost nothing.
-Setup then picks the output language, which
-sections to build (the core set is fixed, the rest are offered with the ones your material supports
-pre-ticked), and how strict a standards profile to follow. Then: scope, people, data and systems,
-constraints. It never invents a requirement - anything unstated becomes a flagged open issue with an
-ID, not a guess.
-
-Full question-by-question detail, and why each is asked:
-[`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md).
-
----
-
-## 📦 What you get
-
-Not a fixed bundle - a `.claude/` harness **tailored to this repo**. The roster, which rules load, the
-hook flavor, the deny-list, and the delivery discipline are all derived from intake and from what the
-code graph finds in your source, not copied from a template:
-
-- **Agent roster** - one dev seat per module or bounded context the code graph maps in your repo, not
-  a fixed head count; add or retire a seat later with `/harness-update`.
-- **Rules that load** - matched to the stack your manifests actually show; a rule for a language,
-  framework, or concern you don't have (no DB, no UI) never loads at all.
-- **Hooks** - matched to the dev OS intake detects (Windows vs. POSIX), so the guardrails fire instead
-  of silently no-opping on the wrong shell.
-- **Deny-list** - matched to the real destructive commands for this stack (the DB reset command, the
-  deploy command, any infra-teardown command) - confirmed from your config, never guessed.
-- **Methodology** - four options, chosen in intake: DDD by default (bounded-context scopes, tests ship
-  with the implementation), TDD (tests strictly first - stronger proof, slower delivery), TDD+DDD (both,
-  the strictest and slowest posture - the two can pull against each other), or Lightweight (no
-  methodology rule installed, the review gate and guardrail hooks stay - for prototypes and solo
-  velocity) - see [`intake.md`](harness-bootstrap/reference/intake.md).
-- **Testing** - a choice, not an assumption: unit + e2e, unit only, e2e only, or none. Only the chosen
-  kinds ship `qa-test`, `/test`, and `rules/testing.md`; frameworks are then suggested per stack
-  (Vitest is only suggested for JS/TS).
-- **Effort profile** - Default / Economy / Thorough, tuning cost vs. depth per seat without touching a
-  review or safety gate.
-- **Control level** - deploy rights and destructive-command posture; deployment defaults to
-  human-only (`deploy` sits in `permissions.deny` until intake, or `/harness-tune` later, moves it to
-  `ask`), adjustable after bootstrap without re-running intake.
-
-```text
-.claude/
-  agents/     one seat per module the code graph finds - model, effort, tool grant, turn limit
-  rules/      always-loaded core plus stack-matched rules that load only on a matching file touched
-  commands/   the tuning commands (below) plus the stack-specific ones intake wires in
-  hooks/      the guardrails matched to your OS, blocking a dangerous action before it happens
-  settings.json
-docs/
-  tasks/      the board: one row per task, a session log the agent writes AS IT WORKS
-  context/    code-graph.md (dependency map) and docs-graph.md (traceability map), each also exported
-              as self-contained interactive HTML - docs/context/harness-graph.html (agents, hooks,
-              rules, commands, settings, and modules) and docs/context/specs-graph.html (document
-              traceability)
-  specs/ requirements/ architecture/ templates/
-AGENTS.md + CLAUDE.md
-```
-
-| An agent tries to | Result |
-|---|---|
-| Read `.env`, a private key, `~/.ssh/`, or a path classified Restricted | Blocked |
-| Commit straight to `main`, or ship an AI-attribution trailer | Blocked |
-| Edit an Accepted ADR, or spawn an off-roster agent | Blocked |
-
-The spawn boundary itself - only a roster seat may run, and only at its pinned model - is enforced by
-the `guard-agent-spawn` hook, not by a rule an agent could drift from.
-
-Shipped toolbox this tailoring draws from - the asset superset, not a per-project guarantee: 16
-agents, 17 rules, 22 slash commands, 11 hooks (9 always; the rtk wrapper only behind its
-flag). Roughly 8-11 agents land in a default install; a `long`
-project adds `brainstormer` + `tech-researcher` + `history-tracker`, `tests` adds `qa-test`, and
-`solo_review` swaps the split reviewers for one merged `reviewer`. What actually lands in your
-`.claude/` depends on the dimensions above; see [`roster.md`](harness-bootstrap/reference/roster.md)
-for the full seat list.
-
-Full guarantees, the memory model, and the cost breakdown: [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md),
-[`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md),
-[`cost-model.md`](harness-bootstrap/reference/cost-model.md).
-
-### 🔭 `harness-view` - the optional native viewer
-
-The skill's own HTML export (`docs/context/harness-graph.html`) needs nothing but Python and a
-browser, and that stays the default. [`tools/harness-view`](tools/harness-view/) is the power
-version: a small Rust binary that reads the same `.claude/state/harness-graph.json` contract and
-adds a live-refreshing UI, file watching, and safe runtime toggles.
-
-Every release attaches a **standalone executable** for Windows, macOS (Intel and Apple Silicon)
-and Linux - no toolchain, no Python, no install step. On Windows you can drop it into a repo and
-double-click it: with no arguments it serves that folder and opens your browser. Or build from
-source with `cargo install --path tools/harness-view`.
-
-```
-harness-view                              # serve the current folder, open a browser
-harness-view scan  [path]                 # write .claude/state/harness-graph.json
-harness-view serve [path] [--port 7420]   # Flow + Graph views, details panel, safe toggles
-harness-view watch [path]                 # rebuild the graph as .claude/ or docs/ change
-```
-
-Full instructions for every route - downloading per OS, the double-click case, pointing it at
-other repos, the endpoints and the safety model - are in
-[`tools/harness-view/README.md`](tools/harness-view/README.md).
-
-It is entirely optional: nothing in the harness requires it, and the shipped HTML viewer covers the
-same two views with zero install.
-
----
-
-## 🎛️ Post-bootstrap tuning
-
-The harness's starting posture is not permanent. Eight commands ship into every bootstrapped repo to
-adjust it after the fact, plus two more (`/spec-ingest`, `/spec-retract`) that arrive with a
-`spec-builder` spec set - full guidance, worked examples, and the invariants each one enforces live
-in [`docs/TUNING.md`](docs/TUNING.md).
-
-**Two places these live, and it matters which one you have.**
-
-Scaffolded into the repo (`.claude/commands/`), they carry your answers: `/deploy` knows your deploy
-command because intake substituted it. They exist only in a repo that ran the bootstrap, and only
-in that repo.
-
-The same eight also ship **with the plugin**, so the harness-management set is available in any
-directory the moment the plugin is installed - before a first bootstrap, and in repos someone else
-bootstrapped. Plugin commands carry the plugin's namespace, which is also what keeps them from
-colliding with anything else you have installed:
-
-```
-/harness-bootstrap:harness-tune          /harness-bootstrap:code-graph
-/harness-bootstrap:harness-toggle        /harness-bootstrap:docs-graph
-/harness-bootstrap:harness-update        /harness-bootstrap:board-audit
-/harness-bootstrap:agent-permissions     /harness-bootstrap:skill-wire
-```
-
-The plugin copies read the repo instead of having its values baked in - they open `settings.json`
-and the roster and quote back what they find rather than assuming it - and each one says plainly
-when the current directory has no `.claude/` to work on. The delivery commands (`/test`, `/deploy`,
-`/new-task` and the rest) stay scaffold-only: a generic `/deploy` that has to guess your deploy
-command is worse than no `/deploy`.
-
-Claude Code resolves a bare `/harness-tune` to the scaffolded copy when the repo has one, so
-bootstrapped repos keep working exactly as before. The namespaced form always reaches the plugin's.
-
-| Command | What it does |
-|---|---|
-| [`/board-audit`](docs/TUNING.md#board-audit) | Runs `board-check.py` first, then a read-only sweep for orphaned tasks, unlogged runs, board drift, and a stale code graph |
-| [`/harness-tune`](docs/TUNING.md#harness-tune) | Retune control level - deploy rights, destructive-command posture, spawn allowlist, caps, review scope, agent-history detail (six dials) |
-| [`/harness-toggle`](docs/TUNING.md#harness-toggle) | Disable or re-enable one rule, command, hook, or agent seat - HARD items need a typed confirm phrase, SOFT items and every seat need `--yes` |
-| [`/agent-permissions`](docs/TUNING.md#agent-permissions) | Grant or revoke one tool on one roster seat |
-| [`/harness-update`](docs/TUNING.md#harness-update) | Re-run the scaffolder to pick up new assets or a changed codebase, conflicts flagged, never clobbered |
-| [`/code-graph`](docs/TUNING.md#code-graph) | Rebuild the code dependency graph (mermaid + JSON) an agent consults before a cross-module change, and refresh the harness graph + HTML exports |
-| [`/docs-graph`](docs/TUNING.md#docs-graph) | Rebuild the docs traceability graph - orphan requirement IDs - and refresh both interactive exports, `specs-graph.html` and `harness-graph.html` |
-| [`/spec-ingest`](docs/TUNING.md#the-spec-side) | Fold a new source into an existing spec set - diffed, versioned, rippled to the agent files that depend on it |
-| [`/spec-retract`](docs/TUNING.md#the-spec-side) | Withdraw a bad source or claim - traced, converted to open issues, affected tasks blocked for a human |
-| [`/skill-wire`](docs/TUNING.md#skill-wire) | Wire an installed [skills.sh](https://www.skills.sh/) skill to a roster seat - content re-review, scope match, recorded |
-
-Three things none of the eight will ever do, no matter what you confirm:
-reviewers never gain write access, only the orchestrator spawns, and the code-review gate cannot be
-removed - only rescoped.
-
----
-
-## 🛠️ Delivery commands
-
-A second set of commands runs during normal feature work rather than harness upkeep - registering a
-task, implementing an FR, running tests, reviewing a diff, deploying. Full reference, including what
-each writes and refuses: [`docs/FLOWS.md` section 7](docs/FLOWS.md#7-delivery-commands-command-by-command).
-
-| Command | What it does | Ships |
+| Mechanism | What it does | Where |
 |---|---|---|
-| [`/new-task`](docs/FLOWS.md#new-task-short-title) | Create a task file from the template, register it on the master plan | Unconditional |
-| [`/implement-fr`](docs/FLOWS.md#implement-fr-fr-id) | Plan and implement a functional requirement end-to-end against its acceptance criteria | Unconditional |
-| [`/scaffold-feature`](docs/FLOWS.md#scaffold-feature-feature-slug) | Create a feature's skeleton - entry point, module, component, failing test - no logic | Unconditional |
-| [`/db-migration`](docs/FLOWS.md#db-migration-migration-name) | Generate a migration against the local DB only, escalating anything that could lose data | `db` |
-| [`/seed-db`](docs/FLOWS.md#seed-db) | Seed the local/dev database with deterministic, synthetic, idempotent data | `db` + `db_seeder` |
-| [`/test`](docs/FLOWS.md#test) | Run lint plus the unit/e2e suites, report failures by owning agent | `tests` |
-| [`/review-changes`](docs/FLOWS.md#review-changes) | Code + security review on the current diff before a PR/MR - never merges or deploys | Unconditional |
-| [`/secret-scan`](docs/FLOWS.md#secret-scan) | Scan the diff for secrets and sensitive data - any hit blocks until rotated | Unconditional |
-| [`/deploy`](docs/FLOWS.md#deploy) | Deploy after every precondition holds - human-invoked only, never model-triggered | Unconditional |
-| [`/new-adr`](docs/FLOWS.md#new-adr-decision-title) | Create an Architecture Decision Record - Accepted ADRs are hook-immutable | Unconditional |
-| [`/new-spec-section`](docs/FLOWS.md#new-spec-section-section-number-or-name) | Scaffold a missing `docs/specs/` section | Unconditional |
-| [`/sync-context`](docs/FLOWS.md#sync-context) | Refresh `docs/context/` (rules, issues, changelog, glossary) from what landed | Unconditional |
-| [`/task-resume`](docs/FLOWS.md#task-resume-task-nnn) | Resume a task after a compaction or crash, trusting files over memory | Unconditional |
-| [`/brainstorm`](docs/FLOWS.md#brainstorm-topic) | Structured options + trade-offs on a decision, never deciding for the user | `long` |
-| [`/security-scan`](docs/FLOWS.md#security-scan-repo-slug) | Run the pinned scanner suite (read-only mount) and record new findings | `audit` mode only |
-| [`/triage-findings`](docs/FLOWS.md#triage-findings-repo-slug) | Confirm, score, anchor, and register findings as tasks - never applies the fix | `audit` mode only |
+| Hooks that block in the shell | Exit code 2 refuses the action before it happens. Always on: secrets, commits to the default branch, Accepted ADRs, off-roster spawns, hand edits to the board, and `guard-destructive` (`rm -rf` on the repo, force push to main, `reset --hard`). Stricter stops (large files, egress, unpinned installs, "done" with no evidence) are opt-in with `hooks_strict` | [hooks README](harness-bootstrap/assets/claude/hooks/README.md) |
+| Proportionate verification | `verify-plan.py` reads the diff and says which tests and reviews it needs, and records why each skipped gate was skipped. A README edit does not earn a security review | [`verify-plan.py`](harness-bootstrap/assets/scripts/verify-plan.py) |
+| Verification ledger + spawn guard | `guard-agent-spawn` refuses a review or test run on content that already passed, an identical brief, and a dispatch past the task budget. Only a human can override, with `REVERIFY: <reason>` in the brief, once | [Overriding the ledger](harness-bootstrap/assets/claude/hooks/README.md#overriding-the-verification-ledger-for-the-user-not-the-agent) |
+| Two review rounds, then stop | A third review round on the same content is refused; the agent has to stop and ask | same |
+| Effort and caps per seat | Every seat pins `model`, `effort`, `tools` and `maxTurns`. The orchestrator delegates only work big enough to earn a fresh context, and `settings.json` caps spawn depth at 2 and concurrent subagents at 4 | [`cost-model.md`](harness-bootstrap/reference/cost-model.md), [`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md) |
 
----
+### 3. "I am worried about leaking keys."
 
-## 🗺️ Docs map
+| Mechanism | What it does | Where |
+|---|---|---|
+| `protect-secrets` (always) | Blocks reading or copying `.env*` (except `.env.example`), keys, `secrets/` and `credentials/` dirs | [hooks README](harness-bootstrap/assets/claude/hooks/README.md#env-files-what-a-seat-may-read-and-how) |
+| `env-read.py` (always) | The sanctioned way to use env values: checks names and shape, or runs a command with values loaded and redacted from its output | same |
+| `secret-guard` (`hooks_strict`) | Vendor-format keys in a prompt are blocked before sending; in tool output they trigger a rotate warning | [Opt-in hooks](harness-bootstrap/assets/claude/hooks/README.md#opt-in-hooks-one-per-scenario) |
+| `guard-egress` (`hooks_strict`) | Blocks an upload to a host not on the allowlist, the step a prompt injection needs | same |
+| `/secret-scan` (always) | Scans the diff before review; any hit blocks until rotated | [`FLOWS.md`](docs/FLOWS.md#secret-scan) |
 
-```text
-agent-harness-bootstrap
-├── docs/                          how it works, and what it costs
-│   ├── FLOWS.md                   seven diagrams + the delivery-command reference
-│   ├── CONTEXT-MANAGEMENT.md      RAM vs disk, crash-resume, hard vs soft controls
-│   ├── QUESTIONNAIRES.md          what each skill asks, and why - flow diagrams for both
-│   ├── TUNING.md                  the eight tuning commands + spec-builder's ingest/retract pair
-│   ├── ASSESSMENT.md              scorecard, including what this does not do
-│   └── RELEASING.md               semver, artifacts, the release-note format
-│
-├── harness-bootstrap/             skill 1 - builds the harness
-│   ├── SKILL.md                   the procedure the model follows
-│   └── reference/
-│       ├── intake.md              the 27-question intake, batch by batch
-│       ├── roster.md              every agent's model, effort, tools, turn limit, and why
-│       ├── cost-model.md          how model, effort, tools and cache stability affect the bill
-│       ├── task-control.md        the orchestration loop, crash recovery, merge discipline
-│       ├── codebase-analysis.md   how a brownfield repo is read before anything is written
-│       ├── skill-discovery.md     finding, vetting and wiring third-party skills
-│       ├── tech-presets.md        stack defaults and the version-currency rule
-│       ├── control-surfaces.md    where each guardrail actually lives
-│       └── audit-mode.md          read-only mode for source agents must never touch
-│
-├── spec-builder/                  skill 2 - writes the spec the harness builds from
-│   ├── SKILL.md                   the procedure, and the selective section set
-│   └── reference/
-│       ├── elicitation.md         how the questions are asked, and what is never guessed
-│       ├── writing-rules.md       ID scheme, anchors, the blank-cell rule
-│       └── ba-standards.md        which standards the spec sections draw on
-│
-├── tools/harness-view/            the optional native viewer (see above)
-├── benchmark/RESULTS.md           benchmark numbers and their caveats
-├── eval/README.md                 the guardrail eval: every case and what it proves
-└── CONTRIBUTING.md                dev setup, the gates a PR must pass, asset editing rules
-```
+### 4. "Traditional SDLC makes every task a struggle, and AI-DLC ends up half-hearted."
 
-Also published: the [slide presentation](https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/)
-(EN / VI / JP) and the [video gallery](https://nguyenhx2.github.io/agent-harness-bootstrap/video/)
-(seven clips, captions, no download).
+The agentic loop: **FR -> task -> implement -> verify-plan -> review -> done**, with the spec as the
+oracle at every step. Ceremony follows the change, not the calendar:
 
-**Numbers**, measured against the predecessor skill this replaces - reproduce with
-`python benchmark/benchmark.py`:
+| Tier | When | Who |
+|---|---|---|
+| Inline | A question, a lookup, a small edit | The main session, no task file |
+| Direct | One module, reversible, no contract touched | The owning seat, straight |
+| Standard | Several files or an FR behind it | The owning seat, task file if it must survive compaction |
+| Guarded | Several seats in order, or schema, auth, money, migrations, deploys | The orchestrator, full flow |
 
-| | Before | After | Δ |
-|---|---:|---:|---:|
-| Bytes the model must read to bootstrap a repo | 234,196 | 156,205 | **-33%** |
-| Bytes the model must write as output | 95,064 | 9,439 | **-90%** |
-| Rule content kept out of the default session | - | 55,062 of 87,196 B | **68%** |
-| Guardrail eval | - | **122/122** | - |
+`task.py` moves a task's file, folder and board row in one command, and `task.py checkpoint` writes
+the next step and last green commit so a fresh session resumes where the last one stopped.
+Read [`agentic-loop.md`](spec-builder/reference/agentic-loop.md) and
+[`FLOWS.md` section 4](docs/FLOWS.md#4-one-feature-end-to-end-through-the-generated-harness).
 
----
+### 5. "I want specs a human can confirm and an AI can understand."
 
-## 🙏 Third-party credits
+`spec-builder` turns any input into one contract under `docs/specs/`:
+6 core sections, up to 8 optional ones chosen by what your material contains. Then:
 
-Two optional pieces of the harness build on other people's work. Both are opt-in, both are
-permissively licensed, and both are named here because that is what those licences ask for.
+- **The confirmation sheet** (`confirmation.md`): every FR in plain words with a yes / no / change
+  column, for the PO or client.
+- **The index** (`index.json`): what agents read first, so a task on one FR loads one block.
+- **Given/When/Then criteria**: every FR has checkable acceptance criteria, including a negative case.
+- **Flagged assumptions**: nothing is invented. An unknown becomes `AS-nn` (with its impact) or
+  `OI-nn` (with an owner). A scanned PDF (under 80 characters a page) goes to a vision pass, and an
+  unreadable file becomes a named open issue.
+- **`spec-check.py`**: regenerates the sheet and index and fails when either falls behind the spec.
 
-| Used for | Project | Licence | Author |
-|---|---|---|---|
-| The output-style rule, behind the `terse` flag | [i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | Ayoub Ghriss |
-| The command-output wrapper hook, behind the `rtk` flag | [rtk](https://github.com/rtk-ai/rtk) | Apache-2.0 | rtk-ai and rtk-ai Labs |
+Read [`spec-builder/SKILL.md`](spec-builder/SKILL.md) and
+[`ba-standards.md`](spec-builder/reference/ba-standards.md) for the standards it draws on.
 
-The rule text is adapted from that project's skill, pinned at commit `2ed0640`, with its MIT notice
-preserved in the generated file.
+### 6. "I want to understand and control how the agents work, all of it, in depth."
 
-**rtk is not bundled.** The harness ships only `hooks/rtk-rewrite.{sh,ps1}`, a wrapper we wrote that
-calls the binary if you installed it and stays silent if you did not, so choosing the flag can never
-break a machine that lacks it. The wrapper also refuses to hand rtk any command our own guards
-inspect, so a compressor cannot become the reason a guard did not fire.
+| Mechanism | What it shows | Where |
+|---|---|---|
+| `harness-view` | Every agent, rule, hook, command and module as a live graph read off disk; toggle any part off safely | [`tools/harness-view`](tools/harness-view/README.md) |
+| Run history (always) | `agent-history` archives every finished subagent run; detail level set with `/harness-tune` | [`TUNING.md`](docs/TUNING.md#harness-tune) |
+| `agent-trace` (`long`) | Which rule entered context and why, which subagent started, what auto mode refused | [Opt-in hooks](harness-bootstrap/assets/claude/hooks/README.md#opt-in-hooks-one-per-scenario) |
+| `harness-check.py` (always) | Every link between parts points at something real: registered hooks exist, every named seat exists, the tier table matches the seats | [`harness-check.py`](harness-bootstrap/assets/scripts/harness-check.py) |
 
-Neither project endorses this one.
+### 7. "Once built, the harness is too much to check and slow to fix. And the score is vague."
 
-The overview figure borrows its central idea from the Temporal Loom in the Marvel Cinematic
-Universe: a machine that takes tangled, divergent threads and weaves them into something ordered
-and inspectable. Only the idea was borrowed. No Marvel artwork was copied, traced or embedded, and
-the figure is drawn from scratch. Reference:
-[Temporal Loom](https://marvelcinematicuniverse.fandom.com/wiki/Temporal_Loom) on the Marvel
-Cinematic Universe Wiki. Marvel and Disney do not endorse this project.
+`harness-view assess` is a plain rules engine, and the same engine backs the browser tab and CI.
 
+- **A prioritised worklist.** Findings grouped by rule and ordered by weight x count / effort, each
+  card saying what the score would be with that rule cleared.
+- **One-click fixes** where safe (pin a model, set an effort, strip write tools from a reviewer),
+  offered only when the agent editor would accept the edit.
+- **What changed since the last check:** score before and after, findings fixed and new.
+- **A published rubric.** Each category starts at 100 and shows its own arithmetic
+  (`100 - COST-01 1x12 = 88`); every finding carries a rule ID, `file:line` evidence and the fix.
 
-## 🤝 Contributing
+<p align="center">
+  <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 100 out of 100, with per-category bars and an empty findings list" width="860">
+</p>
 
-Issues and pull requests are welcome. This repo generates a harness other people's agents run
-inside, so the bar is "does this still hold up" rather than "does it compile" - and the checks
-that answer it are automated, so you do not have to remember them:
+The screenshot is a real harness: 219 nodes, 655 edges, scored 99/100. Read
+[`RUBRIC.md`](tools/harness-view/RUBRIC.md) and [Harness View](docs/wiki/Harness-View.md).
+
+## Proof you can run
 
 ```bash
-py -3.13 eval/guardrail_eval.py      # the guardrails must still block
-py -3.13 scripts/check_numbers.py    # every published figure must match its script
+python eval/guardrail_eval.py       # the guardrails still block, and good work still passes
+python benchmark/benchmark.py       # harnessed vs a bare repo
+python scripts/check_numbers.py     # every published figure matches its script
 ```
 
-[`CONTRIBUTING.md`](CONTRIBUTING.md) has the full gate list and what each one exists to catch.
+The guardrail eval scaffolds a real harness per hook flavour (`.sh` and `.ps1`) with `hooks_strict`,
+`db`, `long` and the test flags on, then fires payloads at it: 250/250 per flavour (101 must-block,
+149 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
+does not measure agent behaviour or a default scaffold. Cases: [`eval/README.md`](eval/README.md).
+Benchmark caveats: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 
-## 📄 License
+## Go deeper
 
-**[GNU AGPL-3.0](LICENSE.md)** - free to use for any purpose, commercial included. If you
-distribute a modified version of this software, or let people use a modified version over a
-network, you must publish the source of your changes under the same licence. Licensor:
-**Hoàng Xuân Nguyên** (`nguyenhx2`).
+| To learn | Read |
+|---|---|
+| Every flow as a diagram, and every delivery command | [`docs/FLOWS.md`](docs/FLOWS.md) |
+| The tuning commands (`/harness-tune`, `/harness-toggle`, `/harness-update` ...) | [`docs/TUNING.md`](docs/TUNING.md) |
+| What each skill asks you, and why | [`docs/QUESTIONNAIRES.md`](docs/QUESTIONNAIRES.md) |
+| Memory, crash-resume, hard vs soft controls | [`docs/CONTEXT-MANAGEMENT.md`](docs/CONTEXT-MANAGEMENT.md) |
+| What this does not do | [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md) |
+| Every seat, rule, hook, command and flag | [the wiki](https://github.com/nguyenhx2/agent-harness-bootstrap/wiki) |
+| Running the harness in Cursor or Codex | [`docs/tools/`](docs/tools/) |
 
-The harness files scaffolded into *your* repository are yours, under terms of your choice: an
-additional permission in [NOTICE](NOTICE.md) keeps them outside the AGPL. The copyleft applies to
-*this software* - its skills, scripts and tools - not to what it generates for you.
+## Credits
+
+Two opt-in pieces build on others' work: the `terse` output-style rule adapts
+[i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT, Ayoub Ghriss, pinned at `2ed0640`), and the
+`rtk` hook wraps [rtk](https://github.com/rtk-ai/rtk) (Apache-2.0, rtk-ai and rtk-ai Labs). rtk is not
+bundled: the wrapper stays silent without it and never hands it a command our guards inspect. The
+loom figure in the video borrows the idea of the
+[Temporal Loom](https://marvelcinematicuniverse.fandom.com/wiki/Temporal_Loom); no Marvel artwork was
+used. None of these projects endorse this one.
+
+## Contributing
+
+Issues and pull requests are welcome. The bar is "does this still hold up", and the gates that
+answer it are automated: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## License
+
+**[GNU AGPL-3.0](LICENSE.md)**, licensor **Hoàng Xuân Nguyên** (`nguyenhx2`). Free for any use,
+commercial included; distribute or serve a modified version and you publish your changes under the
+same licence. The harness files scaffolded into *your* repository are yours, under terms of your
+choice: see [NOTICE](NOTICE.md).

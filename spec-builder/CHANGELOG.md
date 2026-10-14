@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `harness-bootstrap` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.20.0] - 2026-10-14
+
+### Added
+
+- **A confirmation sheet and a machine index.** `spec-check.py --write` regenerates
+  `docs/specs/confirmation.md` (yes / no / change per requirement) and `docs/specs/index.json`, which agents read instead of whole documents.
+- **`spec-check.py` validates the contract:** unique IDs, criteria in Given/When/Then or
+  "Done when" form, owned open issues, and a sheet and index that match the spec.
+- **A light contract for research, strategy and docs repos** (README, 05, 11, 13), and
+  `reference/agentic-loop.md`, which maps each harness tier to the spec ceremony it needs.
+
+### Changed
+
+- The description is 1,009 -> 792 characters, says when to use it first, and names what it is not
+  for. `evals/trigger-cases.md` covers six trigger-case types.
+
+### Fixed
+
+- Template 12 cited an FR-03 that did not exist, and module copies left business-rule IDs bare, so
+  they collided across modules.
+
 ## [1.19.3] - 2026-10-13
 
 No functional change. The version moves with `harness-bootstrap`.

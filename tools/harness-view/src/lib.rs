@@ -7,6 +7,7 @@ pub mod agentedit;
 pub mod assess;
 pub mod instruction;
 pub mod refs;
+pub mod rubric;
 pub mod scan;
 pub mod serve;
 pub mod toggle;

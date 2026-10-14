@@ -1,0 +1,244 @@
+// On-screen text, English and Japanese. Spoken text and captions are not here: they come from
+// SCRIPT.md / SCRIPT.ja.md through timing.<lang>.json. Nothing here carries a figure; every number
+// on screen is read from figures.json where it is drawn.
+
+export type Lang = 'en' | 'ja';
+
+const en = {
+  title: 'Agent Harness Bootstrap',
+  soul1: 'a repo it can actually understand',
+  soul2: 'a harness it cannot escape',
+  closeA: 'A repo it can actually understand.',
+  closeB: 'A harness it cannot escape.',
+  you: 'you',
+  kicker: {
+    team: 'a team that fits',
+    safe: 'safe by default',
+    lean: 'safe, without the waste',
+    keys: 'keys stay secret',
+    loop: 'the agentic loop',
+    spec: 'spec-builder',
+    control: 'see and control it',
+    assess: 'harness-view assess',
+  } as Record<string, string>,
+
+  // team
+  readsCode: 'reads the code first',
+  readsCodeSub: 'pre-fills every answer it can',
+  purposeQ: 'what is the repo for?',
+  profile: {code: 'code', research: 'research', strategy: 'strategy', docs: 'docs'} as Record<string, string>,
+  rosterBig: (lo: number, hi: number) => `${lo} to ${hi}`,
+  rosterOf: (n: number) => `of the ${n} seats`,
+  rosterSub: 'one dev seat per real module',
+  rosterNever: 'never every seat by default',
+
+  // safe
+  blocked: 'BLOCKED',
+  blockedBy: 'guard-destructive - exit 2',
+  neverLands: 'the push never runs',
+  byDefault: 'ships by default',
+  hooksLine: (n: number) => `${n} hooks,\ndecided by exit code`,
+  noModel: 'no model decides',
+  evalLine: (n: number) => `guardrail eval ${n}/${n}`,
+  evalSub: 'per hook flavour, on a strict scaffold',
+
+  // lean
+  lean: [
+    {icon: 'document-check', title: 'verify-plan', text: 'the diff decides which checks run', sub: 'a README edit does not earn a security review'},
+    {icon: 'archive-box', title: 'verification ledger', text: 'no re-review of content that already passed', sub: 'only a human can override, once'},
+    {icon: 'arrow-path', title: 'bounded review', text: '', sub: ''},
+    {icon: 'adjustments-horizontal', title: 'effort per seat', text: 'every seat pins model, effort, tools, maxTurns', sub: ''},
+  ],
+  rounds: (n: number) => `${n} review rounds, then stop and ask`,
+  roundsSub: (n: number) => `round ${n + 1} on the same content is refused`,
+  depth: (n: number) => `spawn depth ${n}`,
+  concurrent: (n: number) => `${n} subagents at once`,
+
+  // keys
+  protectSecrets: 'protect-secrets',
+  always: 'always on',
+  allowed: 'allowed',
+  blockedWord: 'blocked',
+  envRead: 'env-read.py run',
+  envOut: 'connected to',
+  envNote: 'values loaded, then redacted from the output',
+  secretScan: '/secret-scan before review',
+  secretScanSub: 'always on - a hit blocks until rotated',
+  strict: 'secret-guard, guard-egress',
+  strictSub: 'with hooks_strict - keys in a prompt, uploads to unknown hosts',
+
+  // loop
+  loopSteps: ['FR', 'task', 'implement', 'verify-plan', 'review', 'done'],
+  loopBack: 'a wrong criterion goes back to the spec, not around it',
+  oracle: 'the spec is the oracle at every step',
+  tierWhen: {
+    Inline: 'a question, a lookup, a small edit',
+    Direct: 'one module, reversible',
+    Standard: 'several files, or an FR behind it',
+    Guarded: 'schema, auth, money, migrations, deploys',
+  } as Record<string, string>,
+  who: {'main session': 'main session', 'owning agent': 'owning agent', orchestrator: 'orchestrator'} as Record<string, string>,
+  ceremony: 'ceremony',
+
+  // spec
+  contract: 'one contract',
+  sections: (core: number, opt: number) => `${core} core sections,\nup to ${opt} optional`,
+  sheet: 'confirmation.md',
+  sheetFor: 'for the client',
+  sheetRows: ['users sign in with email', 'an admin can export orders', 'large orders need approval'],
+  yes: 'yes',
+  no: 'no',
+  change: 'change',
+  index: 'index.json',
+  indexFor: 'agents read it first',
+  indexKeys: ['status', 'decision', 'criteria', 'open issues', 'file#anchor'],
+  gwt: 'Given / When / Then, with a negative case',
+  as: 'assumption, with its impact',
+  oi: 'open issue, with an owner',
+  neverInvented: 'flagged, never invented',
+
+  // control
+  legend: {agent: 'agent', rule: 'rule', hook: 'hook', module: 'module'} as Record<string, string>,
+  readOff: 'read off disk, live',
+  ctl: [
+    {icon: 'power', text: 'toggle any part off, safely', sub: '/harness-toggle, restored exactly'},
+    {icon: 'archive-box', text: 'every finished subagent run archived', sub: 'agent-history, always on'},
+    {icon: 'link', text: 'harness-check: every link is real', sub: 'hooks exist, named seats exist'},
+    {icon: 'eye', text: 'which rule loaded, and why', sub: 'agent-trace, with the long flag'},
+  ],
+  off: 'off',
+
+  // assess
+  fixFirst: 'fix these first',
+  orderedBy: 'ordered by weight x count / effort',
+  effort: 'effort',
+  oneClick: 'one-click fix',
+  since: 'since the last check',
+  sinceRows: ['score before and after', 'findings fixed', 'findings new'],
+  finding: 'review seat `reviewer` holds `Edit`',
+  at: 'at',
+  fileLine: '.claude/agents/reviewer.md:<line>',
+  fix: 'fix',
+  fixText: 'remove `Edit` from `tools:`, list it in `disallowedTools:`',
+  arithmetic: (w: number) => `Safety  100 - SAF-01 1x${w} = ${100 - w}`,
+  rubricLine: (r: number, c: number) => `published rubric: ${r} rules, ${c} categories`,
+  noModelLoop: 'no model in the loop',
+  captured: (n: number, e: number, s: number) => `a real harness: ${n} nodes, ${e} edges, scored ${s}/100`,
+
+  url: 'github.com/nguyenhx2/agent-harness-bootstrap',
+};
+
+export type Strings = typeof en;
+
+const ja: Strings = {
+  ...en,
+  soul1: '本当に理解できるリポジトリ',
+  soul2: '抜け出せないハーネス',
+  closeA: '本当に理解できるリポジトリと、',
+  closeB: '抜け出せないハーネス。',
+  you: 'あなた',
+  kicker: {
+    team: '合ったチーム',
+    safe: '既定で安全',
+    lean: '安全に、無駄なく',
+    keys: 'キーを守る',
+    loop: 'エージェント的なループ',
+    spec: 'spec-builder',
+    control: '見て、制御する',
+    assess: 'harness-view assess',
+  },
+
+  readsCode: 'まずコードを読む',
+  readsCodeSub: '分かる答えは先に埋めておく',
+  purposeQ: 'このリポジトリの目的は?',
+  profile: {code: 'コード', research: 'リサーチ', strategy: '戦略', docs: 'ドキュメント'},
+  rosterBig: (lo: number, hi: number) => `${lo}〜${hi} 席`,
+  rosterOf: (n: number) => `全 ${n} 席のうち`,
+  rosterSub: '開発担当は\n実在するモジュールごとに一人',
+  rosterNever: '既定で全員は入れない',
+
+  blocked: 'ブロック',
+  blockedBy: 'guard-destructive - 終了コード 2',
+  neverLands: 'プッシュは実行されない',
+  byDefault: '既定で有効',
+  hooksLine: (n: number) => `フック ${n} 本\n終了コードで判定`,
+  noModel: '判定にモデルは関与しない',
+  evalLine: (n: number) => `ガードレール評価 ${n}/${n}`,
+  evalSub: 'フックの系統ごと、厳格な構成で',
+
+  lean: [
+    {icon: 'document-check', title: 'verify-plan', text: '差分が、必要な検証を決める', sub: 'README の編集にセキュリティレビューは要らない'},
+    {icon: 'archive-box', title: '検証の台帳', text: '合格済みの内容は再レビューしない', sub: '上書きできるのは人だけ、一度だけ'},
+    {icon: 'arrow-path', title: 'レビューの上限', text: '', sub: ''},
+    {icon: 'adjustments-horizontal', title: 'エージェントごとの effort', text: 'model・effort・tools・maxTurns を固定', sub: ''},
+  ],
+  rounds: (n: number) => `レビューは ${n} ラウンドまで、その先は人に確認`,
+  roundsSub: (n: number) => `同じ内容への ${n + 1} ラウンド目は拒否される`,
+  depth: (n: number) => `起動の深さ ${n}`,
+  concurrent: (n: number) => `同時実行 ${n}`,
+
+  protectSecrets: 'protect-secrets',
+  always: '常時有効',
+  allowed: '許可',
+  blockedWord: 'ブロック',
+  envRead: 'env-read.py run',
+  envOut: 'connected to',
+  envNote: '値は読み込むが、出力では伏せる',
+  secretScan: 'レビュー前に /secret-scan',
+  secretScanSub: '常時有効 - 検出したらローテーションまで止める',
+  strict: 'secret-guard、guard-egress',
+  strictSub: 'hooks_strict で有効 - プロンプト中のキー、未登録ホストへの送信',
+
+  loopSteps: ['FR', 'タスク', '実装', 'verify-plan', 'レビュー', '完了'],
+  loopBack: '誤った基準は、回り道せず仕様に戻す',
+  oracle: 'どの段階でも仕様が判定基準',
+  tierWhen: {
+    Inline: '質問、調べもの、小さな編集',
+    Direct: '一つのモジュール、元に戻せる変更',
+    Standard: '複数ファイル、または FR に基づく変更',
+    Guarded: 'スキーマ、認証、お金、移行、デプロイ',
+  },
+  who: {'main session': 'メインセッション', 'owning agent': '担当エージェント', orchestrator: 'オーケストレーター'},
+  ceremony: '手続き',
+
+  contract: '一つの契約',
+  sections: (core: number, opt: number) => `コア ${core} セクション\n任意セクションは最大 ${opt}`,
+  sheetFor: '顧客向け',
+  sheetRows: ['メールアドレスでサインインできる', '管理者は注文を出力できる', '高額の注文には承認が要る'],
+  yes: 'はい',
+  no: 'いいえ',
+  change: '変更',
+  indexFor: 'エージェントが最初に読む',
+  indexKeys: ['status', 'decision', 'criteria', 'open issues', 'file#anchor'],
+  gwt: 'Given / When / Then、否定ケース付き',
+  as: '前提: 外れたときの影響付き',
+  oi: '未解決課題: 担当者付き',
+  neverInvented: '明示する。でっち上げない',
+
+  legend: {agent: 'エージェント', rule: 'ルール', hook: 'フック', module: 'モジュール'},
+  readOff: 'ディスクから読む、ライブで',
+  ctl: [
+    {icon: 'power', text: 'どの部品も安全に無効化', sub: '/harness-toggle、元どおりに戻せる'},
+    {icon: 'archive-box', text: '終わったサブエージェントの実行を記録', sub: 'agent-history、常時有効'},
+    {icon: 'link', text: 'harness-check: すべての参照が実在する', sub: '登録されたフックも、名前の出る席も'},
+    {icon: 'eye', text: 'どのルールが、なぜ読み込まれたか', sub: 'agent-trace、long フラグで'},
+  ],
+  off: 'オフ',
+
+  fixFirst: 'まずこれを直す',
+  orderedBy: '重み x 件数 / 手間 の順',
+  effort: '手間',
+  oneClick: 'ワンクリック修正',
+  since: '前回からの変化',
+  sinceRows: ['前後のスコア', '解消した指摘', '新しい指摘'],
+  finding: 'レビュー担当 `reviewer` が `Edit` を持っている',
+  at: '根拠',
+  fix: '修正',
+  fixText: '`tools:` から `Edit` を削除し、`disallowedTools:` に加える',
+  arithmetic: (w: number) => `Safety  100 - SAF-01 1x${w} = ${100 - w}`,
+  rubricLine: (r: number, c: number) => `公開された採点表: ルール ${r} 件、カテゴリ ${c} 個`,
+  noModelLoop: 'モデルは介在しない',
+  captured: (n: number, e: number, s: number) => `実際のハーネス: ノード ${n}、エッジ ${e}、${s}/100`,
+};
+
+export const STRINGS: Record<Lang, Strings> = {en, ja};

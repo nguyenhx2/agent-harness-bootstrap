@@ -6,7 +6,11 @@
 # nests a repo inside the repo.
 worktrees/
 
-# Machine state: the subagent-run archive, the code and docs graphs, the staleness log. Derived,
+# Bytecode a script leaves when it imports a sibling (task.py imports verify-plan.py). It is
+# output, never content, and an untracked .pyc would show up as a change to review.
+scripts/__pycache__/
+
+# Machine state: the subagent-run archive, the machine copies of the code and docs graphs. Derived,
 # per-machine, and regenerated on demand (/code-graph, /docs-graph). `state/*` rather than
 # `state/` because git cannot re-include a file whose parent DIRECTORY is excluded, and one
 # file below must be re-included.
