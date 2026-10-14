@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>document.documentElement.classList.add('js')</script>
 <title>Agent Harness Bootstrap - an introduction</title>
 <meta name="description" content="Give an AI agent a repo it can actually understand, and a harness it cannot escape. One contract, a roster sized to the repo's purpose, process sized to each change, hooks that block rather than advise, and a viewer that scores what was built.">
 <meta name="robots" content="index,follow">
@@ -107,15 +108,41 @@
   <symbol id="i-claude" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.7v3.6M8 10.7v3.6M1.7 8h3.6M10.7 8h3.6"/><path d="M3.6 3.6l2.5 2.5M9.9 9.9l2.5 2.5M12.4 3.6L9.9 6.1M6.1 9.9l-2.5 2.5"/></symbol>
   <symbol id="i-codex" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6l5.5 3.2v6.4L8 14.4 2.5 11.2V4.8z"/><path d="M10.6 6.3v3.4L8 11.4 5.4 9.7V6.3L8 4.6z"/></symbol>
   <symbol id="i-cursor" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 2.2l8.6 4.2-3.7 1.2-1.2 3.7z"/><path d="M8.7 8.7l3.9 4.9"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></symbol>
 </svg>
 
 <header class="masthead">
   <div class="wrap">
+    <button class="menu" type="button" aria-expanded="false" aria-controls="toc" hidden><svg width="20" height="20" aria-hidden="true"><use href="#i-menu"/></svg><span class="u-hidden">Sections</span></button>
     <a class="brand" href="#main"><svg width="20" height="20" aria-hidden="true"><use href="#i-mark"/></svg><b>Agent Harness Bootstrap</b> <span>AGPL-3.0</span></a>
     <a class="mast-link" href="index.ja.html" hreflang="ja" lang="ja" aria-label="この記事を日本語で読む"><svg width="16" height="16" aria-hidden="true"><use href="#i-lang"/></svg>日本語</a>
     <a class="mast-link" href="https://github.com/nguyenhx2/agent-harness-bootstrap">GitHub <svg width="16" height="16" aria-hidden="true"><use href="#i-out"/></svg></a>
   </div>
 </header>
+
+<div class="shell">
+<nav class="toc" id="toc" aria-label="On this page" data-close="Close sections">
+  <p class="toc__h label" aria-hidden="true">On this page</p>
+  <ol class="toc__list">
+      <li><a href="#watch"><span class="toc__n" aria-hidden="true">01</span>The intro</a></li>
+      <li><a href="#familiar"><span class="toc__n" aria-hidden="true">02</span>Sound familiar?</a></li>
+      <li><a href="#solution"><span class="toc__n" aria-hidden="true">03</span>What answers it</a></li>
+      <li><a href="#orchestrator"><span class="toc__n" aria-hidden="true">04</span>Process sized to the change</a></li>
+      <li><a href="#fit"><span class="toc__n" aria-hidden="true">05</span>Roster sized to purpose</a></li>
+      <li><a href="#floor"><span class="toc__n" aria-hidden="true">06</span>A request stopped</a></li>
+      <li><a href="#viewer"><span class="toc__n" aria-hidden="true">07</span>harness-view</a></li>
+      <li><a href="#install"><span class="toc__n" aria-hidden="true">08</span>Install it</a></li>
+      <li><a href="#use"><span class="toc__n" aria-hidden="true">09</span>Run it</a></li>
+      <li><a href="#tuning"><span class="toc__n" aria-hidden="true">10</span>Change it narrowly</a></li>
+  </ol>
+  <p class="toc__h label" aria-hidden="true">Elsewhere</p>
+  <ul class="toc__list toc__list--more">
+      <li><a href="presentation/">The deck</a></li>
+      <li><a href="video/">The intro, full page</a></li>
+  </ul>
+</nav>
+<div class="scrim" hidden></div>
+<div class="page">
 
 <main id="main">
 
@@ -142,7 +169,7 @@
         <dl class="record">
           <div><dt>Guardrail eval</dt><dd><b>290/290</b> <span class="u-quiet">per hook flavour, strict hooks on</span></dd></div>
           <div><dt>Licence</dt><dd><b>AGPL-3.0</b> <span class="u-quiet">free for any use</span></dd></div>
-          <div><dt>Latest</dt><dd><b>v1.21.0</b> <span class="u-quiet">binaries attached</span></dd></div>
+          <div><dt>Latest</dt><dd><b>v1.21.1</b> <span class="u-quiet">binaries attached</span></dd></div>
           <div><dt>Port adapter</dt><dd><b>32/32</b> <span class="u-quiet">Cursor and Codex</span></dd></div>
         </dl>
       </div>
@@ -156,31 +183,17 @@
 
       <ul class="clips">
         <li class="clip clip--lead">
-          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>Agent Harness Bootstrap in brief <span class="dur">~164s</span></h3>
+          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>Agent Harness Bootstrap in brief <span class="dur">~167s</span></h3>
           <p>The questions teams ask once agents do real work, and the mechanism that answers each
             one. Narrated and captioned.</p>
           <video src="video/mp4/00-intro.mp4" poster="video/gif/00-intro-poster.png" controls preload="metadata" playsinline width="1920" height="1080"></video>
           <p class="clip__links">
             <a href="video/mp4/00-intro.mp4">Open the MP4</a>
             <a href="video/gif/00-intro.gif">Open the GIF</a>
+            <a href="video/">Open the intro on its own page</a>
           </p>
         </li>
       </ul>
-
-      <details class="more">
-        <summary>One deeper clip</summary>
-        <ul class="clips">
-          <li class="clip">
-            <h3>Tailoring, skills and the viewer <span class="dur">~44s</span></h3>
-            <p>A roster derived rather than installed, and the three mechanisms that keep it honest.</p>
-            <video src="video/mp4/07-skills-and-view.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/07-skills-and-view.html">HTML animation</a>
-              <a href="video/mp4/07-skills-and-view.mp4">MP4</a>
-            </p>
-          </li>
-        </ul>
-      </details>
     </div>
   </section>
 
@@ -1211,6 +1224,8 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
     </nav>
   </div>
 </footer>
+</div>
+</div>
 
 <script type="module" src="./src/main.js"></script>
 </body>

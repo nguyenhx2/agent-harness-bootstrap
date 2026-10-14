@@ -2,33 +2,33 @@
   "narration": {
     "en": {
       "endpoint": "POST /v1/text-to-speech/{voice_id}/with-timestamps",
-      "voice_id": "EST9Ui6982FZPSi7gCHi",
-      "voice_name": "Elise",
+      "voice_id": "KLdWtAstZMPBbfqaBs59",
+      "voice_name": "Klara",
       "model_id": "eleven_v3",
       "voice_settings": {
         "stability": 0.5,
         "similarity_boost": 0.75,
         "use_speaker_boost": true
       },
-      "text_sha256": "bcd6a54174d1ede7514e75373f3df1a1fbe43832d6ec884b3fadf70b3742b079"
+      "text_sha256": "4972097bba4c2f6f3f9a3916628802ba93b239e056a2f7009cafa894793e3cfb"
     },
     "ja": {
       "endpoint": "POST /v1/text-to-speech/{voice_id}/with-timestamps",
-      "voice_id": "G3EZ8O36A0x9lmeOtr0f",
-      "voice_name": "Kaori",
+      "voice_id": "T7yYq3WpB94yAuOXraRi",
+      "voice_name": "Konoha",
       "model_id": "eleven_v3",
       "voice_settings": {
         "stability": 0.5,
         "similarity_boost": 0.75,
         "use_speaker_boost": true
       },
-      "text_sha256": "a29d0b3e1e8df553c783936d878487237b54afc1310ef9bb3f1a3cb604f75db5"
+      "text_sha256": "e76a373bfe3f83868093f440a80e53d580922e53da1ed6219f3fa68f830545c4"
     }
   },
   "music": {
     "endpoint": "POST /v1/music",
     "prompt": "Modern, warm, light tech ambient bed for a friendly product explainer. Soft analog synth pads, a steady gentle pulse from a muted kick and soft shaker at 100 BPM, a light plucked arpeggio, warm sub bass. Optimistic and calm, never dramatic. No vocals, no lead melody that competes with a narrator. Present and audible throughout, consistent energy, a gentle lift every half minute, resolves warmly at the end.",
-    "music_length_ms": 193000,
+    "music_length_ms": 222000,
     "model_id": "music_v1",
     "force_instrumental": true
   },
@@ -50,6 +50,180 @@
       "text": "A gentle, warm two-note confirmation chime, clean and minimal",
       "duration_seconds": 1.5,
       "prompt_influence": 0.5
+    }
+  },
+  "questions": {
+    "en": {
+      "team": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "0d2a126868fcbcc4506a61c1d6f610dd949271f317ae78fc402b21a35fcb9674"
+      },
+      "safe": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "e141a3b03b56e93182688d23a4235d20cf093e423623fbee3dbc4f763afb7b03"
+      },
+      "keys": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "dba9e7f17f0c1540ee8a6d55875412025e6d7be209384f70baf5ceb82f800373"
+      },
+      "loop": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "f73b8f35456cf0f155d75855a6e80997e785de4b32d4e97691c8055ab0273314"
+      },
+      "spec": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "20d402aedb0433fe8d3b6d245826f883effde21a6540953b1781ef9790fc5056"
+      },
+      "control": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "f3a31bbd19d165fb888e96a823be1e9fd702056ec89d109e0f0a0895777fb31a"
+      },
+      "assess": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "UgBBYS2sOqTuMpoF3BR0",
+        "voice_name": "Mark",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "1b334dea841be0b4e061ecc31ee3448bced3408fdee0b56a789ada8d6266f6b1"
+      }
+    },
+    "ja": {
+      "team": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "5a49899f7c2939018aeccddab21f705c7a1106e3cc895af39bd0ebaeefeb0006"
+      },
+      "safe": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "60a06973ec6cd1fb0871e498e9f853643939a0b24d70ecf9e2e0f0ae2a970843"
+      },
+      "keys": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "cd88f10ed3998198551c4afd85d3ce2f74283736fad46b2d016a27aed8e18941"
+      },
+      "loop": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "9f9f1a16062a95006cbfd2ae7a57d4fa8a47353e42a2e6407202880d7abe784a"
+      },
+      "spec": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "9a42d38c74ab6a77730960fbbe3f5ca355fb64b59d487c9b9c4885a50184657b"
+      },
+      "control": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "da712c71062c17af5115d9a4fb93cc4daae48541d477e3aed885155f2f14c167"
+      },
+      "assess": {
+        "endpoint": "POST /v1/text-to-speech/{voice_id}",
+        "voice_id": "GKDaBI8TKSBJVhsCLD6n",
+        "voice_name": "Asahi",
+        "model_id": "eleven_v3",
+        "voice_settings": {
+          "stability": 0.5,
+          "similarity_boost": 0.75,
+          "use_speaker_boost": true
+        },
+        "text_sha256": "73348f32f4a926e416e32c51894478ee8f2861ecfafe0eca12436c848175b799"
+      }
     }
   }
 }

@@ -46,8 +46,8 @@ The product is three parts that hand off to each other: `spec-builder` (a skill)
 install path offered and the one with working updates; the release zip is the offline, pinned
 alternative. Both are portable to Cursor and Codex. The landing page sits beside a slide deck
 (`presentation/`) and the GitHub repository, served from the same GitHub Pages site; the intro
-clip and the remaining explainer clip play in the landing page itself rather than only on the
-`video/` page.
+clip, the only clip the project ships, plays in the landing page itself and has a page of its own
+at `video/`.
 
 ## Capabilities and Constraints
 

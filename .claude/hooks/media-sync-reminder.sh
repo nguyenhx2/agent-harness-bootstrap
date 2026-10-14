@@ -30,7 +30,7 @@ norm=${path//\\//}
 
 case "$norm" in
   *harness-bootstrap/assets/*|*harness-bootstrap/SKILL.md|*harness-bootstrap/reference/*|*spec-builder/*|*docs/FLOWS.md|*docs/CONTEXT-MANAGEMENT.md|*README.md|*README.ja.md)
-    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"Skill content changed. The presentation (presentation/index.html, 3 languages) and the intro videos (video/src + rendered mp4/gif) bake this content - check them for drift before releasing. Counts are guarded by scripts/check_numbers.py; wording, diagrams, and slide claims need a read."}}'
+    printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"Skill content changed. The presentation (presentation/index.html, 3 languages) and the intro video (video/intro/SCRIPT*.md + rendered mp4/gif) bake this content - check them for drift before releasing. Counts are guarded by scripts/check_numbers.py; wording, diagrams, and slide claims need a read."}}'
     ;;
 esac
 exit 0

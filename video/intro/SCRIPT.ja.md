@@ -11,7 +11,9 @@ narration's character alignment, and refuses to run when the two no longer match
 (`bash render.sh --generate voice --force` regenerates both voices).
 
 Each question scene opens with a short lead-in line, then the quoted question, then the answer;
-the quote marks tell the composition which cue is the question. The question bubbles quote the
+the quote marks tell the composition which cue is the question. The narrator (Konoha) answers;
+the question is heard in a second voice (Asahi), recorded on its own
+(`audio/question.ja.<scene>.mp3`) and put in place of the narrator's reading of it. The question bubbles quote the
 section headings of "解決する問題" in `README.ja.md`. The script is written shorter than a
 translation would be, so the voice can speak at its own pace: nothing is sped up. The narration
 speaks no count; the figures on screen are listed in the generated block at the bottom.
@@ -32,6 +34,7 @@ speaks no count; the figures on screen are listed in the generated block at the 
 - 「自分のプロジェクトに合ったエージェントチームがほしい」
 - harness-bootstrap は、まずコードを読んで、目的を聞きます。
 - 開発担当はモジュールごとに一人。全員は入れません。
+- スタックに合うスキルを探して、それぞれを必要な担当につなぎます。
 
 ## safe
 

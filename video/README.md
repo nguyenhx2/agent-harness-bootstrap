@@ -1,34 +1,47 @@
-# Explainer clips
+# The intro video
 
-A narrated introduction and one explainer clip for **Agent Harness Bootstrap**. The introduction is
-a Remotion composition with an ElevenLabs voice, music bed and sound effects; the explainer is
-rendered with Manim and also ships as a self-contained HTML animation. Core message:
+The narrated introduction to **Agent Harness Bootstrap**, in English and Japanese. It is a Remotion
+composition with two ElevenLabs voices, a music bed and sound effects. Core message:
 
 > Give an AI agent a repo it can actually understand, and a harness it cannot escape.
 
 Every claim is taken from `README.md` and the files it links to. Nothing is invented.
 
 **Watch online** (plays in the browser, no download): <https://nguyenhx2.github.io/agent-harness-bootstrap/video/>
-The clips are served by GitHub Pages, and [`index.html`](index.html) is the gallery that embeds them.
+([`index.html`](index.html), served by GitHub Pages). The page has an EN / JA switch (`?lang=ja`
+opens the Japanese clip) and a chapter list. The chapters are not typed into the page: it reads the
+committed `intro/src/timing.<lang>.json` the clip was rendered with, so a re-scripted or re-timed
+intro cannot leave the page seeking to the wrong second.
 
-Every clip is captioned, because playback is muted by default. A viewer with no audio can follow the
+The clip is captioned, because playback is muted by default. A viewer with no audio can follow the
 whole clip from the burned-in captions alone.
 
-## The set
+| Clip | MP4 (1080p) | Script |
+|---|---|---|
+| **00 intro** | [`mp4/00-intro.mp4`](mp4/00-intro.mp4), JA [`mp4/ja/00-intro.mp4`](mp4/ja/00-intro.mp4) | [`intro/SCRIPT.md`](intro/SCRIPT.md), [`intro/SCRIPT.ja.md`](intro/SCRIPT.ja.md) |
 
-| Clip | Length | MP4 (1080p) | HTML | What it says |
-|---|---:|---|---|---|
-| **00 intro** (start here, narrated) | ~164s (JA ~167s) | [`mp4/00-intro.mp4`](mp4/00-intro.mp4), JA [`mp4/ja/00-intro.mp4`](mp4/ja/00-intro.mp4) | - | The soul line, then a framing beat - the questions teams putting agents on real work keep asking - and the seven questions from the README's "The problems it solves". Each is introduced by a short lead-in, asked in a speech bubble, and answered by the mechanism that handles it: a team that fits (purpose profiles, a roster sized from the real modules); safe without waste (hooks that block in the shell, a force push to main refused by default, the guardrail eval, verify-plan, the verification ledger, bounded review rounds, effort and caps per seat); keys (protect-secrets, env-read redaction, /secret-scan, and the `hooks_strict` guards named as such); the agentic loop with ceremony matched to the tier; spec-builder's confirmation sheet and index; harness-view's live graph, toggles and run history; and `harness-view assess` turning a vague score into a worklist with one-click fixes, a since-last-check diff and a published rubric. Voiced in English and in Japanese, with music, captions burned in for each language. Scripts: [`intro/SCRIPT.md`](intro/SCRIPT.md), [`intro/SCRIPT.ja.md`](intro/SCRIPT.ja.md). |
-| 07 skills and view | ~44s | [`mp4/07-skills-and-view.mp4`](mp4/07-skills-and-view.mp4), JA [`mp4/ja/07-skills-and-view.mp4`](mp4/ja/07-skills-and-view.mp4) | [`html/07-skills-and-view.html`](html/07-skills-and-view.html) | What the intro leaves out. The operating flow of [`docs/assets/harness-overview.svg`](../docs/assets/harness-overview.svg) end to end, then a roster derived from the contract and the real modules rather than everything installed up front, then the mechanisms that keep it honest and the problem each one solves: Skill Discovery reads this project's manifests to find skills matching its stack, Skill Wire connects a chosen skill to the agent seat that needs it, and harness-view answers whether any of it is actually wired right. |
-
-Lengths are rounded from `ffprobe`; re-check them with the probe command below.
+The soul line, then a framing beat - the questions teams putting agents on real work keep asking -
+and the seven questions from the README's "The problems it solves". Each is introduced by a short
+lead-in, asked by the viewer in a speech bubble and in a second voice, and answered by the mechanism
+that handles it: a team that fits (purpose profiles, a roster sized from the real modules, skills
+found for the stack and wired to the seat that needs them); safe without waste (hooks that block in
+the shell, a force push to main refused by default, verify-plan, the verification ledger, bounded
+review rounds, effort and caps per seat); keys (protect-secrets, env-read redaction); the agentic
+loop with ceremony matched to the tier; spec-builder's confirmation sheet and index; harness-view's
+live graph, toggles and run history; and `harness-view assess` turning a vague score into a worklist.
+Its length is whatever the timing build measures; `ffprobe` below reads it.
 
 ### Retired clips
 
-Clips 01 to 06 were removed in v1.21.0. 01 overview, 02 flow, 03 layers and 04 solution told the
-story the intro now tells, in less detail. 05 spec-builder and 06 harness-bootstrap had drifted: 06
-showed three modes where there are four and had no purpose profiles, and 05 drew seven always-on
-spec sections while saying six. The clip numbers are kept, so `07` is still `07`.
+Clips 01 to 07 were removed. 01 overview, 02 flow, 03 layers and 04 solution went in v1.21.0: they
+told the story the intro now tells, in less detail. 05 spec-builder and 06 harness-bootstrap went
+with them because they had drifted: 06 showed three modes where there are four and had no purpose
+profiles, and 05 drew seven always-on spec sections while saying six. 07 skills and the viewer went
+in v1.21.1: it was the last Manim clip, its style no longer matched the intro, and its flow diagram
+had fallen behind the harness. The one point only 07 made - Skill Discovery finds skills for the
+stack, Skill Wire connects each one to the seat that needs it - now lives in the intro. The Manim
+sources (`video/src/`), their self-contained HTML twins (`video/html/`) and `render-all.sh` went
+with it, so the intro is the only clip and Remotion the only renderer.
 
 ## The README GIF
 
@@ -61,11 +74,16 @@ are gitignored). It needs node 22, ffmpeg and Python 3.13.
   polices like any other document. `derive_figures.py --check` fails when either is stale.
 - **The audio is generated once and cached** in `video/intro/audio/`: the English and Japanese
   narration with their character alignment (`POST /v1/text-to-speech/{voice_id}/with-timestamps`),
-  the music bed (`POST /v1/music`) and three sound effects (`POST /v1/sound-generation`). The
-  voices are two women from the ElevenLabs voice library, tagged conversational: Elise for English,
-  Kaori, a native Japanese speaker, for Japanese. The generator tries `eleven_v3` first and falls
-  back to `eleven_multilingual_v2` (the key cannot list models, so it asks by trying).
-  `audio/ASSETS.json` records the voice, the model that answered, every setting and every prompt.
+  one file per question in a second voice (`question.<lang>.<scene>.mp3`), the music bed
+  (`POST /v1/music`) and three sound effects (`POST /v1/sound-generation`). Two voices, so the clip
+  is heard as a conversation: the narrator is a woman who sounds like she knows the subject - Klara
+  ("Tech Executive & Scientist") for English, Konoha ("Professional JP Explainer", a native Japanese
+  speaker) for Japanese - and the viewer who asks each question is a young man, Mark for English
+  and Asahi for Japanese, both tagged conversational in the ElevenLabs voice library. The narration
+  still records each question too; the timing build cuts that reading out and plays the second
+  voice in its place. The generator tries `eleven_v3` first and falls back to
+  `eleven_multilingual_v2` (the key cannot list models, so it asks by trying). `audio/ASSETS.json`
+  records each voice, the model that answered, every setting and every prompt.
 - **Pacing is edited, never sped up.** The voice plays at its own tempo. `scripts/build-timing.mjs`
   finds the silences in the cached narration with ffmpeg, shortens any pause longer than 0.55 s,
   and splits the narration at every scene boundary so the next scene starts a little later and the
@@ -102,45 +120,22 @@ prints or writes it. `render.sh` ends by recording the provenance of all six art
 
 Dark background (`#12141a`). Clean, technical, calm. No emoji. No em-dashes.
 
-## Regenerate the Manim clip
-
-Everything uses `py -3.13` (Manim 0.20.1). Do not use bare `python`.
-
-```bash
-# Scene sources live in video/src/ (shared palette in video/src/theme.py), Japanese in video/src/ja/.
-bash video/render-all.sh
-
-# Then copy each result out of the gitignored media/ scratch dir:
-cp video/media/videos/07-skills-and-view/1080p60/07-skills-and-view.mp4    video/mp4/07-skills-and-view.mp4
-cp video/media/videos/07-skills-and-view/1080p60/07-skills-and-view.ja.mp4 video/mp4/ja/07-skills-and-view.mp4
-```
-
-`video/media/` is gitignored build scratch; only `video/mp4/`, `video/gif/` and `video/html/` ship.
-
-The HTML files in `video/html/` are hand-written, fully self-contained (inline CSS/JS/SVG, no external
-fonts or CDNs), and loop on their own; just open one in a browser.
-
 ## After every render: record the provenance
 
-Figures inside a clip are burned into pixels, so `check_numbers.py` cannot see them. It reads text,
-and it does check `video/src/**.py` - but nothing connected a SOURCE that was right to an ARTIFACT
-that was stale. `gif/04-solution.gif` read "guardrail eval 69/69" on the README for three releases
-while its own scene source said 107/107; the number had moved twice and the GIF was re-rendered for
-neither.
+Figures inside a clip are burned into pixels, so `check_numbers.py` cannot see them in the MP4. It
+does read the scripts, generated block of on-screen figures included - but nothing connected a
+SOURCE that was right to an ARTIFACT that was stale. A retired clip, `gif/04-solution.gif`, read
+"guardrail eval 69/69" on the README for three releases while its own scene source said 107/107;
+the number had moved twice and the GIF was re-rendered for neither.
 
-`video/RENDERED.json` closes that gap: it stores the sha256 of the scene source each shipped clip
-was last rendered from, and `scripts/check_media.py` fails CI when a source has moved on without
-its artifact. So a render is not finished until you record it:
+`video/RENDERED.json` closes that gap: it stores the sha256 of the script each shipped artifact was
+last rendered from, and `scripts/check_media.py` fails CI when a script has moved on without its
+artifact. `render.sh` records it as its last step; by hand it is:
 
 ```bash
-py -3.13 scripts/check_media.py --update video/mp4/07-skills-and-view.mp4 video/mp4/ja/07-skills-and-view.mp4
+py -3.13 scripts/check_media.py --update video/mp4/00-intro.mp4 video/gif/00-intro.gif video/gif/00-intro-poster.png
 py -3.13 scripts/check_media.py          # must print "ok"
 ```
-
-It deliberately does NOT hash `theme.py` / `jatheme.py`. Those change every frame of every Manim
-clip, and demanding a full re-render for one colour tweak would get the gate switched off. A
-palette change cannot make a published number false, which is the failure this gate exists to stop.
-After a theme change, re-render deliberately and update every entry.
 
 ## Verify
 
@@ -148,10 +143,10 @@ After a theme change, re-render deliberately and update every entry.
 # MP4: sane duration + resolution
 ffprobe -v error -show_entries format=duration -show_entries stream=width,height video/mp4/00-intro.mp4
 
-# HTML: confirm nothing loads from the network (should print nothing)
-grep -rniE 'https?://|cdn' video/html/
+# The page: confirm nothing loads from another origin (the only hit is the repository link)
+grep -niE 'https?://|cdn' video/index.html
 
 # No em-dashes anywhere (should print nothing). U+2014 by escape, so this
 # check does not itself contain the character it is looking for.
-grep -rnP '\x{2014}' video/src/ video/html/ video/README.md video/intro/SCRIPT.md video/intro/SCRIPT.ja.md video/intro/src/
+grep -rnP '\x{2014}' video/index.html video/README.md video/intro/SCRIPT.md video/intro/SCRIPT.ja.md video/intro/src/
 ```

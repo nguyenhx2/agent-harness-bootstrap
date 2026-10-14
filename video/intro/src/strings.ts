@@ -45,6 +45,9 @@ const en = {
   rosterOf: (n: number) => `of the ${n} seats`,
   rosterSub: 'one dev seat per real module',
   rosterNever: 'never every seat by default',
+  skillFind: 'skill discovery',
+  skillFindSub: 'skills that match your stack',
+  skillWireSub: 'wired to the seat that needs it',
 
   // safe
   blocked: 'BLOCKED',
@@ -182,6 +185,9 @@ const ja: Strings = {
   rosterOf: (n: number) => `全 ${n} 席のうち`,
   rosterSub: '開発担当は\n実在するモジュールごとに一人',
   rosterNever: '既定で全員は入れない',
+  skillFind: 'スキル探索',
+  skillFindSub: 'スタックに合うスキル',
+  skillWireSub: '必要な担当につなぐ',
 
   blocked: 'ブロック',
   blockedBy: 'guard-destructive - 終了コード 2',

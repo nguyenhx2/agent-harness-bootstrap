@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>document.documentElement.classList.add('js')</script>
 <title>Agent Harness Bootstrap - はじめに</title>
 <meta name="description" content="AI エージェントに、本当に理解できるリポジトリと、抜け出せないハーネスを。一つの契約、リポジトリの目的に合わせたロースター、変更の大きさに合わせた手順、助言ではなく遮断するフック、そして構築結果を採点するビューア。">
 <meta name="robots" content="index,follow">
@@ -108,15 +109,41 @@
   <symbol id="i-claude" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.7v3.6M8 10.7v3.6M1.7 8h3.6M10.7 8h3.6"/><path d="M3.6 3.6l2.5 2.5M9.9 9.9l2.5 2.5M12.4 3.6L9.9 6.1M6.1 9.9l-2.5 2.5"/></symbol>
   <symbol id="i-codex" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6l5.5 3.2v6.4L8 14.4 2.5 11.2V4.8z"/><path d="M10.6 6.3v3.4L8 11.4 5.4 9.7V6.3L8 4.6z"/></symbol>
   <symbol id="i-cursor" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 2.2l8.6 4.2-3.7 1.2-1.2 3.7z"/><path d="M8.7 8.7l3.9 4.9"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></symbol>
 </svg>
 
 <header class="masthead">
   <div class="wrap">
+    <button class="menu" type="button" aria-expanded="false" aria-controls="toc" hidden><svg width="20" height="20" aria-hidden="true"><use href="#i-menu"/></svg><span class="u-hidden">目次</span></button>
     <a class="brand" href="#main"><svg width="20" height="20" aria-hidden="true"><use href="#i-mark"/></svg><b>Agent Harness Bootstrap</b> <span>AGPL-3.0</span></a>
     <a class="mast-link" href="index.html" hreflang="en" lang="en" aria-label="Read this page in English"><svg width="16" height="16" aria-hidden="true"><use href="#i-lang"/></svg>English</a>
     <a class="mast-link" href="https://github.com/nguyenhx2/agent-harness-bootstrap">GitHub <svg width="16" height="16" aria-hidden="true"><use href="#i-out"/></svg></a>
   </div>
 </header>
+
+<div class="shell">
+<nav class="toc" id="toc" aria-label="このページ" data-close="目次を閉じる">
+  <p class="toc__h label" aria-hidden="true">このページ</p>
+  <ol class="toc__list">
+      <li><a href="#watch"><span class="toc__n" aria-hidden="true">01</span>紹介動画</a></li>
+      <li><a href="#familiar"><span class="toc__n" aria-hidden="true">02</span>こんな覚えは</a></li>
+      <li><a href="#solution"><span class="toc__n" aria-hidden="true">03</span>それに答えるもの</a></li>
+      <li><a href="#orchestrator"><span class="toc__n" aria-hidden="true">04</span>変更に合わせた手順</a></li>
+      <li><a href="#fit"><span class="toc__n" aria-hidden="true">05</span>目的に合うロースター</a></li>
+      <li><a href="#floor"><span class="toc__n" aria-hidden="true">06</span>要求の遮断</a></li>
+      <li><a href="#viewer"><span class="toc__n" aria-hidden="true">07</span>harness-view</a></li>
+      <li><a href="#install"><span class="toc__n" aria-hidden="true">08</span>導入する</a></li>
+      <li><a href="#use"><span class="toc__n" aria-hidden="true">09</span>動かす</a></li>
+      <li><a href="#tuning"><span class="toc__n" aria-hidden="true">10</span>狭く変える</a></li>
+  </ol>
+  <p class="toc__h label" aria-hidden="true">関連</p>
+  <ul class="toc__list toc__list--more">
+      <li><a href="presentation/">スライド</a></li>
+      <li><a href="video/">紹介動画の専用ページ</a></li>
+  </ul>
+</nav>
+<div class="scrim" hidden></div>
+<div class="page">
 
 <main id="main">
 
@@ -139,7 +166,7 @@
         <dl class="record">
           <div><dt>ガードレール評価</dt><dd><b>290/290</b> <span class="u-quiet">フック形式ごと、厳格フック有効</span></dd></div>
           <div><dt>ライセンス</dt><dd><b>AGPL-3.0</b> <span class="u-quiet">商用含め無償</span></dd></div>
-          <div><dt>最新版</dt><dd><b>v1.21.0</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
+          <div><dt>最新版</dt><dd><b>v1.21.1</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
           <div><dt>移植アダプタ</dt><dd><b>32/32</b> <span class="u-quiet">Cursor と Codex</span></dd></div>
         </dl>
       </div>
@@ -153,30 +180,16 @@
 
       <ul class="clips">
         <li class="clip clip--lead">
-          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>Agent Harness Bootstrap の概要 <span class="dur">~167秒</span></h3>
+          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>Agent Harness Bootstrap の概要 <span class="dur">~193秒</span></h3>
           <p>エージェントを実務に使うチームが繰り返し尋ねる問いと、それぞれに答える仕組み。日本語のナレーションと字幕付きです。</p>
           <video src="video/mp4/ja/00-intro.mp4" poster="video/gif/ja/00-intro-poster.png" controls preload="metadata" playsinline width="1920" height="1080"></video>
           <p class="clip__links">
             <a href="video/mp4/ja/00-intro.mp4">MP4 を開く</a>
             <a href="video/gif/ja/00-intro.gif">GIF を開く</a>
+            <a href="video/">紹介動画を専用ページで開く</a>
           </p>
         </li>
       </ul>
-
-      <details class="more">
-        <summary>さらに詳しいクリップ</summary>
-        <ul class="clips">
-          <li class="clip">
-            <h3>テーラーメイド構築・スキル・ビューア <span class="dur">~44秒</span></h3>
-            <p>導入するのではなく導かれるロースターと、それを健全に保つ三つの仕組み。</p>
-            <video src="video/mp4/ja/07-skills-and-view.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/ja/07-skills-and-view.html">HTML アニメーション</a>
-              <a href="video/mp4/ja/07-skills-and-view.mp4">MP4</a>
-            </p>
-          </li>
-        </ul>
-      </details>
     </div>
   </section>
 
@@ -1149,6 +1162,8 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
     </nav>
   </div>
 </footer>
+</div>
+</div>
 
 <script type="module" src="./src/main.js"></script>
 </body>

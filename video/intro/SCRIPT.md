@@ -10,7 +10,10 @@ The clip is built as pain-point bubbles. After the soul line, `frame` says what 
 question scene then opens with a short lead-in line, spoken over a "question n of 7" card; the
 quoted cue after it is the question a team actually asks, drawn as a speech bubble; and the cues
 after that are the mechanism that answers it. The quote marks are what tells the composition which
-cue is the question. The questions mirror the seven sections of "The problems it solves" in
+cue is the question, and they also decide who speaks it: the narrator (Klara) answers, but the
+question is heard in a second voice (Mark), recorded on its own (`audio/question.en.<scene>.mp3`)
+and put in place of the narrator's reading of it, so the clip sounds like someone asking and
+someone replying. The questions mirror the seven sections of "The problems it solves" in
 `README.md`; `safe` and `lean` are the two halves of the second one.
 
 It is written to be spoken, not read: short sentences and contractions. The voice is never sped
@@ -48,6 +51,7 @@ licence beside it in `src/icons.LICENSE`.
 - "I want an agent team that fits my project."
 - harness-bootstrap reads your code first, then asks what the repo is for: code, research, strategy, or docs.
 - One dev seat per real module. Never every seat by default.
+- It finds skills that match your stack, and wires each one to the seat that needs it.
 
 ## safe
 

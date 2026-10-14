@@ -1,13 +1,14 @@
 // Generate the intro's audio with ElevenLabs, once, into audio/. Costs API credit, so it only runs
 // behind an explicit flag (render.sh --generate) and skips any asset already cached.
 //
-//   node scripts/generate-audio.mjs [voice|music|sfx|all] [en|ja] [--force]
+//   node scripts/generate-audio.mjs [voice|questions|music|sfx|all] [en|ja] [--force]
 //
 // The key is read from ../../.env (ELEVENLABS_API_KEY) or the environment. It is held in memory,
 // sent only in the xi-api-key header, and never printed, logged or written anywhere.
 import {existsSync, readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import path from 'node:path';
-import {HERE, AUDIO, LANGS, LEAD_IN, TAIL, SCENE_GAP, readScript, narrationText, sha, narrationFile, alignmentFile} from './script.mjs';
+import {HERE, AUDIO, LANGS, LEAD_IN, TAIL, SCENE_GAP, readScript, narrationText, sha, narrationFile, alignmentFile,
+  isQuestion, questionFile, questionText} from './script.mjs';
 
 const API = 'https://api.elevenlabs.io/v1';
 
@@ -23,12 +24,22 @@ const MODELS = [
 ];
 
 const VOICES = {
-  // "Elise - Warm, Natural and Engaging", a voice-library voice: young American woman, tagged
-  // conversational, described for explainers and narration.
-  en: {voice_id: 'EST9Ui6982FZPSi7gCHi', name: 'Elise'},
-  // "Kaori - Relatable and Friendly Voice", a native Japanese woman from the voice library, standard
-  // accent, tagged conversational: a light, easygoing delivery rather than an announcer's.
-  ja: {voice_id: 'G3EZ8O36A0x9lmeOtr0f', name: 'Kaori'},
+  // The narrator has to sound like someone who knows the subject, not a friendly host.
+  // "Klara - Tech Executive & Scientist", a voice-library voice: crisp, articulate and authoritative,
+  // a West Coast American woman.
+  en: {voice_id: 'KLdWtAstZMPBbfqaBs59', name: 'Klara'},
+  // "Konoha - Professional JP Explainer", a native Japanese woman from the voice library, Kanto
+  // accent, a calm mid-range voice built for explainers.
+  ja: {voice_id: 'T7yYq3WpB94yAuOXraRi', name: 'Konoha'},
+};
+
+// The viewer asking the questions: a second, contrasting voice, so a question is heard as someone
+// asking and the answer as the narrator replying. Both are young men, tagged conversational.
+const ASKERS = {
+  // "Mark - Natural Conversations": a casual young American speaking in a natural manner.
+  en: {voice_id: 'UgBBYS2sOqTuMpoF3BR0', name: 'Mark'},
+  // "Asahi - Calm and Natural": a young native Japanese man, standard accent.
+  ja: {voice_id: 'GKDaBI8TKSBJVhsCLD6n', name: 'Asahi'},
 };
 
 const MUSIC_PROMPT =
@@ -135,6 +146,43 @@ async function voice(key, lang, force) {
   console.log(`  wrote   ${path.basename(out)} + ${path.basename(alignmentFile(lang))}`);
 }
 
+/** One file per question, in the asker's voice. No alignment is needed: a question is one cue. */
+async function questions(key, lang, force) {
+  const v = ASKERS[lang];
+  for (const scene of readScript(lang)) {
+    const cue = scene.cues.find(isQuestion);
+    if (!cue) continue;
+    const out = questionFile(lang, scene.id);
+    const text = questionText(cue);
+    const m = loadManifest();
+    const same = m.questions?.[lang]?.[scene.id]?.text_sha256 === sha(text);
+    if (existsSync(out) && !force && same) {
+      console.log(`  cached  ${path.basename(out)}`);
+      continue;
+    }
+    let used = null;
+    for (const mod of MODELS) {
+      try {
+        const res = await post(`${API}/text-to-speech/${v.voice_id}?output_format=mp3_44100_128`,
+          {text, model_id: mod.model_id, voice_settings: mod.voice_settings}, key);
+        writeFileSync(out, audioBytes(await res.arrayBuffer(), `question ${scene.id}`));
+        used = mod;
+        break;
+      } catch (e) {
+        console.log(`  ${mod.model_id} unavailable for ${lang}/${scene.id}: ${String(e.message).slice(0, 160)}`);
+      }
+    }
+    if (!used) throw new Error(`no model produced the ${lang} question for ${scene.id}`);
+    const m2 = loadManifest();
+    m2.questions = m2.questions || {};
+    m2.questions[lang] = m2.questions[lang] || {};
+    m2.questions[lang][scene.id] = {endpoint: 'POST /v1/text-to-speech/{voice_id}', voice_id: v.voice_id,
+      voice_name: v.name, model_id: used.model_id, voice_settings: used.voice_settings, text_sha256: sha(text)};
+    saveManifest(m2);
+    console.log(`  wrote   ${path.basename(out)}`);
+  }
+}
+
 async function music(key, force) {
   const out = path.join(AUDIO, 'music.mp3');
   // One bed for both languages, long enough for the longer narration.
@@ -176,13 +224,14 @@ async function sfx(key, force) {
 
 const args = process.argv.slice(2);
 const words = args.filter((a) => !a.startsWith('--'));
-const what = words.find((w) => ['voice', 'music', 'sfx', 'all'].includes(w)) || 'all';
+const what = words.find((w) => ['voice', 'questions', 'music', 'sfx', 'all'].includes(w)) || 'all';
 const langs = words.filter((w) => LANGS.includes(w));
 const force = args.includes('--force');
 mkdirSync(AUDIO, {recursive: true});
 const key = apiKey();
 try {
   if (what === 'voice' || what === 'all') for (const l of langs.length ? langs : LANGS) await voice(key, l, force);
+  if (what === 'questions' || what === 'all') for (const l of langs.length ? langs : LANGS) await questions(key, l, force);
   if (what === 'music' || what === 'all') await music(key, force);
   if (what === 'sfx' || what === 'all') await sfx(key, force);
 } finally {

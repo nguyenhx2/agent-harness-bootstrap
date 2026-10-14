@@ -40,7 +40,7 @@ consulted when a hook decides, so the guardrail result cannot depend on which mo
     </picture>
   </a>
 </p>
-<p align="center"><a href="video/mp4/00-intro.mp4">Watch the intro as MP4</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">All clips, captioned</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/">Slides</a></p>
+<p align="center"><a href="video/mp4/00-intro.mp4">Watch the intro as MP4</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">The intro, with chapters</a> · <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/presentation/">Slides</a></p>
 
 ## Install
 

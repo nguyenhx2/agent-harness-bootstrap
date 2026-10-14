@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.21.1
+
+The intro video and the site, finished. The intro has a narrator who sounds like she knows the
+subject (Klara in English, Konoha in Japanese), and the questions are asked in a second voice
+(Mark, Asahi), so each one is heard as someone asking and the narrator answering. It now also
+says how skills are found and wired. Clip 07, the last Manim clip, is retired along with every
+Manim source and HTML animation; the video page is rebuilt around the intro with chapters. The
+landing page gains navigation: a left sidebar on desktop, a menu button on phones. No skill or
+tool behaviour changed.
+
 ## v1.21.0
 
 Proof from real sessions, and a harness that costs less to run. A live benchmark runs Claude Code

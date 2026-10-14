@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Syntax-check the JavaScript this repo ships inside self-contained HTML pages.
 
-Most of it is inline: the page `graph-html.py` writes, the deck, and every
-explainer clip carry their JavaScript in a <script> block. Nothing executes that
+Most of it is inline: the page `graph-html.py` writes, the deck, and the video
+page carry their JavaScript in a <script> block. Nothing executes that
 JavaScript in CI, so a syntax error ships silently and the only symptom is a
 blank canvas - which is exactly what happened when a string literal in ui.html
 was broken across real newlines. The whole script died, the page rendered its
@@ -52,13 +52,12 @@ SOURCES = [
     "presentation/index.html",
 ]
 
-# Every clip carries its own inline timeline. These are globbed rather than listed,
-# because a hand-maintained list only covers the files someone remembered to add:
-# clip 07 was written, shipped, and checked green while its JavaScript was never
-# parsed at all. A glob cannot forget a new clip.
+# Pages under video/ carry inline scripts (today the clip page, video/index.html). They
+# are globbed rather than listed, because a hand-maintained list only covers the files
+# someone remembered to add: a clip page was once written, shipped, and checked green
+# while its JavaScript was never parsed at all. A glob cannot forget a new page.
 SOURCE_GLOBS = [
-    "video/html/*.html",
-    "video/html/ja/*.html",
+    "video/*.html",
 ]
 
 # Standalone .js files, checked by path. Each carries a minimum byte count,

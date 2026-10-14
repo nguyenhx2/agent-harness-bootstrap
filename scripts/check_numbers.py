@@ -409,21 +409,18 @@ COUNT_CHECKS = [
 # The exact "after" byte figure that follows the known baseline constant in a before|after row. The
 # token columns are prefixed "~" and so are not captured; the detail-table rows do not carry the
 # baseline constant and so are covered by the summary rows instead.
-# The presentation deck and the intro-video sources bake several counts as display text. They are
+# The presentation deck and the landing pages bake several counts as display text. They are
 # not markdown, so the .md walk never sees them - and they drifted on every release until this list
 # existed. English phrasings only: every baked stat has an EN variant, and the VI/JA strings are
 # edited in the same pass.
 #
-# video/html/ja/*.html and video/src/ja/*.py are the Japanese twins of the same media (translated
-# copies, not new content) - they bake the same numbers, so the gate has to see them too. MEDIA_CHECKS
-# below is an EN-phrase regex list ("21 commands", "9 blocking hooks", ...) and will not match the
-# JA prose ("コマンド21", "ブロッキングフック9") - that is expected, not a gap: the JA source is a
-# translation of the already-checked EN source, so a divergence would have to be introduced by hand
-# in the JA file itself, and the EVAL_PAIR check below still applies to it (the JA badge reads
-# "ガードレール評価 26/26", and "ガードレール" is in the context regex the same as "guardrail" is).
+# The Manim clip sources and their HTML twins (video/src, video/html) used to be scanned here. They
+# were retired with the clips, 01 to 06 in v1.21.0 and 07 in v1.21.1. The one remaining clip, the
+# narrated intro, is scripted in markdown (video/intro/SCRIPT.md, SCRIPT.ja.md), so the markdown
+# walk already reads it and its generated block of on-screen figures.
 # index.html is the GitHub Pages landing page. It bakes the same artifact counts as the deck and
 # is the first thing a visitor reads, so it is policed the same way. Its Japanese twin is a
-# translation of the checked English source, exactly as the video files are.
+# translation of the checked English source.
 # The landing pages moved into site/ when the page became a Vite build (the served
 # index.html is produced by CI from these sources). The gate follows the SOURCES,
 # because the built output is never committed and a gate on an uncommitted file is
@@ -431,8 +428,7 @@ COUNT_CHECKS = [
 MEDIA_FILES = ["presentation/index.html", "site/index.html", "site/index.ja.html"]
 # The figures bake the same numbers as the prose and nothing was reading them: the roster
 # range and the session-tax percentage both appear inside docs/assets/*.svg.
-MEDIA_GLOBS = ["video/html/*.html", "video/src/*.py", "video/html/ja/*.html",
-               "video/src/ja/*.py", "docs/assets/*.svg"]
+MEDIA_GLOBS = ["docs/assets/*.svg"]
 MEDIA_CHECKS = [
     ("media command count", r"(\d+) commands\b", "commands"),
     ("media hook count",    r"(\d+) (?:blocking )?hooks\b", "hooks"),

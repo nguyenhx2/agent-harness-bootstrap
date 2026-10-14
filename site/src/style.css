@@ -289,6 +289,112 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: max(0.9em, 0.75rem);
 .mast-link:hover { color: var(--ink); }
 .mast-link svg { flex: none; }
 
+/* ---------------------------------------------------------------- navigation */
+
+/* One list of the page's sections, drawn two ways. From 64rem it is a column
+   of its own, left of the sheet, sticky under the masthead: the reader always
+   sees where they are and how much is left. Below that it is a drawer behind a
+   button in the masthead. Without a script the button is never shown and the
+   list sits open above the hero, so the sections stay reachable either way. */
+.menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.menu[hidden] { display: none; }
+.menu:hover { color: var(--accent-text); }
+.menu[aria-expanded="true"] { color: var(--accent-text); }
+
+.toc { font-family: var(--mono); font-size: var(--t--1); background: var(--paper); }
+.toc__h { padding: 1.1rem var(--gutter) 0.35rem; }
+.toc__h + .toc__list { margin-bottom: 0.25rem; }
+.toc__list { margin: 0; padding: 0; list-style: none; }
+.toc__list a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  min-height: 40px;
+  padding: 0.55rem var(--gutter) 0.55rem calc(var(--gutter) - 2px);
+  border-left: 2px solid transparent;
+  color: var(--ink-2);
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+.toc__list a:hover { color: var(--ink); background: var(--paper-3); }
+.toc__n { flex: none; font-size: var(--t--2); letter-spacing: 0.08em; color: var(--ink-3); }
+/* Where the reader is: the field colour as a route mark down the left edge. */
+.toc__list a[aria-current="true"] { color: var(--ink); border-left-color: var(--accent-text); }
+.toc__list a[aria-current="true"] .toc__n { color: var(--accent-text); }
+.toc__list--more a { color: var(--ink-3); }
+
+.scrim { display: none; }
+
+/* No script: the list is plain content under the masthead. */
+html:not(.js) .toc { border-bottom: 1px solid var(--line); padding-bottom: 0.5rem; }
+
+/* Narrow, scripted: a drawer that slides in under the masthead. */
+@media (max-width: 63.99rem) {
+  .js .toc {
+    position: fixed;
+    /* --mast-h is the masthead's measured height (src/main.js): at 360px the
+       product name wraps and the bar grows, and the drawer must start under it. */
+    top: var(--mast-h, 3.25rem);
+    bottom: 0;
+    left: 0;
+    z-index: 25;
+    width: min(20rem, 86vw);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: var(--s-2);
+    border-right: 1px solid var(--line);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 220ms var(--ease), visibility 0s linear 220ms;
+  }
+  .js .toc[data-open] { transform: none; visibility: visible; transition: transform 220ms var(--ease); }
+  .js .scrim:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: var(--mast-h, 3.25rem) 0 0 0;
+    z-index: 24;
+    background: var(--paper);
+    opacity: 0.72;
+  }
+  .js.toc-open, .js.toc-open body { overflow: hidden; }
+}
+
+/* Wide: the list is a column, and the menu button has nothing to do. */
+@media (min-width: 64rem) {
+  .menu { display: none; }
+  .shell { display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); }
+  .toc {
+    position: sticky;
+    top: 3.25rem;
+    align-self: start;
+    height: calc(100vh - 3.25rem);
+    height: calc(100dvh - 3.25rem);
+    overflow-y: auto;
+    padding-top: var(--s-1);
+    border-right: 1px solid var(--line);
+  }
+  html:not(.js) .toc { border-bottom: 0; }
+  .toc__h, .toc__list a { padding-left: 1.25rem; padding-right: 1rem; }
+  .toc__list a { padding-left: calc(1.25rem - 2px); }
+  /* The masthead spans both columns, so the brand sits over the list it heads. */
+  .masthead .wrap { max-width: none; padding-left: 1.25rem; }
+}
+
 /* ---------------------------------------------------------------- hero */
 
 .hero { padding-block: var(--s-3) var(--s-1); }
@@ -935,9 +1041,8 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: max(0.9em, 0.75rem);
 
 /* ---------------------------------------------------------------- the clips */
 
-/* The video gallery, folded into this page: it was a second page nobody had a
-   reason to open. The lead clip spans the grid; the other six sit behind a
-   disclosure and preload nothing until it is opened. */
+/* The intro clip, played inline. It is the only clip the project ships; the
+   /video/ page is the same clip given a page of its own. */
 .clips { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: 0; list-style: none; }
 @media (min-width: 60rem) { .clips { grid-template-columns: 1fr 1fr; } .clip--lead { grid-column: 1 / -1; } }
 .clip h3 {
@@ -976,31 +1081,6 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: max(0.9em, 0.75rem);
 }
 .clip__links a:hover { color: var(--accent-text); }
 
-.more { margin-top: var(--s-2); padding-top: 0.5rem; border-top: 1px solid var(--line); }
-.more > summary {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 48px;
-  cursor: pointer;
-  list-style: none;
-  font-family: var(--mono);
-  font-size: var(--t--1);
-  color: var(--ink-2);
-  transition: color 140ms ease;
-}
-.more > summary::-webkit-details-marker { display: none; }
-.more > summary::after {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 180ms var(--ease);
-}
-.more[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
-.more > summary:hover { color: var(--ink); }
 
 /* ---------------------------------------------------------------- screenshots */
 
