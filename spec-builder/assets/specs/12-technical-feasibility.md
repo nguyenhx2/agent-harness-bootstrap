@@ -21,7 +21,7 @@ tags: [specs, feasibility, risk, {{PROJECT_SLUG}}]
 |----|-------------|----------|---------------------|------------|------------|
 | [FR-01](05-functional-requirements.md#fr-01) | <one line> | Yes | <the known-good path> | High | - |
 | [FR-02](05-functional-requirements.md#fr-02) | <one line> | Partial | <what works, and what does not - name the specific blocker> | Medium | <the PoC, the fallback, or the scope cut> |
-| [FR-03](05-functional-requirements.md#fr-03) | <one line> | No | <the hard blocker: a missing API, an unavailable dataset, a licence, a law> | High | <what would have to change; link the open issue> |
+| <FR-nn, linked into 05> | <one line> | No | <the hard blocker: a missing API, an unavailable dataset, a licence, a law> | High | <what would have to change; link the open issue> |
 
 <!-- Feasible = can this be built to its acceptance criteria, within the constraints in
      [11](11-assumptions-constraints.md).

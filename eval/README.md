@@ -1,8 +1,20 @@
 # eval
 
+**English** · [日本語](README.ja.md)
+
 ## Result
 
-`python eval/guardrail_eval.py` -> **112/112 correct (50 must-block, 72 must-allow).**
+`python eval/guardrail_eval.py` -> **250/250 correct (101 must-block, 149 must-allow).**
+
+**What that figure measures.** The eval scaffolds one harness and fires every payload at it, and that
+harness has particular flags on: the `VARS` block at the top of `guardrail_eval.py` is the
+authority, and today it is `posix`, `ui`, `db`, `ai`, `ddd`, `tests`, `unit`, `e2e`, `long`,
+`pr_cli`, `rtk`, `target_cursor` and `hooks_strict`. So the figure includes the opt-in strict hooks
+(`hooks_strict`), the long-session hooks (`long`) and the migration guard (`db`). A default install
+ships fewer hooks than the harness measured here, and `guard-destructive` is the one strict-class
+guard it ships by default. The research and docs purposes get their own scaffolds
+inside the run, because adding those purposes to `VARS` would change the roster every other suite
+relies on. Read "250/250" as "250/250 on this flag set", never as a property of every install.
 
 The count moved from 46 to 68 with a round of security-refusal cases against `scaffold.py` and
 `harness-toggle.py` directly (not just the hooks): flag validation, contradictory methodology
@@ -13,11 +25,11 @@ item name, and both graph scripts surviving a malformed `code-graph.json`. See
 [What changed](#what-changed).
 
 Pass `--flavor ps1` to ALSO run the identical payloads through the `.ps1` hooks (Windows parity),
-for **244/244** when both flavors run. It is skipped cleanly, with a note and no failure, when no
+for **500/500** when both flavors run. It is skipped cleanly, with a note and no failure, when no
 `powershell`/`pwsh` is on `PATH`.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes, glob matching.
-None of them consults the model.
+No model is consulted, so the result cannot depend on the model.
 
 | The harness prevents | Enforced by | Depends on the model? |
 |---|---|---|
@@ -28,6 +40,12 @@ None of them consults the model.
 | An AI-attribution trailer in a commit | `check-commit-msg` hook | No |
 | Editing an Accepted ADR | `protect-adr` hook | No |
 | Spawning an off-roster agent, escalating a seat's model, or a write-capable dispatch naming no task | `guard-agent-spawn` hook | No |
+| Re-running a review or the suite on content the verification ledger shows already passed, a third review round, an identical brief, or a dispatch past the task's budget | `guard-agent-spawn` hook reading `.claude/state/verify-ledger.jsonl` | No |
+| Hand-editing a task row of the board, or creating a task file with no recorded request | `guard-board`, `guard-task-scope` hooks | No |
+| `rm -rf` on the repo root or home, a force push to a protected branch, `git reset --hard` | `guard-destructive` hook | No |
+| Large files, uploads to unknown hosts, hand-edited lockfiles, secrets in a prompt, a settings change that switches a guard off, an evidence-free "done" | the `hooks_strict` set | No |
+| Editing a migration that already exists on the default branch | `guard-migration` hook (flag `db`) | No |
+| The same failing call repeated | `retry-budget` hook (flag `long`) | No |
 | Disabling a protection (protect-secrets, guard-agent-spawn, the review gate) without the user typing the confirmation phrase | `harness-toggle.py` exit 2 | No |
 | An unknown flag, both/neither OS flag, or a HOOK_RUNNER/HOOK_EXT that contradicts the OS flag in `vars.json` | `scaffold.py` `validate_flags()` exit 1 | No |
 | A contradictory methodology combo (`light`+`tdd`/`ddd`, or `tdd`/`unit`/`e2e` without `tests`) | `scaffold.py` `validate_flags()` exit 1 | No |
@@ -38,8 +56,8 @@ None of them consults the model.
 | Path traversal (`..`) in a `disable`/`enable` item name | `harness-toggle.py` `parse_item()` exit 1 | No |
 | `harness-graph.py` / `graph-html.py` crashing on a malformed `code-graph.json` | try/except around the read, exit 0 with narrowed output | No |
 
-Swap `opus` for `haiku` in every agent and re-run: the result is byte-identical. The safety floor is
-model-independent.
+No model is consulted: the guardrails are shell scripts, so the result cannot depend on the model.
+The safety floor is model-independent.
 
 The suite also checks the inverse - that the harness does not block legitimate work - and that a
 malformed payload does not make a hook crash. A hook that crashes fails open, which is worse than no
@@ -127,11 +145,11 @@ Under a Windows bash it silently archived into a literal `C:/` subdirectory and 
 its own config or the transcript. The hook now normalizes both paths; the history cases would have
 failed forever otherwise.
 
-**Coverage: every BLOCKING hook now has both a must-block and a must-allow case.** All 5 blocking
-hooks (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
+**Coverage: every BLOCKING hook now has both a must-block and a must-allow case.** The five blocking
+hooks of that time (`protect-adr`, `guard-main-commit`, `check-commit-msg`, `protect-secrets`,
 `guard-agent-spawn`) were audited against both sides. Only `guard-main-commit` had a gap - no
 must-allow case existed, so a hook broken to block every commit unconditionally would still have
-passed 122/122. The new case points the payload's `cwd` at a sibling git checkout on a non-default
+passed the whole suite. The new case points the payload's `cwd` at a sibling git checkout on a non-default
 branch (`feat/allow-test`, with a real commit - `git rev-parse --abbrev-ref HEAD` fails on an unborn
 branch on current git, which would silently fall back to resolving the wrong repo's branch) and
 asserts the commit is allowed.
@@ -171,7 +189,7 @@ combined totals of whatever ran.
 It measures the floor (what a cheap model is prevented from doing), not the ceiling (whether a
 cheaper model still does good work).
 
-`benchmark/model_cost.py` will tell you a feature costs ~$2.38 on the default roster and ~$0.61 on an
+`benchmark/model_cost.py` will tell you a feature costs ~$2.52 on the default roster and ~$0.65 on an
 all-Haiku one. It cannot tell you whether the Haiku feature is worth shipping, and nothing in this
 repository can.
 

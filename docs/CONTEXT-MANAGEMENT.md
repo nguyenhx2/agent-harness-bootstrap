@@ -1,5 +1,7 @@
 # Context management: state on disk, not in the model
 
+**English** · [日本語](CONTEXT-MANAGEMENT.ja.md)
+
 Agent state in this harness is anchored to physical files, not to the model's context window. Every
 durable fact about a mission - what the task is, what has been decided, what has run, what passed,
 what is blocked, who owns it - exists as committed markdown before it exists as a claim in a
@@ -23,8 +25,10 @@ gives a metaphor for context budgeting:
   irrelevant to the task in hand, and it charges you tokens for that irrelevance on every single turn.
   He puts the onset of degradation "somewhere around line two hundred".
 - Nested `CLAUDE.md` files scope rules to a folder, so folder-specific detail does not tax the root.
+  The scaffolder writes them: each module from the analysis gets its own `CLAUDE.md` (owner, scope,
+  local invariants and commands, 40 lines at most), loaded only when a file there is read.
 
-This repo follows it. `harness-bootstrap/assets/root/CLAUDE.md` is a nine-line Claude-specific surface
+This repo follows it. `harness-bootstrap/assets/root/CLAUDE.md` is a thin Claude-specific surface
 on top of a single `@AGENTS.md` import, and `AGENTS.md` carries an explicit budget comment:
 
 > `Keep AGENTS.md and CLAUDE.md under about 200 lines combined: instruction adherence drops on longer
@@ -60,8 +64,8 @@ of the work actually lives.
 
 | Tier | What lives there | When it loads | What it costs | What compaction does to it |
 |---|---|---|---|---|
-| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 7 unconditional files in `.claude/rules/` (with every flag on: `ai-governance.md` ships only with `ai`, `output-style.md` only with `terse`), the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~25,700 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
-| **Lazy-RAM** | The 10 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~51,800 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
+| **Always-RAM** | `CLAUDE.md` (which is just `@AGENTS.md` plus the Claude-specific surface), the 7 unconditional files in `.claude/rules/` (with every flag on: `ai-governance.md` ships only with `ai`, `output-style.md` only with `terse`), the agent's own body, its tool schemas | Every session, every agent, before any file is touched | ~23,000 bytes of rules alone, re-sent every turn, forever | Survives. The project-root `CLAUDE.md` is re-injected after compaction. A **nested** `CLAUDE.md` is not: it re-enters context only when a file in that directory is read again |
+| **Lazy-RAM** | The 10 path-scoped files in `.claude/rules/` (`paths:` frontmatter) | Only when Claude touches a file matching the glob | ~62,000 bytes that most sessions never pay for | Follows the same rule as the trigger: gone from the window, reloaded when a matching file is touched again |
 | **Disk** (the state of the work) | `docs/tasks/master-plan.md` (the board) and `docs/tasks/active/TASK-NNN.md` (goal, scope, acceptance criteria, decisions and blockers, session log) | On demand, by an explicit `Read` | A few hundred bytes read once per session | **Nothing.** It is committed markdown in git. This is the tier that survives everything |
 | **Archive** (append-only) | `.claude/state/history/` - one markdown file per finished subagent run, holding the prompt it was given and its final response | Never, unless read | Zero, until someone asks | Nothing. It is written by a hook after the fact, so no amount of context loss can erase it |
 
@@ -91,7 +95,7 @@ None of the always-loaded files can be path-scoped even in principle:
   session, deliberately: an agent that forgets where state lives will invent it."* The tier that
   tells the agent where disk is has to live in RAM.
 
-### Lazy-RAM: the 67%
+### Lazy-RAM: the 73%
 
 Everything else in `.claude/rules/` carries a `paths:` block:
 
@@ -103,8 +107,8 @@ paths:
 # Frontend
 ```
 
-`benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 28,821 bytes against 10
-path-scoped rules at 60,290 bytes. **68% of the rule content is kept out of the default session.** The
+`benchmark/RESULTS.md` measures the effect: 7 unconditional rules at 23,047 bytes against 10
+path-scoped rules at 62,365 bytes. **73% of the rule content is kept out of the default session.** The
 database agent no longer carries the frontend rules; the UI agent no longer carries the migration
 rules. `reference/cost-model.md` calls this "the single largest recurring saving available and it costs
 nothing but frontmatter". It is Arena's test applied mechanically: *every time* is unconditional,
@@ -119,12 +123,18 @@ Two files:
   task IDs, never the brief"*).
 - **`docs/tasks/active/TASK-NNN.md`** - one file per task, created from `docs/templates/TASK.md`. It
   carries the frontmatter `status:`, the goal, the inputs, the acceptance criteria, a decisions and
-  blockers section, and the **session log**: an append-only table of `| Date | Who | What was done |
-  Result |`.
+  blockers section, a **checkpoint** (the next step, the last green commit, open questions), and the
+  **session log**: a table of `| Date | Who | What was done | Result |`. The file keeps the newest rows
+  and folds older ones into `docs/tasks/log/log-TASK-NNN.md`, which is still committed evidence but is
+  not reloaded every time the task is resumed.
 
-Status is deliberately duplicated, once in the task file's frontmatter and once in the board row.
-`task-control.md` requires that both be written in the same step, and that the board row be read back
-afterwards, because *"a write nobody confirmed is a wish"*.
+Status is deliberately duplicated, once in the task file's frontmatter and once in the board row, and
+the file's folder follows it. One command writes them together, `python .claude/scripts/task.py`
+(`new`, `move`, `log`, `gate`, `checkpoint`, `attempt`, `resume`, `check`): it re-reads the board row
+afterwards and fails loudly if the write did not land, because *"a write nobody confirmed is a wish"*.
+A hand edit of a task row is blocked by the `guard-board` hook, and `task.py` applies the same
+refusals as `guard-task-scope` (no task without a recorded request and two real criteria), so the
+command cannot become the way around that hook.
 
 The five states are defined exactly once, in the frontmatter comment of `docs/templates/TASK.md`:
 `Planned | Active | Blocked | Pending | Done`. Every other file links to that definition instead of
@@ -173,6 +183,16 @@ process death, because it is on the disk of the machine that ran the agent. It d
 fresh clone on a different machine. `model-policy.md` states this exactly: *"the run archive under
 .claude/state/history/ is on disk and usually backed up even though it is gitignored"*. Committed task
 files are the durable tier; the archive is the forensic one.
+
+### The long-session hooks: the two moments a session loses its place
+
+With the `long` flag, two hooks cover what a rule cannot see. `compact-checkpoint` (`PreCompact`)
+writes `.claude/state/compact-checkpoint.md` before every compaction: the branch, each active task with
+its status, owner, checkpoint lines and first unchecked item, and the uncommitted changes. It carries
+no timestamp, is overwritten each time, and always exits 0, because blocking an automatic compaction
+that was triggered by a context-limit error fails the request. `session-context` (`SessionStart`)
+injects the active tasks with owner and next step, at most eight, and after a compaction points at the
+checkpoint file. Neither is a substitute for the task files; both only point at them.
 
 ### Byte-stability: why disk is what keeps RAM cacheable
 
@@ -234,11 +254,12 @@ to anyone but the agent doing it.
 `orchestrator.md`, section 1. **Before** accepting a new mission:
 
 ```
-grep -l "status: Active" docs/tasks/active/*.md
-grep -l "status: Blocked" docs/tasks/active/*.md
+python .claude/scripts/task.py resume
+python .claude/scripts/task.py check
 ```
 
-Then read `docs/tasks/master-plan.md`. And then:
+`resume` with no argument lists every unfinished task, human gates first; `check` confirms the board
+and the task files agree. Then read `docs/tasks/master-plan.md`. And then:
 
 > `Unfinished work takes priority: read the task file's session log and continue from the recorded
 > state. **The task files, not conversation memory, are the source of truth** - this is what makes the
@@ -250,22 +271,26 @@ accepts the new brief before scanning has already forked the board.
 ### Rebuild from the files
 
 `/task-resume TASK-NNN` (`.claude/commands/task-resume.md`) does this. Its allowed-tools list is
-itself a control: `Bash(git status)`, `Bash(git diff:*)`, `Bash(git log:*)`, `Read`, `Grep`, `Edit`.
-It cannot commit. It cannot push. It reads and reconciles.
+itself a control: `Bash(git status)`, `Bash(git diff:*)`, `Bash(git log:*)`, `Bash(python:*)`,
+`Bash(python3:*)`, `Read`, `Grep`. It has no `Edit` and no `Write`. It cannot commit. It cannot push.
+It reads and reconciles.
 
-Its five steps:
+Its four steps:
 
-1. Read `docs/tasks/master-plan.md` for position, dependencies, priority.
-2. Read the task file end to end: session log, decisions, blockers, acceptance criteria.
-3. **Trust the files over conversation memory.** *"The conversation may have been compacted; the files
-   were committed."*
-4. Verify the working tree with `git status`, `git diff`, `git log`. *"The files record intent, the
-   tree records reality. When they disagree, reconcile before continuing: inspect uncommitted work and
+1. Run `python .claude/scripts/task.py resume TASK-NNN`. It prints the board row, the checkpoint
+   (next step, last green commit, open questions), the open acceptance criteria, the last few
+   session-log rows, and whether HEAD and the working tree match the checkpoint - a digest in place of
+   reading the whole log.
+2. **Trust that over conversation memory.** *"The conversation may have been compacted; the files
+   were committed."* Read more of the task file only for what the digest does not answer.
+3. If it reports drift or uncommitted paths, reconcile first. *"The files record intent, the tree
+   records reality. When they disagree, reconcile before continuing: inspect uncommitted work and
    drive it to completion or escalate it. Never stash, discard, or clobber it."*
-5. Continue, appending a session-log row after every meaningful unit of work.
+4. Continue from the checkpoint's next step, logging each completed unit with `task.py log`, changing
+   status only with `task.py move`, and rewriting the checkpoint before stopping.
 
 Run with no argument, it resumes nothing: it lists every unfinished task (`Planned`, `Active`,
-`Blocked`) with its board row, priority, and blockers.
+`Blocked`), human gates first.
 
 ### Crash recovery
 
@@ -302,10 +327,10 @@ mission duplicates work; abandoning a crashed one loses it.
 
 Close-out therefore writes a durable, machine-checkable marker (`orchestrator.md`, section 6):
 
-1. Set the mission's status in `docs/tasks/master-plan.md` to a terminal state, **and read the row back
-   to confirm the write landed.**
+1. Move each of the mission's tasks to a terminal state with `task.py move`, which updates the file,
+   its folder and the board row together **and reads the row back to confirm the write landed.**
 2. Append a final row to the mission's log:
-   `| <date> | orchestrator | MISSION COMPLETE - board audited | Done |`
+   `task.py log TASK-NNN "MISSION COMPLETE - board audited" Done`
 
 Then deliver the summary and **terminate**. The rule against lingering is explicit: *"Never linger idle
 after close-out: an idle instance is indistinguishable from a crashed one, and a lingering one invites
@@ -326,8 +351,8 @@ An ambiguity in the model's world is resolved by making the two cases differ on 
 2. **Confirm the old process is gone.** A killed IDE window does not always mean a killed agent
    process. Verify termination; never assume it.
 3. **`/task-resume`** with no argument. It lists every unfinished task from `docs/tasks/active/`.
-4. **`/task-resume TASK-NNN`** on the one that was in flight. Read the board row, then the task file
-   end to end.
+4. **`/task-resume TASK-NNN`** on the one that was in flight. Read the digest `task.py resume` prints,
+   then as much of the task file as it does not answer.
 5. **Reconcile against git.** `git status`, `git diff`, `git log`, `git worktree list`, `git branch -a`.
    The task file says what was intended; the tree says what exists. Uncommitted work in the tree is
    inspected and driven to completion or escalated - **never stashed, discarded, or clobbered**.
@@ -372,10 +397,10 @@ three rows to the session log. It is midway through a fourth change when the IDE
 
 **The recovery:**
 
-A fresh orchestrator opens with an empty context. It scans `docs/tasks/active/` for `status: Active`
-and finds `TASK-014` before it will accept any new work. It confirms the old process is dead, runs
-`/task-resume TASK-014`, and reads the board row and then the task file end to end: the goal, the
-acceptance criteria, what was decided and why, and the three session-log rows. It runs `git status`,
+A fresh orchestrator opens with an empty context. It runs `task.py resume` and finds `TASK-014` before
+it will accept any new work. It confirms the old process is dead, runs `/task-resume TASK-014`, and
+reads the digest - the board row, the checkpoint, the open acceptance criteria and the session-log
+rows - then the task file for what the digest leaves open. It runs `git status`,
 `git diff`, `git log`, and `git worktree list`: the worktree is intact, two commits are on the branch,
 and there is one uncommitted hunk. It logs an incident row in the session log, adopts the uncommitted
 work, and continues from the acceptance criterion the log says was next.
@@ -385,7 +410,7 @@ zero minutes of work.
 
 None of that worked because anything clever happened at crash time. Nothing happened at crash time;
 the process simply stopped. It worked because the agent had been writing as it went: a session-log row
-after every meaningful unit of work, a status flip in both places at once, a commit per green test.
+after every meaningful unit of work, a status flip in every place at once, a commit per green test.
 Crash recovery is not a feature you add. It is a property you get for free, and only, if the state was
 already on disk before you needed it.
 
@@ -407,12 +432,17 @@ Every claim above traces to a file in this repository:
 - `harness-bootstrap/assets/docs/templates/TASK.md` - the canonical five states, the session log.
 - `harness-bootstrap/assets/docs/master-plan.md` - the board.
 - `harness-bootstrap/assets/claude/commands/task-resume.md` - the resume command.
+- `harness-bootstrap/assets/scripts/task.py` - the board CLI: one command changes state, the digest
+  `/task-resume` reads.
+- `harness-bootstrap/assets/claude/hooks/compact-checkpoint.sh`, `session-context.sh` - the `long`
+  flag's compaction and session-start hooks.
 - `harness-bootstrap/assets/root/AGENTS.md`, `CLAUDE.md` - the contract and its Claude-specific surface.
 - `harness-bootstrap/assets/claude/settings.json` - deny rules and hook registrations.
 - `harness-bootstrap/assets/claude/hooks/agent-history.sh`, `hooks/README.md` - the SubagentStop archive.
 - `harness-bootstrap/reference/cost-model.md` - path-scoped rules, byte-stability, `maxTurns`.
-- `benchmark/RESULTS.md` - the 67% figure.
-- `eval/guardrail_eval.py` - 122/122.
+- `benchmark/RESULTS.md` - the 73% figure.
+- `eval/guardrail_eval.py` - 250/250 on a harness scaffolded with `hooks_strict`, `long` and `db` on
+  (`VARS` in the script names the flag set).
 - `docs/ASSESSMENT.md` - what is enforced, what is advisory, and why routing cannot be hooked.
 
 External:

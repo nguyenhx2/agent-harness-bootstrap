@@ -14,8 +14,9 @@ phase. Paused with a recorded reason, not abandoned and not forgotten.
 Every file in this folder records why it was parked and what would justify resuming it. A task
 parked with no recorded reason is indistinguishable from a task that was quietly dropped.
 
-To resume one: move the file back to `docs/tasks/active/`, set `status: Active` in the frontmatter
-AND in the `docs/tasks/master-plan.md` row, and continue with `/task-resume TASK-NNN`.
+To resume one: `python .claude/scripts/task.py move TASK-NNN Active` - it moves the file back to
+`docs/tasks/active/` and flips the frontmatter and the board row together - then continue with
+`/task-resume TASK-NNN`.
 
 The session-start scan deliberately skips this folder. Nothing here is picked up automatically; a
 pending task is resumed only when a human asks for it.

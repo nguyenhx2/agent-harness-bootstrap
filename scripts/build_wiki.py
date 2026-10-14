@@ -264,8 +264,8 @@ that it blocked. That shipped once.
 ### Proving they fire
 
 `python eval/guardrail_eval.py` scaffolds a real harness and fires {eval_cases} payloads at it per
-hook flavour, {eval_block} that must be blocked and {eval_allow} that must be allowed. Swap every
-agent from Opus to Haiku and the result is byte-identical.
+hook flavour, {eval_block} that must be blocked and {eval_allow} that must be allowed. No model is
+consulted when a hook decides, so the result cannot depend on which model an agent runs.
 """
 
 
@@ -299,7 +299,7 @@ anything at all.
 def page_flags() -> str:
     src = (ROOT / "harness-bootstrap/scripts/scaffold.py").read_text(encoding="utf-8")
     m = re.search(r"KNOWN_FLAGS = \{(.*?)\}", src, re.S)
-    flags = sorted(re.findall(r'"([a-z_]+)"', m.group(1))) if m else []
+    flags = sorted(re.findall(r'"([a-z0-9_]+)"', m.group(1))) if m else []
 
     meaning = {
         "ui": "the project has a frontend; installs the frontend rule and UI-aware guidance",
@@ -315,7 +315,14 @@ def page_flags() -> str:
         "e2e": "agents automate end-to-end tests",
         "tests": "derived: set when either `unit` or `e2e` is chosen",
         "deploy_ask": "deployment is gated behind an explicit human confirmation",
-        "long": "long-lived project; adds the Tier 3 seats (brainstormer, tech-researcher, history-tracker)",
+        "long": "long-lived project; adds strategist, researcher and history-tracker, plus the checkpoint, session-context, retry-budget and trace hooks",
+        "purpose_code": "the repo builds software; the default when no purpose is given",
+        "purpose_research": "the repo produces research; fields researcher and checker, no code tooling",
+        "purpose_strategy": "the repo produces strategy work; fields strategist, researcher and checker",
+        "purpose_docs": "the repo produces documentation; fields writer and checker",
+        "checker": "derived: set whenever a non-code purpose is, never written by hand",
+        "merge_gate": "a delegated merge-manager seat for a steady stream of parallel pull requests",
+        "hooks_strict": "the strict hooks: secrets in prompts and output, config weakening, egress, large files, dependencies, evidence on stop",
         "solo_review": "one merged reviewer seat instead of separate code and security reviewers",
         "windows": "ship `.ps1` hooks and register them for PowerShell",
         "posix": "ship `.sh` hooks and register them for bash",
@@ -382,8 +389,10 @@ def validate(out: pathlib.Path) -> list[str]:
             else:
                 i += 1
 
+        # `[[Text|Page-Name]]` links to Page-Name; the Japanese pages use it so the visible
+        # text can be Japanese while the target stays a flat `-ja` page name.
         for m in re.finditer(r"\[\[([^\]]+)\]\]", text):
-            target = m.group(1).replace(" ", "-")
+            target = m.group(1).rsplit("|", 1)[-1].strip().replace(" ", "-")
             if target not in names:
                 problems.append(f"DEAD LINK {p.name}: [[{m.group(1)}]] -> {target}.md missing")
 

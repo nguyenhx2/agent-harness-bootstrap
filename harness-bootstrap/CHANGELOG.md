@@ -6,6 +6,44 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.20.0] - 2026-10-14
+
+The harness now fits the repo's purpose and enforces proportion instead of describing it. A
+verification ledger refuses a review or test that already passed on the same content, the roster
+sizes itself to code, research, strategy or docs work, and every shipped seat carries deliberate
+frontmatter. Figures below come from `benchmark/results/v1.20.0.md`.
+
+### Added
+
+- **Purpose profiles** (`purpose_code`, `purpose_research`, `purpose_strategy`, `purpose_docs`,
+  combinable; none means code): research, docs and strategy harnesses field 3 to 4 seats and no code tooling.
+- **Verification ledger and dispatch guard.** `verify-plan.py` picks the gates a diff needs and
+  records passes by content hash; `guard-agent-spawn` refuses a repeat review, a third round or an over-budget task. Simulated mission: 17 -> 11 gate runs.
+- **`task.py`** (atomic moves, a three-line checkpoint, bounded logs) and **`harness-check.py`**
+  (one cross-link check, run at the end of every scaffold). Resuming a 40-row task reads 8,253 -> 966 bytes.
+- **`/new-skill`**, a skill template with six trigger-case types, and `skill-check.py`.
+- **Hooks for more scenarios**, opt-in by flag: `hooks_strict` (secret-guard, guard-config,
+  egress, large files, dependencies, evidence on stop), `long` (checkpoint before compaction, session context, retry budget, agent trace), and per purpose (sources, links).
+
+### Changed
+
+- **Every seat's frontmatter is chosen, not defaulted:** `disallowedTools` on reviewers, `Agent`
+  only on the orchestrator, `memory`, `effort`, `omitClaudeMd`, `initialPrompt`. Spawn depth 2 and concurrency 4 are set in `settings.json`.
+- **Seats:** `strategist` and `researcher` replace `brainstormer` and `tech-researcher`; one
+  `checker` reviews non-code work; `merge-manager` ships only with `merge_gate`; dev seats run at medium effort.
+- **Intake is two questionnaires at most,** pre-answered from the codebase analysis.
+  `/harness-tune` proposes up to four ranked changes from run evidence; `/harness-update` merges new hook registrations into an existing `settings.json`.
+- **The code graph is a module-boundary check.** It now reports only real edges (6 of 6 on the
+  sample monorepo, against 56 before), and flags a new cross-module import on the edit that adds it; the docs graph and the specs HTML are gone.
+- **Always-loaded context, full profile: 36,800 -> 31,179 bytes.** Per-module `CLAUDE.md` files
+  (40 lines at most) move module guidance out of the root; "double-check" instructions are removed.
+
+### Fixed
+
+- **`guard-destructive` now ships by default.** The default install only had the deny rule
+  `Bash(git push --force:*)`, a prefix that `git push origin main --force` slipped past.
+- `/harness-update` never registered new hooks, because it skipped an existing `settings.json`.
+
 ## [1.19.3] - 2026-10-13
 
 Less process for small work, one test run per feature, and fewer tokens in every session. Measured

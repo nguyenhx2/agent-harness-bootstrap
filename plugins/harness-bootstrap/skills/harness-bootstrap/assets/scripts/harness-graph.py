@@ -41,6 +41,10 @@ import pathlib
 import re
 import sys
 
+# Importing a sibling script must not leave bytecode in .claude/scripts/: a stray .pyc there
+# is an untracked file, and verify-plan.py would ask for a review of it.
+sys.dont_write_bytecode = True
+
 NODE_TYPES = ("agent", "rule", "command", "hook", "settings", "script",
               "module", "task", "gate", "human", "skill", "instruction")
 EDGE_TYPES = ("gates", "triggers", "enforces", "reviews", "owns", "spawns",
@@ -96,22 +100,6 @@ INSTRUCTION_FILES = (
 # character class the write path enforces, so a name this scanner turns into a
 # node is a name the editor can address.
 INSTRUCTION_NAME_RE = re.compile(r"^(?!\.)(?!.*\.\.)[A-Za-z0-9_.-]+$")
-
-# A wired skill is recorded in the SEAT's body: /skill-wire adds "a new entry
-# under the seat's Skills available section". A declaration line is therefore the
-# only trustworthy signal. Matching a bare skill name anywhere in an agent file
-# invents wiring: five of ost's agents contain the word "performance"
-# ("performance budgets", "performance NFRs") while the skill of that name is
-# wired to no seat at all.
-SKILL_DECL_RE = re.compile(
-    r"^[^\n]*\bskills?\b[^\n:]*(?:available|to load|in use|when relevant)[^\n:]*:(.+)$",
-    re.I | re.M)
-SKILL_TOKEN_RE = re.compile(r"[A-Za-z0-9][\w.-]*[A-Za-z0-9]|[A-Za-z0-9]")
-
-# Seats that gate the merge request (edge agent -reviews-> gate:merge-request).
-REVIEW_SEATS = {"code-reviewer", "security-reviewer", "spec-guardian",
-                "reviewer", "merge-manager"}
-
 
 # ---------------------------------------------------------------- content refs
 # Twin of tools/harness-view/src/refs.rs; read that file's header for the why.
@@ -220,8 +208,8 @@ def references(text: str, inv: dict) -> set:
     out: set = set()
     for w in _runs(norm, _word_char):
         _path_refs(w.rstrip("."), inv, out)
-    for line in norm.split("\n"):
-        for span in _marked_spans(line.removesuffix("\r")):
+    for line in _lines(norm):
+        for span in _marked_spans(line):
             kind = _by_name(inv, span, True)
             if kind:
                 out.add((kind, span))
@@ -261,57 +249,81 @@ def edge_type(frm: str, to: str) -> str:
 
 _PREFIX = {"command": "cmd"}
 
+# Seats that gate the merge request by name (edge agent -reviews-> gate:merge-request).
+# Twin of REVIEWERS in scan.rs; is_review_seat() adds the role suffixes.
+REVIEWERS = ("code-reviewer", "merge-manager", "reviewer", "security-reviewer",
+             "spec-guardian")
 
-def read_text(p: pathlib.Path, limit: int | None = None) -> str:
-    try:
-        t = p.read_text(encoding="utf-8", errors="replace")
-        return t[:limit] if limit else t
-    except OSError:
-        return ""
+# Events whose hook gates a tool call: exit 2 stops the call or refuses the
+# permission. Twin of TOOL_GATE_EVENTS in scan.rs.
+TOOL_GATE_EVENTS = ("PreToolUse", "PermissionRequest")
+
+# The state folders of an orchestrator-kit task board, in board order.
+BOARD_STATES = ("pending", "active", "completed", "canceled")
+
+# ------------------------------------------------------------- Rust string twins
+# The parity gate compares this scanner with harness-view byte for byte, so the
+# string primitives below mirror Rust's rather than Python's: `str::trim` knows a
+# narrower whitespace set than `str.strip`, `str::lines` splits on "\n" only,
+# and `read_to_string` neither translates newlines nor survives invalid UTF-8.
+
+_WS = ("\t\n\x0b\x0c\r \x85\xa0        "
+       "        　")
 
 
-def frontmatter_field(head: str, key: str) -> str | None:
-    m = re.search(rf"^{key}:\s*(.+?)\s*$", head, re.M)
-    return m.group(1) if m else None
+def _trim(s: str) -> str:
+    return s.strip(_WS)
 
 
-def _unquote(s: str) -> str:
-    s = s.strip()
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
-        s = s[1:-1]
-    return s.strip()
+def _blen(s: str) -> int:
+    return len(s.encode("utf-8"))
 
 
-def frontmatter_list(head: str, key: str) -> list[str]:
-    """A frontmatter value that may be written inline or as a YAML block list.
-
-    `tools: Read, Edit` and
-
-        tools:
-          - Read
-          - Edit
-
-    are both legal and both appear in real agent files. frontmatter_field cannot read the
-    second: its `\\s*` crosses the newline, so it returned the single item "- Read" with the
-    dash still attached, while the Rust scanner returned all three. The schema promises the
-    two scanners agree byte for byte, so this is a parity break, not a cosmetic one.
-    """
-    m = re.search(rf"^{key}:[ \t]*(.*)$", head, re.M)
-    if not m:
+def _lines(text: str) -> list[str]:
+    """Rust `str::lines`: split on LF, drop the CR of a CRLF, no empty last line."""
+    if not text:
         return []
-    inline = m.group(1).strip()
-    if inline:
-        inline = inline.strip().lstrip("[").rstrip("]")
-        return [p for p in (_unquote(x) for x in inline.split(",")) if p]
-    out: list[str] = []
-    for line in head[m.end():].splitlines():
-        if not line.strip():
-            continue
-        stripped = line.lstrip()
-        if not stripped.startswith("- "):
-            break
-        out.append(_unquote(stripped[2:]))
+    parts = text.split("\n")
+    last = parts.pop()
+    out = [p[:-1] if p.endswith("\r") else p for p in parts]
+    if last:
+        out.append(last)
     return out
+
+
+def _get(v, key):
+    """serde_json `Value::get`: a key of an object, None for anything else."""
+    return v.get(key) if isinstance(v, dict) else None
+
+
+def _str(v) -> str | None:
+    return v if isinstance(v, str) else None
+
+
+def _i64(v) -> int | None:
+    if isinstance(v, int) and not isinstance(v, bool) and -2**63 <= v < 2**63:
+        return v
+    return None
+
+
+def _no_constant(_name):
+    raise ValueError("not JSON")
+
+
+def _load_json(text: str):
+    """Parse like serde_json: NaN and Infinity are not JSON. None when unreadable."""
+    try:
+        return json.loads(text, parse_constant=_no_constant)
+    except (ValueError, TypeError, RecursionError):
+        return None
+
+
+def read_text(p: pathlib.Path) -> str:
+    """The file as Rust's read_to_string sees it: raw UTF-8, else empty."""
+    try:
+        return p.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
 
 
 def strip_comment(s: str) -> str:
@@ -324,104 +336,506 @@ def strip_comment(s: str) -> str:
     if s[:1] in ('"', "'"):
         return s
     for i, ch in enumerate(s):
-        if ch == "#" and (i == 0 or s[i - 1].isspace()):
-            return s[:i].rstrip()
+        if ch == "#" and (i == 0 or s[i - 1] in " \t\n\x0c\r"):
+            return s[:i].rstrip(_WS)
     return s
 
 
 def unquote(s: str) -> str:
     """Strip one matched pair of surrounding quotes."""
-    t = s.strip()
+    t = _trim(s)
     if len(t) >= 2 and t[0] in "\"'" and t[-1] == t[0]:
         return t[1:-1]
     return t
 
 
-def frontmatter_block(text: str) -> str:
-    """The leading `---` fenced block, or "" when the file has none.
+def split_top(s: str) -> list[str]:
+    """Split on commas outside parentheses, brackets and quotes, so
+    `Agent(researcher, writer), Read` is two tools and not three fragments."""
+    out: list[str] = []
+    cur: list[str] = []
+    depth = 0
+    quote = None
+    for c in s:
+        if quote is not None:
+            if c == quote:
+                quote = None
+            cur.append(c)
+            continue
+        if c in "\"'":
+            quote = c
+        elif c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif c == "," and depth <= 0:
+            out.append(_trim("".join(cur)))
+            cur = []
+            continue
+        cur.append(c)
+    if _trim("".join(cur)):
+        out.append(_trim("".join(cur)))
+    return out
 
-    Read the BLOCK, not the first N bytes: a `description:` line in the prose
-    body is not frontmatter, and a long value can sit past any byte cap. The
-    Rust twin parses the block the same way, and the two must agree exactly.
-    """
-    if not text.startswith("---"):
-        return ""
-    rest = text[3:]
-    end = rest.find("\n---")
-    return rest[:end] if end != -1 else rest
+
+def as_list(v) -> list[str]:
+    """`Read, Write, Bash(git commit:*)` or a YAML list -> list of strings."""
+    if isinstance(v, list):
+        return [unquote(x) for x in v if isinstance(x, str)]
+    if isinstance(v, str):
+        inner = _trim(v).lstrip("[").rstrip("]")
+        return [p for p in (unquote(x) for x in split_top(inner)) if p]
+    return []
 
 
-def description_field(text: str) -> str | None:
+def frontmatter(text: str) -> dict:
+    """Flat `key: value` pairs and block lists, top level only. Twin of scan.rs."""
+    out: dict = {}
+    # A file saved by a Windows editor can start with a UTF-8 BOM.
+    text = text.removeprefix("﻿")
+    lines = _lines(text)
+    if not lines or _trim(lines[0]) != "---":
+        return out
+    cur_key = None
+    cur_list: list[str] = []
+    for line in lines[1:]:
+        if _trim(line) == "---":
+            break
+        trimmed = line.lstrip(_WS)
+        if trimmed.startswith("- ") and cur_key is not None:
+            cur_list.append(_trim(trimmed[2:]))
+            continue
+        if cur_key is not None:
+            if cur_list:
+                out[cur_key] = cur_list
+                cur_list = []
+            cur_key = None
+        if line.startswith((" ", "\t")):
+            continue
+        idx = line.find(":")
+        if idx >= 0:
+            key, val = _trim(line[:idx]), _trim(line[idx + 1:])
+            if not key:
+                continue
+            if not val:
+                cur_key = key
+            else:
+                out[key] = val
+    if cur_key is not None and cur_list:
+        out[cur_key] = cur_list
+    return out
+
+
+def cap(s: str, n: int) -> str:
+    s = _trim(s)
+    return s[:n] + "..." if len(s) > n else s
+
+
+def description(fm: dict) -> str | None:
     """Frontmatter `description:`, trimmed and capped at 300 chars.
 
     The viewer shows this in its sidebar, so a runaway value must not push the
     rest of the panel off screen; the full text is one Preview click away.
     """
-    raw = frontmatter_field(frontmatter_block(text), "description")
-    if not raw:
+    raw = fm.get("description")
+    if not isinstance(raw, str):
         return None
-    d = unquote(raw).strip()
+    d = _trim(unquote(raw))
     if not d:
         return None
     return d[:300] + "..." if len(d) > 300 else d
 
 
-def load_disabled(claude: pathlib.Path) -> dict[str, dict]:
-    """-> {'<kind>/<name>': entry} from .claude/disabled.json (absent = empty)."""
-    out: dict[str, dict] = {}
-    f = claude / "disabled.json"
-    if f.is_file():
-        try:
-            data = json.loads(read_text(f))
-            for e in data.get("disabled", []):
-                if isinstance(e, dict) and e.get("kind") and e.get("name"):
-                    out[f"{e['kind']}/{e['name']}"] = e
-        # AttributeError/KeyError too: a file that is VALID JSON but the wrong shape (a
-        # list where a dict belongs, a dict missing 'edges') raises neither of the two
-        # errors this used to catch, so the docstring's "never fails the caller" was
-        # false for exactly the hand-edited state files most likely to be wrong.
-        except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
-            data = {}
-        if not isinstance(data, dict):
-            data = {}
+# ------------------------------------------------------- nested frontmatter
+# Claude Code's subagent format nests three fields - `hooks:`, `mcpServers:` and
+# `experimental:` - which the flat reader cannot see. Twin of frontmatter_tree()
+# in scan.rs: maps and lists by indentation, scalars as strings, a `[a, b]` flow
+# list as a list. Indents are counted in UTF-8 bytes, as Rust counts them.
+
+def frontmatter_tree(text: str) -> dict:
+    text = text.removeprefix("﻿")
+    raw = _lines(text)
+    if not raw or _trim(raw[0]) != "---":
+        return {}
+    lines: list[tuple[int, str]] = []
+    for line in raw[1:]:
+        if _trim(line) == "---":
+            break
+        t = line.rstrip(_WS)
+        body = t.lstrip(_WS)
+        if not body or body.startswith("#"):
+            continue
+        lines.append((_blen(t) - _blen(body), body))
+    v = _yaml_block(lines, [0], 0)
+    return v if isinstance(v, dict) else {}
+
+
+def _yaml_scalar(s: str):
+    t = strip_comment(_trim(s))
+    if len(t) >= 2 and t.startswith("[") and t.endswith("]"):
+        return [x for x in (unquote(p) for p in split_top(t[1:-1])) if x]
+    single = t.startswith("'")
+    u = unquote(t)
+    return u.replace("''", "'") if single else u
+
+
+def _yaml_kv(s: str):
+    """`key: rest` when the line opens a mapping entry, else None."""
+    if s[:1] in ('"', "'", "[", "{"):
+        return None
+    idx = s.find(": ")
+    if idx < 0:
+        if not s.endswith(":"):
+            return None
+        idx = len(s) - 1
+    key = _trim(s[:idx])
+    if not key or " " in key:
+        return None
+    return unquote(key), _trim(s[idx + 1:])
+
+
+def _is_item(body: str) -> bool:
+    return body == "-" or body.startswith("- ")
+
+
+def _yaml_block(lines, i, indent):
+    if i[0] >= len(lines):
+        return None
+    ind0, first = lines[i[0]]
+    indent = max(ind0, indent)
+    if _is_item(first):
+        arr = []
+        while i[0] < len(lines):
+            ind, body = lines[i[0]]
+            if ind != indent or not _is_item(body):
+                break
+            rest = body[1:].lstrip(_WS)
+            col = indent + _blen(body) - _blen(rest)
+            i[0] += 1
+            if not rest:
+                if i[0] < len(lines) and lines[i[0]][0] > indent:
+                    arr.append(_yaml_block(lines, i, lines[i[0]][0]))
+                else:
+                    arr.append(None)
+                continue
+            kv = _yaml_kv(rest)
+            if kv:
+                # `- key: value` opens a map whose later keys sit at `col`
+                m = {kv[0]: _yaml_value(lines, i, col, kv[1])}
+                if i[0] < len(lines) and lines[i[0]][0] == col:
+                    more = _yaml_block(lines, i, col)
+                    if isinstance(more, dict):
+                        m.update(more)
+                arr.append(m)
+            else:
+                arr.append(_yaml_scalar(rest))
+        return arr
+    m = {}
+    while i[0] < len(lines):
+        ind, body = lines[i[0]]
+        if ind != indent or _is_item(body):
+            break
+        i[0] += 1
+        kv = _yaml_kv(body)
+        if kv:
+            m[kv[0]] = _yaml_value(lines, i, indent, kv[1])
+    return m
+
+
+def _yaml_value(lines, i, indent, inline):
+    """The value after `key:` - inline, a block scalar, or a nested block."""
+    if inline in ("|", ">", "|-", ">-", "|+", ">+"):
+        parts = []
+        while i[0] < len(lines) and lines[i[0]][0] > indent:
+            parts.append(lines[i[0]][1])
+            i[0] += 1
+        return ("\n" if inline.startswith("|") else " ").join(parts)
+    if inline:
+        return _yaml_scalar(inline)
+    if i[0] < len(lines):
+        n, b = lines[i[0]]
+        if n > indent:
+            return _yaml_block(lines, i, n)
+        # YAML lets a list sit at its key's own indent
+        if n == indent and _is_item(b):
+            return _yaml_block(lines, i, indent)
+    return None
+
+
+# ------------------------------------------------------------- hooks
+
+def hook_name_from_command(cmd: str) -> str | None:
+    """The `.claude/hooks/<name>` a registration runs. The `hooks/<name>.sh` (or
+    `.ps1`) occurrence wins over any other `hooks/` in the line; failing that,
+    the last occurrence."""
+    norm = cmd.replace("\\", "/")
+    last = None
+    start = 0
+    while True:
+        i = norm.find("hooks/", start)
+        if i < 0:
+            return last
+        at = i + len("hooks/")
+        j = at
+        while j < len(norm) and (_ascii_alnum(norm[j]) or norm[j] in "-_"):
+            j += 1
+        name = norm[at:j]
+        if name:
+            if norm.startswith(".sh", j) or norm.startswith(".ps1", j):
+                return name
+            last = name
+        start = at
+
+
+class HookReg:
+    """One hook registration, from settings.json or from a seat's frontmatter."""
+
+    __slots__ = ("source", "event", "matcher", "command", "hook")
+
+    def __init__(self, source, event, matcher, command, hook):
+        self.source, self.event, self.matcher = source, event, matcher
+        self.command, self.hook = command, hook
+
+    def summary(self) -> str:
+        target = self.hook if self.hook is not None else cap(self.command, 120)
+        if self.matcher in ("*", ""):
+            return f"{self.event} -> {target}"
+        return f"{self.event} {self.matcher} -> {target}"
+
+
+def hook_regs(source: str, hooks) -> list[HookReg]:
+    """Every registration in a `hooks:` value - settings.json's and a subagent
+    frontmatter's share one shape: event -> [{matcher, hooks: [{type, command}]}]."""
+    out: list[HookReg] = []
+    if not isinstance(hooks, dict):
+        return out
+    for event, groups in hooks.items():
+        for group in groups if isinstance(groups, list) else []:
+            matcher = _str(_get(group, "matcher"))
+            matcher = "*" if matcher is None else matcher
+            inner = _get(group, "hooks")
+            for h in inner if isinstance(inner, list) else []:
+                ty = _str(_get(h, "type"))
+                ty = "command" if ty is None else ty
+                cmd = _str(_get(h, "command"))
+                if cmd is not None:
+                    command = cmd
+                else:
+                    body = next((x for x in (_str(_get(h, "prompt")), _str(_get(h, "url")))
+                                 if x is not None), "")
+                    command = f"{ty}: {body}"
+                out.append(HookReg(source, event, matcher, command,
+                                   hook_name_from_command(cmd) if cmd is not None else None))
     return out
 
 
-def hook_registrations(claude: pathlib.Path) -> dict[str, dict]:
-    """-> {hook stem: {'event','matcher'}} parsed from settings.json.
+# ------------------------------------------------------------- seats
 
-    A settings.json that is still a template (unresolved conditionals) simply
-    parses as nothing - every hook then reports registered false, which is the
-    honest answer for an unscaffolded tree.
-    """
-    reg: dict[str, dict] = {}
-    f = claude / "settings.json"
-    if not f.is_file():
-        return reg
+def is_review_seat(name: str) -> bool:
+    """A seat whose job is to judge work rather than produce it: the scaffolder's
+    names, `editor`, `checker`, or a name ending in a reviewing role."""
+    return (name in REVIEWERS or name in ("editor", "checker")
+            or name.endswith(("reviewer", "-checker", "auditor", "critic", "verifier")))
+
+
+def spawn_targets(tools: list[str]) -> list[str] | None:
+    """The seats an `Agent(a, b)` (or legacy `Task(a, b)`) grant names; None when
+    the tool list grants spawning without naming anyone, or not at all."""
+    out: list[str] = []
+    named = False
+    for t in tools:
+        for head in ("Agent(", "Task("):
+            if t.startswith(head) and t.endswith(")") and len(t) > len(head):
+                named = True
+                out.extend(x for x in (unquote(p) for p in split_top(t[len(head):-1])) if x)
+    return sorted(set(out)) if named else None
+
+
+def agent_meta_extra(stem: str, fm: dict, tree: dict, meta: dict) -> None:
+    """The subagent frontmatter fields beyond model/effort/maxTurns/tools/description
+    (code.claude.com/docs/en/sub-agents, "Supported frontmatter fields"), each only
+    when the file sets it. Twin of agent_meta_extra() in scan.rs."""
+    def flat(k):
+        v = fm.get(k)
+        return unquote(strip_comment(v)) if isinstance(v, str) else None
+
+    n = flat("name")
+    # Claude Code dispatches by `name:`, not by the file name. Say so when they differ.
+    if n and n != stem:
+        meta["name"] = n
+    for k in ("permissionMode", "memory", "isolation", "color"):
+        v = flat(k)
+        if v:
+            meta[k] = v
+    for k in ("background", "omitClaudeMd"):
+        v = flat(k)
+        if v == "true":
+            meta[k] = True
+        elif v == "false":
+            meta[k] = False
+        elif v:
+            meta[k] = v
+    p = tree.get("initialPrompt")
+    if isinstance(p, str) and _trim(p):
+        meta["initialPrompt"] = cap(p, 300)
+    for k in ("disallowedTools", "skills"):
+        if k in fm:
+            lst = as_list(fm[k])
+            if lst:
+                meta[k] = lst
+    # mcpServers: a list of server names, inline definitions keyed by name, or both
+    servers: list[str] = []
+    ms = tree.get("mcpServers")
+    if isinstance(ms, list):
+        for x in ms:
+            if isinstance(x, str):
+                servers.append(x)
+            elif isinstance(x, dict):
+                servers.extend(x.keys())
+    elif isinstance(ms, dict):
+        servers.extend(ms.keys())
+    elif isinstance(ms, str):
+        servers.extend(as_list(ms))
+    if servers:
+        meta["mcpServers"] = servers
+    if "hooks" in tree:
+        regs = [r.summary() for r in hook_regs("", tree["hooks"])]
+        if regs:
+            meta["hooks"] = regs
+    ttl = _str(_get(tree.get("experimental"), "cacheTtl"))
+    if ttl is None:
+        ttl = flat("experimental.cacheTtl")
+    if ttl:
+        meta["cacheTtl"] = ttl
+    if isinstance(meta.get("tools"), list):
+        t = spawn_targets([x for x in meta["tools"] if isinstance(x, str)])
+        if t is not None:
+            meta["spawns"] = t
+
+
+def skill_decl_value(line: str) -> str | None:
+    """The value of a line that declares skills for a seat, e.g. "Skills to load
+    when relevant: webapp-testing." /skill-wire records a wire as an entry under
+    the seat's "Skills available" section, so a declaration line is the only
+    trustworthy signal. Matching a bare skill name anywhere in an agent file
+    invents wiring: five of ost's agents contain the word "performance" while
+    the skill of that name is wired to no seat."""
+    lower = line.lower()
+    kw = lower.find("skill")
+    colon = line.find(":")
+    if kw < 0 or colon < 0 or colon < kw:
+        return None
+    between = lower[kw:colon]
+    if not any(m in between for m in ("available", "to load", "in use", "when relevant")):
+        return None
+    return line[colon + 1:]
+
+
+def slug_tokens(text: str) -> list[str]:
+    """Slug-shaped tokens, trailing punctuation dropped: " webapp-testing." yields
+    "webapp-testing", not "webapp-testing."."""
+    out = []
+    for w in _runs(text, lambda c: _ascii_alnum(c) or c in "_-."):
+        i, j = 0, len(w)
+        while i < j and not _ascii_alnum(w[i]):
+            i += 1
+        while j > i and not _ascii_alnum(w[j - 1]):
+            j -= 1
+        if i < j:
+            out.append(w[i:j])
+    return out
+
+
+def md_stems(d: pathlib.Path) -> list[str]:
+    """Stems of the `.md` entries in a directory, README excluded, sorted."""
     try:
-        data = json.loads(read_text(f))
-    except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
-        return reg
-    if not isinstance(data, dict):
-        return reg
-    for event, groups in (data.get("hooks") or {}).items():
-        if not isinstance(groups, list):
+        entries = list(d.iterdir())
+    except OSError:
+        return []
+    return sorted(p.stem for p in entries if p.suffix == ".md" and p.stem != "README")
+
+
+def _names(d: pathlib.Path) -> list[str]:
+    try:
+        return sorted(p.name for p in d.iterdir())
+    except OSError:
+        return []
+
+
+def load_disabled(claude: pathlib.Path) -> set[str]:
+    """'<kind>/<name>' keys listed in .claude/disabled.json (absent = empty)."""
+    out: set[str] = set()
+    data = _load_json(read_text(claude / "disabled.json"))
+    entries = _get(data, "disabled")
+    for e in entries if isinstance(entries, list) else []:
+        k, n = _str(_get(e, "kind")), _str(_get(e, "name"))
+        if k is not None and n is not None:
+            out.add(f"{k}/{n}")
+    return out
+
+
+# ------------------------------------------------------------- task board
+
+def board_dir(root: pathlib.Path, settings) -> str | None:
+    """`env.TASK_BOARD_DIR` from settings.json when it is a relative path inside
+    the repo, else `.agent-base/tasks`; None when that directory does not exist."""
+    pick = ".agent-base/tasks"
+    d = _str(_get(_get(settings, "env"), "TASK_BOARD_DIR"))
+    if d is not None:
+        d = d.replace("\\", "/").strip("/")
+        if d and ":" not in d and not any(s in ("..", "") for s in d.split("/")):
+            pick = d
+    return pick if (root / pick).is_dir() else None
+
+
+def board_index(path: pathlib.Path) -> dict[str, dict]:
+    """TASKS.md rows keyed by TASK id: | ID | task | agent | state | deps | mission |."""
+    out: dict[str, dict] = {}
+    for line in _lines(read_text(path)):
+        t = _trim(line)
+        if not t.startswith("|"):
             continue
-        for g in groups:
-            matcher = g.get("matcher", "*") if isinstance(g, dict) else "*"
-            for h in (g.get("hooks") or []) if isinstance(g, dict) else []:
-                cmd = h.get("command", "") if isinstance(h, dict) else ""
-                m = re.search(r"hooks/([\w-]+)\.(?:sh|ps1)", cmd)
-                if m and m.group(1) not in reg:
-                    reg[m.group(1)] = {"event": event, "matcher": matcher}
-    return reg
+        cells = [_trim(c) for c in t.strip("|").split("|")]
+        rid = cells[0] if cells else ""
+        if not rid.startswith("TASK-") or _blen(rid) < 6:
+            continue
+
+        def cell(i):
+            return cells[i] if i < len(cells) and cells[i] != "-" else ""
+        out[rid] = {"title": cell(1), "owner": cell(2), "state": cell(3), "deps": cell(4)}
+    return dict(sorted(out.items()))
+
+
+def task_id(stem: str) -> str:
+    """`TASK-007-fix-login` -> `TASK-007`: the id task.sh keys the index by."""
+    if not stem.startswith("TASK-"):
+        return stem
+    digits = ""
+    for c in stem[5:]:
+        if not ("0" <= c <= "9"):
+            break
+        digits += c
+    return f"TASK-{digits}" if digits else stem
+
+
+def walk_tasks(d: pathlib.Path, root: pathlib.Path, out: list) -> None:
+    """Every TASK-*.md below `d`, depth first in name order, as (stem, relpath)."""
+    for name in _names(d):
+        p = d / name
+        if p.is_dir():
+            walk_tasks(p, root, out)
+        elif name.startswith("TASK-") and name.endswith(".md"):
+            stem = name
+            while stem.endswith(".md"):
+                stem = stem[:-3]
+            out.append((stem, p.relative_to(root).as_posix()))
 
 
 def _cells(line: str) -> list[str]:
-    t = line.strip()
+    t = _trim(line)
     if not t.startswith("|"):
         return []
-    return [c.strip().strip("*").strip() for c in t.strip("|").split("|")]
+    return [_trim(_trim(c).strip("*")) for c in t.strip("|").split("|")]
 
 
 def _is_separator(line: str) -> bool:
@@ -437,16 +851,30 @@ def tier_rows(text: str) -> list[dict]:
     and can be reworded without the table changing at all. Twin of
     `instruction::tier_rows` in the Rust scanner.
     """
-    lines = text.splitlines()
+    lines = _lines(text)
     for i, line in enumerate(lines):
         head = _cells(line)
         if len(head) < 3:
             continue
         lower = [c.lower() for c in head]
-        if lower[0] != "tier" or not any("who runs" in c for c in lower):
+        english = lower[0] == "tier" and any("who runs" in c for c in lower)
+        # The same table in another language - orchestrator-kit writes it as
+        # `| 区分 | 変更の内容 | 誰が行うか |` - is recognised by its rows: the tier
+        # names are identifiers and stay English whatever the prose around them.
+        named_rows = 0
+        for raw in lines[i + 1:]:
+            if _is_separator(raw):
+                continue
+            c = _cells(raw)
+            if len(c) < 3:
+                break
+            if c[0] in ("Direct", "Standard", "Guarded"):
+                named_rows += 1
+        if not english and named_rows < 2:
             continue
-        who_at = next((j for j, c in enumerate(lower) if "who runs" in c), 2)
-        change_at = next((j for j, c in enumerate(lower) if "change" in c), 1)
+        who_at = next((j for j, c in enumerate(lower) if "who runs" in c or "誰" in c), 2)
+        change_at = next((j for j, c in enumerate(lower)
+                          if "change" in c or "変更" in c), 1)
         adds_at = next((j for j, c in enumerate(lower) if "adds" in c), 3)
         out: list[dict] = []
         for raw in lines[i + 1:]:
@@ -534,294 +962,338 @@ def instruction_files(root: pathlib.Path):
 
 
 def build(root: pathlib.Path) -> dict:
+    """The harness graph. A line-for-line twin of `scan()` in scan.rs: the parity
+    gate compares the two outputs byte for byte, so the order of reads and the
+    shape of every node follow the Rust side."""
     claude = root / ".claude"
     nodes: dict[str, dict] = {}
     edges: set[tuple[str, str, str, int]] = set()
+    listed = load_disabled(claude)
 
-    def add_node(id_: str, type_: str, label: str, file: str | None = None,
-                 disabled: bool = False, synthetic: bool = False,
-                 meta: dict | None = None, edit: dict | None = None,
-                 tiers: list | None = None) -> None:
-        n: dict = {"id": id_, "type": type_, "label": label, "disabled": disabled}
-        if file:
-            n["file"] = file
-        if synthetic:
-            n["synthetic"] = True
-        if meta:
-            n["meta"] = meta
-        # The write path takes a key and a bare name, never a path. A node that
-        # carries these is one the viewer's editor may address; a node without
-        # them is read-only, and that is the whole permission model.
-        if edit is not None:
-            n["edit"] = edit
-        if tiers:
-            n["tiers"] = tiers
-        nodes[id_] = n
-
-    def add_edge(frm: str, to: str, type_: str, refs: int = 0) -> None:
-        edges.add((frm, to, type_, refs))
-
-    def rel(p: pathlib.Path) -> str:
-        return p.relative_to(root).as_posix()
-
-    disabled_entries = load_disabled(claude)
-
-    # settings (no meta by contract: id/type/label/file/disabled only). It does
-    # carry `edit`, because the viewer edits it through the same key-and-name
-    # write path the instruction files use.
-    if (claude / "settings.json").is_file():
-        add_node("settings", "settings", "settings.json",
-                 file=".claude/settings.json",
-                 edit={"key": "settings", "name": ""})
-
-    # agents (active + disabled are both nodes; disabled agents are not a
-    # supported toggle, but a file parked there still deserves visibility)
-    agent_dirs = [(claude / "agents", False), (claude / "disabled" / "agents", True)]
-    agents: list[str] = []
-    for d, dis in agent_dirs:
-        for a in sorted(d.glob("*.md")) if d.is_dir() else []:
-            head = read_text(a, 700)
-            meta: dict = {"model": frontmatter_field(head, "model") or "inherit"}
-            eff = frontmatter_field(head, "effort")
-            if eff:
-                meta["effort"] = eff
-            mt = frontmatter_field(head, "maxTurns")
-            if mt and mt.isdigit():
-                meta["maxTurns"] = int(mt)
-            # `tools` first, then `allowed-tools`, first non-empty wins - the same order and
-            # the same fallback the Rust scanner uses.
+    # agents: both trees, because a seat parked under disabled/agents still
+    # belongs in the graph, greyed out
+    agent_names: list[str] = []
+    agent_regs: list[HookReg] = []
+    for dir_tail, dis in ((".claude/agents", False), (".claude/disabled/agents", True)):
+        for name in md_stems(root / dir_tail):
+            text = read_text(root / dir_tail / f"{name}.md")
+            fm = frontmatter(text)
+            meta: dict = {}
+            for key in ("model", "effort"):
+                if isinstance(fm.get(key), str):
+                    meta[key] = fm[key]
+            for key in ("maxTurns", "max-turns"):
+                v = fm.get(key)
+                if isinstance(v, str) and re.fullmatch(r"[+-]?[0-9]+", v):
+                    n = int(v)
+                    if -2**63 <= n < 2**63:
+                        meta["maxTurns"] = n
             for key in ("tools", "allowed-tools"):
-                tools = frontmatter_list(head, key)
-                if tools:
-                    meta["tools"] = tools
-                    break
-            desc = description_field(read_text(a))
-            if desc:
-                meta["description"] = desc
-            add_node(f"agent:{a.stem}", "agent", a.stem, file=rel(a),
-                     disabled=dis, meta=meta)
+                if key in fm:
+                    lst = as_list(fm[key])
+                    if lst:
+                        meta["tools"] = lst
+                        break
+            d = description(fm)
+            if d:
+                meta["description"] = d
+            tree = frontmatter_tree(text)
+            agent_meta_extra(name, fm, tree, meta)
+            if not dis and "hooks" in tree:
+                agent_regs.extend(hook_regs(f"agent:{name}", tree["hooks"]))
+            nodes[f"agent:{name}"] = {"id": f"agent:{name}", "type": "agent", "label": name,
+                                      "file": f"{dir_tail}/{name}.md", "disabled": dis,
+                                      "meta": meta}
             if not dis:
-                agents.append(a.stem)
-    # skills: .claude/skills/<slug>/SKILL.md. A skill may carry its own agents
-    # and scripts, but those are internal to the skill and are NOT roster seats,
-    # so they are recorded as meta rather than drawn as harness nodes.
+                agent_names.append(name)
+
+    # rules, commands: active tree plus the disabled/ quarantine tree. Only
+    # unconditional rules in the ACTIVE tree gate; only active commands are invoked.
+    gating_rules: list[str] = []
+    active_commands: list[str] = []
+    for kind, sub, prefix in (("rule", "rules", "rule"), ("command", "commands", "cmd")):
+        for dir_tail, dir_disabled in ((f".claude/{sub}", False),
+                                       (f".claude/disabled/{sub}", True)):
+            for name in md_stems(root / dir_tail):
+                file = f"{dir_tail}/{name}.md"
+                nid = f"{prefix}:{name}"
+                node = {"id": nid, "type": kind,
+                        "label": f"/{name}" if kind == "command" else name, "file": file,
+                        # disabled.json ORs into the flag for rules and hooks only
+                        "disabled": dir_disabled or (kind == "rule" and f"rule/{name}" in listed)}
+                fm = frontmatter(read_text(root / file))
+                if kind == "rule":
+                    meta = {}
+                    scoped = False
+                    if "paths" in fm:
+                        paths = as_list(fm["paths"])[:8]
+                        scoped = bool(paths)
+                        meta["scoped"] = scoped
+                        if scoped:
+                            meta["paths"] = paths
+                    else:
+                        meta["scoped"] = False
+                    d = description(fm)
+                    if d:
+                        meta["description"] = d
+                    node["meta"] = meta
+                    if not dir_disabled and not scoped:
+                        gating_rules.append(nid)
+                else:
+                    d = description(fm)
+                    if d:
+                        node["meta"] = {"description": d}
+                    if not dir_disabled:
+                        active_commands.append(nid)
+                nodes[nid] = node
+
+    # hooks: one node per name, across both flavors and the quarantine. Disabled
+    # only when ALL its flavor files are quarantined; the representative file is
+    # the .sh if present, an active flavor beating a disabled one.
+    hook_variants: dict[str, list[tuple[str, bool]]] = {}
+    for dir_tail, disabled in ((".claude/hooks", False), (".claude/disabled/hooks", True)):
+        for fname in _names(root / dir_tail):
+            stem, dot, ext = fname.rpartition(".")
+            if not dot or ext not in ("sh", "ps1"):
+                continue
+            hook_variants.setdefault(stem, []).append((f"{dir_tail}/{fname}", disabled))
+    hook_files: dict[str, tuple[str, bool]] = {}
+    for stem in sorted(hook_variants):
+        files = hook_variants[stem]
+        all_disabled = all(d for _, d in files)
+        files = sorted(files, key=lambda fd: (not fd[0].endswith(".sh"), fd[1], fd[0]))
+        hook_files[stem] = (files[0][0], all_disabled or f"hook/{stem}" in listed)
+
+    # settings.json: which hooks are registered, and under what
+    settings_path = claude / "settings.json"
+    have_settings = settings_path.is_file()
+    settings_v = _load_json(read_text(settings_path)) if have_settings else None
+    settings_regs = hook_regs("settings", _get(settings_v, "hooks"))
+    if have_settings:
+        node = {"id": "settings", "type": "settings", "label": "settings.json",
+                "file": ".claude/settings.json", "disabled": False,
+                "edit": {"key": "settings", "name": ""}}
+        # Registrations that run no file in .claude/hooks/: an inline command, a
+        # Python hook, a prompt or http hook. They fire all the same.
+        other = [r.summary() for r in settings_regs
+                 if r.hook is None or r.hook not in hook_files]
+        if other:
+            node["meta"] = {"otherHooks": other}
+        nodes["settings"] = node
+
+    for name, (file, disabled) in hook_files.items():
+        hid = f"hook:{name}"
+        regs = [r for r in settings_regs + agent_regs if r.hook == name]
+        meta = {"registered": bool(regs)}
+        if regs:
+            meta["event"] = regs[0].event
+            meta["matcher"] = regs[0].matcher
+            meta["blocking"] = any(r.event in TOOL_GATE_EVENTS for r in regs)
+        # Registered more than once: list every one, because the first alone
+        # under-reports what the hook guards.
+        seen: list[str] = []
+        for r in regs:
+            s = r.event if r.matcher == "*" else f"{r.event} {r.matcher}"
+            if s not in seen:
+                seen.append(s)
+        if len(seen) > 1:
+            meta["events"] = seen
+        # A hook a seat registers in its own frontmatter fires only while that
+        # seat runs. `scope` names the seats; absent means session-wide.
+        scope = sorted({r.source[len("agent:"):] for r in regs
+                        if r.source.startswith("agent:")})
+        if scope:
+            for a in scope:
+                edges.add((f"agent:{a}", hid, "triggers", 0))
+            if not any(r.source == "settings" for r in regs):
+                meta["scope"] = scope
+        nodes[hid] = {"id": hid, "type": "hook", "label": name, "file": file,
+                      "disabled": disabled, "meta": meta}
+        if have_settings and any(r.source == "settings" for r in regs):
+            edges.add(("settings", hid, "triggers", 0))
+
+    # scripts: every .py, .sh and .ps1 under .claude/scripts/. One node per name;
+    # when two flavors share a name the .py wins, then the .sh.
+    scripts_dir = claude / "scripts"
+    files = [n for n in _names(scripts_dir) if (scripts_dir / n).is_file()]
+    by_stem: dict[str, str] = {}
+    for ext in ("py", "sh", "ps1"):
+        for f in files:
+            if f.endswith(f".{ext}") and len(f) > len(ext) + 1:
+                by_stem.setdefault(f[:-len(ext) - 1], f)
+    for name, fname in by_stem.items():
+        nodes[f"script:{name}"] = {"id": f"script:{name}", "type": "script", "label": fname,
+                                   "disabled": False, "file": f".claude/scripts/{fname}"}
+
+    # synthetic flow anchors
+    nodes["gate:merge-request"] = {"id": "gate:merge-request", "type": "gate",
+                                   "label": "Merge request", "disabled": False,
+                                   "synthetic": True}
+    nodes["human"] = {"id": "human", "type": "human", "label": "Human",
+                      "disabled": False, "synthetic": True}
+
+    # modules from code-graph.json (best effort, absence is fine). Valid JSON of
+    # the wrong shape narrows the graph; it never fails the caller.
+    module_names: list[str] = []
+    cg = claude / "state" / "code-graph.json"
+    g = _load_json(read_text(cg)) if cg.is_file() else None
+    mods = _get(g, "modules")
+    for name, info in (mods.items() if isinstance(mods, dict) else []):
+        # code-graph.json stores files as a path array; a bare count is tolerated
+        raw = _get(info, "files")
+        count = len(raw) if isinstance(raw, list) else (_i64(raw) or 0)
+        owner = _str(_get(info, "owner"))
+        owner = "-" if owner is None else owner
+        if owner != "-" and f"agent:{owner}" in nodes:
+            edges.add((f"agent:{owner}", f"mod:{name}", "owns", 0))
+        nodes[f"mod:{name}"] = {"id": f"mod:{name}", "type": "module", "label": name,
+                                "disabled": False, "meta": {"files": count, "owner": owner}}
+        module_names.append(name)
+    raw_edges = _get(g, "edges")
+    for e in raw_edges if isinstance(raw_edges, list) else []:
+        # an edge is a [from, to] pair or a {"from", "to", "refs"} object
+        if isinstance(e, list):
+            frm = _str(e[0]) if len(e) > 0 else None
+            to = _str(e[1]) if len(e) > 1 else None
+        else:
+            frm, to = _str(_get(e, "from")), _str(_get(e, "to"))
+        if frm is not None and to is not None \
+                and f"mod:{frm}" in nodes and f"mod:{to}" in nodes:
+            refs = _i64(_get(e, "refs"))
+            edges.add((f"mod:{frm}", f"mod:{to}", "references", 1 if refs is None else refs))
+
+    # tasks: every TASK-*.md under docs/tasks/** is a node by contract, and so is
+    # every one on an orchestrator-kit board: <board>/{pending,active,completed,
+    # canceled}/TASK-NNN[-slug].md plus a TASKS.md index. The folder IS the state.
+    task_files: list = []
+    walk_tasks(root / "docs" / "tasks", root, task_files)
+    task_files.sort()
+    board = board_dir(root, settings_v)
+    board_files: list = []
+    if board is not None and not board.startswith("docs/tasks"):
+        walk_tasks(root / board, root, board_files)
+        board_files.sort()
+    index = board_index(root / board / "TASKS.md") if board is not None else {}
+    has_index = board is not None and (root / board / "TASKS.md").is_file()
+    indexed_seen: set[str] = set()
+    for stem, relpath, on_board in ([(s, r, False) for s, r in task_files]
+                                    + [(s, r, True) for s, r in board_files]):
+        body = read_text(root / relpath)
+        fm = frontmatter(body)
+        # task.sh writes `agent:` and `depends_on:` where the docs/tasks
+        # templates write `owner:` and `deps:`; same fields, other spelling.
+        for canon, alias in (("owner", "agent"), ("deps", "depends_on")):
+            if canon not in fm and alias in fm:
+                fm[canon] = fm[alias]
+        meta = {}
+        for key in ("title", "status", "fr", "owner", "deps", "priority", "phase"):
+            if isinstance(fm.get(key), str):
+                v = unquote(strip_comment(fm[key]))
+                # task.sh writes `-` for "none"; on its board that is no value at all
+                if v and (not on_board or v != "-"):
+                    meta[key] = v
+        if on_board:
+            folder = pathlib.PurePosixPath(relpath).parent.name
+            if folder in BOARD_STATES:
+                meta.setdefault("status", folder)
+                # task.sh check, restated: folder, `status:` and the index row must
+                # agree. Record what disagrees rather than pick a winner.
+                drift = []
+                if meta["status"] != folder:
+                    drift.append(f"status: {meta['status']} but the file is in {folder}/")
+                tid = task_id(stem)
+                row = index.get(tid)
+                if row is not None:
+                    if row["state"] != folder:
+                        drift.append(f"TASKS.md says {row['state']} but the file is in {folder}/")
+                elif has_index:
+                    drift.append("no row in TASKS.md")
+                indexed_seen.add(tid)
+                if drift:
+                    meta["drift"] = drift
+            for key in ("mission", "attempts"):
+                if isinstance(fm.get(key), str):
+                    v = unquote(strip_comment(fm[key]))
+                    if v and v != "-":
+                        meta[key] = v
+            meta["board"] = board
+        node = {"id": f"task:{stem}", "type": "task", "label": stem, "disabled": False,
+                "file": relpath}
+        if meta:
+            node["meta"] = meta
+        nodes[f"task:{stem}"] = node
+        # agent -owns-> task, only when the named seat exists. Real boards co-own
+        # a task as "frontend-ui-dev+platform-dev": one edge per named seat.
+        if isinstance(fm.get("owner"), str):
+            for one in unquote(strip_comment(fm["owner"])).split("+"):
+                one = _trim(one)
+                if one and one in agent_names:
+                    edges.add((f"agent:{one}", f"task:{stem}", "owns", 0))
+        for m in module_names:
+            if m in body:
+                edges.add((f"task:{stem}", f"mod:{m}", "references", 0))
+    # A TASKS.md row whose file is in no state folder: the index promises work the
+    # board cannot show. It still gets a node, so the gap is visible.
+    for tid, row in index.items():
+        if tid in indexed_seen or f"task:{tid}" in nodes:
+            continue
+        meta = {k: row[src] for k, src in (("title", "title"), ("owner", "owner"),
+                                           ("status", "state"), ("deps", "deps")) if row[src]}
+        meta["board"] = board
+        meta["drift"] = ["in TASKS.md but no file in any state folder"]
+        nodes[f"task:{tid}"] = {"id": f"task:{tid}", "type": "task", "label": tid,
+                                "disabled": False, "meta": meta}
+        for one in row["owner"].split("+"):
+            one = _trim(one)
+            if one and one in agent_names:
+                edges.add((f"agent:{one}", f"task:{tid}", "owns", 0))
+
+    for rule_id in gating_rules:
+        for agent in agent_names:
+            edges.add((rule_id, f"agent:{agent}", "gates", 0))
+
+    # skills: .claude/skills/<slug>/SKILL.md. A skill's own agents and scripts are
+    # internal to it, not roster seats, so they are meta rather than nodes.
+    skill_names: set[str] = set()
     skills_dir = claude / "skills"
-    skills: set[str] = set()
-    for sd in sorted(skills_dir.iterdir()) if skills_dir.is_dir() else []:
+    for name in _names(skills_dir):
+        sd = skills_dir / name
         sm = sd / "SKILL.md"
         if not sd.is_dir() or not sm.is_file():
             continue
-        skills.add(sd.name)
-        smeta: dict = {}
-        sdesc = description_field(read_text(sm))
-        if sdesc:
-            smeta["description"] = sdesc
+        meta = {}
+        d = description(frontmatter(read_text(sm)))
+        if d:
+            meta["description"] = d
         for extra in ("agents", "scripts"):
-            n = len(list((sd / extra).glob("*"))) if (sd / extra).is_dir() else 0
+            try:
+                n = sum(1 for _ in (sd / extra).iterdir())
+            except OSError:
+                n = 0
             if n:
-                smeta["own_" + extra] = n
-        add_node(f"skill:{sd.name}", "skill", sd.name, file=rel(sm), meta=smeta)
-
-    # agent -uses-> skill, from the declaration line only, and only when the
-    # skill is actually installed: an edge to a node that does not exist would
-    # dangle in every viewer. A seat declaring a skill that is NOT installed is
-    # reported by the assessment, which reads the seat files directly.
-    for d, dis in agent_dirs:
-        for a in sorted(d.glob("*.md")) if d.is_dir() else []:
-            for decl in SKILL_DECL_RE.findall(read_text(a)):
-                for tok in SKILL_TOKEN_RE.findall(decl):
-                    if tok in skills:
-                        add_edge(f"agent:{a.stem}", f"skill:{tok}", "uses")
-
-    if "orchestrator" in agents:
-        for name in agents:
-            if name != "orchestrator":
-                add_edge("agent:orchestrator", f"agent:{name}", "spawns")
-
-    # rules
-    for d, dis in [(claude / "rules", False), (claude / "disabled" / "rules", True)]:
-        for rl in sorted(d.glob("*.md")) if d.is_dir() else []:
-            head = read_text(rl, 400)
-            scoped = head.startswith("---") and "paths:" in head[3:].split("---", 1)[0]
-            meta = {"scoped": bool(scoped)}
-            if scoped:
-                pm = re.findall(r"^\s*-\s*['\"]?([^'\"\n]+?)['\"]?\s*$",
-                                head.split("paths:", 1)[1].split("---", 1)[0], re.M)
-                if pm:
-                    meta["paths"] = pm[:8]
-            desc = description_field(read_text(rl))
-            if desc:
-                meta["description"] = desc
-            entry = disabled_entries.get(f"rule/{rl.stem}")
-            add_node(f"rule:{rl.stem}", "rule", rl.stem, file=rel(rl),
-                     disabled=dis or bool(entry), meta=meta)
-            if not dis and not scoped:
-                for name in agents:
-                    add_edge(f"rule:{rl.stem}", f"agent:{name}", "gates")
-
-    # scripts: complete inventory of .claude/scripts/*.{py,sh,ps1}, whether or
-    # not anything references them. One node per name: .py, then .sh, then .ps1.
-    scripts_dir = claude / "scripts"
-    script_files: dict[str, pathlib.Path] = {}
-    for ext in (".py", ".sh", ".ps1"):
-        for sp in sorted(scripts_dir.glob("*" + ext)) if scripts_dir.is_dir() else []:
-            if sp.is_file() and sp.name[:-len(ext)]:
-                script_files.setdefault(sp.name[:-len(ext)], sp)
-    for stem in sorted(script_files):
-        add_node(f"script:{stem}", "script", script_files[stem].name,
-                 file=rel(script_files[stem]))
-
-    # commands (+ a runs edge for EVERY .claude/scripts/<name>.py reference)
-    for d, dis in [(claude / "commands", False), (claude / "disabled" / "commands", True)]:
-        for c in sorted(d.glob("*.md")) if d.is_dir() else []:
-            body = read_text(c)
-            cmeta = {}
-            desc = description_field(body)
-            if desc:
-                cmeta["description"] = desc
-            add_node(f"cmd:{c.stem}", "command", "/" + c.stem, file=rel(c), disabled=dis,
-                     meta=cmeta or None)
-            for s in sorted(set(re.findall(r"\.claude/scripts/([\w-]+)\.py", body))):
-                # nodes are the on-disk inventory; a reference to a script that
-                # does not exist stays a dangling edge (the viewers tolerate it)
-                add_edge(f"cmd:{c.stem}", f"script:{s}", "runs")
-            if not dis:
-                add_edge("human", f"cmd:{c.stem}", "invokes")
-
-    # hooks (a hook is one seat with up to two flavor files)
-    reg = hook_registrations(claude)
-    hook_files: dict[str, list[pathlib.Path]] = {}
-    for d, dis in [(claude / "hooks", False), (claude / "disabled" / "hooks", True)]:
-        if not d.is_dir():
-            continue
-        for hf in sorted(list(d.glob("*.sh")) + list(d.glob("*.ps1"))):
-            hook_files.setdefault(hf.stem, []).append(hf)
-    for stem in sorted(hook_files):
-        files = hook_files[stem]
-        dis = all("disabled" in f.parts for f in files)
-        # File tie-break by contract: the .sh flavor if present, else the .ps1;
-        # an active flavor beats a disabled one at equal extension.
-        files = sorted(files, key=lambda f: (f.suffix != ".sh",
-                                             "disabled" in f.parts, f.name))
-        r = reg.get(stem)
-        meta = {"registered": bool(r)}
-        if r:
-            meta["event"] = r["event"]
-            meta["matcher"] = r["matcher"]
-            meta["blocking"] = r["event"] == "PreToolUse"
-        entry = disabled_entries.get(f"hook/{stem}")
-        add_node(f"hook:{stem}", "hook", stem, file=rel(files[0]),
-                 disabled=dis or bool(entry), meta=meta)
-        if r and "settings" in nodes:
-            add_edge("settings", f"hook:{stem}", "triggers")
-
-    # synthetic flow nodes
-    add_node("gate:merge-request", "gate", "Merge request", synthetic=True)
-    add_node("human", "human", "Human", synthetic=True)
-    add_edge("gate:merge-request", "human", "escalates")
-    for name in sorted(REVIEW_SEATS & set(agents)):
-        add_edge(f"agent:{name}", "gate:merge-request", "reviews")
-
-    # code modules (from code-graph.py) + ownership
-    cg = claude / "state" / "code-graph.json"
-    if cg.is_file():
-        try:
-            g = json.loads(read_text(cg))
-        # AttributeError/KeyError too: a file that is VALID JSON but the wrong shape (a
-        # list where a dict belongs, a dict missing 'edges') raises neither of the two
-        # errors this used to catch, so the docstring's "never fails the caller" was
-        # false for exactly the hand-edited state files most likely to be wrong.
-        except (json.JSONDecodeError, TypeError, AttributeError, KeyError):
-            g = {}
-        # Valid JSON of the wrong SHAPE is the common case for a hand-edited state file, and it
-        # raises nothing at parse time. Normalise here so every .get() below is safe.
-        if not isinstance(g, dict):
-            g = {}
-        mods = g.get("modules")
-        for mod, info in (mods if isinstance(mods, dict) else {}).items():
-            # Element shape is as untrusted as container shape: a JSON file can be a valid dict
-            # whose values are strings. Skip what is not usable rather than crashing the caller.
-            if not isinstance(info, dict):
-                continue
-            owner = info.get("owner", "-") or "-"
-            # code-graph.json stores files as a path array; a bare COUNT is tolerated for
-            # forward compatibility. The Rust twin already did this and the Python side did
-            # not, so a graph carrying a count crashed this scanner with "object of type
-            # 'int' has no len()" while harness-view scanned it happily - a parity break that
-            # showed up as a crash rather than a diff.
-            raw_files = info.get("files", [])
-            files = len(raw_files) if isinstance(raw_files, (list, tuple)) else (
-                raw_files if isinstance(raw_files, int) else 0)
-            add_node(f"mod:{mod}", "module", mod,
-                     meta={"files": files, "owner": owner})
-            if owner != "-" and f"agent:{owner}" in nodes:
-                add_edge(f"agent:{owner}", f"mod:{mod}", "owns")
-        raw_edges = g.get("edges")
-        for e in (raw_edges if isinstance(raw_edges, list) else []):
-            # code-graph.json writes an edge either as a [from, to] pair or as a
-            # {"from":..., "to":..., "refs":...} object. The Rust twin accepted both and this
-            # side accepted only the object, so a pair-shaped graph produced FEWER edges here
-            # than in harness-view - a silent parity break, and the schema's whole promise is
-            # that the two scanners agree byte for byte.
-            if isinstance(e, (list, tuple)):
-                frm = e[0] if len(e) > 0 else None
-                to = e[1] if len(e) > 1 else None
-                refs = 1
-            elif isinstance(e, dict):
-                frm, to = e.get("from"), e.get("to")
-                raw_refs = e.get("refs", 1)
-                refs = raw_refs if isinstance(raw_refs, int) else 1
-            else:
-                continue
-            if not (isinstance(frm, str) and isinstance(to, str)):
-                continue
-            f_, t_ = f"mod:{frm}", f"mod:{to}"
-            if f_ in nodes and t_ in nodes:
-                add_edge(f_, t_, "references", refs)
-
-    # tasks: EVERY TASK-*.md under docs/tasks/** is a node by contract;
-    # references edges only where the body names a module path
-    tasks_dir = root / "docs" / "tasks"
-    if tasks_dir.is_dir():
-        mod_names = [(n["label"], n["label"].split("/")[-1])
-                     for n in nodes.values() if n["type"] == "module"]
-        for t in sorted(tasks_dir.rglob("TASK-*.md")):
-            body = read_text(t)
-            fm = frontmatter_block(body)
-            # The board fields, in the order the task template declares them.
-            # This is what makes a task readable without opening the file.
-            tmeta = {}
-            for key in ("title", "status", "fr", "owner", "deps", "priority", "phase"):
-                v = frontmatter_field(fm, key)
-                if v:
-                    v = unquote(strip_comment(v)).strip()
-                    if v:
-                        tmeta[key] = v
-            add_node(f"task:{t.stem}", "task", t.stem, file=rel(t), meta=tmeta or None)
-            # agent -owns-> task, the same edge type an agent uses for a module.
-            # Emitted only when the named seat exists: a task owned by a retired
-            # agent would otherwise anchor to nothing. (Contrast `runs`, which is
-            # deliberately allowed to dangle - a command naming a missing script
-            # is itself the finding.)
-            # Real boards co-own a task as "frontend-ui-dev+platform-dev", so
-            # each named seat gets its own edge. Dropping the pair entirely
-            # would leave a task that HAS owners looking unowned.
-            for one in (tmeta.get("owner") or "").split("+"):
-                one = one.strip()
-                if one and one in agents:
-                    add_edge(f"agent:{one}", f"task:{t.stem}", "owns")
-            for m in [m for m, base in mod_names if base and base in body]:
-                add_edge(f"task:{t.stem}", f"mod:{m}", "references")
+                meta[f"own_{extra}"] = n
+        nodes[f"skill:{name}"] = {"id": f"skill:{name}", "type": "skill", "label": name,
+                                  "file": f".claude/skills/{name}/SKILL.md",
+                                  "disabled": False, "meta": meta}
+        skill_names.add(name)
+    # agent -uses-> skill, from the declaration line, and only for an installed skill
+    for dir_tail in (".claude/agents", ".claude/disabled/agents"):
+        for name in md_stems(root / dir_tail):
+            for line in _lines(read_text(root / dir_tail / f"{name}.md")):
+                val = skill_decl_value(line)
+                if val is None:
+                    continue
+                for tok in slug_tokens(val):
+                    if tok in skill_names:
+                        edges.add((f"agent:{name}", f"skill:{tok}", "uses", 0))
 
     # instruction files: AGENTS.md, CLAUDE.md and the per-tool equivalents. The
     # only nodes outside .claude/, and the point of them: they are the contract
-    # every seat is told to obey, so a graph that stopped at the .claude/
-    # boundary drew every enforcement mechanism and none of the thing enforced.
+    # every seat is told to obey.
     instr_found = instruction_files(root)
-    instr_ids = {e[0]: f"instr:{e[0]}" for e, name, _ in instr_found if not name}
-    rule_labels = [n["label"] for n in nodes.values()
-                   if n["type"] == "rule" and not n["disabled"]]
     agent_tier: dict[str, str] = {}
+    rule_names = [n["label"] for n in nodes.values()
+                  if n["type"] == "rule" and not n["disabled"]]
     for entry, name, relpath in instr_found:
         key, path, ext, tools, source, verified, note = entry
         nid = f"instr:{key}" if not name else f"instr:{key}/{name}"
@@ -829,52 +1301,39 @@ def build(root: pathlib.Path) -> dict:
         imeta: dict = {"tools": list(tools), "source": source, "verified": verified}
         if note:
             imeta["note"] = note
-        # Size travels with the node so `assess` can tell a per-folder contract that governs a
-        # subtree from one that only looks like it does. Counted from the text already read for
-        # the tier parse below, so it costs nothing extra. Twin of the same line in scan.rs.
-        # From the BYTES on disk, not from `text`: read_text normalises CRLF to LF, so a file
-        # checked out natively on Windows would be counted three bytes short per line and the two
-        # scanners would disagree on every one. That is the same native-checkout trap that has bitten
-        # this repo in the plugin tree, the scaffolder and the step fixtures.
-        try:
-            imeta["bytes"] = (root / relpath).stat().st_size
-        except OSError:
-            imeta["bytes"] = len(text.encode("utf-8"))
+        # Size travels with the node so `assess` can tell a per-folder contract that
+        # governs a subtree from one that only looks like it does.
+        imeta["bytes"] = _blen(text)
+        node = {"id": nid, "type": "instruction", "label": relpath, "file": relpath,
+                "disabled": False, "meta": imeta, "edit": {"key": key, "name": name}}
         rows = tier_rows(text)
-        for row in rows:
-            # A tier row that NAMES a seat routes to it. The Direct and Standard
-            # rows say "the owning agent" and name nobody, so they route to
-            # nobody: guessing which seats they mean is exactly the invention
-            # the table exists to replace.
-            for tok in SKILL_TOKEN_RE.findall(row["who"]):
-                if tok in agents:
-                    agent_tier[tok] = row["tier"]
-                    add_edge(nid, f"agent:{tok}", "routes")
-        add_node(nid, "instruction", relpath, file=relpath, meta=imeta,
-                 edit={"key": key, "name": name}, tiers=rows or None)
-        # CLAUDE.md says @AGENTS.md, and saying so in the graph is what stops a
-        # reader treating it as a second, competing contract.
-        for other_key, other_id in instr_ids.items():
-            if other_id == nid:
+        if rows:
+            for row in rows:
+                # A tier row that NAMES a seat routes to it. The Direct and Standard
+                # rows say "the owning agent" and name nobody, so they route to nobody.
+                for tok in slug_tokens(row["who"]):
+                    if tok in agent_names:
+                        agent_tier[tok] = row["tier"]
+                        edges.add((nid, f"agent:{tok}", "routes", 0))
+            node["tiers"] = rows
+        nodes[nid] = node
+        # CLAUDE.md is a thin `@AGENTS.md` import, and saying so in the graph is
+        # what stops a reader treating it as a second, competing contract.
+        for other, other_name, other_rel in instr_found:
+            if other_name or other_rel == relpath:
                 continue
-            other_rel = next(r for e, n2, r in instr_found
-                             if e[0] == other_key and not n2)
             if f"@{other_rel}" in text:
-                add_edge(nid, other_id, "imports")
-        # A rule the contract actually points at, matched by the path it cites
-        # rather than by the bare word: "testing" appears in prose everywhere,
-        # `.claude/rules/testing.md` does not.
+                edges.add((nid, f"instr:{other[0]}", "imports", 0))
+        # A rule the contract points at by its path; "testing" in prose does not count.
         norm = text.replace("\\", "/")
-        for r in rule_labels:
+        for r in rule_names:
             if f"rules/{r}.md" in norm:
-                add_edge(nid, f"rule:{r}", "cites")
-        # A seat the contract briefs. Agent names are slugs, so a token match is
-        # exact; a substring match would brief every seat whose name happens to
-        # sit inside another word.
-        tokens = set(SKILL_TOKEN_RE.findall(text))
-        for a in agents:
+                edges.add((nid, f"rule:{r}", "cites", 0))
+        # A seat the contract briefs, by exact slug token.
+        tokens = set(slug_tokens(text))
+        for a in agent_names:
             if a in tokens:
-                add_edge(nid, f"agent:{a}", "briefs")
+                edges.add((nid, f"agent:{a}", "briefs", 0))
     for a, tier in agent_tier.items():
         n = nodes.get(f"agent:{a}")
         if n is not None:
@@ -890,33 +1349,91 @@ def build(root: pathlib.Path) -> dict:
     for nid, n in list(nodes.items()):
         kind = n["type"]
         if kind not in ("agent", "rule", "command", "hook", "skill", "instruction") \
-                or not n.get("file"):
+                or "file" not in n:
             continue
         text = read_text(root / n["file"])
         for to_kind, name in references(text, inv):
             to = f"{_PREFIX.get(to_kind, to_kind)}:{name}"
             if to != nid:
-                add_edge(nid, to, edge_type(kind, to_kind))
+                edges.add((nid, to, edge_type(kind, to_kind), 0))
         # Claude Code's own subagent field: `skills:` preloads those skills
         # into the seat, which is a wire whatever the names look like.
-        if kind == "agent":
-            for sk in frontmatter_list(frontmatter_block(text), "skills"):
+        if kind == "agent" and "skills" in (fm := frontmatter(text)):
+            for sk in as_list(fm["skills"]):
                 if sk in inv["skill"]:
-                    add_edge(nid, f"skill:{sk}", "uses")
+                    edges.add((nid, f"skill:{sk}", "uses", 0))
     # A hook nothing registers but another hook sources is a library, not a
     # hook that was switched off.
     for (_f, t, ty, _r) in list(edges):
         if ty == "sources":
             m = nodes.get(t, {}).get("meta")
-            if m is not None and m.get("registered") is False:
+            if isinstance(m, dict) and m.get("registered") is False:
                 m["library"] = True
 
-    edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r else {})}
-                 for (f, t, ty, r) in edges
-                 if f in nodes and (t in nodes or ty == "runs")]
-    edge_list.sort(key=lambda e: (e["from"], e["to"], e["type"]))
+    # Who can start whom. `Agent(a, b)` in a seat's tools names exactly who it may
+    # spawn; the orchestrator, or any seat holding a bare `Agent`, can spawn every
+    # other seat on the roster.
+    for agent in agent_names:
+        m = nodes.get(f"agent:{agent}", {}).get("meta") or {}
+        named = m.get("spawns") if isinstance(m.get("spawns"), list) else None
+        tools = m.get("tools") if isinstance(m.get("tools"), list) else []
+        bare = any(t in ("Agent", "Task") for t in tools)
+        if named is not None:
+            targets = [a for a in agent_names if a in named]
+        elif agent == "orchestrator" or bare:
+            targets = list(agent_names)
+        else:
+            targets = []
+        for t in targets:
+            if t != agent:
+                edges.add((f"agent:{agent}", f"agent:{t}", "spawns", 0))
+    # orchestrator-kit's spawn-guard.sh admits, besides the roster, the built-in
+    # agents listed one per line in .claude/hooks/spawn-allowlist. Built-ins are
+    # not nodes, so the list rides on the seat whose guard reads it.
+    allow_path = claude / "hooks" / "spawn-allowlist"
+    if allow_path.is_file():
+        allow = [x for x in (_trim(ln.split("#", 1)[0]) for ln in _lines(read_text(allow_path)))
+                 if x]
+        readers = sorted({r.source[len("agent:"):] for r in agent_regs
+                          if r.hook in hook_files and r.source.startswith("agent:")
+                          and "spawn-allowlist" in read_text(root / hook_files[r.hook][0])})
+        seats = readers or [a for a in agent_names if a == "orchestrator"]
+        for s in seats:
+            m = nodes.get(f"agent:{s}", {}).get("meta")
+            if isinstance(m, dict):
+                m["spawnAllowlist"] = allow
+    for r in agent_names:
+        # active seats only - a parked agent file reviews nothing
+        if is_review_seat(r):
+            edges.add((f"agent:{r}", "gate:merge-request", "reviews", 0))
+    edges.add(("gate:merge-request", "human", "escalates", 0))
+    for cmd_id in active_commands:
+        edges.add(("human", cmd_id, "invokes", 0))
+    # Every ".claude/scripts/<name>.py" a command names counts, whether or not the
+    # script exists yet - the dangling edge records the broken wiring. The
+    # ".claude/" prefix is required: a skill's own "<skill>/scripts/x.py" is not
+    # an installed script.
+    needle = ".claude/scripts/"
+    for cmd_id in [i for i, n in nodes.items() if n["type"] == "command"]:
+        norm = read_text(root / nodes[cmd_id]["file"]).replace("\\", "/")
+        start = 0
+        while True:
+            i = norm.find(needle, start)
+            if i < 0:
+                break
+            at = i + len(needle)
+            j = at
+            while j < len(norm) and (_ascii_alnum(norm[j]) or norm[j] in "-_"):
+                j += 1
+            name = norm[at:j]
+            start = at + max(len(name), 1)
+            if name and norm.startswith(".py", min(start, len(norm))):
+                edges.add((cmd_id, f"script:{name}", "runs", 0))
+
+    edge_list = [{"from": f, "to": t, "type": ty, **({"refs": r} if r > 0 else {})}
+                 for (f, t, ty, r) in sorted(edges)]
     return {"version": 1,
-            "nodes": sorted(nodes.values(), key=lambda n: n["id"]),
+            "nodes": [nodes[k] for k in sorted(nodes)],
             "edges": edge_list}
 
 

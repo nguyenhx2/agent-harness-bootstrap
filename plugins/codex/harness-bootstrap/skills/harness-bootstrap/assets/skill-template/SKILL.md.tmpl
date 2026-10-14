@@ -1,0 +1,45 @@
+---
+name: [[FILL: my-skill]]
+description: [[FILL: What it does, in one sentence, naming the domain words a request would use.]] Use when [[FILL: the situations and phrasings that should trigger it]]. Do not use for [[FILL: the nearest neighbouring job, and the skill or command that owns it]].
+---
+
+# [[FILL: Skill title]]
+
+[[FILL: One paragraph - the outcome this skill produces and why it beats doing the job without
+it. Domain knowledge the model does not already have; nothing generic.]]
+
+## Inputs and outputs
+
+- **Needs:** [[FILL: the inputs, and where they come from]]
+- **Produces:** [[FILL: the artifact or change, and where it lands]]
+- **Done when:** `python ${CLAUDE_SKILL_DIR}/scripts/validate.py <output>` exits 0.
+
+## Before you start
+
+[[FILL: Prerequisites. If one is missing, stop and say which - do not improvise around it.]]
+
+## Steps
+
+Each step says how much freedom it has. **Fixed** means run it exactly; **guided** means follow
+the pattern and adapt the details; **open** means use judgment toward the stated goal.
+
+1. **Fixed.** [[FILL: the deterministic part - a script call, a file copy, a command]]
+2. **Guided.** [[FILL: the part that follows a pattern - point at references/REFERENCE.md for it]]
+3. **Open.** [[FILL: the judgment call, and the goal it serves]]
+
+If [[FILL: a branch condition]], go to [[FILL: the step or reference that handles it]].
+
+## Validate
+
+Run `python ${CLAUDE_SKILL_DIR}/scripts/validate.py <output>`. Exit 0 means done. Exit 1 lists
+what failed: fix those items and run it again, at most [[FILL: a small retry limit]] times. Still
+failing after that, or exit 2 (bad input): stop and report the script's output and what you tried.
+
+## Report
+
+Lead with the outcome in a sentence or two, then the files changed. Keep it as short as the
+change; a summary of the actions taken, not a transcript of them.
+
+## More
+
+- `references/REFERENCE.md` - [[FILL: what it holds and when to read it]]

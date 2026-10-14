@@ -53,9 +53,19 @@ const FLOW_COL = { instruction: 0, rule: 1, hook: 2, settings: 2, skill: 3, agen
 const HIDE_DEFAULT = new Set(["module", "task", "script"]);
 // Hook event -> short badge. The scan carries the full event name; the node is
 // too small for "PostToolUse", and Pre/Post is the distinction that matters.
-const EVENT_BADGE = { PreToolUse: "PRE", PostToolUse: "POST", SubagentStop: "STOP",
-                      UserPromptSubmit: "PROMPT", SessionStart: "START", Stop: "STOP" };
-const STATUS_COLOR = { Active: "#1d4ed8", Blocked: "#b91c1c", Pending: "#a16207", Done: "#15803d" };
+const EVENT_BADGE = { PreToolUse: "PRE", PostToolUse: "POST", PostToolUseFailure: "FAIL",
+                      PermissionRequest: "PERM", UserPromptSubmit: "PROMPT",
+                      SessionStart: "START", SessionEnd: "END", Stop: "STOP",
+                      SubagentStart: "SUB+", SubagentStop: "SUB-", PreCompact: "COMPACT",
+                      Notification: "NOTIFY" };
+const STATUS_COLOR = { Active: "#1d4ed8", Blocked: "#b91c1c", Pending: "#a16207", Done: "#15803d",
+                       Canceled: "#64748b" };
+// Boards spell states differently: the docs/tasks templates write `Done`,
+// orchestrator-kit's task.sh writes `completed` and `canceled` in lower case.
+// One canonical key keeps the colours and the board order the same for both.
+const STATUS_ALIAS = { completed: "Done", done: "Done", cancelled: "Canceled", canceled: "Canceled",
+                       active: "Active", pending: "Pending", blocked: "Blocked" };
+function statusKey(s) { return s ? (STATUS_ALIAS[String(s).toLowerCase()] || s) : s; }
 let graph = { nodes: [], edges: [] };
 let view = localStorage.getItem("hv-view") || "flow";
 let hidden = new Set(JSON.parse(localStorage.getItem("hv-hidden") || "null") || [...HIDE_DEFAULT]);
@@ -643,7 +653,10 @@ function makeModeButton(key, onChange, file) {
 // A load failure must never leave a blank page: the error goes in the banner,
 // the previous graph stays on screen, and the canvas is already sized because
 // fit() runs before the first load rather than after it.
-async function load(rootOverride) {
+// The text of the last graph shown, so an auto-refresh that finds nothing new
+// leaves the page alone instead of re-laying it out and resetting the zoom.
+let lastGraphText = "";
+async function load(rootOverride, quiet) {
   const target = rootOverride !== undefined ? rootOverride : currentRoot;
   const url = "graph.json" + (target ? "?root=" + encodeURIComponent(target) : "");
   let res, body;
@@ -652,12 +665,16 @@ async function load(rootOverride) {
     // operation the indicator exists for
     [res, body] = await withBusy("scanning", null, async () => {
       const r = await fetch(url);
-      return [r, await r.json()];
+      const text = await r.text();
+      const same = quiet && r.ok && text === lastGraphText;
+      if (r.ok) lastGraphText = text;
+      return [r, same ? null : JSON.parse(text)];
     });
   } catch (e) {
     banner("could not reach the server: " + e);
     return false;
   }
+  if (res.ok && body === null) return true;   // timed refresh, nothing changed
   if (!res.ok || body.error) {
     // "nothing is loaded yet" is not a failure. `harness-view serve` runs in a
     // directory with no harness on purpose, so that double-clicking the binary
@@ -692,7 +709,11 @@ async function load(rootOverride) {
   document.getElementById("rootnow").textContent = currentRoot ? "root: " + currentRoot : "";
   rememberRoot(currentRoot);
   document.getElementById("stats").textContent = graph.nodes.length + " nodes, " + graph.edges.length + " edges";
-  buildLegend(); await checkPlan(); layout(); fitView(graph.nodes.filter(visible)); hint(); draw();
+  // A timed refresh of the same root keeps the reader's zoom and pan; only a
+  // new root, or a load the reader asked for, re-fits the view.
+  buildLegend(); await checkPlan(); layout();
+  if (changedRoot || !quiet) fitView(graph.nodes.filter(visible));
+  hint(); draw();
   return true;
 }
 function types() { return [...new Set(graph.nodes.map(n => n.type))].sort(); }
@@ -703,7 +724,7 @@ function label(n) { return n.label || n.id.split(":").slice(1).join(":") || n.id
 // arranged without overlapping whatever the lane maths does. The task id is the
 // handle everything else uses (deps read "TASK-027"), it is unique, and the full
 // title is one click away in the sidebar, so the node carries the id alone.
-const STATUS_ORDER = { Active: 0, Blocked: 1, Pending: 2, Done: 3 };
+const STATUS_ORDER = { Active: 0, Blocked: 1, Pending: 2, Done: 3, Canceled: 4 };
 function nodeLabel(n) {
   const full = label(n);
   if (n.type === "task") {
@@ -770,7 +791,8 @@ function layout() {
       // colour bands are the grouping and no extra chrome is needed.
       if (ns.every(n => n.type === "task")) {
         ns.sort((a, b) => {
-          const sa = STATUS_ORDER[meta(a, "status")] ?? 9, sb = STATUS_ORDER[meta(b, "status")] ?? 9;
+          const sa = STATUS_ORDER[statusKey(meta(a, "status"))] ?? 9,
+                sb = STATUS_ORDER[statusKey(meta(b, "status"))] ?? 9;
           return sa !== sb ? sa - sb : a.id.localeCompare(b.id);
         });
       } else {
@@ -1166,7 +1188,9 @@ function nodeBadge(n) {
   if (n.type === "task") {
     const st = meta(n, "status");
     if (!st) return null;
-    const c = STATUS_COLOR[st];
+    // a board that disagrees with itself says so before it says anything else
+    if (meta(n, "drift")) return { text: "DRIFT", bg: "#b91c1c", fg: "#fff" };
+    const c = STATUS_COLOR[statusKey(st)];
     return c ? { text: st.toUpperCase().slice(0, 7), bg: c, fg: "#fff" } : null;
   }
   // A seat the routing table names, badged with the tier it names it in. This
@@ -1942,8 +1966,8 @@ function select(n, force) {
       const cell = row(table, k, "");
       const s = document.createElement("span");
       s.className = "state"; s.textContent = val;
-      s.style.background = (STATUS_COLOR[val] || "#64748b") + "22";
-      s.style.color = STATUS_COLOR[val] || "#334155";
+      s.style.background = (STATUS_COLOR[statusKey(val)] || "#64748b") + "22";
+      s.style.color = STATUS_COLOR[statusKey(val)] || "#334155";
       cell.append(s);
     } else if (k === "owner") {
       const cell = row(table, k, val);
@@ -2014,6 +2038,15 @@ function select(n, force) {
         ? "true (sourced, see the source row)"
         : "false (unverified - treat the path as a guess)";
       cell.append(s2);
+    } else if (Array.isArray(v) && v.some(x => String(x).length > 24)) {
+      // Long items - a seat's hook registrations, a board's drift notes - read
+      // as a list, one per line, rather than one comma-joined run-on.
+      const cell = row(table, k, "");
+      for (const item of v) {
+        const line = document.createElement("div");
+        line.className = "vmono"; line.textContent = String(item);
+        cell.append(line);
+      }
     } else {
       row(table, k, val);
     }
@@ -2480,6 +2513,55 @@ function renderPlan(md) {
 // harness. This code only renders what it returns.
 let assessCache = null, assessRoot = null;
 
+// The Assess tab speaks English or Japanese. The engine sends both texts for
+// every finding, so switching language is a re-render, never a re-assessment.
+// The choice is a per-viewer convenience, so it lives in localStorage and the
+// page works the same when storage is blocked.
+const A_TEXT = {
+  en: {
+    title: "Harness assessment", purposes: "purposes", from: "from", high: "high",
+    medium: "medium", low: "low", finding: "finding", findings: "findings",
+    first: "Fix these first", firstNote: "Ordered by weight x count / effort. Each card says what full marks means and how to get there.",
+    more: "The rest of the worklist", effort: "effort", after: "overall after fixing",
+    oneClick: "one-click fixes available", applyAll: "Apply all one-click fixes",
+    since: "Since the last check", fixed: "fixed", added: "new", unchanged: "unchanged",
+    fixedL: "Fixed", newL: "New", seats: "for",
+    nodesAdded: "nodes added", nodesRemoved: "nodes removed", noChange: "Nothing changed.",
+    how: "How each score is computed", notMeasured: "What this score does NOT measure",
+    stats: "Statistics", findingsH: "Findings", worst: "worst first",
+    none: "No findings. That means every rule this engine checks passed, not that the harness is good.",
+    at: "at", fix: "fix", show: "show in graph", rubric: "Rubric", rubricNote: "Every rule, its weight, effort and what full marks means. Also published as RUBRIC.md.",
+    applies: "applies", notApplied: "rules not applied to this purpose",
+    confirm: "Apply this fix?", apply: "Apply", cancel: "Cancel", applied: "Fix applied",
+    applying: "applying",
+  },
+  ja: {
+    title: "ハーネス評価", purposes: "目的", from: "判定元", high: "high",
+    medium: "medium", low: "low", finding: "件", findings: "件",
+    first: "まずこれを直す", firstNote: "「重み × 件数 ÷ 手間」の大きい順。各カードに満点の条件と直し方を示します。",
+    more: "作業リストの残り", effort: "手間", after: "解消後の総合",
+    oneClick: "件はワンクリックで修正可", applyAll: "ワンクリック修正をすべて適用",
+    since: "前回の確認から", fixed: "件解消", added: "件新規", unchanged: "件変化なし",
+    fixedL: "解消", newL: "新規", seats: "対象",
+    nodesAdded: "追加されたノード", nodesRemoved: "削除されたノード", noChange: "変化はありません。",
+    how: "各点数の計算方法", notMeasured: "この点数が測定していないもの",
+    stats: "統計", findingsH: "指摘", worst: "重い順",
+    none: "指摘はありません。検査したルールがすべて通ったという意味で、ハーネスが良いという意味ではありません。",
+    at: "根拠", fix: "修正", show: "グラフで表示", rubric: "採点基準", rubricNote: "すべてのルールと、その重み・手間・満点の条件。RUBRIC.ja.md としても公開しています。",
+    applies: "対象", notApplied: "この目的では適用しないルール",
+    confirm: "この修正を適用しますか?", apply: "適用", cancel: "キャンセル", applied: "修正を適用しました",
+    applying: "適用中",
+  },
+};
+let alang = "en";
+try {
+  alang = localStorage.getItem("hv-lang") ||
+          ((navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en");
+} catch (e) { alang = "en"; }
+function T(k) { return (A_TEXT[alang] || A_TEXT.en)[k] || A_TEXT.en[k] || k; }
+// The field in the language chosen, falling back to English.
+function L(o, k) { return (alang === "ja" && o[k + "_ja"]) ? o[k + "_ja"] : o[k]; }
+
 async function loadAssessment(force) {
   const host = document.getElementById("assess");
   if (!force && assessCache && assessRoot === currentRoot) { renderAssessment(assessCache); return; }
@@ -2530,17 +2612,169 @@ function gotoNode(id) {
   draw();
 }
 
+// A one-click fix is a request to an endpoint that already exists - `POST
+// /agent`, the roster editor's own write path, with its own allow-list of keys
+// and tool names. The body comes from the engine; it is sent as JSON and the
+// answer is shown as text, so nothing here parses repository text as markup.
+async function applyActions(actions) {
+  const out = [];
+  for (const act of actions) {
+    const r = await fetch(act.endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ root: currentRoot }, act.body)),
+    });
+    const t = await r.text();
+    if (!r.ok) throw new Error(t || ("HTTP " + r.status));
+    out.push(t);
+  }
+  return out;
+}
+
+async function confirmAndApply(actions, label) {
+  const answer = await ui.modal({
+    title: T("confirm"),
+    icon: "alert",
+    tone: "warn",
+    body: label + "\n\n" + actions.map(a => "`" + a.body.name + "`: " + L(a, "label")).join("\n"),
+    actions: [
+      { id: "no", label: T("cancel"), icon: "x", kind: "cancel", default: true },
+      { id: "go", label: T("apply"), icon: "check", kind: "primary" },
+    ],
+  });
+  if (!answer || answer.action !== "go") return;
+  try {
+    const msgs = await withBusy(T("applying"), null, () => applyActions(actions));
+    ui.toast({ kind: "success", title: T("applied"), body: msgs.join("\n") });
+    await load();                // the graph changed on disk
+    await loadAssessment(true);  // and the re-check shows what that fixed
+  } catch (e) {
+    ui.toast({ kind: "error", title: "That did not happen", body: String((e && e.message) || e) });
+  }
+}
+
+function langSwitch() {
+  const box = document.createElement("span"); box.className = "alang";
+  for (const [code, name] of [["en", "EN"], ["ja", "日本語"]]) {
+    const b = document.createElement("button");
+    b.textContent = name;
+    if (code === alang) b.className = "on";
+    b.onclick = () => {
+      alang = code;
+      try { localStorage.setItem("hv-lang", code); } catch (e) { /* per-viewer only */ }
+      if (assessCache) renderAssessment(assessCache);
+    };
+    box.append(b);
+  }
+  return box;
+}
+
+function renderSince(host, s) {
+  const box = document.createElement("div"); box.className = "adiff";
+  const h = document.createElement("b"); h.textContent = T("since") + ": ";
+  box.append(h);
+  const from = s.overall.from, to = s.overall.to;
+  const sc = document.createElement("span");
+  sc.className = to > from ? "up" : to < from ? "down" : "";
+  sc.textContent = from + " -> " + to;
+  box.append(sc);
+  const counts = document.createElement("span"); counts.className = "amuted";
+  counts.textContent = "   " + s.fixed.length + " " + T("fixed") + ", " + s.new.length + " " +
+                       T("added") + ", " + s.unchanged + " " + T("unchanged");
+  box.append(counts);
+  const list = (items, label) => {
+    if (!items.length) return;
+    const ul = document.createElement("ul");
+    for (const f of items) {
+      const li = document.createElement("li");
+      li.textContent = label + ": [" + f.rubric + "] " + L(f, "title");
+      ul.append(li);
+    }
+    box.append(ul);
+  };
+  list(s.fixed, T("fixedL"));
+  list(s.new, T("newL"));
+  const g = s.graph || {};
+  for (const [k, label] of [["nodes_added", "nodesAdded"], ["nodes_removed", "nodesRemoved"]]) {
+    if (g[k] && g[k].length) {
+      const d = document.createElement("div"); d.className = "aev";
+      d.textContent = T(label) + ": " + g[k].join(", ");
+      box.append(d);
+    }
+  }
+  if (!s.fixed.length && !s.new.length && !(g.nodes_added || []).length && !(g.nodes_removed || []).length) {
+    const n = document.createElement("div"); n.className = "amuted"; n.textContent = T("noChange");
+    box.append(n);
+  }
+  host.append(box);
+}
+
+function workCard(a, w, top) {
+  const card = document.createElement("div"); card.className = "awork-c" + (top ? " top" : "");
+  const t = document.createElement("div"); t.className = "afind-t";
+  const rid = document.createElement("span"); rid.className = "arub"; rid.textContent = w.rubric;
+  const sev = document.createElement("span"); sev.className = "sevtag " + w.severity; sev.textContent = w.severity;
+  const cnt = document.createElement("b"); cnt.textContent = "x" + w.count;
+  t.append(rid, sev, cnt);
+  const full = document.createElement("div"); full.style.marginTop = "4px";
+  ui.prose(full, L(w, "full"));
+  const fix = document.createElement("div"); fix.className = "afix";
+  ui.prose(fix, L(w, "fix"));
+  card.append(t, full, fix);
+  // several findings share one placeholder fix; name every subject it covers
+  if (w.count > 1 && w.names && w.names.length) {
+    const who = document.createElement("div"); who.className = "awork-n";
+    who.textContent = T("seats") + ": " + w.names.join(", ");
+    card.append(who);
+  }
+  const meta = document.createElement("div"); meta.className = "awork-n";
+  meta.textContent = T("effort") + " " + w.effort + "  -  " + T("after") + " " + w.overall_after +
+                     (w.one_click ? "  -  " + w.one_click + " " + T("oneClick") : "");
+  card.append(meta);
+  if (w.one_click) {
+    const keys = new Set(w.keys);
+    const actions = a.findings.filter(f => keys.has(f.key) && f.action).map(f => f.action);
+    const b = document.createElement("button"); b.className = "aact";
+    b.textContent = T("applyAll") + " (" + actions.length + ")";
+    b.onclick = () => confirmAndApply(actions, "[" + w.rubric + "] " + L(w, "full"));
+    card.append(b);
+  }
+  return card;
+}
+
+async function renderRubric(details) {
+  if (details.dataset.loaded) return;
+  details.dataset.loaded = "1";
+  try {
+    const r = await (await fetch("rubric")).json();
+    const tbl = document.createElement("table"); tbl.className = "meta";
+    for (const rule of r.rules) {
+      const tr = document.createElement("tr");
+      const cells = [rule.id, rule.severity + " (" + rule.weight + ")", T("effort") + " " + rule.effort,
+                     rule.applies, L(rule, "full")];
+      for (const c of cells) { const td = document.createElement("td"); td.textContent = c; tr.append(td); }
+      tbl.append(tr);
+    }
+    details.append(tbl);
+  } catch (e) { details.dataset.loaded = ""; banner("could not load the rubric: " + e); }
+}
+
 function renderAssessment(a) {
   const host = document.getElementById("assess");
   host.textContent = "";
 
   const head = document.createElement("div"); head.className = "ahead";
   const left = document.createElement("div");
-  const h = document.createElement("h2"); h.textContent = "Harness assessment";
+  const h = document.createElement("h2"); h.textContent = T("title");
+  h.append(langSwitch());
   const sub = document.createElement("div"); sub.className = "amuted";
   sub.textContent = a.root + "  -  " + a.counts.high + " high, " + a.counts.medium +
                     " medium, " + a.counts.low + " low";
-  left.append(h, sub);
+  const pur = document.createElement("div"); pur.className = "amuted";
+  const p = a.purposes || { list: [], source: "", rules_not_applied: [] };
+  pur.textContent = T("purposes") + ": " + p.list.join(", ") + " (" + T("from") + " " + p.source + ")" +
+    (p.rules_not_applied.length ? "  -  " + T("notApplied") + ": " + p.rules_not_applied.join(", ") : "");
+  left.append(h, sub, pur);
   const overall = document.createElement("div"); overall.className = "aoverall";
   const big = document.createElement("b"); big.className = scoreClass(a.scores.overall);
   big.textContent = a.scores.overall;
@@ -2549,35 +2783,72 @@ function renderAssessment(a) {
   head.append(left, overall);
   host.append(head);
 
+  if (a.since) renderSince(host, a.since);
+
   const cats = document.createElement("div"); cats.className = "acats";
   for (const [name, v] of Object.entries(a.scores.categories)) {
     const card = document.createElement("div"); card.className = "acat";
     const t = document.createElement("div"); t.className = "acat-t";
-    const nm = document.createElement("span"); nm.textContent = name;
+    const nm = document.createElement("span"); nm.textContent = alang === "ja" && v.label_ja ? v.label_ja : name;
     const sc = document.createElement("b"); sc.className = scoreClass(v.score); sc.textContent = v.score;
     t.append(nm, sc);
     const f = document.createElement("div"); f.className = "amuted";
-    f.textContent = v.findings + (v.findings === 1 ? " finding" : " findings");
+    f.textContent = v.findings + " " + (v.findings === 1 ? T("finding") : T("findings"));
     card.append(t, abar(v.score, scoreClass(v.score)), f);
+    // the arithmetic behind the number, so it can be redone from RUBRIC.md
+    if (v.derivation && v.derivation.length) {
+      const dv = document.createElement("div"); dv.className = "aderiv";
+      dv.textContent = "100 - " + v.derivation.map(d => d.rubric + " " + d.count + "x" + d.weight).join(" - ") +
+                       " = " + v.score;
+      card.append(dv);
+    }
     cats.append(card);
   }
   host.append(cats);
 
+  const work = a.worklist || [];
+  if (work.length) {
+    const wh = document.createElement("h3"); wh.textContent = T("first"); host.append(wh);
+    const wn = document.createElement("div"); wn.className = "amuted"; wn.textContent = T("firstNote");
+    host.append(wn);
+    const grid = document.createElement("div"); grid.className = "awork";
+    work.slice(0, 3).forEach((w, i) => grid.append(workCard(a, w, i === 0)));
+    host.append(grid);
+    if (work.length > 3) {
+      const more = document.createElement("details");
+      const ms = document.createElement("summary"); ms.textContent = T("more") + " (" + (work.length - 3) + ")";
+      more.append(ms);
+      const g2 = document.createElement("div"); g2.className = "awork";
+      work.slice(3).forEach(w => g2.append(workCard(a, w, false)));
+      more.append(g2); host.append(more);
+    }
+  }
+
+  const how = document.createElement("details"); how.className = "anotm";
+  const hs = document.createElement("summary"); hs.textContent = T("how"); how.append(hs);
   const note = document.createElement("div"); note.className = "anote";
-  note.textContent = a.scores.method;
-  host.append(note);
+  note.textContent = L(a.scores, "method");
+  how.append(note);
+  host.append(how);
+
+  const rub = document.createElement("details"); rub.className = "anotm";
+  const rs = document.createElement("summary"); rs.textContent = T("rubric"); rub.append(rs);
+  const rn = document.createElement("div"); rn.className = "amuted"; rn.textContent = T("rubricNote");
+  rub.append(rn);
+  rub.addEventListener("toggle", () => { if (rub.open) renderRubric(rub); });
+  host.append(rub);
 
   const notm = document.createElement("details"); notm.className = "anotm";
   const nsum = document.createElement("summary");
-  nsum.textContent = "What this score does NOT measure";
+  nsum.textContent = T("notMeasured");
   notm.append(nsum);
   const ul = document.createElement("ul");
-  for (const line of a.scores.not_measured) {
+  for (const line of (alang === "ja" && a.scores.not_measured_ja) || a.scores.not_measured) {
     const li = document.createElement("li"); li.textContent = line; ul.append(li);
   }
   notm.append(ul); host.append(notm);
 
-  const sh = document.createElement("h3"); sh.textContent = "Statistics"; host.append(sh);
+  const sh = document.createElement("h3"); sh.textContent = T("stats"); host.append(sh);
   const st = a.statistics;
   const grid = document.createElement("div"); grid.className = "astats";
   const addStat = (label, pairs, filterable) => {
@@ -2617,33 +2888,45 @@ function renderAssessment(a) {
   host.append(grid);
 
   const fh = document.createElement("h3");
-  fh.textContent = "Findings (" + a.findings.length + ", worst first)";
+  fh.textContent = T("findingsH") + " (" + a.findings.length + ", " + T("worst") + ")";
   host.append(fh);
   if (!a.findings.length) {
     const ok = document.createElement("p"); ok.className = "amuted";
-    ok.textContent = "No findings. That means every rule this engine checks passed, " +
-                     "not that the harness is good.";
+    ok.textContent = T("none");
     host.append(ok);
   }
   const list = document.createElement("div"); list.className = "afind";
   for (const f of a.findings) {
     const row = document.createElement("div"); row.className = "afind-r sev-" + f.severity;
     const top = document.createElement("div"); top.className = "afind-t";
+    const rid = document.createElement("span"); rid.className = "arub"; rid.textContent = f.rubric || "";
     const sev = document.createElement("span"); sev.className = "sevtag " + f.severity;
     sev.textContent = f.severity;
-    const title = document.createElement("span"); title.textContent = f.title;
-    top.append(sev, title);
+    const title = document.createElement("span"); title.textContent = L(f, "title");
+    top.append(rid, sev, title);
     if (f.node) {
       const go = document.createElement("button"); go.className = "agoto";
-      setBtn(go, "target", "show in graph");
+      setBtn(go, "target", T("show"));
       go.onclick = () => gotoNode(f.node);
       top.append(go);
     }
-    const why = document.createElement("div"); why.className = "afind-w"; why.textContent = f.why;
+    const why = document.createElement("div"); why.className = "afind-w"; why.textContent = L(f, "why");
     row.append(top, why);
-    if (f.file) {
-      const fl = document.createElement("div"); fl.className = "afind-f"; fl.textContent = f.file;
-      row.append(fl);
+    if (f.evidence || f.file) {
+      const ev = document.createElement("div"); ev.className = "aev";
+      ev.textContent = T("at") + ": " + (f.evidence || f.file);
+      row.append(ev);
+    }
+    if (f.fix) {
+      const fx = document.createElement("div"); fx.className = "afix";
+      ui.prose(fx, L(f, "fix"));
+      row.append(fx);
+    }
+    if (f.action) {
+      const b = document.createElement("button"); b.className = "aact";
+      b.textContent = L(f.action, "label");
+      b.onclick = () => confirmAndApply([f.action], "[" + f.rubric + "] " + L(f, "title"));
+      row.append(b);
     }
     list.append(row);
   }
@@ -2693,7 +2976,7 @@ function syncAuto() {
   const secs = Math.max(1, Number(every.value) || 10);
   // rebuilt on every change, so a new interval takes effect at once rather
   // than after the next reload
-  if (auto.checked) timer = setInterval(() => load(), secs * 1000);
+  if (auto.checked) timer = setInterval(() => load(undefined, true), secs * 1000);
   localStorage.setItem("hv-auto", auto.checked ? "1" : "0");
   localStorage.setItem("hv-every", String(secs));
 }

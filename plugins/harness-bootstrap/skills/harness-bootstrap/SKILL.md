@@ -1,7 +1,7 @@
 ---
 name: harness-bootstrap
-version: 1.19.3
-description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
+version: 1.20.0
+description: Bootstraps or standardizes the complete AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree (specs/requirements/architecture/tasks/context), and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Works for code repos and for repos dedicated to research, strategy or documentation (purpose profiles pick the seats and the verification). Also runs in a read-only audit mode that builds an audit control plane beside untouched source. Not for writing a specification set - that is spec-builder. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
 
@@ -41,16 +41,23 @@ Follow [`reference/codebase-analysis.md`](reference/codebase-analysis.md). Produ
 anything else. Its mapping tables - modules→dev agents, conventions→rules, risky ops→deny/hooks -
 parameterize every later step.
 
-**1. Intake** - [`reference/intake.md`](reference/intake.md). Closed-choice questions go through
-**`AskUserQuestion`**, free-text stays plain chat - the batching mechanics and the express path are
-defined at the top of the reference. **Ask in the language the user wrote to you in** - question
+**1. Intake** - [`reference/intake.md`](reference/intake.md). Its first question is the repo's
+**purpose** (code, research, strategy, docs - one or more); everything after it is asked only where
+that purpose needs it. Stack proposals come from [`reference/tech-presets.md`](reference/tech-presets.md).
+The closed choices are ONE pre-answered questionnaire of at most two `AskUserQuestion` calls (purpose,
+team shape, hook strictness, verification appetite; then deploy rights, methodology, skills, effort),
+each option list ordered by what the analysis found and anything the evidence settled left out of the
+questions and shown in the plan instead. Free text stays plain chat - the mechanics and the express
+path are at the top of the reference. **Ask in the language the user wrote to you in** - question
 text, option labels and descriptions - inferring it from their own messages and defaulting to
 English only when it is genuinely unclear. That is separate from Q2, which chooses the language of
 the `docs/` prose; the interview language is inferred, never asked. In brownfield, pre-fill every answer the analysis produced and
 only ask what code cannot decide: docs language, commit identity, data sensitivity, gated actions.
 **If no specs exist** (intake Q3), invoke the `spec-builder` skill via the **`Skill`** tool before
 continuing - do not just note the gap; if the `Skill` tool is unavailable, state the exact handoff
-in words (what to run, with which inputs). Then echo a one-screen setup plan - what will be created,
+in words (what to run, with which inputs). The handoff carries the confirmed `purpose_*` flags into
+spec-builder's `vars.json`, so the purpose is asked once across both skills and a non-code repo
+gets spec-builder's light contract. Then echo a one-screen setup plan - what will be created,
 kept, and modified, plus **the roster with each agent's model and effort** - and get confirmation
 before writing anything.
 
@@ -68,23 +75,27 @@ The answer is **persisted**, as the flags `target_cursor` / `target_codex` and `
 from without asking again - it used to be discarded, which left the update command re-deriving it
 from a tree that can no longer tell the tools apart.
 
-**2. Pick the roster** - [`reference/roster.md`](reference/roster.md). Tier 0 is unconditional
-(orchestrator, the two reviewers, spec-guardian, ≥1 dev agent). Choose the preset (S/M/L) that matches
-the project. Brownfield derives dev agents from the module mapping; greenfield from FR clustering, or a
-single `app-dev` if no specs exist.
+**2. Pick the roster** - [`reference/roster.md`](reference/roster.md). The purpose decides the base:
+a code repo gets the orchestrator, the review gate, spec-guardian and at least one dev agent (preset
+S/M/L); research gets `researcher` + `checker`, strategy `strategist` + `researcher` + `checker`,
+docs `writer` + `checker` - three to five seats. Brownfield derives dev agents from the module
+mapping; greenfield from FR clustering, or a single `app-dev` if no specs exist.
 
-Every agent gets an explicit `model:` **and** `effort:`. Unset `model:` means `inherit`, which silently
+Every agent gets an explicit `model:`, `effort:`, `tools:` and `maxTurns:`, and every other frontmatter
+field is chosen deliberately per seat - the table in `roster.md` says which and why. Unset `model:` means `inherit`, which silently
 bills mechanical work at the caller's tier. The allocation and the reasoning are in
 [`reference/cost-model.md`](reference/cost-model.md) - read it before deviating from the table.
 
 **2.5. Skill discovery and install** - [`reference/skill-discovery.md`](reference/skill-discovery.md).
-Once the seats are known, ask (AskUserQuestion) whether to search for seat-matching skills -
-recommended for dev and qa seats, skipped in audit mode. Every candidate passes the reference's
+The questionnaire's "Skills" answer decides whether this step runs - recommended for dev and qa
+seats, skipped in audit mode; it is not asked a second time here. Every candidate passes the reference's
 trust rubric, including a MANDATORY per-skill read of its actual files (a skill is instructions from
 the internet); the confirmations then batch into ONE `AskUserQuestion` multi-select, each skill
 still individually ticked - nothing installs without it. Installed skills serve nobody until
 `/skill-wire` maps them to seats; the wire re-reviews content and records to
-`docs/context/tool-changelog.md`.
+`docs/context/tool-changelog.md`. When nothing found fits and a recurring workflow needs one,
+`/new-skill` decides whether it earns a project skill, scaffolds it from the template and lints it
+with `.claude/scripts/skill-check.py` - find, then create, then wire.
 
 **3. Detect the dev OS.** This gates the hook flavor and the settings registration; get it wrong and
 the guardrails never fire, silently. Windows → `.ps1` hooks. macOS/Linux → `.sh`. Mixed-OS team:
@@ -103,20 +114,35 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 ```json
 {
   "vars":  { "PROJECT_NAME": "...", "DEFAULT_BRANCH": "main", "PR_OR_MR": "PR", "...": "..." },
-  "flags": ["posix", "ui", "db", "ai", "ddd"]
+  "flags": ["posix", "ui", "db", "ai", "ddd"],
+  "modules": [{"path": "src/billing", "owner": "billing-dev", "invariants": "- amounts are integer cents"}]
 }
 ```
 
-Flags gate conditional assets and conditional blocks inside them: `ui`, `db`, `db_engineer`,
-`db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`,
-`solo_review`, `terse`, `rtk`, `pr_cli`, `target_cursor`, `target_codex`, and exactly one of
-`windows` / `posix`. Methodology: `ddd` is the default
+`modules` gives each module or large directory from the analysis its own `CLAUDE.md`, rendered from
+`assets/root/module-CLAUDE.md`: owner seat, scope, local invariants and commands, at most 40 lines
+(the scaffolder refuses more). Claude Code loads it only when it reads files there, so guidance that
+holds for one module stops costing tokens in every session. An existing `CLAUDE.md` at that path is
+never overwritten.
+
+Flags gate conditional assets and conditional blocks inside them: exactly one of `windows` /
+`posix`, the purpose profiles `purpose_code`, `purpose_research`, `purpose_strategy`, `purpose_docs`,
+then `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`,
+`tests`, `deploy_ask`, `long`, `solo_review`, `merge_gate`, `hooks_strict`, `terse`, `rtk`, `pr_cli`,
+`target_cursor`, `target_codex`. One or more purposes; none means `purpose_code`, so an older
+`vars.json` scaffolds what it always did. The code-only flags (`db*`, `ai`, `tdd`, `ddd`, `light`, `unit`, `e2e`,
+`tests`, `solo_review`, `merge_gate`) are refused without `purpose_code`. `checker` is derived - set
+whenever a non-code purpose is - and never written by hand. Methodology: `ddd` is the default
 (`rules/ddd.md`, tests shipping in the same change); `tdd` (tests strictly first) is opt-in - proof
 discipline at a real cost in delivery speed, so intake asks rather than assumes; `light` replaces
 both with a minimal-ceremony posture that keeps the review gate. Testing is a choice, not a default:
 `unit`/`e2e` come from intake Q13 and `tests` is set whenever either is (it gates `qa-test`, `/test`,
-and `rules/testing.md`). `long` fields the planning pair and `history-tracker`; `solo_review` swaps
-the two reviewers for one merged `reviewer`; `db_engineer`/`db_seeder` extend `db`. `deploy_ask`
+and `rules/testing.md`). `long` fields the planning pair (`strategist` + `researcher`) and `history-tracker`; `solo_review`
+swaps the two reviewers for one merged `reviewer`; `merge_gate` fields `merge-manager` for a steady
+stream of parallel PRs (without it the human merges); `hooks_strict` adds the hard-stop hooks for
+large files, egress, unpinned dependencies, pasted secrets, mid-session settings changes and
+evidence-free "done" (`assets/claude/hooks/README.md`) - the destructive-command guard ships in
+every harness, not only strict ones; `db_engineer`/`db_seeder` extend `db`. `deploy_ask`
 moves `{{DEPLOY_CMD}}` from `permissions.deny` to `permissions.ask` - only when intake's
 control-level question chose agent-initiated deploys. `target_cursor`/`target_codex` gate no asset:
 they RECORD which other tools the harness must run in, so step 8 and `/harness-update` port to the
@@ -143,7 +169,8 @@ If Python is unavailable, `cp` the assets and edit the variables by hand - still
 regenerating them - but say so, and fix Python.
 
 **5. Fill in what only judgment can fill.** The scaffolder installs the invariant assets. You still author:
-- the orchestrator's **routing table** (every agent appears; every module has exactly one owner),
+- the **routing table** in `AGENTS.md` (every agent appears; every module has exactly one owner). It
+  lives there once: the orchestrator reads it and the seats' frontmatter instead of a copy,
 - each dev agent's **scope** (real module paths - brownfield: paths that actually exist). When
   instantiating `dev-agent.md`, resolve its `{{#IF_...}}`/`{{^IF_...}}` blocks by hand against the
   chosen flags - the template is copied per-domain, not run through the scaffolder,
@@ -171,16 +198,14 @@ regenerating them - but say so, and fix Python.
 and show its output - never report a check as passed without having run it. Then smoke-test the loop
 end to end: create one real task file, register it in master-plan, append a session-log row,
 `/task-resume` it, and validate the board: `python .claude/scripts/board-check.py` must exit 0 (it
-is what `/board-audit` runs first). Finally build the knowledge graphs and their HTML exports -
-exactly what `/code-graph` and `/docs-graph` do: run `python .claude/scripts/code-graph.py` and
-`python .claude/scripts/docs-graph.py` concurrently (they are independent), then
-`python .claude/scripts/harness-graph.py` and `python .claude/scripts/graph-html.py`, which read the
-earlier outputs. The result: the canonical wiring file `.claude/state/harness-graph.json` (also read
-by external viewers) plus the two browser files `docs/context/harness-graph.html` (Flow and Graph
-views of agents, hooks, rules, commands, settings, modules) and `docs/context/specs-graph.html`
-(document traceability). From then on the `graph-stale` hook keeps the harness and docs graphs
-fresh; only the code-graph rebuild stays deliberate. Greenfield: the code graph waits for the first
-module; the docs graph works as soon as specs exist.
+is what `/board-audit` runs first). Finally build the maps: `python .claude/scripts/code-graph.py`
+(code repos; writes the committed module-boundary map `docs/context/code-graph.md`, the set of
+allowed cross-module imports), `python .claude/scripts/docs-graph.py --check` (prints orphan IDs),
+then `python .claude/scripts/harness-graph.py --html`, which reads the module map and writes the
+canonical wiring file `.claude/state/harness-graph.json` (also read by external viewers) plus
+`docs/context/harness-graph.html`. From then on the `graph-stale` hook keeps the harness graph fresh
+and, on a source edit, names any cross-module import the boundary map does not list. Greenfield:
+the boundary map waits for the first module; the docs check works as soon as specs exist.
 
 **8. Port to the other tools selected in step 1.** If the intake selected Cursor or Codex, run
 `python scripts/port.py --target <repo> --tool cursor|codex|all` after scaffolding. It converts
@@ -199,7 +224,7 @@ guards port exactly. `AGENTS.md` is already read natively by both tools.
       has `README.md`, `specs/`, `requirements/`, `architecture/`, `tasks/` (master-plan + active +
       pending + done), `context/`, `templates/`.
 - [ ] Every path referenced by an agent, command, or rule exists. No references to agents that were not
-      created. The routing table covers every agent - no orphans.
+      created. The `AGENTS.md` routing table covers every agent - no orphans.
 - [ ] Every seat of the Guarded flow is filled by exactly one agent, per the check table in
       `roster.md`. Any intentionally unfilled seat is named in AGENTS.md with who covers it instead.
 - [ ] `AGENTS.md` carries the tier table, and its Guarded row names this project's real irreversible
@@ -207,11 +232,13 @@ guards port exactly. `AGENTS.md` is already read natively by both tools.
       bills a planning pass for a one-line fix, which is the first thing users turn off.
 
 **Cost and context** (this is the part most bootstraps skip)
-- [ ] Every agent has an explicit `model:` **and** `effort:`. Neither is unset. The allocation matches
+- [ ] Every agent has an explicit `model:`, `effort:` and `maxTurns:` (the scaffolder refuses a seat
+      without them). Neither model nor effort is unset. The allocation matches
       `roster.md`, or a deviation is justified in `docs/context/tool-changelog.md`.
 - [ ] Every agent has an explicit `tools:` list. **No agent omits it** - omitting inherits every tool
       including every MCP server, at full schema cost on every request.
-- [ ] **Reviewers have no `Edit` or `Write`.** Not "usually" - none.
+- [ ] **Reviewers have no `Edit` or `Write`**, list them in `disallowedTools`, and set no `memory:`
+      (memory grants Write and Edit). Only the orchestrator holds `Agent`.
 - [ ] Every rule that can be path-scoped **carries `paths:` frontmatter**. Only `00-overview`,
       `agent-guardrails`, `model-policy`, `task-tracking`, `conventional-commits`, and - with the
       `ai` flag - `ai-governance` load unconditionally. Seat tiers live in path-scoped `model-tiers`. A rule without `paths:` is a permanent context tax on every agent in every

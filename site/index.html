@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agent Harness Bootstrap - an introduction</title>
-<meta name="description" content="Start from the symptoms: an agent that touches 14 files, forgets on compaction, and opens .env. Then what answers them - one contract, a harness fitted to your repo, a routing tier that keeps most changes light, and a viewer that scores what was built.">
+<meta name="description" content="Give an AI agent a repo it can actually understand, and a harness it cannot escape. One contract, a roster sized to the repo's purpose, process sized to each change, hooks that block rather than advise, and a viewer that scores what was built.">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#eceff3" media="(prefers-color-scheme: light)">
@@ -19,14 +19,14 @@
 <meta property="og:locale:alternate" content="ja_JP">
 <meta property="og:url" content="https://nguyenhx2.github.io/agent-harness-bootstrap/">
 <meta property="og:title" content="Agent Harness Bootstrap - an introduction">
-<meta property="og:description" content="Start from the symptoms: an agent that touches 14 files, forgets on compaction, and opens .env. Then what answers them - one contract, a harness fitted to your repo, a routing tier that keeps most changes light, and a viewer that scores what was built.">
+<meta property="og:description" content="Give an AI agent a repo it can actually understand, and a harness it cannot escape. One contract, a roster sized to the repo's purpose, process sized to each change, hooks that block rather than advise, and a viewer that scores what was built.">
 <meta property="og:image" content="https://nguyenhx2.github.io/agent-harness-bootstrap/docs/assets/readme-banner.png">
 <meta property="og:image:width" content="1600">
 <meta property="og:image:height" content="400">
 <meta property="og:image:alt" content="Agent Harness Bootstrap - the frame that lets AI agents operate autonomously, and safely">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Agent Harness Bootstrap - an introduction">
-<meta name="twitter:description" content="Start from the symptoms: an agent that touches 14 files, forgets on compaction, and opens .env. Then what answers them - one contract, a harness fitted to your repo, a routing tier that keeps most changes light, and a viewer that scores what was built.">
+<meta name="twitter:description" content="Give an AI agent a repo it can actually understand, and a harness it cannot escape. One contract, a roster sized to the repo's purpose, process sized to each change, hooks that block rather than advise, and a viewer that scores what was built.">
 <meta name="twitter:image" content="https://nguyenhx2.github.io/agent-harness-bootstrap/docs/assets/readme-banner.png">
 <link rel="preload" href="./src/fonts/andadapro-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./src/style.css">
@@ -50,25 +50,21 @@
 </head>
 <body>
 <!--
-  THESIS: this page is an introduction, and it follows the README's argument in
-  the README's order: the symptoms first, then what answers them, then how to
-  install it, how to update it, how to run it, and only then the mechanism
-  underneath. Every claim is a route you step through, not a paragraph you take
-  on trust.
+  THESIS: give an AI agent a repo it can actually understand, and a harness it
+  cannot escape. The page leads with that idea, lets the intro clip carry it,
+  then earns it: the symptoms, what answers them, how work is routed, how the
+  roster is sized, where a request is stopped, how the viewer reads it back,
+  and only then how to install, run and tune it.
   OWN-WORLD: drafting film for the page, deep ultramarine plates for the nets,
   Andada Pro over a mono data face. Inside a plate exactly two signal inks by
   law - gold is a live signal, coral is a refusal - and nothing else uses them.
-  STORY: does any of this sound familiar; here is what answers it; watch it;
-  install it; move to a new version; run it; tune it afterwards; here is how the
-  orchestrator actually decides; here is what the harness is made of; here is
-  the viewer that reads all of it back off disk.
-  FIRST VIEWPORT: the claim at display scale with the refusal word in coral,
+  FIRST VIEWPORT: the claim at display scale with the refusal phrase in coral,
   the lede, four actions with install filled in the field ink, a ruled register
-  of four verified fields, then the first symptom.
+  of four verified fields.
   FORM: schematic capture and net routing; five authored nets, N1 to N5.
   FINISH: every figure on this page is derived by a script and gated by
   scripts/check_numbers.py; every shipping raster carries its provenance in
-  docs/assets/CAPTURED.json.
+  docs/assets/CAPTURED.json or video/RENDERED.json.
 -->
 <a class="skip" href="#main">Skip to contents</a>
 
@@ -126,67 +122,157 @@
   <div class="hero">
     <div class="wrap hero__grid">
       <div class="hero__copy">
-        <h1>Guardrails that <span class="block-word">block</span>, not advise.</h1>
-        <p class="lede">Two Claude Code skills and a viewer. One turns whatever you have into a single
-          contract. One reads your codebase and builds an agent harness fitted to it. The third shows you
-          the whole thing and lets you switch any part of it off.</p>
-        <p class="sub">Greenfield, brownfield, or audit-only. The safety floor is shell scripts and exit
+        <h1>A repo your agent can read. A harness it <span class="block-word">cannot escape</span>.</h1>
+        <p class="lede">Two skills and a viewer. One turns whatever you have into a single contract. One
+          reads the repo and builds the <code>.claude/</code> harness it justifies: the seats its purpose
+          needs, rules on paths that exist, hooks that refuse rather than advise. The viewer reads it all
+          back off disk and scores it.</p>
+        <p class="sub">For code, research, strategy or docs repos. The floor is shell scripts and exit
           codes, so swapping the model does not move it.</p>
       </div>
 
       <div class="hero__do">
         <div class="actions">
           <a class="act act--go" href="#install">Install it</a>
-          <a class="act" href="#watch">Watch it</a>
-          <a class="act" href="#orchestrator">How it works</a>
+          <a class="act" href="#watch">Watch the intro</a>
+          <a class="act" href="#orchestrator">How work is routed</a>
           <a class="act" href="presentation/">Open the deck</a>
         </div>
 
         <dl class="record">
-          <div><dt>Guardrail eval</dt><dd><b>122/122</b> <span class="u-quiet">per hook flavour</span></dd></div>
+          <div><dt>Guardrail eval</dt><dd><b>250/250</b> <span class="u-quiet">per hook flavour, strict hooks on</span></dd></div>
           <div><dt>Licence</dt><dd><b>AGPL-3.0</b> <span class="u-quiet">free for any use</span></dd></div>
-          <div><dt>Latest</dt><dd><b>v1.18.0</b> <span class="u-quiet">binaries attached</span></dd></div>
+          <div><dt>Latest</dt><dd><b>v1.20.0</b> <span class="u-quiet">binaries attached</span></dd></div>
           <div><dt>Port adapter</dt><dd><b>32/32</b> <span class="u-quiet">Cursor and Codex</span></dd></div>
         </dl>
       </div>
     </div>
   </div>
 
-  <!-- ============================================================ 1. the problem -->
+  <!-- ============================================================ 1. watch -->
+  <section class="sec" id="watch" aria-labelledby="watch-h">
+    <div class="wrap">
+      <h2 id="watch-h">The idea, in one clip</h2>
+
+      <ul class="clips">
+        <li class="clip clip--lead">
+          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>Agent Harness Bootstrap in brief <span class="dur">~87s</span></h3>
+          <p>What goes wrong when an agent works a real repository unharnessed, and the one move that
+            answers each failure. Narrated and captioned.</p>
+          <video src="video/mp4/00-intro.mp4" poster="video/gif/00-intro-poster.png" controls preload="metadata" playsinline width="1920" height="1080"></video>
+          <p class="clip__links">
+            <a href="video/mp4/00-intro.mp4">Open the MP4</a>
+            <a href="video/gif/00-intro.gif">Open the GIF</a>
+          </p>
+        </li>
+      </ul>
+
+      <details class="more">
+        <summary>Seven deeper clips</summary>
+        <ul class="clips">
+          <li class="clip">
+            <h3>The complete solution <span class="dur">~63s</span></h3>
+            <p>Four pain points, each flipping from red to green as spec-builder, harness-bootstrap and the
+              delivery loop land their fix.</p>
+            <video src="video/mp4/04-solution.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/04-solution.html">HTML animation</a>
+              <a href="video/mp4/04-solution.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>1. What it is and why <span class="dur">~34s</span></h3>
+            <p>An unconstrained agent invents, forgets on compaction, and bills at the top tier.</p>
+            <video src="video/mp4/01-overview.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/01-overview.html">HTML animation</a>
+              <a href="video/mp4/01-overview.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>2. The operating flow <span class="dur">~31s</span></h3>
+            <p>The contract, the scaffold, then the task loop.</p>
+            <video src="video/mp4/02-flow.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/02-flow.html">HTML animation</a>
+              <a href="video/mp4/02-flow.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>3. The control layers <span class="dur">~32s</span></h3>
+            <p>Deny list, hooks, spawn boundary, path-scoped rules, review gates.</p>
+            <video src="video/mp4/03-layers.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/03-layers.html">HTML animation</a>
+              <a href="video/mp4/03-layers.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>5. spec-builder in depth <span class="dur">~58s</span></h3>
+            <p>Raw input to a contract. Anything unstated becomes a flagged assumption or open issue.</p>
+            <video src="video/mp4/05-spec-builder.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/05-spec-builder.html">HTML animation</a>
+              <a href="video/mp4/05-spec-builder.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>6. harness-bootstrap in depth <span class="dur">~68s</span></h3>
+            <p>Analysis, intake, roster, skills, a scaffold that never clobbers, and the knowledge graphs.</p>
+            <video src="video/mp4/06-harness-bootstrap.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/06-harness-bootstrap.html">HTML animation</a>
+              <a href="video/mp4/06-harness-bootstrap.mp4">MP4</a>
+            </p>
+          </li>
+          <li class="clip">
+            <h3>7. Tailoring, skills and the viewer <span class="dur">~44s</span></h3>
+            <p>A roster derived rather than installed, and the three mechanisms that keep it honest.</p>
+            <video src="video/mp4/07-skills-and-view.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
+            <p class="clip__links">
+              <a href="video/html/07-skills-and-view.html">HTML animation</a>
+              <a href="video/mp4/07-skills-and-view.mp4">MP4</a>
+            </p>
+          </li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. the problem -->
   <section class="sec" id="familiar" aria-labelledby="familiar-h">
     <div class="wrap">
       <h2 id="familiar-h">Does any of this sound familiar?</h2>
-      <p class="intro prose">If you have put an AI agent on a real repository, you have probably hit at
-        least three of these. Each one is answered by something in this repo, not by advice.</p>
+      <p class="intro prose">Each one is answered by a file in the harness, not by advice in a prompt.</p>
 
       <ul class="symp">
         <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-spread"/></svg><span>I asked for one feature. It touched 14 files across 3 modules and force-pushed to <code>main</code>.</span></h3>
-          <p class="a"><b>What answers it</b>Scoped agents, path-based rules, and a hook that exits 2 and refuses the push before it lands.</p>
+          <p class="a"><b>What answers it</b>Scoped seats, path-based rules, and a hook that exits 2 and refuses the push before it lands.</p>
         </li>
         <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-break"/></svg><span>The session compacted and it forgot the plan it was three steps into.</span></h3>
-          <p class="a"><b>What answers it</b>The task board and its session log live on disk, so a fresh session resumes where the last one stopped.</p>
+          <p class="a"><b>What answers it</b>Task state lives on disk with a short checkpoint. A fresh session reads the checkpoint and carries on.</p>
         </li>
         <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-key"/></svg><span>It opened <code>.env</code> while just fixing a bug.</span></h3>
           <p class="a"><b>What answers it</b>Those paths are denied before the read happens. It cannot leak what it was never allowed to open.</p>
         </li>
         <li>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-stack"/></svg><span>My repo is research notes. The kit gave me a test runner and a database engineer.</span></h3>
+          <p class="a"><b>What answers it</b>The first question is the repo's purpose. Research, strategy and docs repos get researchers, strategists, writers and a checker, not dev seats.</p>
+        </li>
+        <li>
+          <h3 class="q"><svg aria-hidden="true"><use href="#i-sliders"/></svg><span>It fixed a typo in the README, then ran the whole suite and three reviewers.</span></h3>
+          <p class="a"><b>What answers it</b>A script reads the diff and plans the verification. A docs change gets no reviewer seat; the secret scan always runs.</p>
+        </li>
+        <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-drift"/></svg><span>The 40th generated doc quietly contradicts the spec.</span></h3>
           <p class="a"><b>What answers it</b>Every requirement gets a stable ID, and the traceability graph names the document that drifted.</p>
         </li>
         <li>
-          <h3 class="q"><svg aria-hidden="true"><use href="#i-stack"/></svg><span>The kit installed forty agents and a hundred skills my project never needed.</span></h3>
-          <p class="a"><b>What answers it</b>The roster is derived from your contract and your real modules: 7 to 15 of the 16 seats, never all of them by default.</p>
-        </li>
-        <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-void"/></svg><span>It wrote tests that pass no matter what the code does.</span></h3>
-          <p class="a"><b>What answers it</b>A test's expected value must come from the acceptance criterion, not from running the code.</p>
-        </li>
-        <li>
-          <h3 class="q"><svg aria-hidden="true"><use href="#i-scan"/></svg><span>It read my scanned PDF and wrote a spec from the three words it got.</span></h3>
-          <p class="a"><b>What answers it</b>Every source routes to a reader that can actually read it. A page holding under 80 characters is treated as a scan and goes to a vision pass; a file nothing can read becomes a named open issue, never a guess.</p>
+          <p class="a"><b>What answers it</b>A test's expected value comes from the acceptance criterion, not from running the code.</p>
         </li>
         <li>
           <h3 class="q"><svg aria-hidden="true"><use href="#i-lens"/></svg><span>I cannot tell what my <code>.claude/</code> actually enforces any more.</span></h3>
@@ -196,42 +282,36 @@
     </div>
   </section>
 
-  <!-- ============================================================ 2. the solution -->
+  <!-- ============================================================ 3. the solution -->
   <section class="sec" id="solution" aria-labelledby="solution-h">
     <div class="wrap">
       <h2 id="solution-h">What answers it</h2>
-      <p class="intro prose">Two Claude Code skills and a viewer. You can use any one of them alone.</p>
 
       <ul class="pieces">
         <li>
           <h3><svg aria-hidden="true"><use href="#i-doc"/></svg>spec-builder</h3>
-          <p>Turns an idea, a transcript, a pile of legacy docs, or a bare repo into one contract written
-            to international standards, with stable requirement IDs. It never invents a requirement:
-            anything unstated becomes a flagged open issue.</p>
+          <p>Turns an idea, a transcript or a pile of legacy docs into one contract with stable
+            requirement IDs. It never invents a requirement: anything unstated becomes a flagged open
+            issue.</p>
         </li>
         <li>
           <h3><svg aria-hidden="true"><use href="#i-frame"/></svg>harness-bootstrap</h3>
-          <p>Reads your code first, then builds the <code>.claude/</code> harness that fits it: agents with
-            a named scope, rules scoped to paths that exist, and hooks that block rather than advise.</p>
+          <p>Asks what the repo is for, reads what is in it, then builds the <code>.claude/</code> harness
+            that fits: seats sized to the purpose, rules scoped to real paths, hooks that block.</p>
         </li>
         <li>
           <h3><svg aria-hidden="true"><use href="#i-eye"/></svg>harness-view</h3>
-          <p>Reads the result and renders it. Scores it. Lets you switch any part off. No model in the
+          <p>Reads the result, renders it, scores it, and lets you switch any part off. No model in the
             loop, so a browser and a CI run cannot disagree.</p>
         </li>
       </ul>
-
-      <p class="note">The floor does not depend on the model. The guardrails are shell scripts and exit
-        codes, so swapping every agent from Opus to Haiku leaves the safety result byte-identical.
-        <code>python eval/guardrail_eval.py</code> proves it: 122/122 per hook flavour, 244/244 across
-        both.</p>
     </div>
   </section>
 
   <section class="sec sec--net dn" aria-label="The delivery net">
     <div class="wrap">
-      <p class="net-lead">Four handoffs, in order. Step through the net: each stage lights the
-        route it energizes and names the artifact it writes to disk.</p>
+      <p class="net-lead">Four handoffs. Step through the net: each stage lights the route it energizes
+        and names what it writes to disk.</p>
 
       <div class="plate">
         <p class="plate__head">Delivery net <b>N1</b> <span>gold is a live signal</span></p>
@@ -249,7 +329,6 @@
           <input type="radio" name="dn" id="dn-5">
           <label for="dn-5"><i class="dot"></i>harness-view</label>
         </fieldset>
-
 
         <svg class="dgm dn__h" viewBox="0 0 960 164" aria-hidden="true" focusable="false">
           <g class="seg-g" data-lv="2"><path class="seg-base" d="M171 65H213"/><path class="seg-live" pathLength="1" d="M171 65H213"/></g>
@@ -352,11 +431,10 @@
       <div class="rdset">
         <div class="rd" data-rd="1">
           <p class="rd__k">Stage IN <b>raw input</b></p>
-          <p class="rd__t">Whatever you actually have, in the form you actually have it.</p>
+          <p class="rd__t">Whatever you have, in the form you have it.</p>
           <ul>
-            <li>An idea in one line, or a meeting transcript nobody wrote up</li>
-            <li>Legacy documents, half-written specs, an existing repository, an empty one</li>
-            <li>Reads PDF / Office sources through a router that knows when a file cannot be read - unreadable never becomes a guess</li>
+            <li>A one-line idea, a meeting transcript, legacy documents, an existing or empty repository</li>
+            <li>PDF and Office sources go through a router that knows when a file cannot be read</li>
           </ul>
           <p class="rd__out"><span>writes</span> nothing yet - this is the material</p>
         </div>
@@ -366,38 +444,35 @@
           <ul>
             <li>Stable requirement IDs, so every later change traces back to what asked for it</li>
             <li>Written to ISO/IEC/IEEE 29148, ISO 25010, BABOK v3, C4 and arc42</li>
-            <li>Usable on its own: you can stop here and keep the specs</li>
           </ul>
           <p class="rd__out"><span>writes</span> docs/specs/ - FR-014, NFR-003, BR-002</p>
         </div>
         <div class="rd" data-rd="3">
           <p class="rd__k">Stage S2 <b>/harness-bootstrap</b></p>
-          <p class="rd__t">Reads the codebase first, then builds the harness around the contract.</p>
+          <p class="rd__t">Purpose first, then the codebase, then the harness around the contract.</p>
           <ul>
-            <li>16 agents, each with an explicit model, effort and tool budget</li>
-            <li>16 rules, 9 of them loaded only on the paths they govern</li>
-            <li>11 blocking hooks, 22 commands, and a task board that survives compaction</li>
-            <li>Skills are found from your own manifests and wired to the seat that needs them, so an installed skill nobody uses shows up as a finding</li>
+            <li>Seats chosen from 18 agents by purpose and evidence, each with complete frontmatter: model, effort, tools, disallowed tools, turns, memory, isolation, preloaded skills, its own hooks</li>
+            <li>17 rules, 10 of them loaded only on the paths they govern</li>
+            <li>26 hooks and 23 commands, the stricter hooks opt-in</li>
           </ul>
-          <p class="rd__out"><span>writes</span> .claude/ - agents, rules, hooks, commands, settings</p>
+          <p class="rd__out"><span>writes</span> .claude/ - agents, rules, hooks, commands, scripts, settings</p>
         </div>
         <div class="rd" data-rd="4">
           <p class="rd__k">Stage S3 <b>the delivery loop</b></p>
-          <p class="rd__t">Plan, build, review, merge - every step running inside what the harness allows.</p>
+          <p class="rd__t">Plan, build, verify, merge - inside what the harness allows.</p>
           <ul>
-            <li>Most changes go straight to the owning agent; only genuinely cross-cutting work is routed through the orchestrator</li>
-            <li>A hook that exits 2 stops the tool call before it happens, not after</li>
-            <li>The board survives compaction, so a long session does not lose the plan</li>
+            <li>Process is sized to the change: most work never touches the orchestrator</li>
+            <li>Verification is planned from the diff, not repeated out of habit</li>
+            <li>A hook that exits 2 stops the tool call before it happens</li>
           </ul>
-          <p class="rd__out"><span>writes</span> code, docs, and a task board you can re-open</p>
+          <p class="rd__out"><span>writes</span> code or documents, and a task board you can resume from</p>
         </div>
         <div class="rd" data-rd="5">
           <p class="rd__k">Stage S4 <b>harness-view</b></p>
           <p class="rd__t">Reads the harness off disk and renders it. No model is in the loop.</p>
           <ul>
-            <li>Flow and graph views of every wire, and every node is a file you can open</li>
-            <li>A deterministic score, with each finding named, so a browser and a CI run cannot disagree</li>
-            <li>A switch on every rule, command, hook and roster seat</li>
+            <li>Flow and graph views of every wire; every node is a file you can open</li>
+            <li>A deterministic score with each finding named</li>
           </ul>
           <p class="rd__out"><span>writes</span> a score, and a named finding for each problem</p>
         </div>
@@ -405,428 +480,12 @@
     </div>
   </section>
 
-  <!-- ============================================================ 3. watch -->
-  <section class="sec" id="watch" aria-labelledby="watch-h">
-    <div class="wrap">
-      <h2 id="watch-h">See the whole thing in one clip</h2>
-      <p class="intro prose">Seven explainer clips, captioned, playing here in the page. No download, and
-        no sound required.</p>
-
-      <ul class="clips">
-        <li class="clip clip--lead">
-          <h3><svg aria-hidden="true"><use href="#i-play"/></svg>The complete solution <span class="dur">~63s</span></h3>
-          <p>The whole product in one clip: the four pain points, then spec-builder writing the contract,
-            harness-bootstrap building the harness, the delivery loop running inside it, and the payoff.
-            Each pain visibly flips from red to green as its fix lands. Closes with harness-view answering
-            the question it exists for: how do you know it is actually wired right.</p>
-          <video src="video/mp4/04-solution.mp4" controls preload="metadata" playsinline width="1920" height="1080"></video>
-          <p class="clip__links">
-            <a href="video/html/04-solution.html">Open the HTML animation</a>
-            <a href="video/mp4/04-solution.mp4">Open the MP4</a>
-          </p>
-        </li>
-      </ul>
-
-      <details class="more">
-        <summary>The other six clips</summary>
-        <ul class="clips">
-          <li class="clip">
-            <h3>1. What it is and why <span class="dur">~34s</span></h3>
-            <p>An unconstrained agent hallucinates, forgets on compaction, and bills at the top tier. Two
-              skills build a harness.</p>
-            <video src="video/mp4/01-overview.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/01-overview.html">HTML animation</a>
-              <a href="video/mp4/01-overview.mp4">MP4</a>
-            </p>
-          </li>
-          <li class="clip">
-            <h3>2. The operating flow <span class="dur">~31s</span></h3>
-            <p>spec-builder writes the contract; harness-bootstrap reads the code and scaffolds in about a
-              fifth of a second; then the task loop runs.</p>
-            <video src="video/mp4/02-flow.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/02-flow.html">HTML animation</a>
-              <a href="video/mp4/02-flow.mp4">MP4</a>
-            </p>
-          </li>
-          <li class="clip">
-            <h3>3. The control layers <span class="dur">~32s</span></h3>
-            <p>Deny list, hooks, the spawn boundary, path-scoped rules, review gates. The guardrails are
-              shell scripts, so Opus to Haiku is identical safety.</p>
-            <video src="video/mp4/03-layers.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/03-layers.html">HTML animation</a>
-              <a href="video/mp4/03-layers.mp4">MP4</a>
-            </p>
-          </li>
-          <li class="clip">
-            <h3>5. spec-builder in depth <span class="dur">~58s</span></h3>
-            <p>Raw input to a contract: elicit, confirm the FR list first, scaffold the selected sections
-              (the core six always), fill them in order, then the traceability check. Nothing is invented -
-              anything unstated becomes a flagged AS-nn or OI-nn.</p>
-            <video src="video/mp4/05-spec-builder.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/05-spec-builder.html">HTML animation</a>
-              <a href="video/mp4/05-spec-builder.mp4">MP4</a>
-            </p>
-          </li>
-          <li class="clip">
-            <h3>6. harness-bootstrap in depth <span class="dur">~68s</span></h3>
-            <p>Mode, then the mandatory codebase analysis and Inventory Report, intake and the tool
-              questionnaire, a roster with explicit model and effort, skills matched to the stack and wired
-              in once you choose them, the scaffold that reports ADDED / KEPT / CONFLICT and never clobbers,
-              orchestration wiring, and building both knowledge graphs with their HTML exports.</p>
-            <video src="video/mp4/06-harness-bootstrap.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/06-harness-bootstrap.html">HTML animation</a>
-              <a href="video/mp4/06-harness-bootstrap.mp4">MP4</a>
-            </p>
-          </li>
-          <li class="clip">
-            <h3>7. Tailoring, skills and the viewer <span class="dur">~44s</span></h3>
-            <p>The operating flow end to end: input in whatever shape it arrives, one contract, rules and
-              hooks coming down into the agents, three ordered outputs, and state that is written rather
-              than supplied. Then the step most kits skip - a roster derived from the contract and the
-              modules that exist - and the three mechanisms that keep it honest: skill discovery, skill
-              wiring, and harness-view.</p>
-            <video src="video/mp4/07-skills-and-view.mp4" controls preload="none" playsinline width="1920" height="1080"></video>
-            <p class="clip__links">
-              <a href="video/html/07-skills-and-view.html">HTML animation</a>
-              <a href="video/mp4/07-skills-and-view.mp4">MP4</a>
-            </p>
-          </li>
-        </ul>
-      </details>
-    </div>
-  </section>
-
-  <!-- ============================================================ 4. install -->
-  <section class="sec" id="install" aria-labelledby="install-h">
-    <div class="wrap">
-      <h2 id="install-h">Install it</h2>
-      <p class="intro prose">The plugin route comes first: it is the path with working updates, so it
-        leads. The release zip stays fully supported as the offline, pinned alternative. Either way, the
-        skills are available in the next session.</p>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-claude"/></svg>Claude Code</h3>
-          <p class="tag">Plugin route</p>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Claude Code plugin install commands"><pre><code>/plugin marketplace add nguyenhx2/agent-harness-bootstrap
-/plugin install harness-bootstrap@agent-harness-bootstrap
-/plugin install spec-builder@agent-harness-bootstrap</code></pre></div>
-        </div>
-        <p>Install either plugin on its own, or both. Each entry points at the skill directory directly:
-          its <code>SKILL.md</code> sits at that directory's root, so Claude Code auto-loads it as a
-          single-skill plugin. No further configuration is required.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-codex"/></svg>Codex</h3>
-          <p class="tag">Plugin route</p>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Codex plugin install command"><pre><code>codex plugin marketplace add nguyenhx2/agent-harness-bootstrap</code></pre></div>
-        </div>
-        <p>Then open <code>/plugins</code> in the Codex CLI and install <code>harness-bootstrap</code>,
-          <code>spec-builder</code>, or both.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-cursor"/></svg>Cursor, and every Agent Plugins client</h3>
-          <p class="tag">Plugin route</p>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Cursor plugin install commands"><pre><code>git clone https://github.com/nguyenhx2/agent-harness-bootstrap
-cp -r agent-harness-bootstrap/plugins/harness-bootstrap ~/.cursor/plugins/local/</code></pre></div>
-        </div>
-        <p>Reload the window afterwards. The same directories are what VS Code, Copilot, Kiro and any
-          other Agent Plugins client consumes; the per-client detail, and what was verified against which
-          real client, is in
-          <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/docs/PLUGIN.md">docs/PLUGIN.md</a>.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Or the release zip</h3>
-          <p class="tag tag--q">Offline, pinned</p>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Zip install commands"><pre><code><span class="cmt"># both skills, pinned to whatever you downloaded</span>
-unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
-        </div>
-        <p>Works offline and stays on that exact version until you replace the files. Requires Python 3.
-          Every release also attaches a <code>SHA256SUMS</code> asset to verify the archive against.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-eye"/></svg>The viewer</h3>
-          <p class="tag tag--q">Optional</p>
-        </div>
-        <p>Every release attaches a standalone executable for Windows, macOS (Intel and Apple Silicon)
-          and Linux. No toolchain, no Python, no install step - the web UI is compiled into the
-          executable. On Windows you can drop it into a repo and double-click it: with no arguments it
-          serves that folder and opens your browser.</p>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Build harness-view from source"><pre><code>cargo install --path tools/harness-view   <span class="cmt"># or build it yourself</span></code></pre></div>
-        </div>
-        <p>Nothing in the harness requires it. The skill's own HTML export
-          (<code>docs/context/harness-graph.html</code>) needs nothing but Python and a browser, and covers
-          the same two views with zero install.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ 5. update -->
-  <section class="sec" id="update" aria-labelledby="update-h">
-    <div class="wrap">
-      <h2 id="update-h">Move to a new version</h2>
-      <p class="intro prose">Two things update independently: the skills on your machine, and the harness
-        already scaffolded into a repository. Neither one overwrites work you did.</p>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>The skills</h3>
-          <p class="tag">Plugin route</p>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Plugin update commands"><pre><code>/plugin update harness-bootstrap@agent-harness-bootstrap
-/plugin update spec-builder@agent-harness-bootstrap</code></pre></div>
-        </div>
-        <p>The <code>version</code> field in the marketplace entry is what governs an update, and both
-          skills release together under one repo version, so both entries bump in lockstep with every
-          release. On the zip route there is no update command: download the newer archive and unzip it
-          over the old one, which is exactly the trade you chose when you pinned.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>The harness in your repo</h3>
-          <p class="tag">Reconciled, never clobbered</p>
-        </div>
-        <p>A newer skill version does not reach an already-bootstrapped repository by itself. Re-run the
-          scaffolder from inside that repo:</p>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="The harness update command"><pre><code>/harness-bootstrap:harness-update</code></pre></div>
-        </div>
-        <p>It is safe to run any number of times. It re-reads reality first, because a dev agent scoped to
-          a path that no longer exists is a seat pointing at nothing. Then it re-runs the scaffolder against
-          your recorded answers and reports every file in one of three states:</p>
-        <dl class="states">
-          <div>
-            <dt>ADDED</dt>
-            <dd>A new asset from the newer skill version, written in. Nothing of yours was involved.</dd>
-          </div>
-          <div>
-            <dt>KEPT</dt>
-            <dd>Identical on both sides. Left alone.</dd>
-          </div>
-          <div>
-            <dt>CONFLICT</dt>
-            <dd>The file differs from the template, so you edited it. It stays exactly as you had it and
-              joins a reconciliation queue you resolve by hand - keep, adapt, or take the new one. Never
-              in bulk with <code>--force</code>.</dd>
-          </div>
-        </dl>
-        <p>The scaffolder never overwrites a differing file, so everything you or your team edited survives
-          the update. A deliberately disabled control survives it too: if <code>.claude/disabled.json</code>
-          exists, re-applying the toggle state re-quarantines what you switched off rather than letting an
-          update resurrect it. And it re-ports only to the targets intake recorded, so adding Cursor or
-          Codex is an edit to those recorded places rather than a re-bootstrap.</p>
-        <p class="note">What the update never does: rewrite <code>tech-stack.md</code>,
-          <code>coding-standards.md</code>, agent scopes, or any other authored content. Those were derived
-          from your code and your answers, and the update reaches them only through the conflict queue,
-          with you deciding.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ 6. use -->
-  <section class="sec" id="use" aria-labelledby="use-h">
-    <div class="wrap">
-      <h2 id="use-h">Run it</h2>
-      <p class="intro prose">Both skills interview you before they write anything, in the language you
-        write to them in. Nothing is generated until you approve a one-screen plan.</p>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-term"/></svg>The first run</h3>
-        </div>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="First run commands"><pre><code>/spec-builder           <span class="cmt"># write the specs first, if you are starting from an idea</span>
-/harness-bootstrap      <span class="cmt"># build (or update) the .claude harness for this repo</span></code></pre></div>
-        </div>
-        <p>If the repo already has code, run <code>/harness-bootstrap</code> on its own: it reads the code
-          first and pre-fills the intake with what it found, so you are correcting findings rather than
-          typing from scratch. Existing files are reconciled, not overwritten.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-book"/></svg>What you will be asked</h3>
-        </div>
-        <p><code>harness-bootstrap</code> asks eight batches, and most of them are confirmations: identity
-          and docs language, the stack (confirmed from the code), git (confirmed from git), quality and
-          safety, then the database, frontend and audit batches that appear only if they apply. The last
-          batch is governance - model sovereignty, residency, licences, gated actions - and it is the one
-          place nothing is ever guessed, because each answer is a policy position only your organisation can
-          hold and an invented one would be believed. "We do not know yet" is a valid answer, and it becomes
-          a registered task.</p>
-        <p><code>spec-builder</code> asks four batches plus a setup question. Hand it files rather than
-          prose and it reads them first, showing a one-line plan per source - which reader it chose, or that
-          a file is unreadable and what would fix it - before asking anything.</p>
-        <p>In a hurry? Say so and you get the express path: only the questions with no safe default, with
-          every other answer defaulted and shown to you as one table to confirm. Audit mode is never
-          express, because scope cannot be guessed.</p>
-      </div>
-
-      <div class="step">
-        <div class="step__h">
-          <h3><svg aria-hidden="true"><use href="#i-term"/></svg>Day to day</h3>
-        </div>
-        <p>The bootstrap writes the delivery commands into the repo with your answers substituted, so
-          <code>/deploy</code> knows your deploy command:</p>
-        <div class="listing">
-          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Delivery commands"><pre><code>/new-task "short title"    <span class="cmt"># register a task on the master plan</span>
-/implement-fr FR-014       <span class="cmt"># plan and implement one requirement end to end</span>
-/review-changes            <span class="cmt"># the review gate, on the whole branch diff</span>
-/secret-scan               <span class="cmt"># any hit blocks until it is rotated</span>
-/task-resume TASK-007      <span class="cmt"># after a compaction or a crash, trusting files over memory</span></code></pre></div>
-        </div>
-        <p>Those five drive work through the harness. A second set changes the harness itself, after
-          it exists - <a href="#tuning">the tuning commands</a>, below, one at a time and with the
-          moment you would reach for each.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ 6b. tuning -->
-  <section class="sec" id="tuning" aria-labelledby="tuning-h">
-    <div class="wrap">
-      <h2 id="tuning-h">Tuning it after the bootstrap</h2>
-      <p class="intro prose">The bootstrap writes a first draft, not a verdict. Eight commands change
-        the harness after it exists, and every one of them is deliberately narrow: it shows you the
-        diff, asks, applies exactly what you chose, and records why in
-        <code>docs/context/tool-changelog.md</code>. Each also refuses something, and the refusals are
-        the half worth reading before you need them.</p>
-
-      <ul class="cmds">
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>/harness-tune</h3>
-          <p class="when"><b>Reach for it when</b>the floor is tighter or looser than your team can
-            work with, and you want to move a dial rather than remove a control.</p>
-          <p>Turns one dial per confirmation: who may run the deploy command, the posture on
-            force-push, <code>rm -rf</code> and a database reset, the spawn allowlist, per-seat turn
-            caps and the attempt cap, how deep the review pass goes, and how much agent history
-            lands on disk. Lowering a cap is free; raising one comes with the cost it will add.
-            Removing the code-review gate is refused outright - that is a different repository, not
-            a tuning - and switching a whole control off is not a tune either, it is the next
-            command.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-toggle"/></svg>/harness-toggle</h3>
-          <p class="when"><b>Reach for it when</b>one named rule, command, hook or seat is in the
-            way and you want it off without deleting it.</p>
-          <p>A script is the only thing that moves: it parks the file under
-            <code>.claude/disabled/</code>, strips its registration out of <code>settings.json</code>,
-            writes your one-line reason into <code>.claude/disabled.json</code> - committed, so the
-            team shares it and a re-scaffold respects it - and regenerates the graph so the item
-            renders greyed out. The protected controls (the secret guard, the spawn guard, the review
-            seats) need a confirmation phrase typed literally, byte for byte. Enabling is never
-            gated: restoring a control is not the risk the tiers exist for.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>/harness-update</h3>
-          <p class="when"><b>Reach for it when</b>you moved to a newer skill version, or the codebase
-            moved under a harness that was fitted to its old shape.</p>
-          <p>Re-reads the code first, because a dev agent scoped to a path that no longer exists is a
-            seat pointing at nothing. Then it re-runs the scaffolder against your recorded answers and
-            reports every file as ADDED, KEPT or CONFLICT, and the conflicts are yours to resolve one
-            at a time. Afterwards it re-applies your toggle state, so an update cannot resurrect
-            something you deliberately switched off, and re-ports only to the Cursor or Codex targets
-            intake recorded rather than re-detecting them.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>/agent-permissions</h3>
-          <p class="when"><b>Reach for it when</b>one seat needs one more tool - or, more often, one
-            fewer.</p>
-          <p>Edits a single seat's <code>tools:</code> line, after checking the change against the
-            invariants that make a roster safe. Reviewers never gain Edit or Write, because a gate
-            that edits is a dev agent that lost its independence. Only the orchestrator holds the
-            spawn tool. There are no wildcard grants. And <code>model:</code> and <code>effort:</code>
-            are not permissions, so they are refused here and sent to the roster and the cost model
-            instead. A revocation skips the whole check: narrowing is always safe.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-lens"/></svg>/board-audit</h3>
-          <p class="when"><b>Reach for it when</b>you are about to trust a status - or when work
-            seems to be happening somewhere the board does not know about.</p>
-          <p>Validates the board's own frontmatter and its dependency chains first, because every
-            sweep after that assumes well-formed task files. Then it looks for Active tasks nobody is
-            driving, finished agent runs nobody collected, a task whose status disagrees with the
-            master plan, attempts past the cap still marked Active, worktrees and branches no task
-            references, Blocked tasks naming no owner or condition that would unblock them, and a
-            code graph that has gone stale. It is read-only on purpose: it reports, and you or the
-            orchestrator reconcile.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>/code-graph</h3>
-          <p class="when"><b>Reach for it when</b>a change crosses a module boundary, or the moment
-            the staleness log stops being empty.</p>
-          <p>Answers the question an agent cannot answer by reading one file: what breaks if I change
-            this module. Modules, files, import edges with reference counts, and an owner per module
-            matched from the roster's scopes. The orchestrator checks a target's fan-in before
-            dispatch, and a high fan-in means the brief has to name the dependents. Honest about its
-            limits: the built-in extractor is static, so a missing edge is absence of evidence, not
-            evidence of isolation.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-doc"/></svg>/docs-graph</h3>
-          <p class="when"><b>Reach for it when</b>the specs changed, or you suspect something is
-            being built that no requirement ever asked for.</p>
-          <p>The traceability twin of the code graph, and neither substitutes for the other. Every ID
-            - FR, NFR, BR, ADR, TASK - the document that defines it, every document that references
-            it, and a self-contained interactive graph that opens in any browser with no network.
-            <code>spec-guardian</code> checks a diff's claimed IDs against it: an implementation
-            naming a requirement the graph does not know is implementing an invented one. An orphan
-            ID is either unstarted work or a dead reference, and the report says which.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>/skill-wire</h3>
-          <p class="when"><b>Reach for it when</b>you installed a skill and nothing is using it. A
-            skill serves nobody until a seat is told to reach for it.</p>
-          <p>Re-reads every file of the skill at wire time rather than trusting the install-time
-            review, because an update can have rewritten the text since - and if it arrived inside a
-            plugin, the whole bundle, since a plugin's hooks and MCP servers run whichever of its
-            skills you wired. It refuses a skill whose instructions edit <code>.claude/</code>,
-            <code>settings.json</code> or hooks; it keeps reviewers on read-only skills, because
-            write-shaped instructions get followed whatever the tool grants say. Unwiring is always
-            allowed, and both directions are recorded.</p>
-        </li>
-      </ul>
-
-      <p class="note">All eight are written into your repository by the bootstrap and ship with the
-        plugin as well, as <code>/harness-bootstrap:harness-tune</code> and so on, so they work in a
-        project somebody else set up. Three things none of them will do, whatever you confirm:
-        reviewers never gain write access, only the orchestrator spawns, and the code-review gate
-        cannot be removed - only rescoped.</p>
-    </div>
-  </section>
-
-  <!-- ============================================================ 7. the orchestrator -->
+  <!-- ============================================================ 4. routing -->
   <section class="sec tr" id="orchestrator" aria-labelledby="orch-h">
     <div class="wrap">
-      <h2 id="orch-h">How the orchestrator actually works</h2>
-      <p class="intro prose">It is not the entry point for everything, and it stopped being one on
-        purpose. Before anything is dispatched, the change is put in a tier, and the tier decides how much
-        process it gets. Most changes are Inline or Direct: the smallest the main session does itself, and
-        for the rest the owning agent is called straight, with no orchestrator and no task file.</p>
+      <h2 id="orch-h">Process sized to the change</h2>
+      <p class="intro prose">Before anything is dispatched, the change is put in one of four tiers, and the
+        tier decides how much process it gets. Only Guarded work goes through the orchestrator.</p>
 
       <figure class="tr__fig">
         <div class="plate">
@@ -835,89 +494,160 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
           <fieldset class="pick pick--plate">
             <legend class="label">Pick a change</legend>
             <input type="radio" name="tier" id="tier-1" checked>
-            <label for="tier-1"><i class="dot"></i>fix a typo in one module</label>
+            <label for="tier-1"><i class="dot"></i>rename a variable</label>
             <input type="radio" name="tier" id="tier-2">
-            <label for="tier-2"><i class="dot"></i>build FR-014 in one domain</label>
+            <label for="tier-2"><i class="dot"></i>fix a bug in one module</label>
             <input type="radio" name="tier" id="tier-3">
-            <label for="tier-3"><i class="dot"></i>add a column and an auth check</label>
+            <label for="tier-3"><i class="dot"></i>build FR-014 in one domain</label>
+            <input type="radio" name="tier" id="tier-4">
+            <label for="tier-4"><i class="dot"></i>add a column and an auth check</label>
           </fieldset>
 
-          <svg class="dgm" viewBox="0 0 340 276" aria-hidden="true" focusable="false">
-            <g data-lv="1"><path class="seg-base" d="M170 42V60"/><path class="seg-live" pathLength="1" d="M170 42V60"/></g>
-            <g data-lv="2"><path class="seg-base" d="M170 60H60V78"/><path class="seg-live" pathLength="1" d="M170 60H60V78"/></g>
-            <g data-lv="3"><path class="seg-base" d="M170 60V78"/><path class="seg-live" pathLength="1" d="M170 60V78"/></g>
-            <g data-lv="4"><path class="seg-base" d="M170 60H280V78"/><path class="seg-live" pathLength="1" d="M170 60H280V78"/></g>
-            <g data-lv="2"><path class="seg-base" d="M60 130V150H170"/><path class="seg-live" pathLength="1" d="M60 130V150H170"/></g>
-            <g data-lv="3"><path class="seg-base" d="M170 130V150"/><path class="seg-live" pathLength="1" d="M170 130V150"/></g>
-            <g data-lv="4"><path class="seg-base" d="M280 130V150H170"/><path class="seg-live" pathLength="1" d="M280 130V150H170"/></g>
-            <g data-lv="5"><path class="seg-base" d="M170 150V166"/><path class="seg-live" pathLength="1" d="M170 150V166"/></g>
-            <g data-lv="6"><path class="seg-base" d="M170 214V232"/><path class="seg-live" pathLength="1" d="M170 214V232"/></g>
+          <svg class="dgm tr__h" viewBox="0 0 420 276" aria-hidden="true" focusable="false">
+            <g data-lv="1"><path class="seg-base" d="M210 42V60"/><path class="seg-live" pathLength="1" d="M210 42V60"/></g>
+            <g data-lv="2"><path class="seg-base" d="M210 60H54V78"/><path class="seg-live" pathLength="1" d="M210 60H54V78"/></g>
+            <g data-lv="3"><path class="seg-base" d="M210 60H158V78"/><path class="seg-live" pathLength="1" d="M210 60H158V78"/></g>
+            <g data-lv="4"><path class="seg-base" d="M210 60H262V78"/><path class="seg-live" pathLength="1" d="M210 60H262V78"/></g>
+            <g data-lv="5"><path class="seg-base" d="M210 60H366V78"/><path class="seg-live" pathLength="1" d="M210 60H366V78"/></g>
+            <g data-lv="2"><path class="seg-base" d="M54 130V150H210"/><path class="seg-live" pathLength="1" d="M54 130V150H210"/></g>
+            <g data-lv="3"><path class="seg-base" d="M158 130V150H210"/><path class="seg-live" pathLength="1" d="M158 130V150H210"/></g>
+            <g data-lv="4"><path class="seg-base" d="M262 130V150H210"/><path class="seg-live" pathLength="1" d="M262 130V150H210"/></g>
+            <g data-lv="5"><path class="seg-base" d="M366 130V150H210"/><path class="seg-live" pathLength="1" d="M366 130V150H210"/></g>
+            <g data-lv="6"><path class="seg-base" d="M210 150V166"/><path class="seg-live" pathLength="1" d="M210 150V166"/></g>
+            <g data-lv="7"><path class="seg-base" d="M210 214V232"/><path class="seg-live" pathLength="1" d="M210 214V232"/></g>
 
             <g data-lv="1">
-              <rect class="n-box" x="95" y="4" width="150" height="38" rx="3"/>
-              <text class="n-code" x="107" y="20">CHANGE</text>
-              <text class="n-name" x="107" y="34">one change to make</text>
+              <rect class="n-box" x="135" y="4" width="150" height="38" rx="3"/>
+              <text class="n-code" x="147" y="20">CHANGE</text>
+              <text class="n-name" x="147" y="34">one change to make</text>
             </g>
             <g data-lv="2">
-              <rect class="n-box" x="8" y="78" width="104" height="52" rx="3"/>
-              <text class="n-code" x="18" y="96">DIRECT</text>
-              <text class="n-name" x="18" y="110">owning agent</text>
-              <text class="n-sub" x="18" y="122">no task file</text>
+              <rect class="n-box" x="6" y="78" width="96" height="52" rx="3"/>
+              <text class="n-code" x="15" y="96">INLINE</text>
+              <text class="n-name" x="15" y="110">main session</text>
+              <text class="n-sub" x="15" y="122">no subagent</text>
             </g>
             <g data-lv="3">
-              <rect class="n-box" x="118" y="78" width="104" height="52" rx="3"/>
-              <text class="n-code" x="128" y="96">STANDARD</text>
-              <text class="n-name" x="128" y="110">owning agent</text>
-              <text class="n-sub" x="128" y="122">+ a task file</text>
+              <rect class="n-box" x="110" y="78" width="96" height="52" rx="3"/>
+              <text class="n-code" x="119" y="96">DIRECT</text>
+              <text class="n-name" x="119" y="110">owning seat</text>
+              <text class="n-sub" x="119" y="122">no task file</text>
             </g>
             <g data-lv="4">
-              <rect class="n-box" x="228" y="78" width="104" height="52" rx="3"/>
-              <text class="n-code" x="238" y="96">GUARDED</text>
-              <text class="n-name" x="238" y="110">orchestrator</text>
-              <text class="n-sub" x="238" y="122">one at a time</text>
+              <rect class="n-box" x="214" y="78" width="96" height="52" rx="3"/>
+              <text class="n-code" x="223" y="96">STANDARD</text>
+              <text class="n-name" x="223" y="110">owning seat</text>
+              <text class="n-sub" x="223" y="122">+ a task file</text>
             </g>
             <g data-lv="5">
-              <rect class="n-box" x="44" y="166" width="252" height="48" rx="3"/>
-              <text class="n-code" x="56" y="183">BRANCH GATE - RUNS ONCE</text>
-              <text class="n-name" x="56" y="197">/review-changes</text>
-              <text class="n-sub" x="56" y="209">suites, reviewers, /secret-scan</text>
+              <rect class="n-box" x="318" y="78" width="96" height="52" rx="3"/>
+              <text class="n-code" x="327" y="96">GUARDED</text>
+              <text class="n-name" x="327" y="110">orchestrator</text>
+              <text class="n-sub" x="327" y="122">one at a time</text>
             </g>
             <g data-lv="6">
-              <rect class="n-box" x="80" y="232" width="180" height="38" rx="3"/>
-              <text class="n-code" x="92" y="248">RESULT</text>
-              <text class="n-name" x="92" y="262">one reviewed MR</text>
+              <rect class="n-box" x="70" y="166" width="280" height="48" rx="3"/>
+              <text class="n-code" x="82" y="183">BRANCH GATE - SIZED TO THE DIFF</text>
+              <text class="n-name" x="82" y="197">/review-changes</text>
+              <text class="n-sub" x="82" y="209">verify-plan.py picks; secret scan always</text>
+            </g>
+            <g data-lv="7">
+              <rect class="n-box" x="120" y="232" width="180" height="38" rx="3"/>
+              <text class="n-code" x="132" y="248">RESULT</text>
+              <text class="n-name" x="132" y="262">one reviewed MR</text>
+            </g>
+          </svg>
+          <svg class="dgm tr__v" viewBox="0 0 320 388" aria-hidden="true" focusable="false">
+            <g data-lv="1"><path class="seg-base" d="M160 40V52"/><path class="seg-live" pathLength="1" d="M160 40V52"/></g>
+            <g data-lv="2"><path class="seg-base" d="M160 52H24V86H48"/><path class="seg-live" pathLength="1" d="M160 52H24V86H48"/></g>
+            <g data-lv="2"><path class="seg-base" d="M272 86H296V270H160V284"/><path class="seg-live" pathLength="1" d="M272 86H296V270H160V284"/></g>
+            <g data-lv="3"><path class="seg-base" d="M160 52H24V138H48"/><path class="seg-live" pathLength="1" d="M160 52H24V138H48"/></g>
+            <g data-lv="3"><path class="seg-base" d="M272 138H296V270H160V284"/><path class="seg-live" pathLength="1" d="M272 138H296V270H160V284"/></g>
+            <g data-lv="4"><path class="seg-base" d="M160 52H24V190H48"/><path class="seg-live" pathLength="1" d="M160 52H24V190H48"/></g>
+            <g data-lv="4"><path class="seg-base" d="M272 190H296V270H160V284"/><path class="seg-live" pathLength="1" d="M272 190H296V270H160V284"/></g>
+            <g data-lv="5"><path class="seg-base" d="M160 52H24V242H48"/><path class="seg-live" pathLength="1" d="M160 52H24V242H48"/></g>
+            <g data-lv="5"><path class="seg-base" d="M272 242H296V270H160V284"/><path class="seg-live" pathLength="1" d="M272 242H296V270H160V284"/></g>
+            <g data-lv="7"><path class="seg-base" d="M160 332V346"/><path class="seg-live" pathLength="1" d="M160 332V346"/></g>
+
+            <g data-lv="1">
+              <rect class="n-box" x="60" y="4" width="200" height="36" rx="3"/>
+              <text class="n-code" x="72" y="19">CHANGE</text>
+              <text class="n-name" x="72" y="33">one change to make</text>
+            </g>
+            <g data-lv="2">
+              <rect class="n-box" x="48" y="64" width="224" height="44" rx="3"/>
+              <text class="n-code" x="60" y="80">INLINE</text>
+              <text class="n-name" x="60" y="96">main session</text>
+              <text class="n-sub" x="262" y="96" text-anchor="end">no subagent</text>
+            </g>
+            <g data-lv="3">
+              <rect class="n-box" x="48" y="116" width="224" height="44" rx="3"/>
+              <text class="n-code" x="60" y="132">DIRECT</text>
+              <text class="n-name" x="60" y="148">owning seat</text>
+              <text class="n-sub" x="262" y="148" text-anchor="end">no task file</text>
+            </g>
+            <g data-lv="4">
+              <rect class="n-box" x="48" y="168" width="224" height="44" rx="3"/>
+              <text class="n-code" x="60" y="184">STANDARD</text>
+              <text class="n-name" x="60" y="200">owning seat</text>
+              <text class="n-sub" x="262" y="200" text-anchor="end">+ a task file</text>
+            </g>
+            <g data-lv="5">
+              <rect class="n-box" x="48" y="220" width="224" height="44" rx="3"/>
+              <text class="n-code" x="60" y="236">GUARDED</text>
+              <text class="n-name" x="60" y="252">orchestrator</text>
+              <text class="n-sub" x="262" y="252" text-anchor="end">one at a time</text>
+            </g>
+            <g data-lv="6">
+              <rect class="n-box" x="40" y="284" width="240" height="48" rx="3"/>
+              <text class="n-code" x="52" y="301">BRANCH GATE - SIZED TO THE DIFF</text>
+              <text class="n-name" x="52" y="315">/review-changes</text>
+              <text class="n-sub" x="52" y="327">verify-plan.py picks; secret scan always</text>
+            </g>
+            <g data-lv="7">
+              <rect class="n-box" x="70" y="346" width="180" height="36" rx="3"/>
+              <text class="n-code" x="82" y="361">RESULT</text>
+              <text class="n-name" x="82" y="375">one reviewed MR</text>
             </g>
           </svg>
         </div>
 
         <figcaption class="rdset">
           <div class="rd" data-rd="1">
+            <p class="rd__k">Tier <b>Inline</b></p>
+            <p class="rd__t">A question, a lookup, or a small edit you can see whole in one or two files.</p>
+            <ul>
+              <li>The main session does it - no subagent, no orchestrator, no task file</li>
+              <li>One check of the thing that changed</li>
+            </ul>
+            <p class="rd__out"><span>result</span> done in the session, and the branch still lands through a reviewed MR</p>
+          </div>
+          <div class="rd" data-rd="2">
             <p class="rd__k">Tier <b>Direct</b></p>
             <p class="rd__t">One module, reversible, touching no contract, schema, auth, payment or infrastructure.</p>
             <ul>
-              <li>The owning agent is called straight - no orchestrator, no task file</li>
-              <li>The agent proves each acceptance criterion itself, and reports how</li>
+              <li>The owning seat is called straight, with <code>TIER: direct</code> in the dispatch</li>
+              <li>The seat proves each acceptance criterion itself, and reports how</li>
             </ul>
-            <p class="rd__out"><span>result</span> the work happens, and the branch still lands through a reviewed MR</p>
+            <p class="rd__out"><span>result</span> no orchestrator, no task file, one reviewed MR</p>
           </div>
-          <div class="rd" data-rd="2">
+          <div class="rd" data-rd="3">
             <p class="rd__k">Tier <b>Standard</b></p>
             <p class="rd__t">One domain, several files, or a functional requirement behind it.</p>
             <ul>
-              <li>Still the owning agent, not the orchestrator</li>
-              <li>Register a task file when the work must survive a compacted session</li>
-              <li>The test command runs over what changed</li>
+              <li>Still the owning seat, not the orchestrator</li>
+              <li>A task file when the work must survive a compacted session</li>
+              <li>Tests over what changed, not the whole suite</li>
             </ul>
-            <p class="rd__out"><span>result</span> a task file on the board, and a reviewed MR</p>
+            <p class="rd__out"><span>result</span> a task on the board, and a reviewed MR</p>
           </div>
-          <div class="rd" data-rd="3">
+          <div class="rd" data-rd="4">
             <p class="rd__k">Tier <b>Guarded</b></p>
-            <p class="rd__t">Two or more domains, or it touches schema, auth, money, a public contract, a migration, a deploy, or personal data.</p>
+            <p class="rd__t">Two or more seats in a dependent order, or it touches schema, auth, money, a public contract, a migration, a deploy or personal data.</p>
             <ul>
-              <li>The orchestrator runs it - one at a time, never two on the same board</li>
-              <li><code>spec-guardian</code> locks the scope before anything is implemented</li>
-              <li>The specialist implements against the locked criteria</li>
-              <li>The branch gate runs before the MR is opened. <code>/implement-fr FR-NN</code> is that flow, end to end</li>
+              <li>The orchestrator runs it, one at a time, never two on the same board</li>
+              <li><code>spec-guardian</code> locks the scope before anything is built</li>
+              <li><code>/implement-fr FR-NN</code> is that flow, end to end</li>
             </ul>
             <p class="rd__out"><span>result</span> the full flow, and none of it is optional</p>
           </div>
@@ -926,57 +656,56 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
 
       <ul class="layers">
         <li>
-          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>The tier is a decision, not a default</h3>
-          <p>Choosing a heavier tier than the change needs is a defect, not caution: a one-line fix that
-            pays for a planning pass, a task file and three reviews spends real time to learn nothing.
-            Choosing a lighter tier for a change on the Guarded list is the failure that list exists to
-            prevent. When two look equally right, the agent names the one it picked and why, then
-            continues.</p>
+          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>Verification is planned from the diff</h3>
+          <p><code>.claude/scripts/verify-plan.py</code> reads the paths a change touches and says which
+            tests and reviews it needs, and why each skipped gate was skipped. The secret scan always
+            runs. Security review runs for risky paths only. End-to-end runs only for a named flow whose
+            paths changed. A docs-only change gets no reviewer seat.</p>
         </li>
         <li>
-          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>The gate runs once, on the branch</h3>
-          <p>Not after every agent. <code>/review-changes</code> is that boundary: the suites,
-            <code>code-reviewer</code> and <code>security-reviewer</code>, and <code>/secret-scan</code>,
-            over the whole branch diff. Reviewing after every agent reads the same files again for each one
-            and reports the same findings each time. Security review belongs to that boundary, and to any
-            moment you ask for it - not to every change.</p>
+          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>Spawns are capped</h3>
+          <p>Only the orchestrator delegates, and how deep and how wide it may fan out is set in
+            <code>settings.json</code> through <code>CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH</code> and
+            <code>CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS</code>, not left to a prompt.</p>
         </li>
         <li>
-          <h3><svg aria-hidden="true"><use href="#i-break"/></svg>Task state survives context loss</h3>
-          <p>The board lives in markdown under <code>docs/tasks/</code>, committed alongside the code it
-            describes. Those files are the source of truth; conversation memory is not, because it gets
-            compacted and it lies about what was finished. A status change is written in the task file and
-            in the master plan in the same edit, and the two must never disagree.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-void"/></svg>Verify, do not trust</h3>
-          <p>An agent's "done", "passed" or "merged" is a claim, not a fact. It is checked against git and
-            the task file when the work comes back - once, not while it is still running. Asking a working
-            agent whether it is finished yet verifies nothing and bills for the asking.</p>
+          <h3><svg aria-hidden="true"><use href="#i-break"/></svg>Task state is one command</h3>
+          <p><code>.claude/scripts/task.py</code> moves the file, its folder and its board row together,
+            then reads the row back; a hook refuses hand edits to the board. Each task keeps a short
+            checkpoint - next step, last green commit, open questions - so resuming reads three lines,
+            not the whole log. Old log rows fold into an archive.</p>
         </li>
       </ul>
     </div>
   </section>
 
-  <!-- ============================================================ 8. the roster -->
+  <!-- ============================================================ 5. the roster -->
   <section class="sec" id="fit" aria-labelledby="fit-h">
     <div class="wrap">
-      <h2 id="fit-h">The roster is decided, not installed</h2>
-      <p class="intro prose">The contract and the modules that actually exist decide who gets a seat.
-        Pick a shape of project and watch the roster resolve.</p>
+      <h2 id="fit-h">The roster is sized to the purpose</h2>
+      <p class="intro prose">Code, research, strategy, docs, or a mix. The purpose sets the base; the
+        contract and the modules that exist decide the rest. Pick a repo and watch it resolve.</p>
 
+      <!-- Tallies derived with harness-bootstrap/scripts/scaffold.py's own effective_flags() and
+           wanted() over these flag sets: purpose_docs; purpose_strategy; purpose_code;
+           purpose_code+db+tests; purpose_code+db+db_engineer+db_seeder+tests+long+merge_gate.
+           Dev agents are instantiated per module on top and are not among the 18 seats. -->
       <figure class="fit">
         <div class="plate">
           <p class="plate__head">Tailor <b>N2</b> <span>evidence in, roster out</span></p>
 
           <fieldset class="pick pick--plate">
-            <legend class="label">Pick a shape of project</legend>
+            <legend class="label">Pick a repo</legend>
             <input type="radio" name="fit" id="fit-1" checked>
-            <label for="fit-1"><i class="dot"></i>one service, no database</label>
+            <label for="fit-1"><i class="dot"></i>a docs site</label>
             <input type="radio" name="fit" id="fit-2">
-            <label for="fit-2"><i class="dot"></i>web app, API, one database</label>
+            <label for="fit-2"><i class="dot"></i>a strategy repo</label>
             <input type="radio" name="fit" id="fit-3">
-            <label for="fit-3"><i class="dot"></i>monorepo, five modules</label>
+            <label for="fit-3"><i class="dot"></i>one service, no database</label>
+            <input type="radio" name="fit" id="fit-4">
+            <label for="fit-4"><i class="dot"></i>web app, a database, tests</label>
+            <input type="radio" name="fit" id="fit-5">
+            <label for="fit-5"><i class="dot"></i>monorepo, long-running</label>
           </fieldset>
 
           <svg class="dgm" viewBox="0 0 360 124" style="--on:1" aria-hidden="true" focusable="false">
@@ -991,11 +720,11 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
             <path class="seg-base" d="M266 56H284V90H300"/>
             <path class="seg-live" pathLength="1" d="M266 56H284V90H300"/>
             <rect class="n-box" x="4" y="6" width="124" height="44" rx="3"/>
-            <text class="n-code" x="14" y="25">CONTRACT</text>
-            <text class="n-name" x="14" y="41">FR / NFR / BR</text>
+            <text class="n-code" x="14" y="25">PURPOSE</text>
+            <text class="n-name" x="14" y="41">code, docs, ...</text>
             <rect class="n-box" x="4" y="62" width="124" height="44" rx="3"/>
-            <text class="n-code" x="14" y="81">CODEBASE</text>
-            <text class="n-name" x="14" y="97">real modules</text>
+            <text class="n-code" x="14" y="81">EVIDENCE</text>
+            <text class="n-name" x="14" y="97">specs + modules</text>
             <rect class="n-box" x="190" y="34" width="76" height="44" rx="3"/>
             <text class="n-name" x="228" y="61" text-anchor="middle">TAILOR</text>
             <text class="n-sub" x="306" y="25">roster</text>
@@ -1004,52 +733,62 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
           </svg>
 
           <ul class="fit__grid">
-            <li class="seat" style="--i:0">orchestrator</li>
-            <li class="seat" style="--i:1">spec-guardian</li>
-            <li class="seat" style="--i:2">reviewer</li>
-            <li class="seat" style="--i:3">code-reviewer</li>
-            <li class="seat" style="--i:4">qa-test</li>
-            <li class="seat" style="--i:5">merge-manager</li>
-            <li class="seat" style="--i:6">history-tracker</li>
-            <li class="seat" style="--i:7">ba-analyst</li>
-            <li class="seat" style="--i:8">security-reviewer</li>
-            <li class="seat" style="--i:9">debugger</li>
-            <li class="seat" style="--i:10">devops</li>
-            <li class="seat" style="--i:11">tech-researcher</li>
-            <li class="seat" style="--i:12">brainstormer</li>
-            <li class="seat" style="--i:13">data-modeler</li>
-            <li class="seat" style="--i:14">db-engineer</li>
-            <li class="seat" style="--i:15">db-seeder</li>
+            <li class="seat" data-p="1 2 3 4 5" style="--i:0">orchestrator</li>
+            <li class="seat" data-p="1 2" style="--i:1">checker</li>
+            <li class="seat" data-p="1" style="--i:2">writer</li>
+            <li class="seat" data-p="2 5" style="--i:3">researcher</li>
+            <li class="seat" data-p="2 5" style="--i:4">strategist</li>
+            <li class="seat" data-p="3 4 5" style="--i:5">spec-guardian</li>
+            <li class="seat" data-p="3 4 5" style="--i:6">ba-analyst</li>
+            <li class="seat" data-p="3 4 5" style="--i:7">code-reviewer</li>
+            <li class="seat" data-p="3 4 5" style="--i:8">security-reviewer</li>
+            <li class="seat" data-p="3 4 5" style="--i:9">debugger</li>
+            <li class="seat" data-p="3 4 5" style="--i:10">devops</li>
+            <li class="seat" data-p="4 5" style="--i:11">qa-test</li>
+            <li class="seat" data-p="4 5" style="--i:12">data-modeler</li>
+            <li class="seat" data-p="5" style="--i:13">db-engineer</li>
+            <li class="seat" data-p="5" style="--i:14">db-seeder</li>
+            <li class="seat" data-p="5" style="--i:15">history-tracker</li>
+            <li class="seat" data-p="5" style="--i:16">merge-manager</li>
+            <li class="seat" data-p="" style="--i:17">reviewer</li>
           </ul>
         </div>
 
         <figcaption>
           <div class="rdset">
             <div class="rd" data-rd="1">
-              <p class="tally"><b>7</b> of the 16 seats installed <span class="u-quiet">9 left empty</span></p>
-              <p class="rd__out"><span>because</span> nothing in the contract or the tree justifies a database seat</p>
+              <p class="tally"><b>3</b> of the 18 seats installed <span class="u-quiet">15 left empty</span></p>
+              <p class="rd__out"><span>because</span> a docs purpose fields a writer and a read-only checker - no code, so no dev, test or code-review seat</p>
             </div>
             <div class="rd" data-rd="2">
-              <p class="tally"><b>11</b> of the 16 seats installed <span class="u-quiet">5 left empty</span></p>
-              <p class="rd__out"><span>because</span> one database and an external surface pull in data, security and ops seats</p>
+              <p class="tally"><b>4</b> of the 18 seats installed <span class="u-quiet">14 left empty</span></p>
+              <p class="rd__out"><span>because</span> strategy gets the planning pair and a checker that red-teams the recommendation</p>
             </div>
             <div class="rd" data-rd="3">
-              <p class="tally"><b>15</b> of the 16 seats installed <span class="u-quiet">1 left empty</span></p>
-              <p class="rd__out"><span>because</span> five real modules each get a dev agent, and the research seats now pay for themselves</p>
+              <p class="tally"><b>7</b> of the 18 seats installed <span class="u-quiet">11 left empty</span></p>
+              <p class="rd__out"><span>because</span> nothing in the contract or the tree justifies a database or a test seat, plus one dev agent per real module</p>
+            </div>
+            <div class="rd" data-rd="4">
+              <p class="tally"><b>9</b> of the 18 seats installed <span class="u-quiet">9 left empty</span></p>
+              <p class="rd__out"><span>because</span> a database pulls in the data modeler, and choosing tests fields qa-test</p>
+            </div>
+            <div class="rd" data-rd="5">
+              <p class="tally"><b>15</b> of the 18 seats installed <span class="u-quiet">3 left empty</span></p>
+              <p class="rd__out"><span>because</span> long-running work earns the planning pair and a history tracker, and parallel PRs earn a merge manager</p>
             </div>
           </div>
 
           <ul class="versus">
             <li>
               <h3>A kit installs everything</h3>
-              <p>Sixteen seats before it has read a line of your code. You pay context for all of them,
-                and the ones nobody owns turn into orphan seats and generic advice.</p>
+              <p>Every seat before it has read a line of your repo. You pay context for all of them, and
+                the ones nobody owns turn into generic advice.</p>
             </li>
             <li>
-              <h3>A run installs 7 to 15 of the 16 seats</h3>
-              <p>Never all of them by default. Rules are scoped to paths that exist, which is why
-                68% of rule content stays out of the default session.</p>
-              <p class="src">derived by benchmark/benchmark.py --json</p>
+              <h3>A run installs 3 to 17 of the 18 seats</h3>
+              <p>Rules are scoped to paths that exist, so 73% of rule content stays out of the default
+                session.</p>
+              <p class="src">derived by scripts/check_numbers.py and benchmark/benchmark.py --json</p>
             </li>
           </ul>
         </figcaption>
@@ -1057,12 +796,12 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
     </div>
   </section>
 
-  <!-- ============================================================ 9. the floor -->
+  <!-- ============================================================ 6. the floor -->
   <section class="sec" id="floor" aria-labelledby="floor-h">
     <div class="wrap">
       <h2 id="floor-h">Watch a request get stopped</h2>
       <p class="intro prose">Five layers sit between an agent and your repository. Send a request down
-        the route and see which layer refuses it, and what the agent is told.</p>
+        the route and see which layer refuses it.</p>
 
       <figure class="gr">
         <div class="plate">
@@ -1139,27 +878,27 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
           <div class="rd rd--stop" data-rd="1">
             <p class="rd__k">Stopped at layer 1 <b>deny list</b></p>
             <p class="rd__t"><code>git push --force origin main</code></p>
-            <p class="rd__out"><span>result</span> permission denied - the tool call never reaches the shell</p>
+            <p class="rd__out"><span>result</span> permission denied - the call never reaches the shell</p>
           </div>
           <div class="rd rd--stop" data-rd="2">
             <p class="rd__k">Stopped at layer 2 <b>blocking hook, exit 2</b></p>
             <p class="rd__t"><code>cat .env</code></p>
-            <p class="rd__out"><span>result</span> exit 2 - the hook refuses, and the reason is handed back to the model</p>
+            <p class="rd__out"><span>result</span> exit 2 - the hook refuses, and the reason goes back to the model</p>
           </div>
           <div class="rd rd--stop" data-rd="3">
             <p class="rd__k">Stopped at layer 3 <b>spawn boundary</b></p>
             <p class="rd__t">A sub-agent tries to spawn another sub-agent.</p>
-            <p class="rd__out"><span>result</span> refused - only the orchestrator delegates, so a run cannot fan out unbounded</p>
+            <p class="rd__out"><span>result</span> refused - only the orchestrator delegates, within the caps</p>
           </div>
           <div class="rd" data-rd="4">
             <p class="rd__k">Through all five <b>held for review</b></p>
             <p class="rd__t"><code>edit src/payments/charge.ts</code></p>
-            <p class="rd__out"><span>result</span> the payments rule loads because that path exists, and the branch gate holds the change for review</p>
+            <p class="rd__out"><span>result</span> the payments rule loads because the path exists, and the gate plans a security review</p>
           </div>
           <div class="rd" data-rd="5">
             <p class="rd__k">Through all five <b>allowed</b></p>
             <p class="rd__t"><code>npm test</code></p>
-            <p class="rd__out"><span>result</span> the call runs - the floor blocks what must be blocked and stays out of the way otherwise</p>
+            <p class="rd__out"><span>result</span> the call runs - the floor stays out of the way of ordinary work</p>
           </div>
         </figcaption>
       </figure>
@@ -1167,48 +906,45 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
       <ul class="layers">
         <li>
           <h3>1 - deny list</h3>
-          <p>Declared in <code>settings.json</code>. The client itself refuses the call, before any
-            agent reasoning is involved.</p>
+          <p>Declared in <code>settings.json</code>. The client refuses the call before any agent
+            reasoning is involved.</p>
         </li>
         <li>
-          <h3>2 - blocking hooks</h3>
-          <p>11 blocking hooks. A hook that exits 2 stops the tool call and returns its reason, so the
-            model learns what it may not do instead of being told to be careful.</p>
+          <h3>2 - hooks</h3>
+          <p>A hook that exits 2 stops the call and returns its reason, so the model learns what it may
+            not do. Opt-in sets cover more ground: irreversible shell commands, unknown network hosts,
+            large files in history, unreviewed dependency changes, edits to a migration already on the
+            default branch, and a "done" with no evidence behind it.</p>
         </li>
         <li>
           <h3>3 - spawn boundary</h3>
-          <p>Who may spawn whom is fixed by the topology, not by a prompt. One orchestrator delegates;
-            a sub-agent cannot start a second wave.</p>
+          <p>Who may spawn whom is fixed by the topology and capped by settings, not by a prompt.</p>
         </li>
         <li>
           <h3>4 - path-scoped rules</h3>
-          <p>A rule loads only on the paths it governs, which keeps 68% of rule content out of the
-            default session and stops rules from becoming background noise.</p>
+          <p>A rule loads only on the paths it governs, so it never becomes background noise.</p>
         </li>
         <li>
           <h3>5 - review gates</h3>
-          <p>Review, security review and merge management are seats with their own budgets, and the
-            branch gate is a step in the flow rather than a suggestion in a prompt.</p>
+          <p>Review is a step in the flow, sized to the diff, held by seats that cannot edit what they
+            review.</p>
         </li>
       </ul>
 
-      <p class="note">Swap Opus for Haiku and the eval result is byte-identical. That is the point:
-        the floor is enforced by shell scripts and exit codes, so it does not depend on which model is
-        driving. What a cheaper model does change is the quality of the code written and the depth of
-        the review, which is the ceiling, and this eval does not measure it.</p>
-      <p class="src">122/122 per hook flavour - 44 must-block, 68 must-allow - re-run it yourself with
-        <code>py -3.13 eval/guardrail_eval.py</code></p>
+      <p class="note">No model is consulted: the guardrails are shell scripts and exit codes, so the result
+        cannot depend on the model. What a cheaper model changes is the quality of the work and the depth
+        of the review - the ceiling, which this eval does not measure.</p>
+      <p class="src">250/250 per hook flavour, on a harness scaffolded with the strict, long-session and database
+        hooks on - re-run it with <code>py -3.13 eval/guardrail_eval.py</code></p>
     </div>
   </section>
 
-  <!-- ============================================================ 10. harness-view -->
+  <!-- ============================================================ 7. harness-view -->
   <section class="sec" id="viewer" aria-labelledby="viewer-h">
     <div class="wrap">
-      <h2 id="viewer-h">harness-view, the native viewer</h2>
-      <p class="intro prose">A small Rust binary that reads the same
-        <code>.claude/state/harness-graph.json</code> contract the skill writes, and shows how everything
-        is actually wired. It only reads files and reports relationships: no model, no network, no
-        judgment calls. A browser and a CI job cannot disagree about the same repo.</p>
+      <h2 id="viewer-h">harness-view reads it back</h2>
+      <p class="intro prose">A small Rust binary that reads the harness off disk and shows how it is
+        actually wired. No model, no network, no judgment calls.</p>
 
       <figure class="vwfig">
       <div class="plate">
@@ -1257,88 +993,50 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
         </svg>
       </div>
       <figcaption class="vw__cap">
-        <p><b>Nothing here is a model's opinion.</b> <code>scan</code> reads <code>.claude/</code> off
-          disk and writes a graph whose output is byte-stable - sorted nodes, sorted edges, sorted keys,
-          no timestamps - and the three commands below it are three readings of that same file. The
-          Assess tab in the browser and <code>harness-view assess</code> in CI run the same engine, so
-          they cannot disagree about the same repo.</p>
-        <p>Everything the page can change goes back out through one narrow door. The server binds to
-          <code>127.0.0.1</code> only; every mutating endpoint requires a same-origin browser request;
-          reading a file is limited to <code>.claude/</code> and <code>docs/</code>, capped at 256 KB,
-          and always served as plain text with <code>nosniff</code>.</p>
+        <p><b>Nothing here is a model's opinion.</b> <code>scan</code> writes a byte-stable graph -
+          sorted, no timestamps - and the three commands below it are three readings of that one file.
+          The Assess tab and <code>harness-view assess</code> in CI run the same engine.</p>
+        <p>Every change the page makes goes back through one narrow door: the server binds to
+          <code>127.0.0.1</code>, and every mutating request must be same-origin.</p>
       </figcaption>
       </figure>
+
+      <ul class="layers">
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-frame"/></svg>Not only code repos</h3>
+          <p>A research or writing harness with no tests and no code graph scans and scores on the same
+            terms, and an orchestrator-kit install - its board, guard hooks and spawn allowlist - is read
+            as well.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>Every field, every event</h3>
+          <p>Every documented subagent frontmatter field, hooks on any event from
+            <code>settings.json</code> or a seat's own <code>hooks:</code>, and <code>skills:</code>
+            preloads and <code>Agent(a, b)</code> grants drawn as edges.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-lens"/></svg>Board drift, named</h3>
+          <p>A task whose folder, status and board row disagree is marked <code>DRIFT</code> in the graph
+            and counted against board health.</p>
+        </li>
+      </ul>
 
       <div class="shots">
         <figure class="shot">
           <img src="docs/assets/harness-view-flow.png" width="1456" height="790" loading="lazy" decoding="async"
                alt="harness-view Flow view of a real project: rules on the left feeding through hooks into agent seats and converging on a merge gate">
-          <figcaption><b>Flow</b> lays the graph out left to right - rules, then hooks and settings, then
-            the agent seats, then the merge-request gate, the human, and the commands. Clicking a node
-            traces its connected subgraph with a marching dash while everything unrelated fades back. This
-            is a real harness, not a mock-up: 109 nodes, 112 edges.</figcaption>
+          <figcaption><b>Flow</b> lays the graph out left to right: rules, hooks and settings, the seats,
+            the merge gate. Clicking a node traces its connected subgraph. A real harness, not a mock-up:
+            219 nodes, 655 edges.</figcaption>
         </figure>
         <figure class="shot">
           <img src="docs/assets/harness-view-assess.png" width="1456" height="790" loading="lazy" decoding="async"
                alt="harness-view Assess tab scoring a real harness 100 out of 100, with per-category bars for board health, cost control, docs quality, safety and traceability, and an empty findings list">
-          <figcaption><b>Assess</b> is a plain rules engine, scoring a real harness 100/100 with the
-            per-category derivation shown rather than hidden behind one number. Every finding that names a
-            node carries a <b>show in graph</b> button, because a finding you cannot locate is a complaint,
-            not a report.</figcaption>
+          <figcaption><b>Assess</b> is a plain rules engine, scoring a real harness 99/100 with the
+            per-category derivation shown. Every finding that names a node can be shown in the
+            graph.</figcaption>
         </figure>
       </div>
-
-      <h3 class="sub-h">What is new in this release</h3>
-      <ul class="layers">
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>A roster editor</h3>
-          <p>Selecting an agent adds <b>Edit roster</b>: change a seat's model, effort, tools and
-            description from pickers rather than by hand-editing frontmatter. The write touches only the
-            keys that changed - an untouched key keeps its position, its comments and its blank lines, and
-            CRLF stays CRLF. Renaming a seat is refused rather than ignored, because that is a
-            routing-table change, not a field edit.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-book"/></svg>A reference you can edit</h3>
-          <p>The catalogue behind those pickers: four vendors - Claude Code, OpenAI Codex, Gemini CLI and
-            Z.AI GLM - with their models and tools, each carrying a <code>verified</code> flag and a note on
-            what it does. Anything that could not be confirmed against a first-party source is marked
-            unverified wherever it appears, including inside the picker. The catalogue is yours to change:
-            edits are stored per repository in <code>.claude/state/references.json</code> and merged over
-            the shipped seed, so upgrading the skill keeps them. An override can correct a label; it cannot
-            promote an unverified model to verified.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>Editable command steps</h3>
-          <p>A command's numbered steps render as a chain of cards you can reorder by dragging, insert
-            into, switch off in place, and retitle, with one Save for the batch and a Revert that discards
-            it all. A save rewrites only the line spans the steps occupy: frontmatter, headings and the
-            prose between groups pass through byte for byte. An unedited step is written back as the bytes
-            it arrived as, and that is a test, not a claim.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-at"/></svg>Mentions, and rendered markdown</h3>
-          <p>Typing in a step suggests the names it is reaching for: agent seats, rule files, hook names
-            and real paths in the repository. A step whose text is a table, a list or a fenced block
-            renders as one, so a routing table in step 4 reads as a table; opening it to edit shows the
-            markdown source again. Repository text reaches the page through <code>createElement</code> and
-            <code>textContent</code> only, and links are limited to <code>http(s)</code>.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-dialog"/></svg>Custom dialogs</h3>
-          <p>The confirmations and editors are the viewer's own dialogs rather than browser prompts, so
-            they can be sized to what they hold, and resized when they are not.</p>
-        </li>
-        <li>
-          <h3><svg aria-hidden="true"><use href="#i-toggle"/></svg>Runtime toggles, in two tiers</h3>
-          <p>Rules, commands, hooks and roster seats switch off from the details panel, on the same
-            contract as <code>/harness-toggle</code>. A HARD-protected control needs a confirmation phrase
-            typed literally, byte for byte - nothing is trimmed or case-folded. SOFT-protected ones, and
-            every agent seat, need an explicit acknowledgement. Enabling is never gated: restoring a
-            control is not the risk the tiers exist for. The record is <code>.claude/disabled.json</code>,
-            committed, sorted, and with no dates in it.</p>
-        </li>
-      </ul>
 
       <div class="step">
         <div class="step__h">
@@ -1348,20 +1046,201 @@ unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
           <div class="scroller scroller--code" tabindex="0" role="region" aria-label="harness-view commands"><pre><code>harness-view                              <span class="cmt"># serve the current folder, open a browser</span>
 harness-view scan   [path]                <span class="cmt"># write .claude/state/harness-graph.json</span>
 harness-view serve  [path] [--port 7420]  <span class="cmt"># the local UI</span>
-harness-view watch  [path]                <span class="cmt"># rebuild the graph as .claude/ or docs/ change</span>
+harness-view watch  [path]                <span class="cmt"># rebuild on .claude/, docs/ or .agent-base/ changes</span>
 harness-view assess [path] [--json]       <span class="cmt"># score it; exit 1 on a high finding</span></code></pre></div>
         </div>
-        <p><code>scan</code> writes a file and exits, which is the form to use in a script or a hook, and
-          its output is byte-stable: sorted nodes, sorted edges, sorted keys, no timestamps.
-          <code>assess</code> exits 1 while any high finding is outstanding, so it can gate a pipeline.
-          Full detail, including the safety model and every endpoint:
+        <p>Detail, including the safety model and every endpoint:
           <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/tools/harness-view/README.md">tools/harness-view/README.md</a>.</p>
       </div>
 
-      <p class="note">What the score is not: it does not measure whether the rules say anything useful for
-        your codebase, whether an agent's scope matches how the code is really organised, or whether a hook
-        that exists actually blocks what it claims to. A clean report means every rule in the engine
-        passed, not that the harness is good.</p>
+      <p class="note">What the score is not: it does not judge whether a rule says anything useful, or
+        whether a hook blocks what it claims to. A clean report means every rule in the engine passed,
+        not that the harness is good.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ 8. install -->
+  <section class="sec" id="install" aria-labelledby="install-h">
+    <div class="wrap">
+      <h2 id="install-h">Install it</h2>
+      <p class="intro prose">The plugin route has working updates, so it comes first. The release zip is
+        the offline, pinned alternative.</p>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-claude"/></svg>Claude Code</h3>
+          <p class="tag">Plugin route</p>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Claude Code plugin install commands"><pre><code>/plugin marketplace add nguyenhx2/agent-harness-bootstrap
+/plugin install harness-bootstrap@agent-harness-bootstrap
+/plugin install spec-builder@agent-harness-bootstrap</code></pre></div>
+        </div>
+        <p>Install either plugin on its own, or both. No further configuration.</p>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-codex"/></svg>Codex</h3>
+          <p class="tag">Plugin route</p>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Codex plugin install command"><pre><code>codex plugin marketplace add nguyenhx2/agent-harness-bootstrap</code></pre></div>
+        </div>
+        <p>Then open <code>/plugins</code> in the Codex CLI and install either skill, or both.</p>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-cursor"/></svg>Cursor, and every Agent Plugins client</h3>
+          <p class="tag">Plugin route</p>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Cursor plugin install commands"><pre><code>git clone https://github.com/nguyenhx2/agent-harness-bootstrap
+cp -r agent-harness-bootstrap/plugins/harness-bootstrap ~/.cursor/plugins/local/</code></pre></div>
+        </div>
+        <p>Reload the window. VS Code, Copilot and Kiro read the same directories; what was verified
+          against which client is in
+          <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/blob/main/docs/PLUGIN.md">docs/PLUGIN.md</a>.</p>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-down"/></svg>Or the release zip</h3>
+          <p class="tag tag--q">Offline, pinned</p>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Zip install commands"><pre><code><span class="cmt"># both skills, pinned to whatever you downloaded</span>
+unzip agent-harness-bootstrap.zip -d ~/.claude/skills/</code></pre></div>
+        </div>
+        <p>Requires Python 3. Each release attaches <code>SHA256SUMS</code> to verify the archive.</p>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-eye"/></svg>The viewer</h3>
+          <p class="tag tag--q">Optional</p>
+        </div>
+        <p>Each release attaches a standalone executable for Windows, macOS and Linux, with the web UI
+          compiled in. On Windows, drop it into a repo and double-click it. Nothing in the harness
+          requires it.</p>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Build harness-view from source"><pre><code>cargo install --path tools/harness-view   <span class="cmt"># or build it yourself</span></code></pre></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 9. run -->
+  <section class="sec" id="use" aria-labelledby="use-h">
+    <div class="wrap">
+      <h2 id="use-h">Run it</h2>
+      <p class="intro prose">Both skills interview you first, in the language you write to them in.
+        Nothing is written until you approve a one-screen plan.</p>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-term"/></svg>The first run</h3>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="First run commands"><pre><code>/spec-builder           <span class="cmt"># write the contract first, if you are starting from an idea</span>
+/harness-bootstrap      <span class="cmt"># build (or update) the .claude harness for this repo</span></code></pre></div>
+        </div>
+        <p>The first question is what the repo is for. If it already has code, the analysis pre-fills
+          the rest, so you correct findings rather than type from scratch. The one batch never guessed is
+          governance: model sovereignty, residency, licences, gated actions. In a hurry, say so: you get
+          only the questions with no safe default.</p>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-term"/></svg>Day to day</h3>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Delivery commands"><pre><code>/new-task "short title"    <span class="cmt"># register a task through task.py</span>
+/implement-fr FR-014       <span class="cmt"># the Guarded flow, end to end</span>
+/review-changes            <span class="cmt"># the branch gate, sized by verify-plan.py</span>
+/secret-scan               <span class="cmt"># any hit blocks until it is rotated</span>
+/task-resume TASK-007      <span class="cmt"># read the checkpoint, not the whole log</span></code></pre></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step__h">
+          <h3><svg aria-hidden="true"><use href="#i-refresh"/></svg>Move to a new version</h3>
+          <p class="tag">Reconciled, never clobbered</p>
+        </div>
+        <div class="listing">
+          <div class="scroller scroller--code" tabindex="0" role="region" aria-label="Update commands"><pre><code>/plugin update harness-bootstrap@agent-harness-bootstrap   <span class="cmt"># the skill</span>
+/harness-bootstrap:harness-update                          <span class="cmt"># the harness in this repo</span></code></pre></div>
+        </div>
+        <p>The update re-reads the code, re-runs the scaffolder against your recorded answers, and
+          reports every file in one of three states:</p>
+        <dl class="states">
+          <div><dt>ADDED</dt><dd>New in the newer skill version. Written in.</dd></div>
+          <div><dt>KEPT</dt><dd>Identical on both sides. Left alone.</dd></div>
+          <div><dt>CONFLICT</dt><dd>You edited it. It stays as you had it and joins a queue you resolve
+            one file at a time.</dd></div>
+        </dl>
+        <p>A control you switched off stays off, and authored content such as agent scopes and
+          <code>coding-standards.md</code> is reached only through that queue.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 10. tuning -->
+  <section class="sec" id="tuning" aria-labelledby="tuning-h">
+    <div class="wrap">
+      <h2 id="tuning-h">Change the harness, narrowly</h2>
+      <p class="intro prose">The bootstrap writes a first draft. Each of these shows you the diff, applies
+        only what you confirm, and records why in <code>docs/context/tool-changelog.md</code>.</p>
+
+      <ul class="cmds">
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-sliders"/></svg>/harness-tune</h3>
+          <p>Reads what actually happened - the run archive, blocks, retry caps, verify-plan logs - and
+            proposes at most four ranked changes to one dial each: deploy permission, force-push posture,
+            spawn allowlist, caps, review depth. Each is proved after it lands.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-toggle"/></svg>/harness-toggle</h3>
+          <p>Switch one rule, command, hook or seat off without deleting it. Protected controls need a
+            typed confirmation; enabling is never gated.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>/agent-permissions</h3>
+          <p>Give one seat one more tool, or one fewer. Reviewers never gain write access; narrowing
+            skips the check.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-book"/></svg>/new-skill</h3>
+          <p>Decide whether a recurring workflow should be a skill at all. If it should: scaffold it from
+            the template, write six kinds of trigger case, lint it with <code>skill-check.py</code>.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-steps"/></svg>/skill-wire</h3>
+          <p>Map an installed skill to the seat that needs it, through the seat's <code>skills:</code>
+            preload, after re-reading every file of the skill.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-lens"/></svg>/board-audit</h3>
+          <p>Read-only sweep for tasks nobody drives, statuses that disagree, and branches no task
+            references.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-route"/></svg>/code-graph</h3>
+          <p>The committed module-boundary map: which module may import which, with an owner per module.
+            A new cross-module import is named on the edit that adds it.</p>
+        </li>
+        <li>
+          <h3><svg aria-hidden="true"><use href="#i-doc"/></svg>/docs-graph</h3>
+          <p>Every requirement ID, where it is defined and who references it; the orphans it prints are
+            work nobody scheduled or references to nothing.</p>
+        </li>
+      </ul>
+
+      <p class="note">None of them will give a reviewer write access, let a seat other than the
+        orchestrator spawn, or remove the review gate.</p>
     </div>
   </section>
 

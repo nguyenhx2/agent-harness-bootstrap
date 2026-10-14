@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # graph-stale.sh
 # Event: PostToolUse   Matcher: Edit|Write
-# Non-blocking graph maintenance, three tiers by cost of the rebuild:
+# Non-blocking graph maintenance, two tiers by edited path:
 #   1. HARNESS edits (.claude/ agents, rules, commands, hooks, settings.json, disabled.json):
 #      regenerate .claude/state/harness-graph.json + harness-graph.html IMMEDIATELY - the scan
 #      is ~50 small files, cheap enough to rebuild as a side effect, and a stale wiring map is
 #      worse than the ~100ms it costs.
-#   2. DOCS edits (docs/**/*.md, only when a docs graph was already built): regenerate the docs
-#      graph + HTML immediately - docs trees are small too.
-#   3. SOURCE edits: record the path in .claude/state/code-graph.stale so agents (and
-#      /code-graph --check) know the graph lags the code. The rebuild itself stays deliberate
-#      (/code-graph): a full source scan on every write would tax every session for a map most
-#      turns never read. Each path is recorded once. Past 20 distinct files this ALSO emits
-#      hookSpecificOutput.additionalContext nudging /code-graph - on a NEWLY recorded file only,
-#      never on a re-edit of one already listed, or editing one file twenty times would re-inject
-#      the same reminder twenty times.
+#   2. SOURCE edits, once a module-boundary map exists (docs/context/code-graph.md, or the
+#      machine copy in .claude/state/): ask `code-graph.py --file` whether THIS file now imports
+#      across a module line the map does not list, and pass its additionalContext through. That
+#      is the decision the map exists for, raised on the edit that makes it - not a staleness
+#      count the agent has to act on later. Each new edge is named once until the next
+#      /code-graph rebuild accepts it; a re-edit stays quiet.
+# The docs graph is no longer rebuilt here: it is a check run on demand (/docs-graph).
 # Never blocks: always exit 0.
 #
 # Contract: reads the PostToolUse JSON payload on stdin. Exit 0 = allow, always.
@@ -116,37 +114,16 @@ case "$norm" in
     exit 0 ;;
 esac
 
-# Tier 2: a docs file changed and a docs graph exists - rebuild it now.
-case "$norm" in
-  */docs/*.md|docs/*.md)
-    if [ -f "$base_cwd/.claude/state/docs-graph.json" ] && \
-       [ -f "$base_cwd/.claude/scripts/docs-graph.py" ]; then
-      if command -v python3 >/dev/null 2>&1; then PY=python3
-      elif command -v python >/dev/null 2>&1; then PY=python
-      else exit 0; fi
-      "$PY" "$base_cwd/.claude/scripts/docs-graph.py" --target "$base_cwd" >/dev/null 2>&1
-      "$PY" "$base_cwd/.claude/scripts/graph-html.py" --target "$base_cwd" >/dev/null 2>&1
-    fi
-    exit 0 ;;
-esac
-
-# Tier 3: only source files invalidate the code graph, and only if a graph exists to invalidate.
+# Tier 2: a source file changed - did it add a cross-module edge the boundary map lacks?
 case "$norm" in
   *.py|*.js|*.jsx|*.ts|*.tsx|*.mjs|*.cjs|*.go|*.java|*.cs|*.rb|*.php|*.rs) : ;;
   *) exit 0 ;;
 esac
-[ -f "$base_cwd/.claude/state/code-graph.json" ] || exit 0
-
-mkdir -p "$base_cwd/.claude/state" 2>/dev/null
-stale_file="$base_cwd/.claude/state/code-graph.stale"
-# Already recorded: the graph is no staler than it was a moment ago, so say nothing.
-grep -qxF -- "$norm" "$stale_file" 2>/dev/null && exit 0
-printf '%s\n' "$norm" >> "$stale_file" 2>/dev/null
-
-lines=$(wc -l < "$stale_file" 2>/dev/null | tr -d '[:space:]')
-case "$lines" in ''|*[!0-9]*) lines=0 ;; esac
-if [ "$lines" -gt 20 ]; then
-  msg="The code graph is now stale against $lines edited source file(s) - run /code-graph to refresh the module map before relying on it for dispatch decisions."
-  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' "$msg"
-fi
+[ -f "$base_cwd/.claude/scripts/code-graph.py" ] || exit 0
+[ -f "$base_cwd/docs/context/code-graph.md" ] || [ -f "$base_cwd/.claude/state/code-graph.json" ] || exit 0
+if command -v python3 >/dev/null 2>&1; then PY=python3
+elif command -v python >/dev/null 2>&1; then PY=python
+else exit 0; fi
+# The helper prints the PostToolUse JSON itself (json.dumps escapes the paths) or nothing.
+"$PY" "$base_cwd/.claude/scripts/code-graph.py" --target "$base_cwd" --file "$(norm_path "$path")" --hook 2>/dev/null
 exit 0

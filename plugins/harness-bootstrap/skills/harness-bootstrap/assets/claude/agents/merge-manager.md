@@ -1,9 +1,10 @@
 ---
 name: merge-manager
-description: Merges approved {{PR_OR_MR}}s into {{DEFAULT_BRANCH}} and resolves merge conflicts under delegated authority. Dispatched ONLY by the orchestrator, one at a time, never invoked directly. Read-only on product code - it merges, it never authors.
+description: Merges approved {{PR_OR_MR}}s into {{DEFAULT_BRANCH}} and resolves merge conflicts under delegated authority. Dispatched ONLY by the orchestrator, one at a time, never invoked directly. Read-only on product code - it merges, it never authors. Not for reviewing the diff - the review gate has already run.
 tools: Read, Grep, Glob, Bash
+disallowedTools: Edit, Write, NotebookEdit
 model: opus
-effort: high
+effort: medium
 maxTurns: 20
 color: orange
 ---

@@ -19,6 +19,9 @@ Usage:
     python scaffold.py --target <repo> --vars vars.json --only specs/
     python scaffold.py --target <repo> --vars vars.json --module BLG:billing --module CAT:catalog
 
+A purpose flag other than purpose_code (purpose_research / purpose_strategy / purpose_docs), without
+purpose_code, scaffolds the light contract from assets/manifest-light.json instead.
+
 vars.json shape:
     {
       "vars":  { "PROJECT_NAME": "acme", "PROJECT_SLUG": "acme",
@@ -99,17 +102,34 @@ def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set
 # or by an {{#IF_}} block in a template. Without this check a typo silently dropped a whole
 # spec section and still exited 0, which is the same failure the harness twin was hardened
 # against.
-KNOWN_FLAGS = {"access", "ai", "db", "design", "feasibility", "flows",
-               "integration", "stakeholders", "ui"}
+SECTION_FLAGS = {"access", "ai", "db", "design", "feasibility", "flows",
+                 "integration", "stakeholders", "ui"}
+# The same purpose profiles harness-bootstrap's vars.json carries, so one vars.json can drive both
+# skills. Any purpose other than code, WITHOUT purpose_code, selects the light contract
+# (assets/manifest-light.json): README, 05, 11 and 13, with 05 shaped for research questions,
+# decisions or a docs scope. No purpose, or purpose_code among them, is the full set it always was.
+PURPOSE_FLAGS = {"purpose_code", "purpose_research", "purpose_strategy", "purpose_docs"}
+KNOWN_FLAGS = SECTION_FLAGS | PURPOSE_FLAGS
+LIGHT_FLAG = "light_contract"           # derived, never written in vars.json
+
+
+def is_light(flags: set[str]) -> bool:
+    purposes = flags & PURPOSE_FLAGS
+    return bool(purposes) and "purpose_code" not in purposes
 
 
 def validate_flags(flags: set[str]) -> list[str]:
     """-> list of human-readable problems; empty means the flag set is sane."""
     unknown = sorted(flags - KNOWN_FLAGS)
-    if not unknown:
-        return []
-    return [f"unknown flag(s): {', '.join(unknown)}. "
-            f"Valid flags: {', '.join(sorted(KNOWN_FLAGS))}"]
+    if unknown:
+        return [f"unknown flag(s): {', '.join(unknown)}. "
+                f"Valid flags: {', '.join(sorted(KNOWN_FLAGS))}"]
+    if is_light(flags) and flags & SECTION_FLAGS:
+        return [f"the light contract ({', '.join(sorted(flags & PURPOSE_FLAGS))}) has no optional "
+                f"sections, but section flag(s) {', '.join(sorted(flags & SECTION_FLAGS))} are "
+                f"set. Those sections describe a code product: add purpose_code for the full set, "
+                f"or drop them."]
+    return []
 
 
 # ---------------------------------------------------------------- section-selection gate
@@ -341,8 +361,8 @@ def modularize(text: str, code: str) -> str:
     ROOT sections, which from `modules/<folder>/` is two directories up - left as-is they are
     dead links in every module copy.
 
-    Only the prefixes DEFINED in module-owned sections are seeded (FR, UC, US, INT, SCR, and
-    NFR's category form). BF, DS, DT, SH, OI, AS, CO, DP and R are defined in root sections and
+    Only the prefixes DEFINED in module-owned sections are seeded (FR, UC, US, BR, INT, SCR,
+    and NFR's category form). BF, DS, DT, SH, OI, AS, CO, DP and R are defined in root sections and
     stay bare - prefixing them would invent IDs that nothing defines. HTML comments are left
     untouched: they are template guidance that describes both forms, and injecting the code
     there would garble the explanation of the flat form.
@@ -355,7 +375,7 @@ def modularize(text: str, code: str) -> str:
 
     text = re.sub(r"<!--.*?-->", stash, text, flags=re.S)
     # Bare numeric form only, so the transform cannot double-inject an already-seeded ID.
-    text = re.sub(r"\b(FR|UC|US|INT|SCR)-(\d{1,5})\b", rf"\1-{code}-\2", text)
+    text = re.sub(r"\b(FR|UC|US|BR|INT|SCR)-(\d{1,5})\b", rf"\1-{code}-\2", text)
     text = re.sub(r"\b(NFR)-([A-Z]{2,4})-(\d{1,5})\b", rf"\1-{code}-\2-\3", text)
     # Anchors are the lowercase twin of the same IDs ({#fr-01}, (#fr-01), ...md#fr-01).
     text = re.sub(r"#(fr|uc|us|int|scr)-(\d{1,5})\b", rf"#\1-{code.lower()}-\2", text)
@@ -415,6 +435,18 @@ def main() -> int:
             print(f"FAIL: {problem}", file=sys.stderr)
         return 1
 
+    light = is_light(flags)
+    if light:
+        flags.add(LIGHT_FLAG)
+        manifest_path = assets / "manifest-light.json"
+        if args.module:
+            print("FAIL: --module splits a code product's sections by module; the light contract "
+                  "has one 05. Drop --module, or add purpose_code for the full set.",
+                  file=sys.stderr)
+            return 1
+        if not manifest_path.is_file():
+            raise ScaffoldError(f"manifest not found: {manifest_path}")
+
     modules, module_problems = parse_modules(args.module)
     if module_problems:
         for problem in module_problems:
@@ -434,7 +466,9 @@ def main() -> int:
         and str(e["dest"]).replace("\\", "/").startswith(SECTIONS_DIR + "/")
         for e in manifest
     )
-    if sections_in_scope:
+    # The light contract has no optional section, so there is no selection to record: its four
+    # files are the whole shape, chosen by the purpose flag.
+    if sections_in_scope and not light:
         problems = check_selection(target, optional_sections, core_sections, flags)
         if problems:
             refuse_selection(target, problems, optional_sections)
@@ -545,6 +579,10 @@ def main() -> int:
     show("DISABLED (respected - listed in .claude/disabled.json, not re-added)", disabled_skips)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
+    if light:
+        print(f"\nLIGHT CONTRACT ({', '.join(sorted(flags & PURPOSE_FLAGS))}): README, 05, 11 and "
+              f"13 only - 05 holds the contract items as FR-nn, so the task board, the docs graph "
+              f"and spec-check.py read it unchanged.")
     if modules:
         print("\nMODULE FORM - the module-owned sections were written once per module:")
         for code, folder in modules:

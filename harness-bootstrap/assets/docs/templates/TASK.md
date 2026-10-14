@@ -38,9 +38,9 @@ tags: [task]
 
 # TASK-NNN: <short title>
 
-A status change is written in BOTH places at once: the `status:` field above, and this task's row
-in `docs/tasks/master-plan.md`. They must never disagree. Read the board row back after writing it:
-a board write can fail silently while the task file lands.
+Change status with `python .claude/scripts/task.py move TASK-NNN <state>`: it writes the `status:`
+field above, moves this file to its folder, flips the row in `docs/tasks/master-plan.md`, logs the
+change and reads the row back. Never edit those by hand - that is how they come to disagree.
 
 ## Goal
 
@@ -70,11 +70,22 @@ a board write can fail silently while the task file lands.
 
 - <decision or blocker>
 
+## Checkpoint
+
+<!-- Rewritten, never appended: where this task stands right now. /task-resume reads these three
+     lines instead of the whole session log. Write them with
+     `python .claude/scripts/task.py checkpoint TASK-NNN --next "..." --green --question "..."`. -->
+
+- Next step: -
+- Last green commit: -
+- Open questions: -
+
 ## Session log
 
-<!-- Append a row after every meaningful unit of work. A quality gate counts as passed only when a
-     row here records the run: an agent's "done" or "passed" is a claim, and the log is the
-     evidence. -->
+<!-- One row per completed unit: a dispatch outcome, a gate run, a decision, a status change. One
+     line each - what was done and the result, not the reasoning. A gate counts as passed only when
+     a row here records the run. `task.py` writes the rows and keeps only the newest here; older rows
+     move to docs/tasks/log/, still committed, no longer loaded on resume. -->
 
 | Date | Who | What was done | Result |
 |------|-----|---------------|--------|

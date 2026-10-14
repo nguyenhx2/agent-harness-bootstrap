@@ -49,9 +49,10 @@ fn good(root: &Path) {
     write(root, ".claude/rules/testing.md", "---\npaths:\n  - \"tests/**\"\n---\n# testing\n");
     write(root, ".claude/commands/review-changes.md", "# review\n");
     write(root, ".claude/agents/orchestrator.md",
-          "---\nname: orchestrator\nmodel: opus\neffort: high\ntools: Read, Grep, Agent\n---\nbody\n");
+          "---\nname: orchestrator\nmodel: opus\neffort: high\nmaxTurns: 40\ntools: Read, Grep, Agent\n---\nbody\n");
     write(root, ".claude/agents/code-reviewer.md",
-          "---\nname: code-reviewer\nmodel: opus\neffort: high\ntools: Read, Grep, Glob\n---\nbody\n");
+          "---\nname: code-reviewer\nmodel: opus\neffort: high\nmaxTurns: 25\ntools: Read, Grep, Glob\n\
+           disallowedTools: Edit, Write, NotebookEdit\n---\nbody\n");
 }
 
 fn run(root: &Path) -> Value {

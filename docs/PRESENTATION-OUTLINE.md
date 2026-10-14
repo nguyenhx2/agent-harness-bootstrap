@@ -1,508 +1,295 @@
 # Agent Harness - Presentation Outline
 
-**Topic:** Standardizing and building the operating foundation for AI coding agents
-**The problem this talk solves:** ad-hoc, improvised AI coding
+**English** · [日本語](PRESENTATION-OUTLINE.ja.md)
+
+**The talk in one line:** give an AI agent a repo it can actually understand, and a harness it
+cannot escape.
 **Repo:** [agent-harness-bootstrap](https://github.com/nguyenhx2/agent-harness-bootstrap)
-**Language:** English
-**Target duration:** 40 minutes (28 talk + 8 demo + Q&A). Compression notes at the end.
+**Deck:** `presentation/index.html` - 23 slides, EN / VI / JA, follows this outline section by
+section. It is the visual for this script, not a second copy of it: if a claim changes, change both.
+**Duration:** 40 minutes (28 talk + 8 demo + Q&A). Shorter and longer variants at the end.
 
 ---
 
-## The narrative arc
+## The arc
 
-One line of argument. Every section earns the next:
+> An agent fails because it does not understand the repo, or because nothing stops it →
+> here are the nine places that shows up → the fix is a harness, not a better prompt →
+> two skills build it, sized to what the repo is for → three mechanisms keep it working →
+> watch it run → here are the numbers.
 
-> AI coding today is ad-hoc → ad-hoc fails structurally, on both the machine side and the human side
-> → the fix is a harness, not a better prompt → here are the three mechanisms that make it work
-> → watch it run → here are the numbers.
-
-**Deliberate ordering choice:** lead with the pain, not the product. The audience must feel the
-problem before the solution means anything. The demo lands late, once they know what to look for.
-
----
-
-## Section 0. Opening: why a harness at all (3 min)
-
-> **This is the framing page. Everything after it is a consequence of this slide.**
-
-**Key message:** AI coding today is *tự phát* - improvised. It works in a demo and breaks in a project.
-
-Open with the contrast. Put this table on screen and walk it left to right:
-
-| | **Ad-hoc AI coding (today)** | **Harnessed AI coding** |
-|---|---|---|
-| The instruction | A prompt someone typed, phrased their way | A written contract with stable IDs and acceptance criteria |
-| Who does the work | One generalist agent, doing everything | A roster of scoped specialists, and a tier that decides how many of them a change earns |
-| Memory | The context window. Compaction erases it | Committed markdown on disk. Compaction cannot touch it |
-| Safety | "Please do not touch production" | Exit code 2. The tool call never happens |
-| Cost | Whatever the default model charges | An explicit model and effort budget per seat |
-| Reproducibility | Depends who asked, and how | Same repo, same contract, same structure |
-
-**The sentence to land the section:**
-> *"The problem is not that the model is not smart enough. It is that nothing around the model is
-> engineered. We treat the most powerful tool we have ever put in a repository as something you chat
-> with, not something you operate."*
-
-**Then define the word, because the whole talk depends on it:**
-> A **harness** is a controlled boundary the agent works inside: who does what, what it may read and
-> touch, what it must write down, and what it simply cannot do.
-
-**Asset:** Clip 4, "The complete solution" (~54s), works well here as a cold open if you prefer video
-to a table. Otherwise the repo logo plus this table.
-**Transition:** *"Let us be precise about what actually breaks. There are two halves to this, and most
-teams only ever talk about one."*
+Lead with the idea, then the pain, then the product. The demo lands late, once the audience knows
+what to look for.
 
 ---
 
-## Section 1. The obstacles and risks (6 min)
+## 0. The idea (2 min) - slides 1-2
 
-**Key message:** These failures are predictable and structural. And half of them are ours, not the model's.
+Say the two halves before anything else. Everything after this is one of them.
 
-### 1a. The machine side - what the agent does wrong (3 min)
-
-Straight from the pain points in the README:
-
-| The obstacle | Why it bites in a real project |
+| Half | What it means in the repo |
 |---|---|
-| **No standard for what "good" looks like** | Every team invents its own agent setup. Nothing is comparable, reviewable, or transferable |
-| **Agents do not compose** | One-off prompts do not add up to delivered work. Multi-step tasks stall halfway |
-| **Hallucination** | It invents requirements, APIs, whole files. They look plausible enough to merge |
-| **Context loss** | The window fills, compacts, and progress that lived only in that window is gone |
-| **Security and blast radius** | It can read `.env`, commit to `main`, edit an accepted decision record |
-| **Cost opacity** | An agent with no model set silently bills mechanical work at the top tier |
-| **Tool lock-in** | The setup is rebuilt from scratch for Claude Code, Cursor, Codex |
+| **A repo it can actually understand** | A written contract with stable IDs. A team sized to what the repo is for. Rules that load only when they apply. Task state on disk, so a closed window loses nothing |
+| **A harness it cannot escape** | Hooks that exit 2 before the tool runs. A deny list, a tool allowlist per seat, a cap on how deep agents spawn. None of it asks the model to agree |
 
-**The line to land:** *"Telling the agent not to do these things is advice. After a context compaction,
-it does not remember the advice."*
-
-### 1b. The human side - the prompt problem nobody audits (3 min)
-
-> **This section is the one most audiences have never heard framed out loud. Give it room.**
-
-The instability does not only come from the model. It comes from **us**, and from natural language as
-an interface:
-
-- **Prompt style is not standardized.** Two engineers ask for the same feature in two different ways
-  and get two different structures back. The output varies by person, by day, by mood. There is no
-  house style for talking to an agent, so there is no consistency in what comes out.
-- **Natural language is a lossy, unstable interface.** The same intent, phrased differently, produces
-  different results. Nothing is reproducible. Worse: *how you asked* is invisible. It is not in git,
-  it has no diff, nobody reviews it, and it cannot be rolled back.
-- **It does not transfer.** A new team member has no idea how to ask. The person who "is good with
-  the AI" becomes a bottleneck, and their skill is tacit and unteachable.
-- **Every hand-off is a fresh translation.** Human prose in, model interpretation out, then that
-  interpretation becomes the input to the next step. Ambiguity compounds at every boundary.
-
-**The insight that turns this into the solution:**
-
-> When agents talk to **each other** through a harness, the interface between them stops being prose
-> and becomes **structure**: a spec section with a stable ID, a task file with acceptance criteria, a
-> session log row. Free-form natural language enters **once**, at the intake boundary, and is
-> immediately converted into a written contract. From that point on, every hand-off is
-> file-mediated. **Structured input produces stable output.**
-
-Say it plainly: *"We are not trying to make people write better prompts. We are trying to make the
-prompt stop being the interface."*
-
-**Transition:** *"Notice: none of these are model problems. A smarter model does not fix a single one."*
+**The line to land:** *"The problem is not that the model is not smart enough. It is that nothing
+around the model is engineered."*
 
 ---
 
-## Section 2. The thesis: it is a harness problem (3 min)
+## 1. Where it breaks (5 min) - slides 3-4
 
-**Key message:** Models are commoditizing. The durable advantage is the harness around them.
+Nine problems in three places. Number them; the numbers come back as the answers land.
 
-- Models get cheaper and better every quarter. That is not where differentiation lives.
-- What lasts: the **operating foundation** - agent roster, context discipline, workflow integration,
-  governance.
-- Reframe the goal: not *"which model do we use"* but *"can we turn any model into a controlled,
-  ROI-positive, production-safe agent system."*
-- Preview the three mechanisms you are about to explain, so the audience has a map:
-  1. **Context** - how the system remembers
-  2. **Orchestration** - how work is decomposed and driven
-  3. **Security** - how it is prevented from doing damage
+| Where | What breaks |
+|---|---|
+| **Setup** | 01 kits install everything and fit nothing · 02 phrasing the prompt eats the time · 03 context is finite, however big the window |
+| **Control** | 04 a rule written as an instruction can be skipped · 05 hallucination and overflow derail the process · 06 different models, unstable output |
+| **Project** | 07 every repo has its own standard and purpose · 08 a closed chat or a crash takes the work with it · 09 few teams write specs an agent can build from |
 
-**Asset:** `docs/assets/ai-dlc-flow.svg`. Green is deterministic and free; purple costs tokens.
-**Transition:** *"Concretely, this is two skills that generate one system."*
+**The human side, given room** (most audiences have never heard it framed): the instability is not
+only the model's. Prompt style is not standardized, natural language is a lossy interface, how you
+asked is not in git, and every hand-off is a fresh translation. Through a harness, free-form
+language enters **once**, at intake, and becomes a contract; after that every hand-off is a file.
+*"We are not trying to make people write better prompts. We are trying to make the prompt stop
+being the interface."*
+
+Close on the quote slide: *speed creates the advantage; control gets us to the destination.*
 
 ---
 
-## Section 3. From scattered agents to a tailored system (4 min)
+## 2. A harness is the operating system for an agent (2 min) - slide 5
 
-**Key message:** The harness is generated *for your repository*, not copied from a template.
+Agent = application, harness = operating system, SDK = building blocks, model = CPU. With a
+framework the developer writes the orchestration; with a harness the model makes the plan and the
+harness keeps it on track. Preview the three mechanisms: **context**, **orchestration**,
+**security**.
 
-| Skill | What it produces | The problem it retires |
+---
+
+## 3. Two skills, one for each half (4 min) - slides 6-7
+
+| Skill | Produces | Retires |
 |---|---|---|
-| **`spec-builder`** | The input an AI can understand: a selective spec set under `docs/specs/` (6 core sections always, up to 8 optional), stable IDs, acceptance criteria, a data model, mandatory security NFRs | The AI is guessing what to build |
-| **`harness-bootstrap`** | The harness the AI runs inside: `.claude/` with agents, rules, hooks, a deny list, plus a task board | Nothing constrains what it does, nothing survives when it forgets |
+| **`spec-builder`** | A selective spec set (6 core sections, up to 8 optional): stable IDs, acceptance criteria, a data model, mandatory security NFRs | 09, 02 |
+| **`harness-bootstrap`** | `.claude/`: a roster sized to the repo's purpose, path-scoped rules, hooks, a deny list, a task board on disk | 01, 04, 08 |
 
-**Why "tailored" is the load-bearing word:**
-- Three modes, chosen first: **Greenfield** / **Brownfield** / **Audit** (read-only; a human applies fixes).
-- Brownfield runs a **mandatory codebase analysis first** and produces an Inventory Report: stack,
-  modules, conventions, risky operations, existing assets, gaps. Everything downstream derives from
-  that evidence.
-- The dev-agent roster comes from the real module map (brownfield) or the FR clusters (greenfield).
-- Existing files are **reconciled, never clobbered**: `ADDED` / `KEPT` / `CONFLICT`.
+Four modes, chosen first: **Greenfield**, **Brownfield** (codebase analysis is mandatory and comes
+first), **Audit** (read-only; a human applies fixes), **Update** (re-run against the existing
+`vars.json`, never a re-bootstrap). Existing files are reconciled - `ADDED` / `KEPT` / `CONFLICT` -
+never clobbered.
 
-**The line to land:** *"It reads your code before it writes anything. A generic template would be worse
-than nothing, because it would look right while describing someone else's repo."*
+**Purpose profiles** answer 01 and 07. The first intake question is what the repo is for:
 
-**Asset:** Clip 6, "harness-bootstrap in depth" (~59s), or `docs/FLOWS.md` diagram 2.
+| Purpose | Seats | Verified by |
+|---|---|---|
+| Code | one dev agent per real module, the review gate, `spec-guardian`; test and database seats when asked | tests and code review; security review only when the diff earns it |
+| Research | `researcher`, `checker` | every claim traced to a source that says it |
+| Strategy | `strategist`, `researcher`, `checker` | distinct options, criteria fixed before scoring, the assumption that flips it |
+| Docs | `writer`, `checker` | accurate against the source, links that resolve |
 
----
+Purposes combine, and one `checker` serves every non-code purpose. Code-only options are refused
+without the code purpose, so no seat is fielded with nothing to do.
 
-## Section 4. Mechanism 1: context management (5 min)
-
-**Key message:** The context window is RAM. The work lives on disk. Compaction is survivable by design.
-
-### The four-tier memory hierarchy
-
-Do not present this as two tiers. The insight is that there are four, and only the bottom two are durable.
-
-| Tier | What lives there | Cost | What compaction does |
-|---|---|---|---|
-| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | **28,821 bytes of rules**, re-sent every turn, forever | Survives, because it is re-injected |
-| **Lazy-RAM** | The 10 path-scoped rules (`paths:` frontmatter) | **60,290 bytes** that most sessions never pay for | Reloads when a matching file is touched |
-| **Disk** | `docs/tasks/master-plan.md` (the board) + `docs/tasks/active/TASK-NNN.md` (goal, criteria, decisions, **session log**) | A few hundred bytes, read once | **Nothing. It is committed markdown in git** |
-| **Archive** | `.claude/state/history/` - one file per finished subagent run, written by a `SubagentStop` hook | Zero until read | Nothing. Written after the fact |
-
-**Asset:** `docs/assets/memory-hierarchy.svg`
-
-### Why this is a mechanism, not a convention
-
-Three design decisions make it hold. Each is worth one sentence on stage:
-
-1. **The session log is written *as the agent works*, not at the end.** A report written at the end is
-   lost with the crash that prevented it. An append-only log survives the crash.
-2. **Status is duplicated on purpose** - in the task file frontmatter *and* the board row - and both
-   are written in the same step, then read back. The rule is: *"a write nobody confirmed is a wish."*
-3. **A `Planned` task file lives in `active/`, not `pending/`.** This looks wrong and is not: the
-   resume scan reads `active/`, so filing new work under `pending/` would hide it forever. The
-   directory layout is not filing, it **is the index the resume protocol scans**.
-
-### The resume protocol
-
-- Session start: **scan before accepting a mission.** Unfinished work is picked up before anything new
-  is taken on.
-- Rebuild state from files, not from memory. **Trust ordering is a written rule: committed files and
-  git state over any agent's final report.**
-- A **`MISSION COMPLETE` marker** distinguishes "finished" from "crashed" by a file check rather than a
-  guess. Marker present and silent means done. No marker and silent means crashed - resume.
-- **A silent stall counts as a crash**, so a hung agent cannot masquerade as a working one.
-
-**The line to land:** *"The window closing is not an incident. It is the expected case, and the system
-is designed for it."*
-
-**Asset:** Clip 2, "The operating flow" (~29s); `docs/CONTEXT-MANAGEMENT.md` for the deep dive.
+**The line to land:** *"It reads your code before it writes anything. A generic template would look
+right while describing someone else's repo."*
 
 ---
 
-## Section 5. Mechanism 2: process proportional to the change (5 min)
+## 4. Skills: find, make, wire (2 min) - slide 8
 
-**Key message:** How much process a change gets is decided before anything is dispatched, and most
-changes get almost none.
+- **Find** - discovery reads the manifests, searches only for stack-matching skills, and reads each
+  one's files before you tick it. Nothing installs behind your back.
+- **Make** - `/new-skill` first decides whether the workflow is a skill at all (refusing is a normal
+  outcome), then scaffolds from a template, writes trigger cases and lints with `skill-check.py`.
+- **Wire** - `/skill-wire` adds the skill to the seat's frontmatter `skills:` preload.
+  `harness-view` reports a skill that sits on disk unwired.
 
-### Lead with the tier table. It is the first thing an agent reads
+---
+
+## 5. Mechanism A: context (5 min) - slides 9-11
+
+**Key message:** the context window is RAM, the work lives on disk, and compaction is survivable by
+design. Answers 03, 05, 08.
+
+| Tier | What lives there | What compaction does |
+|---|---|---|
+| **Always-RAM** | `CLAUDE.md`, the 7 unconditional rules, the agent body, tool schemas | Survives, because it is re-injected every turn |
+| **Lazy-RAM** | The 10 path-scoped rules | Reloads when a matching file is touched |
+| **Disk** | The board and one file per task: a checkpoint and a bounded session log | Nothing. It is committed markdown |
+| **Archive** | One file per finished subagent run, written by a `SubagentStop` hook | Nothing. Written after the fact |
+
+Three things make it a mechanism rather than a convention:
+
+1. **Task state has one writer.** `task.py move` changes the board row, the file's `status:` and its
+   folder together, then reads the row back. `guard-board` blocks a hand edit to the board.
+2. **A resume reads three lines, not the history.** The checkpoint holds the next step, the last
+   green commit and the open questions. The session log keeps its newest rows in the file and folds
+   the rest into a committed archive beside it.
+3. **Finished and crashed are told apart by a file.** Close-out writes `MISSION COMPLETE`. On long
+   projects, `compact-checkpoint` writes state before a compaction and `session-context` puts the
+   active tasks back in front of the agent after it.
+
+**The line to land:** *"The window closing is not an incident. It is the expected case."*
+
+---
+
+## 6. Mechanism B: process proportional to the change (6 min) - slides 12-14
+
+**Routing tiers**, decided before anything is dispatched. Most changes are Inline or Direct.
 
 | Tier | The change | Who runs it |
 |---|---|---|
-| **Inline** | A question, a lookup, a doc or config edit, a fix you can see whole in one or two files | The main session itself. **No subagent, no orchestrator, no task file** |
-| **Direct** | One module, reversible, touching no contract, schema, auth, payment or infrastructure | The owning agent, called straight. **No orchestrator, no task file** |
-| **Standard** | One domain, several files, or a numbered requirement behind it | The owning agent too. A task file only when the work must survive a compaction |
-| **Guarded** | Two or more domains, *or* schema, auth, money, a public contract, a migration, a deploy or personal data | The `orchestrator`, and the full flow below |
+| **Inline** | A question, a lookup, a doc or config edit, a fix you can see whole | The main session. No subagent |
+| **Direct** | One module, reversible, no contract, schema, auth, payment or infrastructure | The owning agent, called straight. No task file |
+| **Standard** | One domain, several files, or a numbered requirement | The owning agent. A task file only if it must survive a compaction |
+| **Guarded** | Two or more domains, or schema, auth, money, a public contract, a migration, a deploy, personal data | The only tier that goes through the orchestrator |
 
-Direct and Standard dispatches carry `TIER: direct` or `TIER: standard` in the prompt, and
-`guard-agent-spawn` accepts that marker in place of a `TASK-NNN`; Guarded work still needs a registered
-task. A long Guarded mission can be run by starting the session as the orchestrator
-(`claude --agent orchestrator`).
+Spawn depth and concurrent subagents are capped in `settings.json` env, so a fan-out cannot run away.
+*"Choosing a heavier tier than the change needs is a defect, not caution."*
 
-**The line to land:** *"Choosing a heavier tier than the change needs is a defect, not caution. A
-one-line fix that pays for a planning pass, a task file and three reviews spends real time to learn
-nothing - and after a few of those, people stop reaching for the harness on small work. Small work is
-most work."*
+**Proportionate verification.** `verify-plan.py` reads the paths a diff touches and prints the gates
+it needs; every skipped gate is one logged line with its reason.
 
-The rest of this section describes the **Guarded** flow. Inline work stays in the main session; Direct
-and Standard work skips straight to the specialist.
+| The diff touches | What runs |
+|---|---|
+| Anything | The secret scan. Never skipped |
+| Docs or config only | No reviewer seat, no test run |
+| Code | The tests that touch it, and code review. The full suite once, at the branch gate |
+| Auth, secrets, parsing, data, AI tool calls, dependencies, infra | Security review too |
+| A named critical flow | An end-to-end run for that flow, never by default |
 
-### The state machine - five states, defined exactly once
+**The Guarded flow:** orchestrator (analyze, decompose, register) → scoped dev seats → one gate over
+the branch diff before the pull request. Reviewers hold no `Edit` or `Write`. A gate passes only when
+the session log records the run: *an agent saying "done" is a claim to verify.* With the strict hook
+set, `stop-evidence` sends back a completion claim that carries no evidence, once.
 
-| State | Meaning | Lives in |
+---
+
+## 7. Mechanism C: security (5 min) - slides 15-17
+
+**Key message:** defence in depth, and the model does not get a vote. Answers 04 and 06.
+
+| Layer | What it stops |
+|---|---|
+| 1. Deny list | What it cannot **see**: `.env`, keys, `secrets/`, `git push --force`, `rm -rf` |
+| 2. Hooks, exit 2 | What it cannot **do** |
+| 3. Tool allowlist | What it cannot **reach**: judges hold no `Edit`; only the orchestrator holds `Agent` |
+| 4. `maxTurns` and spawn caps | The runaway loop or fan-out |
+
+State the weakness yourself: the deny list is prefix matching and re-ordering defeats it. It is a
+speed bump; **the hooks are the gate.**
+
+**Hooks on every event**, each in a `.sh` and a `.ps1` flavor, shipped only with the options that
+need it (`harness-bootstrap/assets/claude/hooks/README.md` has the full table):
+
+| When | What it catches | Does |
 |---|---|---|
-| `Planned` | Registered and scoped, not started | `docs/tasks/active/` |
-| `Active` | In progress. **Exactly one owner** | `docs/tasks/active/` |
-| `Blocked` | Started, cannot proceed. Reason and unblocker recorded | `docs/tasks/active/` |
-| `Pending` | Deliberately parked, a conscious decision to defer | `docs/tasks/pending/` |
-| `Done` | Complete, results recorded | `docs/tasks/done/` |
+| Before a tool call | secrets, commits to main, Accepted ADRs, off-roster spawns, hand edits to the board, destructive commands (`rm -rf` on the root, a force push to a protected branch, `git reset --hard`), shipped migrations when a database is in the repo; the opt-in strict set adds uploads to unknown hosts, large files, lockfile edits, `curl \| sh` | blocks |
+| After a failure | the same failing call, repeated | warns, then blocks |
+| Before a stop | "all tests pass" with nothing behind it | sends it back once |
+| Around a compaction | checkpoint before, active tasks back after | never blocks |
+| After an edit | a changed spec, a stale graph, a broken link, an unsourced research claim | reminds |
 
-Point out the distinction most teams blur: *"`Blocked` wants to move and cannot. `Pending` could move
-and has been told not to."*
-
-### The orchestrator's loop - five phases, on a Guarded change only
-
-1. **Analyze** the requirement against the spec
-2. **Decompose** into tasks with dependencies
-3. **Register** on the board and create the task file. **The board allocates task IDs, never the brief**
-4. **Drive** the lifecycle: dispatch, monitor, log
-5. **Close out**: merge, audit the board, write the completion marker
-
-### Routing: who is dispatched, and why it is not one generalist
-
-- Each dev agent is scoped to real module paths, so two agents do not collide on the same files.
-- Separation of duty is **structural, not aspirational**: reviewers hold no `Edit` or `Write`. *"A
-  reviewer that edits code has become a dev agent and lost its independence."*
-- Sub-tasks that exist to make a plan look thorough are overhead, not rigour: each one is a dispatch,
-  a brief, a board row and a log row.
-
-### One gate, on the branch, at the pull-request boundary
-
-```
-/review-changes over the whole branch diff:
-  the suites → code-reviewer + security-reviewer → /secret-scan → PR opened
-```
-
-**Say the "once" out loud, because the old shape was a reviewer after each agent:** a reviewer
-dispatched per agent re-reads the same files once per agent and reports the same findings each time.
-Security review belongs to this boundary and to any moment the user asks for it - not to every change.
-
-**The most important operational rule in the whole system - land this one hard:**
-
-> A gate counts as passed **only when the task file's session log records the run.** An agent saying
-> "done" or "all gates green" is a **claim to verify**, never a fact. Orchestrators have reported "all
-> gates green" over a log containing no reviewer rows at all.
-
-This is the mechanism that makes an agent system auditable: **evidence in a file beats a status report.**
-
-### Concurrency discipline (mention briefly, it signals maturity)
-
-- One orchestrator drives a project at a time; one merger, serialized.
-- CI must be **green, not pending** - poll to a terminal state, never merge on a presumed pass.
-- On conflicting appends, **union, do not pick a side**, and prove nothing was dropped: the merged test
-  count must be greater than or equal to the sum of both sides.
-- A **post-merge board audit is required after every merge**, because a merge that resolves a board
-  collision by taking one side reverts a status flip with no error at all.
+**The strongest claim in the talk:** `eval/guardrail_eval.py` scaffolds a real harness and fires 250
+payloads at it per hook flavor: 101 must-block, 149 must-allow, 250/250 correct, on a harness scaffolded
+with the strict hooks, the long-session hooks and the database guard on (`hooks_strict`, `long`, `db`).
+No model is consulted: the guardrails are shell scripts, so the result cannot depend on the model. *"A cheap model cannot commit a secret. Not because it knows
+better, but because the hook exits 2 and the tool call never happens."* Then the honest limit: this
+is the floor, not the ceiling.
 
 ---
 
-## Section 6. Mechanism 3: multi-layer security (5 min)
+## 8. Cost and the rest of the frontmatter (3 min) - slide 18
 
-**Key message:** Defence in depth, and the repo is explicit about which layers are real.
+**Key message:** the expensive setup is the one you get by not choosing.
 
-### The distinction that matters: enforced versus advisory
+- **Model and effort per seat.** Opus for judgment and gates, Sonnet for work against a contract,
+  Haiku for mechanical seats; low and medium effort wherever the contract is settled.
+- **The rest of the frontmatter, set on purpose.** `disallowedTools` on every judge,
+  `permissionMode` so a gate never stalls on a prompt, `omitClaudeMd` on reviewers, `memory` only on
+  seats that learn the repo.
+- **Briefs written for current models.** No "double-check" or "final verification" instructions -
+  current models verify their own work, so the check lives in the gate once. Explicit limits on what
+  a seat may delegate.
 
-Most "AI safety" in codebases is advisory text that a model may ignore after compaction. State which
-of your layers the model **does not get a vote** on:
-
-**Enforced - the model does not get a vote:**
-
-| Layer | Mechanism | What it stops |
-|---|---|---|
-| **1. Deny list** | `permissions.deny` in `settings.json`: `Read(**/.env)`, `Read(**/*.pem)`, `Read(**/secrets/**)`, `Bash(git push --force:*)`, `Bash(rm -rf:*)`, plus a Restricted-paths slot | What the agent cannot **see**. The action never reaches a tool call |
-| **2. PreToolUse hooks, exit code 2** | `protect-secrets`, `guard-main-commit`, `check-commit-msg`, `protect-adr` | What the agent cannot **do**: read a `.env`, commit to `main`, ship a bad commit message, edit an `Accepted` ADR |
-| **3. Tool allowlist** | `tools:` in agent frontmatter | What the agent cannot **reach**. Least privilege per seat |
-| **4. `maxTurns`** | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. *"The cost of a stuck agent is unbounded"* |
-
-**Advisory - useful, but honest about it:** the rules files, agent bodies, and effort settings. They
-shape behaviour; they do not enforce it.
-
-**Asset:** `docs/assets/control-layers.svg`; Clip 3, "The control layers" (~31s).
-
-### Why layering matters: state the weakness yourself
-
-> The deny list is **prefix matching** and is defeated by re-ordering (`rm -r -f`). It is a speed bump.
-> **The hooks are the gate.** Saying this out loud is what makes the rest of the claims credible.
-
-### The strongest claim in the talk
-
-`eval/guardrail_eval.py` scaffolds a real harness and fires **40 known-bad and known-good payloads**
-at it: **50 must-block, 72 must-allow, 122/122 correct.**
-
-> *"A cheap model cannot commit a secret. It cannot commit straight to main. It cannot edit an
-> accepted ADR. Not because it knows better, but because the hook exits 2 and the tool call never
-> happens."*
-
-Swap Opus for Haiku and the result is **byte-identical**. The safety floor is **model-independent**.
-
-**State the honest limit immediately after:** this measures the **floor, not the ceiling**. Code
-quality and review depth *do* degrade with a cheaper model. The eval does not measure that.
-
-### Governance layer (30 seconds)
-
-Three governance rules ship, and the skill **never invents a policy for your company**:
-`model-policy` (data classification decides which model may process what), `ip-compliance`
-(dependency licence allow and deny lists), `ai-governance` (which actions require a human - shipped
-only with the `ai` flag).
+Modelled by `benchmark/model_cost.py`: the default roster costs $2.523 per feature, 32% below Opus
+at xhigh everywhere. Say "modelled", never "measured".
 
 ---
 
-## Section 7. Cost as a design decision (3 min)
+## 9. One harness, three tools (2 min) - slide 19
 
-**Key message:** The expensive configuration is the one you get by *not choosing*.
-
-Every agent carries an explicit `model:` **and** `effort:`. An unset `model:` inherits the caller's
-tier, which bills mechanical work at Opus rates.
-
-| Tier | Seats | Why |
-|---|---|---|
-| `opus` | orchestrator, debugger, code-reviewer, security-reviewer | Judgment under incomplete information. The gates |
-| `sonnet` | dev agents, `qa-test`, `spec-guardian`, `ba-analyst` | Bounded work against a written contract |
-| `haiku` + `low` | `history-tracker`, `db-seeder` | High volume, mechanical, no judgment |
-
-Modelled cost of **one feature** through the harness (`benchmark/model_cost.py`):
-
-| Profile | USD / feature | vs default | Per 100 features |
-|---|---:|---:|---:|
-| all-frontier (fable, xhigh) | 8.007 | 2.92x | 791 |
-| all-opus (xhigh, no effort tuning) | 4.004 | 1.46x | 400 |
-| **DEFAULT roster** | **2.746** | **1.00x** | **275** |
-| economy (gates opus, rest haiku) | 2.152 | 0.78x | 215 |
-| haiku-only (medium) | 0.708 | 0.26x | 71 |
-
-> **The default roster costs 31% less than putting Opus at xhigh everywhere, which is the configuration
-> a team lands on by not choosing.**
-
-Context is the other lever: 10 of 16 rules are path-scoped, keeping **68% of rule content out of the
-default session**. A rule without `paths:` is rent paid on every request of every agent, forever.
+Rules port to `.cursor/rules/*.mdc` and `AGENTS.md`; enforcement ports to `.cursor/hooks.json` (with
+an adapter) and `.codex/hooks.json`. All three block a secret read and a commit to main; the port
+adapter self-test is 32/32 across both hook flavors. Limits, out loud: Codex edits via `apply_patch`
+so the ADR guard is best-effort; Cursor's `afterFileEdit` only observes; neither tool has a
+subagent-spawn hook point.
 
 ---
 
-## Section 8. Portability: one harness, three tools (2 min)
+## 10. Is it actually wired? (2 min) - slide 20
 
-| | Claude Code | Cursor | Codex |
-|---|---|---|---|
-| Rules | `.claude/rules/*.md` | `.cursor/rules/*.mdc` + `AGENTS.md` | `AGENTS.md` (native) |
-| Enforcement | `settings.json` hooks | `.cursor/hooks.json` + generated adapter | `.codex/hooks.json` (registers directly) |
-| Blocks a secret read / commit to main | yes | yes | yes |
+`tools/harness-view` reads what is on disk with no model in the loop:
 
-One command: `python scripts/port.py --target . --tool all`. The adapter is unit-tested in CI (32/32, both hook flavours).
-
-**State the three honest limits out loud** - it buys credibility and pre-empts the sharpest question:
-Codex routes edits through `apply_patch`, so `protect-adr` is best-effort there; Cursor's
-`afterFileEdit` is observational, so an ADR edit is flagged rather than blocked; and
-`guard-agent-spawn` does not port at all, because neither tool has Claude Code's `Agent` tool and so
-neither exposes a subagent-spawn hook point.
+- **Reads any harness** - code repos and research or writing repos, orchestrator-kit installs too;
+  every documented frontmatter field; hooks on every event, from `settings.json` and from a seat's
+  own `hooks:`.
+- **Assess** - every finding links to its node: a seat with no module, an unregistered hook, a task
+  whose board row and file disagree (marked `DRIFT`).
+- **Edits** - park a rule, hook or seat (recorded in `.claude/disabled.json`; switching off a
+  reviewer needs a typed confirmation), reorder a command's steps, set a seat's model, effort and
+  tools.
 
 ---
 
-## Section 8b. Seeing whether it is actually wired (2 min)
+## 11. Live demo (8 min) - slide 21 as fallback
 
-**Key message:** A harness that looks configured and has a hook nobody registered is a harness that
-is not there. `tools/harness-view` reads what is on disk, with no model in the loop.
+Use a real repository with existing code; brownfield convinces, an empty folder does not.
 
-- **The graph.** Agents, rules, commands, hooks, skills and tasks, with the edges between them, plus a
-  Flow view that runs from `settings.json` to the human.
-- **`assess`.** Scores a harness against the project's own quality gate and links every finding back to
-  the node that caused it: a seat with no module, a rule matching no path, a skill no agent was told
-  to use. Run against three real harnesses it scores 99, 90 and 64 out of 100.
-- **And it edits.** Park a rule, hook, command or seat (recorded in `.claude/disabled.json`, and
-  switching off a reviewer needs a human to type the confirmation phrase); reorder, retitle or switch
-  off a command's numbered steps; set a seat's `model`, `effort` and `tools` from pickers backed by a
-  four-vendor reference you can edit per repository.
+1. **(30s)** The repo before: source, no `.claude/`.
+2. **(90s)** `/harness-bootstrap`: it reads the code first, asks the purpose, shows the plan with
+   every seat's model and effort. Nothing is written yet.
+3. **(30s)** Approve. Read the wall-clock off the run (~0.2s).
+4. **(2 min)** **Break it on purpose** - `cat .env`, a commit on `main`, an edit to an Accepted ADR.
+   All blocked. This is the moment the talk is built around.
+5. **(90s)** `python eval/guardrail_eval.py` live. *"No model was consulted. These are exit codes."*
+6. **(60s)** `python .claude/scripts/verify-plan.py` on a docs-only change: secret scan, nothing else.
+7. **(60s)** `/task-resume` in a fresh session: it reads the checkpoint and picks up mid-task.
 
-**The line to land:** *"Everything you have just seen is a file on disk, so a tool with no model in it
-can tell you whether the harness you were promised is the harness you have."*
+Fallbacks: tooling fails → clip 4, then the gallery. Short on time → cut 6 and 7, **never 4 or 5**.
 
 ---
 
-## Section 9. Live demo (8 min)
+## 12. Proof (3 min) - slide 22
 
-**Key message:** It is real, it is fast, and the guardrails actually fire.
-
-Use a **real repository with existing code**. Brownfield is far more convincing than an empty folder.
-
-1. **(30s) The repo before.** No `.claude/`, no `docs/`. Just source.
-2. **(90s) Run `/harness-bootstrap`.** Let them watch it *read the code first*. Show the Inventory
-   Report and the intake. Stop at the setup plan: nothing is written yet, and the plan names every
-   agent's model and effort budget.
-3. **(30s) Approve and scaffold.** Call the wall-clock off the run in front of you - it lands in
-   **~0.2s**. Contrast with a model generating the same content: minutes, real money, and it can
-   hallucinate a hook that never runs.
-4. **(60s) Tour what landed.** `.claude/agents/`, `rules/`, `hooks/`, `settings.json`, `docs/tasks/`.
-5. **(2 min) Break it on purpose. This is the moment the talk is built around.**
-   - `cat .env` → blocked
-   - `git commit` on `main` → blocked, with the hook's message
-   - Edit an Accepted ADR → blocked
-6. **(90s) Prove it is not the model being polite.** Run `python eval/guardrail_eval.py` live:
-   **112/112** in seconds. Say it: *"No model was consulted. These are exit codes."*
-7. **(60s) Show resume.** Open a task file with its session log, then `/task-resume` in a fresh
-   session and watch it pick up mid-task.
-
-**Fallbacks, decided in advance:**
-- Tooling fails → play clip 4 (~54s), then the gallery
-- Short on time → cut steps 4 and 7. **Never cut step 5 or 6**
-- Pre-capture the eval output as a screenshot
-
----
-
-## Section 10. Proof and results (4 min)
-
-**Key message:** Every number comes from a script in this repo, and you can re-run all of them.
-
-### Safety
-
-| Claim | Figure | Source |
-|---|---|---|
-| Known-bad and known-good payloads handled correctly | **122/122** (50 blocked, 72 allowed) | `eval/guardrail_eval.py` |
-| Result after swapping Opus for Haiku | **byte-identical** | same eval |
-| Cursor/Codex port adapter | **32/32** | `port.py --self-test` |
-
-### Efficiency of the harness itself
+Every figure comes from a script and `scripts/check_numbers.py` fails CI if a document drifts.
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | **156,205** | **-33%** |
-| Read path (files read) | 24 | **10** | **-58%** |
-| Write path (bytes the model must author) | 95,064 | **9,439** | **-90%** |
+| Read path (bytes pulled into context) | 234,196 | 178,719 | -24% |
+| Read path (files read) | 24 | 10 | -58% |
+| Write path (bytes the model must author) | 95,064 | 9,439 | -90% |
 
-### Session tax (paid on every request, of every agent, forever)
+- 73% of rule content kept out of the default session
+- Guardrail eval 250/250 (`hooks_strict`, `long`, `db` on), no model consulted
+- Scaffold ~0.2s, and a re-run reports `KEPT` for every file
 
-| | Rules | Bytes |
-|---|---:|---:|
-| Unconditional (always loaded) | 7 | 28,821 |
-| Path-scoped (on demand) | 10 | 60,290 |
-| **Kept out of the default session** | | **62%** |
-
-### Cost per feature (modelled)
-
-The table is in Section 7; do not put it on screen twice. What belongs here is where the money goes in
-the default roster, per feature: `app-dev` $0.778, `orchestrator` $0.716, `code-reviewer` $0.421,
-`security-reviewer` $0.404, `qa-test` $0.314, `spec-guardian` $0.088, `history-tracker` $0.025.
-
-### Scaffold
-
-**~0.2s**, exit 0. Re-run is **idempotent**: everything reports `KEPT`, nothing is clobbered. An
-unresolved variable exits non-zero rather than shipping a placeholder into a live rule.
-
-### What ships
-
-**16** agents (+1 template), **16** rules, **22** commands, **10** hooks.
-
-### Say this out loud, it is what makes the rest believable
-
-- **Byte counts are exact**, counted from disk. **Token and cost figures are MODELLED**, derived at
-  3.6 chars/token with no API key set. Do not present modelled numbers as measured.
-- The **cost model cannot tell you whether a cheaper roster produces acceptable work.** That is a
-  quality question. The eval measures only the safety floor.
-- CI enforces all of it: the guardrail eval, a scaffold matrix on Linux and Windows, a diagram render
-  check, and a check that **every figure in the docs matches what the scripts print**. The numbers
-  cannot silently drift.
-
-**Optional credibility slide:** `docs/ASSESSMENT.md` states honestly what is *not* solved. With a
-technical audience this is usually the moment they start trusting you.
+Byte counts are exact; token and cost figures are modelled at 3.6 chars per token.
 
 ---
 
-## Section 11. Close and call to action (2 min)
+## 13. Close (2 min) - slide 23
 
-- Recap against the opening contrast: ad-hoc → engineered, on all four axes (contract, roles, memory, control).
-- The three mechanisms, one line each: **context survives**, **process is proportional to the change
-  and gated once on the branch**, **damage is blocked by exit codes**.
-- The ask, on screen:
-  ```
-  /spec-builder           # write the contract first
-  /harness-bootstrap      # build the harness for this repo
-  ```
-- Point to the repo, the clip gallery, and `docs/FLOWS.md`.
-- Invite the first pilot: offer to run it live on a volunteer's repository after the session.
+The agent understands the repo. It cannot leave the harness. The work is checked in proportion to
+the change.
+
+```
+/spec-builder           # write the contract first
+/harness-bootstrap      # build the harness for this repo
+```
+
+Point to the repo, the clip gallery and `docs/FLOWS.md`, and offer to run it on a volunteer's repo.
 
 ---
 
@@ -510,14 +297,14 @@ technical audience this is usually the moment they start trusting you.
 
 | Question | Short answer |
 |---|---|
-| *Does this lock us into Claude Code?* | No. It ports to Cursor and Codex with enforcement. `AGENTS.md` is the vendor-neutral contract |
-| *What if we already have a `.claude/` folder?* | It reconciles, never clobbers. Differences are reported as `CONFLICT` for you to merge |
-| *Can the agent work around a hook?* | The deny list is prefix matching and is defeatable; that is a speed bump. The hooks are the gate: they fire before the tool runs and exit 2 |
-| *Does a cheaper model break safety?* | No, and it is proven: byte-identical eval on Haiku. What degrades is code quality and review depth |
-| *How much does it cost?* | $2.746 per feature modelled on the default roster, 31% below the not-choosing configuration. Three presets: Default / Economy / Thorough |
+| *Does this lock us into Claude Code?* | No. It ports to Cursor and Codex with enforcement; `AGENTS.md` is the vendor-neutral contract |
+| *We already have a `.claude/` folder.* | It reconciles, never clobbers. Differences come back as `CONFLICT` |
+| *Our repo is research, not code.* | Purpose profiles: a research repo gets `researcher` and `checker`, verified by sources, with no test or code-review seat |
+| *Can the agent work around a hook?* | The deny list can be; it is a speed bump. Hooks fire before the tool runs and exit 2 |
+| *Does a cheaper model break safety?* | No: no model is consulted, the guardrails are shell scripts, so the result cannot depend on the model. Code quality and review depth do degrade |
+| *Does this slow developers down?* | Not on small work. Inline and Direct skip the orchestrator and the task file, and a docs change gets no reviewer at all |
 | *Is this just a big CLAUDE.md?* | A CLAUDE.md is advice the model may forget after compaction. This is enforcement plus durable state |
-| *Who owns the policy decisions?* | You do. Governance rules ship as blanks. The skill never invents a licence policy or a classification table |
-| *Does this slow developers down?* | Not on small work: a small edit is Inline (the main session does it itself) and a one-module, reversible change is Direct - straight to the owning agent, no orchestrator, no task file. The full flow is reserved for changes that span domains or touch schema, auth, money, a contract, a migration, a deploy or personal data, and the gate runs once on the branch rather than after every agent |
+| *Who owns the policy decisions?* | You do. Governance rules ship as blanks; the skill never invents a licence policy or a classification table |
 
 ---
 
@@ -525,45 +312,22 @@ technical audience this is usually the moment they start trusting you.
 
 | Slot | What to do |
 |---|---|
-| **20 min** | Sections 0, 1 (both halves, condensed), 3, 6, short demo (steps 2, 3, 5, 6), 11. Cut 4, 5, 7, 8, 8b, 10 |
-| **40 min** (default) | As written |
-| **60 min** | Add a `docs/FLOWS.md` walkthrough, a deeper `spec-builder` pass with clip 5, the `ASSESSMENT.md` limits discussion, and a second demo in audit mode |
+| **20 min** | Sections 0, 1, 3, 7, a short demo (steps 2, 4, 5), 13 |
+| **40 min** | As written |
+| **60 min** | Add a `docs/FLOWS.md` walkthrough, a `spec-builder` pass with clip 5, the `docs/ASSESSMENT.md` limits, and an audit-mode demo |
 
-**If you must cut only one thing:** cut Section 8 (portability). **Never cut Section 1b** - the human
-prompt problem is the part the audience has not heard before.
-
-**The deck is 25 slides** (`presentation/index.html`), trilingual, and follows this outline section by
-section. It is the visual for this script, not a second copy of it: if a claim changes, change both.
+Never cut Section 0 or the human side of Section 1.
 
 ---
 
-## Asset checklist
+## Fact sheet
 
-- [ ] Clip gallery reachable: https://nguyenhx2.github.io/agent-harness-bootstrap/video/
-- [ ] Clips 2, 3, 4, 6 downloaded locally as an offline fallback
-- [ ] `docs/assets/ai-dlc-flow.svg`, `memory-hierarchy.svg`, `control-layers.svg` exported for slides
-- [ ] Demo repository chosen (with existing code) and a full dry run completed
-- [ ] `eval/guardrail_eval.py` and `benchmark/model_cost.py` output pre-captured as screenshots
-- [ ] Terminal font size raised; projector-legible contrast
-- [ ] Decide which figures you will quote, and never round them upward
+Checked by `scripts/check_numbers.py`; re-run it rather than editing a figure by hand.
 
----
-
-## Fact sheet (verified against the repo)
-
-Enforced by `scripts/check_numbers.py`, so these will not drift:
-
-- **16** agents (+1 dev-agent template), **16** rules, **22** commands, **10** hooks
-- **7** rules unconditional, **9** path-scoped → **68%** of rule content stays out of session
-- Always-RAM rules **28,821 bytes**; path-scoped **60,290 bytes**
-- Read path **-34%** (234,196 -> 155,597 bytes), files read **-58%** (24 -> 10)
-- Write path **-90%** (95,064 → 9,439 bytes)
-- Guardrail eval **112/112** (50 must-block, 72 must-allow), model-independent
-- Port adapter self-test **32/32**
-- Default roster **$2.746 per feature** modelled, **31%** below all-opus-xhigh
-- Scaffold **~0.2s**, idempotent on re-run
-- Roster **7 to 15 of the 16 seats**, never all of them by default
-- Four tiers of process: Inline, Direct, Standard, Guarded - and the gate runs once, on the branch, with tests verified per feature rather than per step
+- 18 agents (+1 dev-agent template), 17 rules, 23 commands, 26 hooks
+- 7 unconditional rules, 10 path-scoped; 73% of rule content stays out of the default session
+- Guardrail eval 250/250 (101 must-block, 149 must-allow) with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 32/32
+- Four routing tiers: Inline, Direct, Standard, Guarded - only Guarded uses the orchestrator
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
-- Three modes: Greenfield, Brownfield, Audit
-- `harness-view assess` on three real harnesses: **99**, **90** and **64** out of 100
+- Four modes: Greenfield, Brownfield, Audit, Update
+- Four purposes: code, research, strategy, docs

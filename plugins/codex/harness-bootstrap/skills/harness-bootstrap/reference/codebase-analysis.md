@@ -20,6 +20,13 @@ files, dispatch THREE `Explore` agents in ONE message and merge their reports -
 Each prompt names its passes verbatim from the list below and requires evidence paths. A smaller
 repo is cheaper single-pass inline - dispatch overhead outweighs the parallelism.
 
+0. **Purpose** - what the repo produces, which sets the purpose flags intake Q0 confirms. Source
+   files and a build manifest → `purpose_code`. A tree that is mostly prose, with a docs-site
+   config (`mkdocs.yml`, `docusaurus.config.*`, `conf.py`, `_config.yml`) and no product source →
+   `purpose_docs`. Notes, literature, datasets and citations with no build → `purpose_research`.
+   Decision memos, option papers, plans and analyses → `purpose_strategy`. Two at once is common -
+   a product with its own docs site is `purpose_code` + `purpose_docs`. Without `purpose_code`, skip
+   the code-only passes (3, 4 and the stack half of 1) and say so in the report.
 1. **Stack** - manifests → language, framework, test runner, lint/format tools, pinned versions.
    Lockfile → package manager. The scripts block → the real test/lint/build/deploy commands.
    Installed reality always beats any preset - see [`tech-presets.md`](tech-presets.md) for the
@@ -176,6 +183,7 @@ dead guardrail.
 
 | Flag | Set when the analysis finds |
 |---|---|
+| `purpose_*` | Pass 0 - one or more of `purpose_code`, `purpose_research`, `purpose_strategy`, `purpose_docs` |
 | `ui` | A rendering layer: components, pages/routes, templates, a design-token or CSS-framework config |
 | `db` | A schema, an ORM, or migrations |
 | `ai` | An LLM/model provider SDK whose output reaches users or drives a decision |

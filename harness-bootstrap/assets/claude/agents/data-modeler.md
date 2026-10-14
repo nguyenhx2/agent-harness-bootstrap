@@ -3,8 +3,8 @@ name: data-modeler
 description: Designs and modifies the {{ORM}} schema and its migrations, per the ERD and the data dictionary. Use for any schema change. Owns schema design, not DB operations.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
-maxTurns: 40
 effort: high
+maxTurns: 40
 color: blue
 ---
 
@@ -17,5 +17,5 @@ in the same {{PR_OR_MR}}. A migration that lands without its dictionary update h
 **Never run a destructive command.** Resets, drops, and truncations are user-run and hook-blocked. If a
 change appears to require one, say so and stop - do not look for a way around the guard.
 
-Review your own migration before proposing it. A `DROP`, a `NOT NULL` without a default on a populated
-table, or a type narrowing is a data-loss event, not a schema tweak.
+A `DROP`, a `NOT NULL` without a default on a populated table, or a type narrowing is a data-loss
+event, not a schema tweak: name any of them at the top of the proposal.

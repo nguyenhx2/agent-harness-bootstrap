@@ -1,0 +1,787 @@
+{
+  "edges": [
+    {
+      "from": "agent:editor",
+      "to": "gate:merge-request",
+      "type": "reviews"
+    },
+    {
+      "from": "agent:editor",
+      "to": "task:TASK-003-review-the-draft",
+      "type": "owns"
+    },
+    {
+      "from": "agent:lead-researcher",
+      "to": "agent:researcher",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:editor",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:lead-researcher",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:researcher",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "agent:writer",
+      "type": "spawns"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "hook:scope-guard",
+      "type": "refers"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "hook:scope-guard",
+      "type": "triggers"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "hook:spawn-guard",
+      "type": "refers"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "hook:spawn-guard",
+      "type": "triggers"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "hook:task-board-guard",
+      "type": "refers"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "rule:orchestration",
+      "type": "cites"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "script:orchestrator-selftest",
+      "type": "runs"
+    },
+    {
+      "from": "agent:orchestrator",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "agent:researcher",
+      "to": "task:TASK-001-collect-sources-on-field-notebooks",
+      "type": "owns"
+    },
+    {
+      "from": "agent:writer",
+      "to": "hook:style-lint",
+      "type": "refers"
+    },
+    {
+      "from": "agent:writer",
+      "to": "hook:style-lint",
+      "type": "triggers"
+    },
+    {
+      "from": "agent:writer",
+      "to": "skill:citation-style",
+      "type": "uses"
+    },
+    {
+      "from": "agent:writer",
+      "to": "task:TASK-002-draft-the-comparison",
+      "type": "owns"
+    },
+    {
+      "from": "agent:writer",
+      "to": "task:TASK-004-translate-the-summary",
+      "type": "owns"
+    },
+    {
+      "from": "gate:merge-request",
+      "to": "human",
+      "type": "escalates"
+    },
+    {
+      "from": "hook:scope-guard",
+      "to": "hook:orch-lib",
+      "type": "sources"
+    },
+    {
+      "from": "hook:spawn-guard",
+      "to": "hook:orch-lib",
+      "type": "sources"
+    },
+    {
+      "from": "hook:spawn-guard",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "hook:task-board-guard",
+      "to": "hook:orch-lib",
+      "type": "sources"
+    },
+    {
+      "from": "hook:task-board-guard",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "instr:agents",
+      "to": "agent:editor",
+      "type": "briefs"
+    },
+    {
+      "from": "instr:agents",
+      "to": "agent:orchestrator",
+      "type": "briefs"
+    },
+    {
+      "from": "instr:agents",
+      "to": "agent:orchestrator",
+      "type": "routes"
+    },
+    {
+      "from": "instr:agents",
+      "to": "agent:researcher",
+      "type": "briefs"
+    },
+    {
+      "from": "instr:agents",
+      "to": "agent:writer",
+      "type": "briefs"
+    },
+    {
+      "from": "instr:agents",
+      "to": "rule:agent-guardrails",
+      "type": "cites"
+    },
+    {
+      "from": "instr:agents",
+      "to": "rule:orchestration",
+      "type": "cites"
+    },
+    {
+      "from": "instr:agents",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "instr:claude",
+      "to": "agent:orchestrator",
+      "type": "briefs"
+    },
+    {
+      "from": "instr:claude",
+      "to": "hook:scope-guard",
+      "type": "refers"
+    },
+    {
+      "from": "instr:claude",
+      "to": "hook:spawn-guard",
+      "type": "refers"
+    },
+    {
+      "from": "instr:claude",
+      "to": "hook:task-board-guard",
+      "type": "refers"
+    },
+    {
+      "from": "instr:claude",
+      "to": "instr:agents",
+      "type": "imports"
+    },
+    {
+      "from": "instr:claude",
+      "to": "script:orchestrator-selftest",
+      "type": "runs"
+    },
+    {
+      "from": "instr:claude",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:editor",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:lead-researcher",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:orchestrator",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:researcher",
+      "type": "gates"
+    },
+    {
+      "from": "rule:agent-guardrails",
+      "to": "agent:writer",
+      "type": "gates"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "agent:orchestrator",
+      "type": "refers"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "hook:orch-lib",
+      "type": "refers"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "hook:spawn-guard",
+      "type": "refers"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "hook:task-board-guard",
+      "type": "refers"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "script:orchestrator-selftest",
+      "type": "runs"
+    },
+    {
+      "from": "rule:orchestration",
+      "to": "script:task",
+      "type": "runs"
+    },
+    {
+      "from": "settings",
+      "to": "hook:permission-audit",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:precompact-save",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:prompt-log",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:session-brief",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:stop-check",
+      "type": "triggers"
+    },
+    {
+      "from": "settings",
+      "to": "hook:task-board-guard",
+      "type": "triggers"
+    }
+  ],
+  "nodes": [
+    {
+      "disabled": false,
+      "file": ".claude/agents/editor.md",
+      "id": "agent:editor",
+      "label": "editor",
+      "meta": {
+        "color": "blue",
+        "description": "Reviews drafts for accuracy, tone and structure. Reports; never rewrites.",
+        "effort": "high",
+        "maxTurns": 20,
+        "model": "opus",
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/lead-researcher.md",
+      "id": "agent:lead-researcher",
+      "label": "lead-researcher",
+      "meta": {
+        "description": "Splits a broad question into searches and runs them in parallel through the researcher.",
+        "effort": "medium",
+        "maxTurns": 25,
+        "model": "sonnet",
+        "spawns": [
+          "Explore",
+          "researcher"
+        ],
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob",
+          "Agent(researcher, Explore)"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/orchestrator.md",
+      "id": "agent:orchestrator",
+      "label": "orchestrator",
+      "meta": {
+        "description": "2 つ以上の専門領域にまたがる依頼を、タスクボードに登録したタスクへ分解し、専門エージェントへ委譲・検証・進捗管理する指揮役。「実装してレビューして docs まで反映」のように、複数の専門エージェントを順序付きで動かす依頼（Guarded 区分）で使う。1 つの専門エージェントで済む依頼、小さな修正、質問への回答、調査だけの依頼には使わない。",
+        "effort": "high",
+        "hooks": [
+          "PreToolUse Agent -> spawn-guard",
+          "PreToolUse Edit|Write|MultiEdit|NotebookEdit -> scope-guard"
+        ],
+        "maxTurns": 100,
+        "model": "opus",
+        "permissionMode": "default",
+        "spawnAllowlist": [
+          "Explore",
+          "Plan"
+        ],
+        "tier": "Guarded",
+        "tools": [
+          "Agent",
+          "Read",
+          "Grep",
+          "Glob",
+          "Bash",
+          "Write",
+          "Edit",
+          "AskUserQuestion"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/researcher.md",
+      "id": "agent:researcher",
+      "label": "researcher",
+      "meta": {
+        "description": "Finds and summarises sources for a brief. Read-only; returns notes with citations.",
+        "effort": "medium",
+        "maxTurns": 30,
+        "model": "sonnet",
+        "permissionMode": "plan",
+        "tools": [
+          "Read",
+          "Grep",
+          "Glob",
+          "WebSearch",
+          "WebFetch"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/agents/writer.md",
+      "id": "agent:writer",
+      "label": "writer",
+      "meta": {
+        "background": false,
+        "cacheTtl": "1h",
+        "color": "green",
+        "description": "Drafts and revises documents under docs/ from the researcher's notes.",
+        "disallowedTools": [
+          "Bash(rm *)",
+          "WebFetch"
+        ],
+        "effort": "medium",
+        "hooks": [
+          "PostToolUse Edit|Write -> style-lint",
+          "Stop -> prompt: Check every claim in the draft cites a source."
+        ],
+        "initialPrompt": "Read the brief in docs/brief.md first.\nThen ask the researcher for sources.",
+        "isolation": "worktree",
+        "maxTurns": 40,
+        "mcpServers": [
+          "drive",
+          "glossary"
+        ],
+        "memory": "project",
+        "model": "sonnet",
+        "omitClaudeMd": false,
+        "permissionMode": "acceptEdits",
+        "skills": [
+          "citation-style"
+        ],
+        "tools": [
+          "Read",
+          "Write",
+          "Edit",
+          "Grep",
+          "Glob"
+        ]
+      },
+      "type": "agent"
+    },
+    {
+      "disabled": false,
+      "id": "gate:merge-request",
+      "label": "Merge request",
+      "synthetic": true,
+      "type": "gate"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/orch-lib.sh",
+      "id": "hook:orch-lib",
+      "label": "orch-lib",
+      "meta": {
+        "library": true,
+        "registered": false
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/permission-audit.sh",
+      "id": "hook:permission-audit",
+      "label": "permission-audit",
+      "meta": {
+        "blocking": true,
+        "event": "PermissionRequest",
+        "matcher": "Bash",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/precompact-save.sh",
+      "id": "hook:precompact-save",
+      "label": "precompact-save",
+      "meta": {
+        "blocking": false,
+        "event": "PreCompact",
+        "matcher": "auto",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/prompt-log.sh",
+      "id": "hook:prompt-log",
+      "label": "prompt-log",
+      "meta": {
+        "blocking": false,
+        "event": "UserPromptSubmit",
+        "matcher": "*",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/scope-guard.sh",
+      "id": "hook:scope-guard",
+      "label": "scope-guard",
+      "meta": {
+        "blocking": true,
+        "event": "PreToolUse",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "registered": true,
+        "scope": [
+          "orchestrator"
+        ]
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/session-brief.sh",
+      "id": "hook:session-brief",
+      "label": "session-brief",
+      "meta": {
+        "blocking": false,
+        "event": "SessionStart",
+        "matcher": "*",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/spawn-guard.sh",
+      "id": "hook:spawn-guard",
+      "label": "spawn-guard",
+      "meta": {
+        "blocking": true,
+        "event": "PreToolUse",
+        "matcher": "Agent",
+        "registered": true,
+        "scope": [
+          "orchestrator"
+        ]
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/stop-check.sh",
+      "id": "hook:stop-check",
+      "label": "stop-check",
+      "meta": {
+        "blocking": false,
+        "event": "Stop",
+        "events": [
+          "Stop",
+          "SubagentStop"
+        ],
+        "matcher": "*",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/style-lint.sh",
+      "id": "hook:style-lint",
+      "label": "style-lint",
+      "meta": {
+        "blocking": false,
+        "event": "PostToolUse",
+        "matcher": "Edit|Write",
+        "registered": true,
+        "scope": [
+          "writer"
+        ]
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/hooks/task-board-guard.sh",
+      "id": "hook:task-board-guard",
+      "label": "task-board-guard",
+      "meta": {
+        "blocking": true,
+        "event": "PreToolUse",
+        "matcher": "Edit|Write|MultiEdit",
+        "registered": true
+      },
+      "type": "hook"
+    },
+    {
+      "disabled": false,
+      "id": "human",
+      "label": "Human",
+      "synthetic": true,
+      "type": "human"
+    },
+    {
+      "disabled": false,
+      "edit": {
+        "key": "agents",
+        "name": ""
+      },
+      "file": "AGENTS.md",
+      "id": "instr:agents",
+      "label": "AGENTS.md",
+      "meta": {
+        "bytes": 2526,
+        "note": "Kiro is deliberately absent from this list: no first-party Kiro page confirms that it reads AGENTS.md, so the claim is unverified and is not made here. Kiro's documented instruction surface is .kiro/steering/.",
+        "source": "docs/tools/claude-code.md; docs/tools/codex.md; docs/tools/cursor.md; antigravity.google/docs/cli/best-practices",
+        "tools": [
+          "Claude Code",
+          "Codex",
+          "Cursor",
+          "Antigravity"
+        ],
+        "verified": true
+      },
+      "tiers": [
+        {
+          "adds": "",
+          "change": "質問・調査、1〜2 ファイルの修正で、契約・スキーマ・認証に触れないもの",
+          "tier": "Direct",
+          "who": "メインエージェントが直接行う。タスク登録なし"
+        },
+        {
+          "adds": "",
+          "change": "1 つの専門領域で完結する（1 本の調査メモの追記）",
+          "tier": "Standard",
+          "who": "担当の専門エージェントへ直接委譲する。タスク登録なし"
+        },
+        {
+          "adds": "",
+          "change": "2 つ以上の専門領域にまたがる（実装 → レビュー → docs など）、工程に順序依存と手戻りがある",
+          "tier": "Guarded",
+          "who": "`orchestrator` が分解・委譲・検証する。タスクボードに登録する"
+        }
+      ],
+      "type": "instruction"
+    },
+    {
+      "disabled": false,
+      "edit": {
+        "key": "claude",
+        "name": ""
+      },
+      "file": "CLAUDE.md",
+      "id": "instr:claude",
+      "label": "CLAUDE.md",
+      "meta": {
+        "bytes": 1820,
+        "note": "A thin @AGENTS.md import plus the Claude-only surface; it is not a second contract.",
+        "source": "docs/tools/claude-code.md; harness-bootstrap/assets/root/CLAUDE.md",
+        "tools": [
+          "Claude Code"
+        ],
+        "verified": true
+      },
+      "type": "instruction"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/rules/agent-guardrails.md",
+      "id": "rule:agent-guardrails",
+      "label": "agent-guardrails",
+      "meta": {
+        "scoped": false
+      },
+      "type": "rule"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/rules/orchestration.md",
+      "id": "rule:orchestration",
+      "label": "orchestration",
+      "meta": {
+        "paths": [
+          ".agent-base/tasks/**",
+          ".claude/agents/**",
+          ".claude/hooks/**",
+          ".claude/scripts/task.sh"
+        ],
+        "scoped": true
+      },
+      "type": "rule"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/scripts/orchestrator-selftest.sh",
+      "id": "script:orchestrator-selftest",
+      "label": "orchestrator-selftest.sh",
+      "type": "script"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/scripts/task.sh",
+      "id": "script:task",
+      "label": "task.sh",
+      "type": "script"
+    },
+    {
+      "disabled": false,
+      "edit": {
+        "key": "settings",
+        "name": ""
+      },
+      "file": ".claude/settings.json",
+      "id": "settings",
+      "label": "settings.json",
+      "meta": {
+        "otherHooks": [
+          "SessionStart -> echo 'Read docs/brief.md before starting.'"
+        ]
+      },
+      "type": "settings"
+    },
+    {
+      "disabled": false,
+      "file": ".claude/skills/citation-style/SKILL.md",
+      "id": "skill:citation-style",
+      "label": "citation-style",
+      "meta": {
+        "description": "How this repository cites a source - author, title, year, link."
+      },
+      "type": "skill"
+    },
+    {
+      "disabled": false,
+      "file": ".agent-base/tasks/completed/TASK-001-collect-sources-on-field-notebooks.md",
+      "id": "task:TASK-001-collect-sources-on-field-notebooks",
+      "label": "TASK-001-collect-sources-on-field-notebooks",
+      "meta": {
+        "attempts": "0",
+        "board": ".agent-base/tasks",
+        "mission": "field-notes",
+        "owner": "researcher",
+        "status": "completed",
+        "title": "Collect sources on field notebooks"
+      },
+      "type": "task"
+    },
+    {
+      "disabled": false,
+      "file": ".agent-base/tasks/active/TASK-002-draft-the-comparison.md",
+      "id": "task:TASK-002-draft-the-comparison",
+      "label": "TASK-002-draft-the-comparison",
+      "meta": {
+        "attempts": "0",
+        "board": ".agent-base/tasks",
+        "deps": "TASK-001",
+        "mission": "field-notes",
+        "owner": "writer",
+        "status": "active",
+        "title": "Draft the comparison"
+      },
+      "type": "task"
+    },
+    {
+      "disabled": false,
+      "file": ".agent-base/tasks/pending/TASK-003-review-the-draft.md",
+      "id": "task:TASK-003-review-the-draft",
+      "label": "TASK-003-review-the-draft",
+      "meta": {
+        "attempts": "0",
+        "board": ".agent-base/tasks",
+        "deps": "TASK-002",
+        "mission": "field-notes",
+        "owner": "editor",
+        "status": "pending",
+        "title": "Review the draft"
+      },
+      "type": "task"
+    },
+    {
+      "disabled": false,
+      "file": ".agent-base/tasks/canceled/TASK-004-translate-the-summary.md",
+      "id": "task:TASK-004-translate-the-summary",
+      "label": "TASK-004-translate-the-summary",
+      "meta": {
+        "attempts": "0",
+        "board": ".agent-base/tasks",
+        "mission": "field-notes",
+        "owner": "writer",
+        "status": "canceled",
+        "title": "Translate the summary"
+      },
+      "type": "task"
+    }
+  ],
+  "version": 1
+}

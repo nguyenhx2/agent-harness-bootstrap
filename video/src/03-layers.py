@@ -93,7 +93,7 @@ class Layers(Scene):
 
         # model swap Opus -> Haiku, identical result
         model = chip("Opus", PURPLE, PURPLE_HI, fs=26, h=0.85, w=2.4).move_to([2.2, 0.7, 0])
-        result = chip("122 / 122", GREEN, GREEN_HI, fs=30, h=0.9, w=3.4).move_to([2.2, -1.2, 0])
+        result = chip("250 / 250", GREEN, GREEN_HI, fs=30, h=0.9, w=3.4).move_to([2.2, -1.2, 0])
         res_label = Text("guardrail eval", font=FONT, font_size=20, color=DIM).next_to(result, DOWN, buff=0.2)
         arrow = Arrow(model.get_bottom(), result.get_top(), buff=0.2, color=DIM, stroke_width=3)
 
@@ -108,10 +108,10 @@ class Layers(Scene):
         self.play(Transform(model, haiku), run_time=0.7)
         # result flashes but stays identical
         self.play(Indicate(result, color=GREEN_HI, scale_factor=1.15), run_time=0.9)
-        byte = Text("byte-identical safety", font=FONT, font_size=24, color=GREEN_HI, weight="BOLD")
-        byte.next_to(insight, DOWN, buff=0.4).align_to(insight, LEFT)
+        byte = Text("No model is consulted when a hook decides", font=FONT, font_size=24, color=GREEN_HI, weight="BOLD")
+        byte.next_to(res_label, DOWN, buff=0.4)
         self.play(FadeIn(byte, shift=0.1 * RIGHT), run_time=0.5)
-        caption(self, "Swap Opus to Haiku: byte-identical result. Control does not depend on the model.", hold=2.3, y=-3.6, size=22)
+        caption(self, "Swap Opus for Haiku: the same result. No model is consulted when a hook decides.", hold=2.3, y=-3.6, size=22)
         self.wait(2.2)
 
         self.play(

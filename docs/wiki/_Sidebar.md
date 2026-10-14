@@ -19,6 +19,14 @@
 - [[Troubleshooting]]
 - [[FAQ]]
 
+**日本語**
+- [[ホーム|Home-ja]]
+- [[はじめに|Getting-Started-ja]]
+- [[テーラードビルド|Tailored-Build-ja]]
+- [[Harness View|Harness-View-ja]]
+- [[トラブルシューティング|Troubleshooting-ja]]
+- [[FAQ|FAQ-ja]]
+
 ---
 - [Repository](https://github.com/nguyenhx2/agent-harness-bootstrap)
 - [Landing page](https://nguyenhx2.github.io/agent-harness-bootstrap/)

@@ -1,16 +1,14 @@
 # graph-stale.ps1
 # Event: PostToolUse   Matcher: Edit|Write
-# Non-blocking graph maintenance, three tiers by cost of the rebuild:
+# Non-blocking graph maintenance, two tiers by edited path:
 #   1. HARNESS edits (.claude/ agents, rules, commands, hooks, settings.json, disabled.json):
 #      regenerate .claude/state/harness-graph.json + harness-graph.html IMMEDIATELY - the scan
 #      is ~50 small files, cheap enough to rebuild as a side effect.
-#   2. DOCS edits (docs/**/*.md, only when a docs graph was already built): regenerate the docs
-#      graph + HTML immediately - docs trees are small too.
-#   3. SOURCE edits: record the path in .claude/state/code-graph.stale; the rebuild stays
-#      deliberate (/code-graph). Each path is recorded once; a re-edit of a recorded file is
-#      silent. Past 20 distinct files this ALSO emits
-#      hookSpecificOutput.additionalContext nudging /code-graph - same emit pattern as
-#      specs-reminder.ps1's fixed-literal JSON.
+#   2. SOURCE edits, once a module-boundary map exists (docs/context/code-graph.md, or the
+#      machine copy in .claude/state/): ask `code-graph.py --file` whether THIS file now imports
+#      across a module line the map does not list, and pass its additionalContext through. Each
+#      new edge is named once until the next /code-graph rebuild accepts it.
+# The docs graph is no longer rebuilt here: it is a check run on demand (/docs-graph).
 # Never blocks: always exit 0.
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -47,36 +45,26 @@ if ($norm -match '(^|/)\.claude/(agents|rules|commands)/.+\.md$' -or
     exit 0
 }
 
-# Tier 2: a docs file changed and a docs graph exists - rebuild it now.
-if ($norm -match '(^|/)docs/.+\.md$') {
-    $docsJson = Join-Path $base ".claude/state/docs-graph.json"
-    $docsScript = Join-Path $base ".claude/scripts/docs-graph.py"
-    if ((Test-Path $docsJson) -and (Test-Path $docsScript)) {
-        Invoke-Py @($docsScript, '--target', $base)
-        Invoke-Py @((Join-Path $base ".claude/scripts/graph-html.py"), '--target', $base)
-    }
-    exit 0
-}
-
-# Tier 3: only source files invalidate the code graph.
+# Tier 2: a source file changed - did it add a cross-module edge the boundary map lacks?
 $srcExts = @('.py', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.go', '.java', '.cs', '.rb', '.php', '.rs')
 $ext = [System.IO.Path]::GetExtension($norm)
 if ($srcExts -notcontains $ext) { exit 0 }
 
-$graph = Join-Path $base ".claude/state/code-graph.json"
-if (-not (Test-Path $graph)) { exit 0 }
+$helper = Join-Path $base ".claude/scripts/code-graph.py"
+if (-not (Test-Path $helper)) { exit 0 }
+if (-not ((Test-Path (Join-Path $base "docs/context/code-graph.md")) -or
+          (Test-Path (Join-Path $base ".claude/state/code-graph.json")))) { exit 0 }
 
-$stateDir = Join-Path $base ".claude/state"
-if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Force $stateDir | Out-Null }
-$staleFile = Join-Path $stateDir "code-graph.stale"
-# Already recorded: the graph is no staler than it was a moment ago, so say nothing.
-if ((Test-Path $staleFile) -and ((Get-Content $staleFile) -contains $norm)) { exit 0 }
-Add-Content -Path $staleFile -Value $norm
-
-$lines = (Get-Content $staleFile | Measure-Object -Line).Lines
-if ($lines -gt 20) {
-    $msg = "The code graph is now stale against $lines edited source file(s) - run /code-graph to refresh the module map before relying on it for dispatch decisions."
-    $out = @{ hookSpecificOutput = @{ hookEventName = "PostToolUse"; additionalContext = $msg } } | ConvertTo-Json -Compress
-    Write-Output $out
+# The helper prints the PostToolUse JSON itself, or nothing. Unlike Invoke-Py above, its stdout
+# is the hook's output, so it is passed through rather than discarded.
+$cmd = Get-Command python -ErrorAction SilentlyContinue
+if (-not $cmd) { $cmd = Get-Command python3 -ErrorAction SilentlyContinue }
+if ($cmd) {
+    $out = & $cmd.Source $helper --target $base --file $path --hook 2>$null
+} else {
+    $cmd = Get-Command py -ErrorAction SilentlyContinue
+    if (-not $cmd) { exit 0 }
+    $out = & $cmd.Source -3 $helper --target $base --file $path --hook 2>$null
 }
+if ($out) { Write-Output ($out -join "`n") }
 exit 0

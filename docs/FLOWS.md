@@ -1,12 +1,14 @@
 # Flows
 
+**English** · [日本語](FLOWS.ja.md)
+
 Visual reference for the two skills in this repo: `spec-builder`, which produces the requirements
 contract, and `harness-bootstrap`, which builds the machine that implements it.
 
 Every diagram below is Mermaid and renders natively on GitHub. The claims in them are taken from the
 source: `harness-bootstrap/SKILL.md`, its `reference/` docs, `scripts/scaffold.py`,
-`assets/manifest.json`, `assets/claude/settings.json`, `spec-builder/SKILL.md`, and
-`benchmark/RESULTS.md`. Section 7 is the exception - a written command reference rather than a
+`assets/manifest.json`, `assets/claude/settings.json`, `assets/claude/hooks/README.md`,
+`spec-builder/SKILL.md`, and `benchmark/RESULTS.md`. Section 7 is the exception - a written command reference rather than a
 diagram, placed here because it documents the commands diagram 4's sequence actually calls.
 
 ## Legend
@@ -48,7 +50,10 @@ it, under what guardrails, at what cost*. The decision point is whether `docs/sp
 requirements set. If it does, go straight to `harness-bootstrap`. If it does not, either run
 `spec-builder` first, or bootstrap with a single `app-dev` and register a task to split it once
 modules emerge. `harness-bootstrap` does not require specs to exist; it fields a smaller roster when
-they do not.
+they do not. When intake finds no specs it invokes `spec-builder` through the `Skill` tool rather than
+only noting the gap, and the handoff carries the confirmed `purpose_*` flags into spec-builder's
+`vars.json`, so the purpose is asked once across both skills and a repo that ships no code gets
+spec-builder's light contract.
 
 ```mermaid
 flowchart TD
@@ -58,7 +63,7 @@ flowchart TD
     SB["spec-builder<br/>elicit, scaffold selective sections<br/>(6 core always + up to 8 optional), fill"]
     SPECS[/"docs/specs/ 01-13<br/>the requirements contract"/]
 
-    HB["harness-bootstrap<br/>analyze, roster, scaffold, wire"]
+    HB["harness-bootstrap<br/>analyze, purpose, roster, scaffold, wire"]
     HARNESS[/".claude/ + docs/ + AGENTS.md + CLAUDE.md<br/>the machine"/]
 
     NOSPEC["Bootstrap anyway:<br/>Preset S, one app-dev,<br/>registered task to split later"]
@@ -97,7 +102,9 @@ truth and the context files link back to it.
 Read it as three bands: a **purple** analysis and decision phase where a model is required, a
 **green** scaffolding step where a script does the bulk copying for free, and a second **purple**
 phase for the things no template can know - the routing table, each dev agent's scope, the real deny
-commands. The `CONFLICT` branch out of the scaffolder is not an error path: it is the brownfield
+commands. The repo's **purpose** (code, research, strategy, docs - one or more) is the first intake
+question and decides the base roster and the verification, so a research or documentation repo is
+not handed a test suite and a code review gate. The `CONFLICT` branch out of the scaffolder is not an error path: it is the brownfield
 reconciliation queue, and it is why the scaffolder never overwrites a file the user wrote.
 
 ```mermaid
@@ -113,30 +120,33 @@ flowchart TD
     INV[/"Inventory Report<br/>mapping tables: modules to dev agents,<br/>conventions to rules, risky ops to deny and hooks"/]
     CONFIRM{"User confirms<br/>or corrects the report"}
 
-    INTAKE["Intake questionnaire<br/>AskUserQuestion, max 4 per call.<br/>Brownfield: pre-fill from evidence, ask only<br/>what code cannot decide"]
+    INTAKE["Intake: the purpose first, then only what that purpose needs.<br/>One pre-answered questionnaire, at most two AskUserQuestion calls,<br/>asked in the language the user wrote in.<br/>Brownfield: pre-fill from evidence, ask only what code cannot decide"]
+    NOSPECS["No specs yet?<br/>invoke spec-builder via the Skill tool,<br/>carrying the confirmed purpose flags"]
     TOOLS["Detect + confirm target tools<br/>ranked evidence: only settings.json hooks, .cursor/<br/>and .codex/ own formats are Strong - CLAUDE.md and<br/>.claude/agents are Weak, AGENTS.md alone asks.<br/>Answer persists as target_cursor / target_codex"]
     PLAN{"One-screen setup plan:<br/>created / kept / modified,<br/>roster with model + effort.<br/>User confirms"}
 
-    ROSTER["Pick the roster<br/>Tier 0 unconditional, preset S/M/L,<br/>explicit model: AND effort: on every agent"]
-    SKILLS["Skill discovery and install<br/>search skills.sh per seat, trust rubric +<br/>mandatory content read, yes per skill"]
+    ROSTER["Pick the roster<br/>the purpose decides the base: code gets the review gate and dev agents<br/>(preset S/M/L); research, strategy and docs get 3 to 5 seats with a checker.<br/>Explicit model, effort, tools and maxTurns on every agent"]
+    SKILLS["Skill discovery and install, when the questionnaire asks for it<br/>trust rubric + mandatory content read, yes per skill.<br/>/skill-wire maps a skill to a seat; /new-skill when nothing fits"]
     OS["Detect the dev OS<br/>Windows to .ps1, macOS or Linux to .sh<br/>sets the windows / posix flag"]
-    VARS[/"vars.json<br/>vars + 21 flags: ui, db, db_engineer, db_seeder, ai,<br/>audit, tdd, ddd, light, unit, e2e, tests, deploy_ask,<br/>long, solo_review, terse, rtk, pr_cli,<br/>target_cursor, target_codex,<br/>exactly one of windows / posix"/]
+    VARS[/"vars.json<br/>vars + flags: one or more purpose_code / research / strategy / docs,<br/>ui, db, db_engineer, db_seeder, ai, audit, tdd, ddd, light, unit, e2e, tests,<br/>deploy_ask, long, solo_review, merge_gate, hooks_strict, terse, rtk, pr_cli,<br/>target_cursor, target_codex, exactly one of windows / posix<br/>+ modules: one CLAUDE.md per module, 40 lines at most"/]
 
     DRY["scaffold.py --dry-run"]
     SCAFFOLD["scaffold.py<br/>deterministic copy of assets/"]
+    HCHECK["harness-check.py --stage scaffold<br/>every seat, hook, rule, command and skill link resolves"]
 
     ADDED[/"ADDED<br/>file did not exist"/]
     KEPT[/"KEPT<br/>exists and is byte-identical"/]
     CONFLICT[/"CONFLICT<br/>exists and differs - not written"/]
-    MISSINGVAR["Unresolved {{VAR}}<br/>exit 1 - fails loudly"]
+    MISSINGVAR["Unresolved {{VAR}}<br/>exit 1, nothing written"]
 
     RECONCILE["Reconcile by hand:<br/>keep / adapt / add / flag.<br/>Never clobber what the user wrote"]
 
     GAPFILL["Model-authored gap-fill<br/>orchestrator routing table, dev-agent scopes,<br/>tech-stack.md, coding-standards.md, git-workflow.md,<br/>settings.json allow/deny for the real stack, .env.example"]
     WIRE["Orchestration wiring<br/>master-plan index table, Phase 1 seeded from the<br/>analysis gap list, AGENTS.md entry point,<br/>CLAUDE.md as a thin @AGENTS.md import"]
 
-    GATE{"Quality gate<br/>structure / cost and context / safety /<br/>grounding / handoff"}
-    SMOKE["Smoke-test the loop:<br/>real task file, master-plan row,<br/>session-log row, /task-resume"]
+    GATE{"Quality gate<br/>structure / cost and context / safety /<br/>governance / grounding / handoff"}
+    SMOKE["Smoke-test the loop: a real task file,<br/>master-plan row, session-log row, /task-resume,<br/>board-check.py exits 0"]
+    MAPS["Build the maps: code-graph.py (module-boundary map),<br/>docs-graph.py --check (orphan IDs),<br/>harness-graph.py --html (the wiring)"]
     PORT["Port to the RECORDED targets<br/>port.py --tool cursor / codex / all:<br/>.cursor/rules + adapter, .codex/hooks.json.<br/>/harness-update re-reads them, never re-asks"]
     DONE(["Harness runs under orchestration"])
 
@@ -152,6 +162,7 @@ flowchart TD
     CONFIRM -->|"corrections override findings"| ANALYZE
     CONFIRM -->|"confirmed"| INTAKE
 
+    INTAKE -->|"no docs/specs/"| NOSPECS --> INTAKE
     INTAKE --> TOOLS --> PLAN
     PLAN -->|"changes requested"| INTAKE
     PLAN -->|"confirmed"| ROSTER
@@ -162,6 +173,7 @@ flowchart TD
     SCAFFOLD --> KEPT
     SCAFFOLD --> CONFLICT
     SCAFFOLD --> MISSINGVAR
+    SCAFFOLD --> HCHECK
     MISSINGVAR -->|"add the var, re-run"| VARS
 
     CONFLICT --> RECONCILE
@@ -171,7 +183,7 @@ flowchart TD
 
     GAPFILL --> WIRE --> GATE
     GATE -->|"a check fails"| GAPFILL
-    GATE -->|"all green"| SMOKE --> PORT --> DONE
+    GATE -->|"all green"| SMOKE --> MAPS --> PORT --> DONE
 
     classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
     classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
@@ -179,8 +191,8 @@ flowchart TD
     classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
     classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
 
-    class ANALYZE,INTAKE,TOOLS,ROSTER,OS,GAPFILL,WIRE,RECONCILE mod
-    class DRY,SCAFFOLD,SMOKE,PORT det
+    class ANALYZE,INTAKE,NOSPECS,TOOLS,ROSTER,SKILLS,OS,GAPFILL,WIRE,RECONCILE mod
+    class DRY,SCAFFOLD,HCHECK,SMOKE,MAPS,PORT det
     class START,MODE,CONFIRM,PLAN,GF,BF,AU,DONE hum
     class GATE,MISSINGVAR gate
     class INV,VARS,ADDED,KEPT,CONFLICT art
@@ -220,18 +232,22 @@ every agent including the one dispatching them.
 `scripts/scaffold.py` is stdlib-only, has no dependencies, and is what makes the skill cheap: it
 copies real asset files instead of asking a model to regenerate them. It walks `assets/manifest.json`
 once, entry by entry. Everything it does is mechanical, which is why the diagram is green apart from
-the two places where it refuses to guess.
+the red stops where it refuses to guess.
 
 ```mermaid
 flowchart TD
     START(["python scripts/scaffold.py --target REPO --vars vars.json"])
-    LOAD["Load vars.json: vars + flags<br/>Load assets/manifest.json"]
+    LOAD["Load vars.json: vars + flags + modules<br/>Load assets/manifest.json"]
     NOMAN["manifest or asset missing<br/>ScaffoldError, exit 2"]
+    VALID{"Flag set valid?<br/>known names, exactly one OS flag,<br/>no contradiction, code-only flags need purpose_code"}
+    BADFLAGS["Print each problem<br/>exit 1, nothing written"]
+    DERIVE["Derive: no purpose means purpose_code,<br/>checker follows any non-code purpose,<br/>HOOK_RUNNER and HOOK_EXT follow the OS flag"]
     LOOP{"Next manifest entry"}
 
     ONLY{"--only prefix set<br/>and src does not match?"}
-    FLAGS{"Flag filter<br/>when: AND over flags<br/>when_any: OR over flags"}
+    FLAGS{"Flag filter<br/>when: AND over flags<br/>when_any: OR over flags<br/>when_not: skip if any is set"}
     SKIP[/"SKIPPED by flags<br/>e.g. frontend.md without 'ui',<br/>*.ps1 without 'windows'"/]
+    OFF[/"DISABLED<br/>listed in .claude/disabled.json,<br/>never resurrected"/]
 
     READ["Read the asset<br/>subst: false to copy bytes verbatim"]
     BLOCKS["Resolve conditional blocks<br/>{{#IF_X}} kept if flag X is set<br/>{{^IF_X}} kept if flag X is NOT set<br/>repeated passes, innermost first"]
@@ -240,33 +256,50 @@ flowchart TD
     EXISTS{"Destination exists?"}
     SAME{"Bytes identical<br/>to the payload?"}
 
-    ADDED[/"ADDED<br/>write file, mkdir parents,<br/>chmod +x if 'exec'"/]
+    ADDED[/"ADDED<br/>queued for writing, mkdir parents,<br/>chmod +x if 'exec'"/]
     KEPT[/"KEPT<br/>already identical - untouched"/]
     CONFLICT[/"CONFLICT<br/>exists and differs.<br/>NOT written unless --force"/]
+    MERGED[/"MERGED<br/>settings.json only: hook registrations<br/>this version ships are added, nothing removed"/]
 
-    REPORT["Report: ADDED / KEPT / CONFLICT / SKIPPED<br/>+ summary counts"]
-    MISS{"Any unresolved {{VAR}}<br/>across all entries?"}
-    FAIL["Print the missing keys per file<br/>exit 1"]
+    MODS["modules in vars.json:<br/>render module-CLAUDE.md into each module,<br/>never over an existing CLAUDE.md,<br/>over 40 lines fails the run"]
+    REPORT["Report: ADDED / KEPT / CONFLICT /<br/>MERGED / DISABLED / SKIPPED + summary counts"]
+    MISS{"Any unresolved {{VAR}}<br/>or module problem?"}
+    FAIL["Print the missing keys per file<br/>exit 1 - nothing was written"]
+    WRITE["Write the queued files"]
+    SPAWN{"More than one seat<br/>holds the Agent tool?"}
+    WIRED{"Controls installed but<br/>not wired?"}
+    HCHECK{"harness-check.py --stage scaffold<br/>finds a link that does not resolve?"}
+    BAD["Print file and line, exit 1"]
     OK["exit 0<br/>CONFLICTs are listed, not fatal"]
     QUEUE["Brownfield reconciliation queue:<br/>keep / adapt / add / flag, by hand"]
 
     START --> LOAD
     LOAD -->|"not found"| NOMAN
-    LOAD --> LOOP
+    LOAD --> VALID
+    VALID -->|"no"| BADFLAGS
+    VALID -->|"yes"| DERIVE --> LOOP
     LOOP --> ONLY
     ONLY -->|"yes, skip"| LOOP
     ONLY -->|"no"| FLAGS
     FLAGS -->|"flags not satisfied"| SKIP --> LOOP
+    FLAGS -->|"wanted, but toggled off"| OFF --> LOOP
     FLAGS -->|"wanted"| READ
     READ --> BLOCKS --> SUBST --> EXISTS
     EXISTS -->|"no"| ADDED --> LOOP
     EXISTS -->|"yes"| SAME
     SAME -->|"yes"| KEPT --> LOOP
     SAME -->|"no"| CONFLICT --> LOOP
-    LOOP -->|"manifest exhausted"| REPORT
+    CONFLICT -.->|"settings.json"| MERGED
+    LOOP -->|"manifest exhausted"| MODS --> REPORT
     REPORT --> MISS
     MISS -->|"yes"| FAIL
-    MISS -->|"no"| OK
+    MISS -->|"no"| WRITE --> SPAWN
+    SPAWN -->|"yes"| BAD
+    SPAWN -->|"no"| WIRED
+    WIRED -->|"yes"| BAD
+    WIRED -->|"no"| HCHECK
+    HCHECK -->|"yes"| BAD
+    HCHECK -->|"no"| OK
     CONFLICT -.-> QUEUE
 
     classDef det fill:#2D6A4F,stroke:#081C15,stroke-width:1px,color:#D8F3DC
@@ -275,20 +308,26 @@ flowchart TD
     classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
     classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
 
-    class LOAD,LOOP,ONLY,FLAGS,READ,BLOCKS,SUBST,EXISTS,SAME,REPORT,MISS,OK det
+    class LOAD,VALID,DERIVE,LOOP,ONLY,FLAGS,READ,BLOCKS,SUBST,EXISTS,SAME,MODS,REPORT,MISS,WRITE,SPAWN,WIRED,HCHECK,OK det
     class START hum
-    class NOMAN,FAIL gate
-    class SKIP,ADDED,KEPT,CONFLICT art
+    class NOMAN,BADFLAGS,FAIL,BAD gate
+    class SKIP,OFF,ADDED,KEPT,CONFLICT,MERGED art
     class QUEUE mod
 ```
 
-The scaffolder refuses two decisions on purpose:
+The scaffolder refuses three decisions on purpose:
 
 - It **never overwrites.** An existing file that differs is reported and left alone, because on a
   brownfield repo the differing file is usually something a human wrote. Use `--force` for files you
-  have explicitly decided to replace.
+  have explicitly decided to replace. The one additive exception is `settings.json`: a hook this
+  version ships that the file does not register yet is added (reported as `MERGED`), and nothing you
+  wrote is changed or removed.
 - It **fails on an unresolved variable** rather than writing a literal `{{DB_RESET_CMD}}` into a deny
-  rule that would then never match anything.
+  rule that would then never match anything, and it writes nothing at all when it does, so a failed
+  run cannot leave a half-built harness.
+- It **refuses an incoherent harness.** A flag set that contradicts itself, a second seat holding
+  `Agent`, a control installed but not wired, and any link `harness-check.py` cannot resolve each stop
+  the run with the file and line to fix.
 
 Re-running on an unchanged repo is idempotent: everything comes back `KEPT`, nothing is clobbered.
 
@@ -312,8 +351,15 @@ Note where the gate sits below: **once, on the branch, at the pull-request bound
 each agent. A reviewer dispatched per agent re-reads the same files once per agent and reports the
 same findings each time. The same holds for tests: verification is per feature, not per step, so
 while building a dev agent runs only the tests that touch what it changed, and the full suite runs
-once at the gate (a green run already logged at the current commit is cited, not repeated). In cost
-terms: the
+once at the gate. What the gate runs is not a fixed list: `verify-plan.py` reads the branch diff and
+prints each gate as required or skipped with the reason (a docs-only change needs the secret scan and
+nothing else), and the verification ledger remembers what already passed. A gate that passed on these
+exact bytes is cited rather than repeated, one whose files changed since is narrowed to the changed
+paths, and `guard-agent-spawn` refuses a re-run, a third review round, an identical brief, or a
+dispatch past the task's budget (`dispatch_budget`, default 24). Task state moves only through
+`task.py` - `new`, `move`, `log`, `gate`, `checkpoint`, `attempt` - which writes the task file, its
+folder and its board row together and reads the row back; `guard-board` blocks a hand edit of a task
+row. In cost terms: the
 orchestrator, the reviewers, and the debugger are Opus seats; the dev agents, `qa-test`, and
 `spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are Haiku at `low`
 effort. The hooks cost nothing, being shell scripts rather than a model, and they are the only
@@ -335,26 +381,27 @@ sequenceDiagram
     participant QA as qa-test
     participant CR as code-reviewer
     participant SR as security-reviewer
+    participant Plan as verify-plan.py<br/>+ verification ledger
     participant Hooks as hooks<br/>.claude/hooks/
 
     User->>Orch: Mission: implement FR-07
-    Orch->>Board: Session-start scan of docs/tasks/active/<br/>grep "status: Active" and "status: Blocked"
+    Orch->>Board: Session-start scan: task.py resume and task.py check<br/>human_gate rows first, then Active and Blocked
     Board-->>Orch: Unfinished work first - otherwise accept the mission
 
     Note over Orch,Board: Registration. A registered-but-not-started task is Planned,<br/>and a Planned file lives in active/ - pending/ means parked.
-    Orch->>Board: Create TASK-NNN from docs/templates/TASK.md<br/>status: Planned in frontmatter AND in the master-plan row
-    Orch->>Board: Append the first session-log row
+    Orch->>Board: task.py new: TASK-NNN from docs/templates/TASK.md<br/>status: Planned in frontmatter AND in the master-plan row,<br/>written together and read back
+    Orch->>Board: task.py log: the first session-log row
 
-    Orch->>Spec: Verify scope and acceptance criteria BEFORE any implementation
+    Orch->>Spec: Verify scope and acceptance criteria BEFORE any implementation,<br/>once per mission. The FR must be Confirmed in docs/specs/index.json
     Spec-->>Orch: Contract locked, or drift found and escalated
     Note over Spec: Read-only. No Bash - it has nothing to run.
-    Orch->>Board: status: Active in BOTH places
+    Orch->>Board: task.py move TASK-NNN Active - file, folder and row together
 
     Orch->>Dev: Dispatch: TASK code, FR/PRD, target files,<br/>acceptance criteria, isolated worktree + branch
-    Note over Dev: tests ship with the code - DDD default. Under opt-in TDD the failing test comes first.
+    Note over Dev: Design first, in the task file. Tests ship with the code - DDD default.<br/>Under opt-in TDD the failing test comes first.
     Dev->>Hooks: Edit / Write
-    Hooks-->>Dev: PreToolUse: protect-adr, protect-secrets - allowed (exit 0)
-    Hooks-->>Dev: PostToolUse: specs-reminder
+    Hooks-->>Dev: PreToolUse: protect-adr, protect-secrets, guard-board - allowed (exit 0)
+    Hooks-->>Dev: PostToolUse: specs-reminder, and graph-stale names any cross-module<br/>import the module-boundary map does not list
 
     Dev->>Hooks: Bash: git commit (on the default branch)
     Hooks-->>Dev: BLOCKED. guard-main-commit exits 2:<br/>"do not commit directly to main - branch first"
@@ -362,101 +409,118 @@ sequenceDiagram
     Dev->>Hooks: Bash: git checkout -b feat/... then git commit
     Hooks-->>Dev: check-commit-msg validates Conventional Commits - passes (exit 0)
     Note over Dev: While building: only the tests touching what changed,<br/>never the full suite per step
-    Dev->>Board: Session-log row per completed unit: what was done, result
+    Dev->>Board: task.py log per completed unit, task.py checkpoint:<br/>done, next step, files touched
     Dev-->>Orch: Implementation complete (a CLAIM, not a fact)
 
-    Orch->>QA: Branch gate: run the full suite once - tests map 1:1 to the acceptance criteria<br/>skipped if a green run is already logged at this commit
-    QA->>Board: Session-log row: tests green
+    Orch->>Plan: /review-changes: verify-plan.py --base main --task TASK-NNN
+    Plan-->>Orch: Each gate REQUIRED or skipped, with the reason.<br/>A gate that passed on these exact bytes is skipped with the ledger line to cite
+    Orch->>Orch: /secret-scan on the diff - never skipped
+
+    Orch->>QA: If required: run the full suite once - tests map 1:1 to the acceptance criteria
+    Hooks-->>Orch: guard-agent-spawn reads the ledger first: refuses a re-run on content that passed
     QA-->>Orch: Green
 
-    par Reviewers run in parallel
+    par Reviewers run in parallel, only the lenses the plan requires
         Orch->>CR: Review the diff
-        CR->>Board: Session-log row: findings
         CR-->>Orch: Pass / findings
     and
         Orch->>SR: Review secrets, PII, authz
-        SR->>Board: Session-log row: findings
         SR-->>Orch: Pass / findings
     end
     Note over CR,SR: Neither has Edit or Write. A reviewer that edits code<br/>has become a dev agent and lost its independence.
     Note over Orch,SR: At most two rounds. The second covers only the fix delta and only<br/>blocker and should-fix findings, and what remains goes to the user.
 
-    Orch->>Orch: /secret-scan on the diff
-    Orch->>Board: Read back the session log
-    Note over Orch,Board: A gate counts as passed ONLY when the session log records the run.<br/>"All gates green" over a log with no reviewer rows is the classic failure.
+    Orch->>Board: task.py gate TASK-NNN gate pass or fail:<br/>one step writes the ledger line and the session-log row
+    Note over Orch,Board: A gate counts as passed ONLY when that row exists.<br/>"All gates green" over a log with no reviewer rows is the classic failure.
 
     alt A gate has no logged row
         Orch->>Dev: Re-run the gate. The claim is not evidence.
     else Every gate is logged
         Orch->>Orch: Merge: one merger, serialized, against the LIVE mainline tip<br/>diff with three dots, union on shared lists, never --ours/--theirs
-        Orch->>Board: Post-merge board audit: every task file's frontmatter<br/>status equals its board row - Done files and Done rows agree 1:1
-        Orch->>Board: Outcome section, status: Done in BOTH places,<br/>move the file active/ to done/
+        Orch->>Board: Post-merge audit, task.py check: every task file's frontmatter<br/>status equals its board row, Done files and Done rows agree 1:1
+        Orch->>Board: Outcome section, then task.py move TASK-NNN Done:<br/>frontmatter, board row and the active/ to done/ move in one step
     end
 
     Note over Orch: Close-out: remove the worktree, delete the merged branch,<br/>prune, and sweep out-of-repo scratch (gated, enumerated).
-    Orch->>Board: No Active or Blocked tasks left in scope:<br/>terminal phase + a final MISSION COMPLETE session-log row
+    Orch->>Board: No Active or Blocked tasks left in scope:<br/>terminal phase + a final MISSION COMPLETE session-log row (task.py log)
     Orch-->>User: Summary. Then the instance terminates rather than idling.
     Note over Orch,Board: Marker present + silent = finished, do NOT resume.<br/>No marker + silent = crashed, resume from file state.
 ```
 
 The files are the truth and an agent's report is a claim. A gate is passed when the task file's
 session log holds a row for it, not when an agent says "reviewed". Status lives in two places, the
-task file's frontmatter and the master-plan row, and every status change writes both in the same
-step, because a merge that resolves a board collision by taking one side reverts a status flip with
+task file's frontmatter and the master-plan row, with the file's folder following it, and
+`task.py move` writes all three in the same step and reads the row back, because a merge that resolves a board collision by taking one side reverts a status flip with
 no error at all. The hooks are the hard edge: `PreToolUse` fires before the tool runs, exit 2 blocks
 it, and the message on stderr goes back to the model. The `MISSION COMPLETE` marker makes "finished"
 distinguishable from "crashed" by a file check instead of a guess.
 
 ## 5. spec-builder
 
-Same shape, different contract: elicit what only a human knows, let the script lay down the selected
-sections - a 6-file core always, plus up to 8 optional sections chosen from what the input material
-actually contains - then spend model tokens on the content rather than on the headings. The governing
-rule is
+Same shape, different contract: read what the user brought, elicit what only a human knows, let the
+script lay down the selected sections - a 6-file core always, plus up to 8 optional sections chosen
+from what the input material actually contains - then spend model tokens on the content rather than
+on the headings. The governing rule is
 that **nothing is invented**. An unstated requirement becomes an assumption (AS-nn) or an open issue
 (OI-nn) with a named owner, because a plausible invented requirement gets estimated, built, and
-discovered in UAT.
+discovered in UAT. A repository whose product is not code (research, strategy, docs) takes a light
+contract instead - README, 05, 11 and 13 only, each item an `FR-nn` with `Done when` criteria - picked
+by the same `purpose_*` flags harness-bootstrap uses.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
     participant SB as spec-builder<br/>the model
+    participant Route as route_sources.py<br/>+ ingest.py
     participant Scaffold as scripts/scaffold.py
     participant Specs as docs/specs/
+    participant Check as spec-check.py
     participant HB as harness-bootstrap
 
     User->>SB: Raw input: an idea, meeting notes, a transcript,<br/>an existing PRD, legacy docs, a codebase
+    SB->>Route: Pick a reader per source
+    Route-->>SB: The plan. Shown to the user first: file to reader,<br/>or UNREADABLE with the fix. An unreadable source becomes an OI-nn
     SB->>SB: Elicit - infer STRUCTURE, ask for DECISIONS
     SB->>User: AskUserQuestion, batches of at most 4:<br/>priorities, permission scope, NFR targets, volumes,<br/>security posture, output language
     User-->>SB: Answers. Anything unanswered becomes AS-nn / OI-nn.
 
-    SB->>User: Confirm the FR list FIRST - FRs with proposed MoSCoW<br/>priorities, the roles, the open issues so far
+    SB->>User: ONE gate: the FR list with proposed MoSCoW priorities, the roles,<br/>the open issues so far, and which optional sections the material justifies
     User-->>SB: Confirmed or corrected
     Note over SB,User: Everything from section 02 onward derives from this list.<br/>A wrong list costs every downstream section, selected or not.
+    SB->>Specs: Record the selection in .sections.json:<br/>every optional section selected or excluded, with a reason
 
-    SB->>Scaffold: vars.json - PROJECT_NAME, PROJECT_SLUG,<br/>PROJECT_PURPOSE, DOC_OWNER + section flags: stakeholders,<br/>flows, access, db, integration, ui, feasibility, design
-    Scaffold->>Scaffold: --dry-run first
-    Scaffold->>Specs: Write the core (README, 01, 03, 05, 07, 13) always,<br/>plus each selected optional section (up to 9, including<br/>14-design-system) - headings, tables, Mermaid scaffolds,<br/>inline authoring notes
+    SB->>Scaffold: vars.json - PROJECT_NAME, PROJECT_SLUG,<br/>PROJECT_PURPOSE, DOC_OWNER + purpose and section flags:<br/>stakeholders, flows, access, db, integration, ui, feasibility, design
+    Scaffold->>Scaffold: --dry-run first. Refuses without .sections.json,<br/>or when it contradicts the flags
+    Scaffold->>Specs: Write the core (README, 01, 03, 05, 07, 11, 13) always,<br/>plus each selected optional section (up to 8, including<br/>14-design-system) - headings, tables, Mermaid scaffolds,<br/>inline authoring notes. Flat, or per module with --module
     Scaffold-->>SB: ADDED / KEPT / CONFLICT. Exit 1 on an unresolved &#123 -&#123 -VAR&#125 -&#125 -.
     Note over Scaffold,Specs: Deterministic and free. The model does not retype the shape -<br/>CONFLICT is the reconciliation queue for a repo that already has specs.
 
     SB->>Specs: Fill section by section, in order - each depends on the last
     Note over SB,Specs: The three that carry the load:<br/>05 observable FRs, anchored, with BR-nn and a NEGATIVE acceptance case<br/>07 security NFRs, never "TBD" - an undecided value is an OI with an owner<br/>12 every FR gets Yes / Partial / No - "Partial" and "No" are the valuable output
 
+    SB->>Check: spec-check.py --write
+    Check->>Specs: Writes confirmation.md (the page a PO or client answers)<br/>and index.json (what agents read instead of whole documents)
+    Check-->>SB: Unique IDs, checkable criteria on every live FR,<br/>open issues owned, derived files in step. Fix every FAIL
     SB->>SB: Traceability check - every FR from 05 appears in 12 (count both),<br/>every screen in 10 names an FR, every role in 06 exists in 03,<br/>every entity in 06 exists in 08, no blank cells, all links resolve
-    SB->>User: Surface every OI, every AS, every Partial/No, and every NFR<br/>target that was proposed rather than received
+    SB->>User: Hand over the confirmation sheet with every OI, every AS,<br/>every Partial/No, and every NFR target that was proposed rather than received
+    User-->>SB: yes / no / change per FR
+    SB->>Specs: /spec-ingest folds each change in, Status: Confirmed on each yes,<br/>one revision row
 
     opt The docs workspace exists
         SB->>HB: Seed docs/requirements/PRD-FR-NN-*.md, docs/context/glossary.md,<br/>docs/context/business-rules.md - linking back, not duplicating
     end
-    SB-->>HB: Handoff: the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.
+    SB-->>HB: Handoff via the Skill tool, FR_LIST and GLOSSARY_SEED prefilled:<br/>the contract exists. Bootstrap the harness that implements it<br/>(dev agents clustered from the FR list), then /implement-fr.
 ```
 
 The ordering is a discipline: the FR list is confirmed *before* anything else is written, and the
 sections are filled in order because each depends on the last. The traceability check at the end is
 mechanical - count the FRs in 05, count the rows in 12, they match - which is the kind of check a
-model will skip unless it is written down as a gate.
+model will skip unless it is written down as a gate. The confirmation sheet exists because a
+product owner cannot correct an assumption nobody told them was made; the index exists so that a
+task touching one FR loads one block, not the whole section. A change that leaves every promise on
+the sheet intact needs no spec work, and one that adds behaviour inside an agreed FR needs one
+appended criterion.
 
 ## 6. Context loading - why the harness is cheap
 
@@ -474,6 +538,7 @@ flowchart TD
         R2[/"agent-guardrails.md"/]
         R3[/"task-tracking.md"/]
         R4[/"conventional-commits.md<br/>governs commit MESSAGES, not files -<br/>no glob can ever scope it"/]
+        R5[/"model-policy.md<br/>decides what may be sent where<br/>before any file is touched"/]
         BODY[/"The agent's own body<br/>one file per agent under .claude/agents/"/]
         SCHEMA[/"Tool schemas - one per entry in tools:<br/>omitting tools: inherits EVERY tool,<br/>including every MCP server on the machine"/]
     end
@@ -488,6 +553,10 @@ flowchart TD
         L5[/"frontend.md - UI_GLOBS (flag ui)"/]
         L6[/"data-model.md - DB_GLOBS (flag db)"/]
         L7[/"docs-workflow.md - docs/**"/]
+        L8[/"ddd.md - SOURCE_GLOBS (flag ddd)"/]
+        L9[/"ip-compliance.md - SOURCE_GLOBS + DEP_MANIFEST_GLOBS"/]
+        L10[/"model-tiers.md - .claude/agents/** and settings.json"/]
+        L11[/"module CLAUDE.md - only when files in that module are read"/]
     end
 
     NEVER[/"assets/ - the hooks, commands, templates, agent bodies.<br/>NEVER enter the context window: scaffold.py copies them.<br/>The model reads SKILL.md + 9 reference docs, and nothing else."/]
@@ -503,6 +572,10 @@ flowchart TD
     TOUCH -->|"src/components/**"| L5
     TOUCH -->|"prisma/**"| L6
     TOUCH -->|"docs/**"| L7
+    TOUCH -->|"src/**"| L8
+    TOUCH -->|"package.json"| L9
+    TOUCH -->|".claude/agents/**"| L10
+    TOUCH -->|"src/billing/**"| L11
     LAZY -->|"only the matching rule"| WINDOW
     NEVER -.->|"never"| WINDOW
 
@@ -511,20 +584,23 @@ flowchart TD
     classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
     classDef art fill:#495057,stroke:#212529,stroke-width:1px,color:#F8F9FA
 
-    class CLAUDEMD,AGENTSMD,R1,R2,R3,R4,BODY,SCHEMA art
-    class L1,L2,L3,L4,L5,L6,L7 art
+    class CLAUDEMD,AGENTSMD,R1,R2,R3,R4,R5,BODY,SCHEMA art
+    class L1,L2,L3,L4,L5,L6,L7,L8,L9,L10,L11 art
     class NEVER det
     class WINDOW mod
     class TOUCH hum
 ```
 
-7 unconditional rules, ten path-scoped ones (two of the seven are flag-gated: `ai-governance.md` ships only with the `ai` flag and `output-style.md` only with `terse`). On the shipped asset set that is 28,821 bytes always
-loaded against 60,290 bytes loaded on demand: **68% of the rule content is kept out of the default
+7 unconditional rules, ten path-scoped ones (two of the seven are flag-gated: `ai-governance.md` ships only with the `ai` flag and `output-style.md` only with `terse`). On the shipped asset set that is 23,047 bytes always
+loaded against 62,365 bytes loaded on demand: **73% of the rule content is kept out of the default
 session**, so the database agent no longer carries the frontend rules and the UI agent no longer
 carries the migration-safety rules.
 
-Two other levers sit in the same diagram:
+Three other levers sit in the same diagram:
 
+- Guidance true of one module lives in that module's own `CLAUDE.md` (40 lines at most: owner, scope,
+  local invariants, commands). Claude Code loads it only when it reads files there, so it costs
+  nothing in a session that never touches the module.
 - Every tool in an agent's `tools:` list ships its JSON schema on *every* request. Omitting `tools:`,
   and thereby inheriting every MCP server on the machine, is treated as a bug in the quality gate.
 - Every file in the always-loaded band is prompt-cache prefix content, so a single `Generated: <date>`
@@ -535,7 +611,7 @@ Two other levers sit in the same diagram:
 
 Diagram 4 is the procedure; this section is the per-command reference for everything it invokes,
 plus the handful of planning and maintenance commands that don't fit a single sequence step.
-`docs/TUNING.md` documents the eight commands that adjust the *harness's own posture* (plus the two
+`docs/TUNING.md` documents the commands that adjust the *harness's own posture* (plus the two
 `spec-builder` commands that ripple a source into or out of `docs/specs/`). This section documents
 the commands used during normal *feature delivery* - the ones a dev agent or the orchestrator runs
 while building the product itself. Same shape as `TUNING.md`, terser, since these run far more often:
@@ -545,18 +621,25 @@ invocation, what it's for, what it does, what it writes, what it refuses, and wh
 
 #### `/new-task <short-title>`
 
-Creates a task file from the template and registers it on the master plan - the entry point for any
-unit of work. Allocates the next `TASK-NNN` sequentially across `active/`, `pending/`, and `done/`,
-copies `docs/templates/TASK.md`, fills title/goal/owner/dependencies/priority/phase/acceptance
-criteria, sets `status: Planned`, adds the row to `docs/tasks/master-plan.md` and reads it back to
-confirm the write landed, then appends the first session-log row. If `.claude/state/code-graph.json`
-exists it also seeds a "Relevant modules" line (the owner's module plus everything with a direct
-dependency edge into it) so the dispatch brief carries a blast-radius hint before any code is
-touched.
+Creates a task file from the template and registers it on the master plan - but only for work the
+user agreed to. It first asks whether the work was requested and whether it is bigger than the
+paperwork (a typo, a rename, a one-line fix and a step inside work already registered are not tasks;
+something noticed while doing something else is a finding to report, not a row), and refusing is a
+normal outcome. Unless the user's own message already asked for it, it puts the proposal to them with
+`AskUserQuestion` and creates the task only on an explicit yes. Registration is one command,
+`python .claude/scripts/task.py new`, which allocates the next `TASK-NNN` across `active/`,
+`pending/` and `done/`, fills `docs/templates/TASK.md`, sets `status: Planned`, adds the board row,
+reads it back to confirm the write landed, and logs the first session-log row. `--requested-by`
+records what was asked for (never `user` or an agent name) and at least two observable criteria are
+required. With `--fr` the task links to an FR by criterion ID and `spec-check.py --write` refreshes
+`docs/specs/index.json`. If `.claude/state/code-graph.json` exists it also seeds a "Relevant modules"
+line (the owner's module plus everything with a direct dependency edge into it) so the dispatch brief
+carries a blast-radius hint before any code is touched.
 
 **Writes:** a new `docs/tasks/active/TASK-NNN-<slug>.md`, a new row in `master-plan.md`, the first
-session-log row. **Refuses:** reusing a task number or overwriting an existing task file on a
-collision; proceeding with no title (asks, then stops). **Ships:** unconditional.
+session-log row. **Refuses:** opening a task nobody asked for, reusing a task number or overwriting an
+existing task file on a collision, fewer than two criteria, proceeding with no title (asks, then
+stops). **Ships:** unconditional.
 
 #### `/new-adr <decision-title>`
 
@@ -583,7 +666,7 @@ acceptance criteria, and the use case it serves.
 **Refuses:** inventing a requirement - an unanswered question becomes a recorded open question,
 never a plausible guess, because "a fabricated requirement is worse than a missing one, because it
 looks settled"; inventing a parallel numbering scheme instead of following the existing one.
-**Ships:** unconditional (it ships with `harness-bootstrap`, even though it dispatches the
+**Ships:** with `purpose_code` (it ships with `harness-bootstrap`, even though it dispatches the
 `ba-analyst` agent in the spec-builder style).
 
 #### `/scaffold-feature <feature-slug>`
@@ -597,28 +680,36 @@ names the acceptance criterion it will eventually prove.
 
 **Writes:** the new skeleton files; a routing-table row if the feature's domain has no owner yet.
 **Refuses:** filling in the business logic - "leave the logic unimplemented rather than filling it
-with a plausible guess"; proceeding with no feature slug (asks, then stops). **Ships:** unconditional.
+with a plausible guess"; proceeding with no feature slug (asks, then stops). **Ships:** with `purpose_code`.
 
 ### Implementing
 
 #### `/implement-fr <FR-id>`
 
 Plans and implements a functional requirement end-to-end against its acceptance criteria - the
-command diagram 4's sequence actually traces. With no argument it lists FRs that have no task yet and
-asks, rather than guessing which one to build. Reads the FR in
-`docs/specs/05-functional-requirements.md` (and the matching PRD, if one exists), dispatches
-`spec-guardian` to lock scope and acceptance criteria *before* any code is written - an FR with no
-observable acceptance criteria stops here and escalates rather than proceeding - registers the work
-via `/new-task`, flips it to `Active`, and assigns the specialist per the routing table. Implementation
-follows whichever methodology the project chose at intake: test-first under TDD, tests shipped in the
-same change under DDD/default, or a session-log note of how each criterion was verified by hand on a
-project with no automated suite. Once the whole FR is implemented - not after each step - it runs
-`/review-changes` a single time; that gate already runs the suites, so `/test` is not run first.
+command diagram 4's sequence actually traces. It is the Guarded flow, so if the work turns out to be
+Direct it says so and hands it to the owning agent instead of running the ceremony around it. With
+no argument it lists the FRs in `docs/specs/index.json` that are Confirmed, decided yes, and have no
+open issues and no task yet, and asks rather than guessing. It reads the FR entry in the index and
+then only its block at the entry's file and anchor (plus the matching PRD, if one exists), and
+**stops unless the entry says `Confirmed` and `yes`**: a Draft FR, or one the confirmation sheet does
+not answer yes, is a promise nobody agreed to. It dispatches `spec-guardian` to lock scope and
+acceptance criteria *before* any code is written - an FR with no observable acceptance criteria stops
+here and escalates - registers the work via `/new-task`, moves it to `Active` with `task.py move`,
+and assigns the specialist per the routing table. A design pass in the task file comes before the
+first line of code. Implementation follows whichever methodology the project chose at intake:
+test-first under TDD, tests shipped in the same change under DDD/default, or a session-log note of
+how each criterion was verified by hand on a project with no automated suite. Once the whole FR is
+implemented - not after each step - it runs `/review-changes TASK-NNN` a single time; that gate runs
+the test layers it needs, so `/test` is not run first. It closes with an evidence map: one line per
+criterion ID (`AC-nn.n`) naming the test, the command and its output, or the screen that proves it,
+then the checkpoint.
 
-**Writes:** task session-log rows, and the code itself via the dispatched dev agent (plus a glossary
-entry for any new domain term, under DDD). **Refuses:** deploying - that is always a separate,
-explicit `/deploy`; skipping the review gate, even under Lightweight methodology, which drops
-ceremony but not the gate. **Ships:** unconditional.
+**Writes:** task session-log rows, the checkpoint, and the code itself via the dispatched dev agent
+(plus a glossary entry for any new domain term, under DDD). **Refuses:** implementing an FR that is
+not Confirmed; deploying - that is always a separate, explicit `/deploy`; skipping the review gate,
+even under Lightweight methodology, which drops ceremony but not the gate; closing with a criterion
+that has no evidence. **Ships:** with `purpose_code`.
 
 #### `/db-migration <migration-name>`
 
@@ -653,35 +744,47 @@ set.
 
 #### `/test`
 
-Runs lint plus the unit and end-to-end suites, and reports each failure with its owning agent. Every
+Runs lint and the test layers this change needs - `verify-plan.py` says which, and a green run
+already logged at HEAD is cited and not repeated - and reports each failure with its owning agent.
+The end-to-end suite runs only for the critical flows the plan names, or on request. Every
 external provider must be mocked - a test that makes a real network call is reported as a failure
 even when it passes, because a green result from a live call is not a repeatable one. Reports the
 coverage figure against the project's target and whether it regressed against the default branch,
 and maps each failure to the agent that owns the code (per the routing table) and the acceptance
 criterion it breaks.
 
-**Writes:** a session-log row on the task file recording the run (pass/fail, coverage). **Refuses:**
+**Writes:** a session-log row on the task file recording the run (pass/fail, coverage), and with a
+green full suite `task.py checkpoint --green` records the commit so it is never run twice. **Refuses:**
 editing a test to make it pass - a failing test is either a real defect or a wrong expectation, and
 deciding which is the point. **Ships:** only when the `tests` flag is set (frameworks vary: unit
 only, e2e only, or both, per the testing choice at intake).
 
 #### `/review-changes`
 
-Runs code review and security review on the current diff before opening a PR/MR - no arguments.
-Diffs with three dots against the default branch on an existing branch (two dots on a stale branch
-reports the branch's own missing commits as false deletions), runs `/secret-scan` first (any real
-secret is a blocker), then dispatches the review agents: the merged `reviewer` doing one pass under
-`solo_review`, or `code-reviewer` plus `security-reviewer` separately on the default split roster.
-Either way, `spec-guardian` verifies the linked FR's and task's acceptance criteria are met, lint and
-tests are confirmed locally, and the CI pipeline must be green in a *terminal* state - pending never
-counts; a green run already logged at the current commit is cited rather than repeated. Findings are
-aggregated by severity: blocker, should-fix, suggestion. The gate is capped at two rounds: after
-fixes the second round covers only the fix delta and only blocker and should-fix findings, and
-whatever remains is escalated to the user.
+Runs the review gate on the current diff before opening a PR/MR - optionally with a `TASK-NNN`.
+It starts with `verify-plan.py --base <default branch>`, which reads the branch diff (three dots,
+merge-base to tip) and prints each gate as REQUIRED or skipped with the reason: the secret scan
+always, spec validation when `docs/specs/` changed, code review for code, tests, schema,
+dependencies and infrastructure, security review for auth, secrets, input parsing, data handling,
+dependencies and hooks, the scoped tests and then the full suite once for behaviour, an end-to-end
+run only for a flow named in `.claude/verify-map.json`, and a content check for prose whose claims
+changed. A gate that already passed on these exact bytes is skipped with the ledger line to cite, and
+one whose files changed since is narrowed to the changed paths; docs and config changes need the
+secret scan and nothing else. It runs `/secret-scan` first (any real secret is a blocker), then
+dispatches only the seats whose gate is required, in parallel: the merged `reviewer` under
+`solo_review`, or `code-reviewer` plus `security-reviewer` on the split roster, with `spec-guardian`
+verifying the linked FR and task acceptance criteria and `checker` for changed non-code claims.
+Lint and tests are confirmed locally, and the CI pipeline must be green in a *terminal* state -
+pending never counts. Findings are aggregated by severity: blocker, should-fix, suggestion, and each
+gate that ran is recorded with `task.py gate`, which writes the ledger line and the session-log row in
+one step. The gate is capped at two rounds: after fixes the second round covers only the fix delta
+and only blocker and should-fix findings, and whatever remains is escalated to the user.
+`guard-agent-spawn` enforces the same ledger at dispatch time.
 
-**Writes:** a session-log row recording the review and its findings - "a gate counts as passed only
+**Writes:** a ledger line and a session-log row per gate that ran - "a gate counts as passed only
 when the log records the run." **Refuses:** merging or deploying - "reviewing is not approving."
-**Ships:** unconditional; its shape (merged vs. split reviewers) follows the `solo_review` flag.
+**Ships:** unconditional; its shape (merged vs. split reviewers, with or without `checker`) follows
+the flags.
 
 #### `/secret-scan`
 
@@ -716,7 +819,7 @@ health endpoint - "deployed is not the same as healthy."
 **Writes:** a `docs/context/tool-changelog.md` entry (what shipped, from which commit, how it was
 verified). **Refuses:** deploying with any precondition unmet; retrying a failed deploy or "fixing
 forward" without the user's explicit go-ahead - on failure it rolls back, reports, and stops.
-**Ships:** unconditional (always installed), but functionally gated by the control-level dial in
+**Ships:** with `purpose_code`, but functionally gated by the control-level dial in
 `/harness-tune`: deploy rights default to human-only (`permissions.deny`) until moved to `ask` or a
 named non-production variant.
 
@@ -743,35 +846,38 @@ what a future agent actually needs and couldn't infer from the code. **Ships:** 
 
 #### `/task-resume [TASK-NNN]`
 
-Resumes a task from its task file after a compaction or in a new session. With no argument it lists
-every unfinished task from `docs/tasks/active/` (`Planned`, `Active`, `Blocked`) and does not resume
-anything. With a task ID, it reads the master-plan row, reads the task file end to end, and trusts
-the files over conversation memory - the conversation may have been compacted, the files were
-committed. It then verifies the working tree against the recorded state with `git status`/`diff`/
-`log`; when the tree disagrees with what the files say, it reconciles before continuing rather than
-picking a side.
+Resumes a task from its checkpoint after a compaction or in a new session. With no argument it lists
+every unfinished task (`Planned`, `Active`, `Blocked`), human gates first, and does not resume
+anything. With a task ID it runs `python .claude/scripts/task.py resume TASK-NNN`, which prints the
+board row, the checkpoint (next step, last green commit, open questions), the open acceptance
+criteria, the last few session-log rows, and whether HEAD and the working tree match the checkpoint -
+so the whole log is not read by default. It trusts that digest over conversation memory: the
+conversation may have been compacted, the files were committed. When the digest reports drift, or
+uncommitted paths, it reconciles before continuing (`task.py check` names the disagreement) rather
+than picking a side.
 
-**Writes:** session-log rows after every meaningful unit of work; any status change to both the task
-file's frontmatter and the master-plan row, together. **Refuses:** stashing, discarding, or
-clobbering uncommitted work it finds in the tree - it drives that work to completion or escalates it.
-**Ships:** unconditional.
+**Writes:** session-log rows after every meaningful unit of work (`task.py log`); any status change
+through `task.py move`, which updates the task file, its folder and the master-plan row together; a
+rewritten checkpoint before it stops. **Refuses:** stashing, discarding, or clobbering uncommitted
+work it finds in the tree - it drives that work to completion or escalates it. **Ships:**
+unconditional.
 
 ### Exploring a decision
 
 #### `/brainstorm <topic>`
 
-Runs a structured brainstorming session on a decision or feature idea. Dispatches `brainstormer`
-(with `tech-researcher` for evidence) to frame the actual decision and its constraints - including
-anything already fixed by an Accepted ADR - produce 3 to 5 genuine options with a trade-off matrix,
-and give a recommendation with its reasoning. When the recommendation rests on an unmeasured
-assumption, it runs a small timeboxed measurement spike before committing to it.
+Runs a structured brainstorming session on a decision or feature idea. Dispatches `strategist`,
+after `researcher` when the options need evidence, to frame the actual decision and its constraints -
+including anything already fixed by an Accepted ADR - produce 3 to 5 genuine options with a
+trade-off matrix, and give a recommendation with its reasoning. When the recommendation rests on an
+unmeasured assumption, it runs a small timeboxed measurement spike before committing to it.
 
 **Writes:** nothing directly - it routes the outcome onward: a stack-affecting decision to `/new-adr`
 before implementation starts, a product-affecting one into the PRD in `docs/requirements/`, anything
-else into the task file's decisions section. **Refuses:** including a straw-man option that exists
+else into the task file decisions section. **Refuses:** including a straw-man option that exists
 only to be rejected - "noise"; deciding on the user's behalf - "the agent never decides silently."
-**Ships:** only when the `long` flag is set (it ships alongside the `brainstormer` and
-`tech-researcher` agents).
+**Ships:** only when the `long` flag is set (it ships alongside the `strategist` and `researcher`
+agents).
 
 ### Audit-only pair
 
@@ -817,19 +923,19 @@ that is always the user's job. **Ships:** only in audit mode (`audit` flag).
 
 | Command | Writes / changes | Ships |
 |---|---|---|
-| `/new-task` | New task file, master-plan row, first session-log row | Unconditional |
+| `/new-task` | New task file, master-plan row, first session-log row (only for agreed work) | Unconditional |
 | `/new-adr` | New ADR file, ADR index row | Unconditional |
-| `/new-spec-section` | New/filled spec section, revision-history row | Unconditional |
-| `/scaffold-feature` | New skeleton files (no logic), routing-table row if new domain | Unconditional |
-| `/implement-fr` | Task session-log rows, code via the dispatched dev agent | Unconditional |
+| `/new-spec-section` | New/filled spec section, revision-history row | `purpose_code` |
+| `/scaffold-feature` | New skeleton files (no logic), routing-table row if new domain | `purpose_code` |
+| `/implement-fr` | Task session-log rows, checkpoint, code via the dispatched dev agent | `purpose_code` |
 | `/db-migration` | Migration file, ERD/data-dictionary, seed script, tool-changelog | `db` |
 | `/seed-db` | Rows in the local/dev database only | `db` + `db_seeder` |
 | `/test` | Task session-log row (pass/fail, coverage) | `tests` |
-| `/review-changes` | Task session-log row (findings by severity) | Unconditional |
+| `/review-changes` | Ledger line and session-log row per gate (findings by severity) | Unconditional |
 | `/secret-scan` | Nothing - reports `file:line` + pattern type only | Unconditional |
-| `/deploy` | tool-changelog entry (what shipped, from which commit) | Unconditional; human-invoked only |
+| `/deploy` | tool-changelog entry (what shipped, from which commit) | `purpose_code`; human-invoked only |
 | `/sync-context` | business-rules.md, known-issues.md, tool-changelog.md, glossary.md | Unconditional |
-| `/task-resume` | Session-log rows; status in the task file + master-plan row together | Unconditional |
+| `/task-resume` | Session-log rows, checkpoint; status in the task file, folder and master-plan row together | Unconditional |
 | `/brainstorm` | Nothing directly - routes to `/new-adr`, a PRD, or the task's decisions section | `long` |
 | `/security-scan` | docs/findings/raw/, docs/findings/<repo>/ | `audit` |
 | `/triage-findings` | Finding status transitions, new task files via `/new-task` | `audit` |
@@ -839,12 +945,18 @@ that is always the user's job. **Ships:** only in audit mode (`audit` flag).
 - The byte and file counts above are exact, counted from disk. The token figures in
   `benchmark/RESULTS.md` are **estimated** at 3.6 chars/token, not measured: the benchmark run had no
   API key. They are an order of magnitude, not a quote.
-- The orchestrator's session-start scan of `docs/tasks/active/` is a **procedure in the agent body**,
-  not a `SessionStart` hook. The 9 hooks registered in `assets/claude/settings.json` are
-  `PreToolUse` (protect-adr, guard-agent-scope, protect-secrets, guard-main-commit, check-commit-msg,
-  guard-agent-spawn), `PostToolUse` (specs-reminder, graph-stale), and `SubagentStop`
-  (agent-history). Diagram 4 shows the scan as an orchestrator action for that reason.
-- `CONFLICT` does **not** change the scaffolder's exit code. Only an unresolved `{{VAR}}` (exit 1) or
-  a missing manifest/asset (exit 2) does. Diagram 3 reflects the code.
+- The orchestrator's session-start scan of the board (`task.py resume`, `task.py check`) is a
+  **procedure in the agent body**, not a hook. The always-registered hooks in
+  `assets/claude/settings.json` are `PreToolUse` (protect-adr, guard-agent-scope, guard-task-scope,
+  guard-board, protect-secrets, guard-main-commit, check-commit-msg, guard-destructive,
+  guard-agent-spawn), `PostToolUse` (specs-reminder, graph-stale) and `SubagentStop` (agent-history).
+  The rest register inside the block of the flag that ships them: `hooks_strict` (large files,
+  egress, dependencies, secrets in prompts and output, config changes, evidence-free "done"), `db`
+  (migrations), `long` (retry budget, compaction checkpoint, a `SessionStart` context injection, an
+  event trace), `purpose_research`, `purpose_docs`, `rtk` and `audit`. `assets/claude/hooks/README.md`
+  is the table. Diagram 4 shows the scan as an orchestrator action for that reason.
+- `CONFLICT` does **not** change the scaffolder's exit code. An unresolved `{{VAR}}`, an invalid flag
+  set, a second `Agent`-holding seat, an unwired control or an unresolved link (exit 1), or a
+  missing manifest/asset (exit 2), does. Diagram 3 reflects the code.
 - The `merge-manager` seat is optional and is omitted from diagram 4. Where it is not fielded, the
   orchestrator merges and applies the same rules itself.

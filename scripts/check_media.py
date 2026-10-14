@@ -63,6 +63,17 @@ def pairs() -> dict[str, str]:
     # The GIFs are transcoded from the MP4 of the same clip, so they carry the same provenance.
     out["video/gif/04-solution.gif"] = "video/src/04-solution.py"
     out["video/gif/ja/04-solution.gif"] = "video/src/ja/04-solution.py"
+    # The Remotion intro. Its scene source is SCRIPT.md, not the .tsx: the script carries every
+    # spoken line, every caption, and the generated block of on-screen figures that
+    # video/intro/derive_figures.py writes - so a figure that moves in the repo moves this file,
+    # and the clip reads stale until `bash video/intro/render.sh` re-renders it.
+    for art in ("video/mp4/00-intro.mp4", "video/gif/00-intro.gif",
+                "video/gif/00-intro-poster.png"):
+        out[art] = "video/intro/SCRIPT.md"
+    # The Japanese intro: same composition, its own script, narration and captions.
+    for art in ("video/mp4/ja/00-intro.mp4", "video/gif/ja/00-intro.gif",
+                "video/gif/ja/00-intro-poster.png"):
+        out[art] = "video/intro/SCRIPT.ja.md"
     return out
 
 

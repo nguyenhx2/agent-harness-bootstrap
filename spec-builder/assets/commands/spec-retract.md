@@ -37,9 +37,9 @@ Procedure:
 5. **Ripple outward** (where a harness exists): the owning dev agent's FR list drops the withdrawn
    IDs; Active tasks implementing them go `Blocked` with `human_gate: requirement withdrawn` -
    never silently deleted, a human decides whether the work stops; glossary terms that only the
-   retracted source defined are marked disputed in `docs/context/glossary.md`. Rebuild
-   traceability: `python .claude/scripts/docs-graph.py` then
-   `python .claude/scripts/graph-html.py` - the new orphan list is the checklist of things the
-   retraction orphaned.
+   retracted source defined are marked disputed in `docs/context/glossary.md`. Check
+   traceability: `python .claude/scripts/docs-graph.py --check` - the orphan list it prints is the
+   checklist of things the retraction orphaned. Then `python .claude/scripts/spec-check.py --write`: withdrawn FRs leave
+   the confirmation sheet and keep their entry in `index.json` with the new status.
 6. **Report**: the blast radius, what converted vs corrected vs stayed, blocked tasks, orphans.
    Record in `docs/context/tool-changelog.md`.

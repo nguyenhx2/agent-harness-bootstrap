@@ -295,9 +295,9 @@ class HarnessBootstrap(Scene):
             font=FONT, font_size=14, color=DIM, line_spacing=0.8,
         ).next_to(gate, DOWN, buff=0.22)
         smoke = chip("Smoke-test the loop", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([-1.95, 1.6, 0])
-        graphs = chip("Build both graphs", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([1.4, 1.6, 0])
+        graphs = chip("Build the maps", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([1.4, 1.6, 0])
         gr2 = Text(
-            "code-graph.py + docs-graph.py,\nthen graph-html.py:\nharness-graph.html + specs-graph.html",
+            "code-graph.py: module boundaries\ndocs-graph.py --check: orphan IDs\nharness-graph.py --html",
             font=FONT, font_size=14, color=DIM, line_spacing=0.8,
         ).next_to(graphs, DOWN, buff=0.22)
         port = chip("Port to your tools", GREEN, GREEN_HI, fs=18, h=0.85, w=3.1).move_to([4.85, 1.6, 0])
@@ -311,7 +311,7 @@ class HarnessBootstrap(Scene):
         self.play(Create(pa1), FadeIn(allg), GrowFromCenter(smoke), run_time=0.5)
         caption(self, "All green: the loop is smoke-tested end to end - a real task, a session-log row, /task-resume.", hold=0.9, y=-3.35, size=21)
         self.play(Create(pa2), GrowFromCenter(graphs), FadeIn(gr2), run_time=0.5)
-        caption(self, "Then both knowledge graphs are built and exported as interactive HTML - code dependency and docs traceability.", hold=1.3, y=-3.35, size=20)
+        caption(self, "Then the maps: a module-boundary check, orphan spec IDs, and the harness graph as HTML.", hold=1.3, y=-3.35, size=20)
         self.play(Create(pa3), GrowFromCenter(port), run_time=0.5)
         caption(self, "Finally it ports to the tools you selected.", hold=0.9, y=-3.35, size=23)
 

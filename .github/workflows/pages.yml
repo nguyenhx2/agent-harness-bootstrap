@@ -28,8 +28,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
           cache: npm
@@ -45,13 +45,15 @@ jobs:
           npm ci
           npm run build
           cp -r dist/. ..
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: "."
+          # v4+ drops dotfiles by default; keep v3's behaviour (it still excludes .git and .github).
+          include-hidden-files: true
       # deploy-pages caps its own wait at 600000 ms, so raising `timeout:` past that does nothing
       # (it warns and clamps). If a deploy aborts with "Timeout reached" while still reporting
       # deployment_in_progress, that is GitHub-side: re-run it. The artifact size is not the
       # trigger - the run that first added the Japanese clips deployed the same payload in 31s.
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

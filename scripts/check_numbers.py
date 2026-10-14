@@ -81,6 +81,11 @@ def spec_sections() -> tuple[int, int]:
 
 
 def roster_range() -> tuple[int, int]:
+    counts = roster_counts()
+    return min(counts.values()), max(counts.values())
+
+
+def roster_counts() -> dict[frozenset, int]:
     """How many of the shipped agent seats a single run can install, at least and at most.
 
     "Tailored, not comprehensive" is the claim the README makes about the roster, and a range
@@ -88,6 +93,12 @@ def roster_range() -> tuple[int, int]:
     every combination of the flags that gate an agent, so it cannot drift from what a real run
     would install: re-implementing the selection rule here would just create a second answer.
     dev-agent is a template instantiated per module, not a seat, and is excluded.
+
+    Only flag sets the scaffolder would accept are counted, and each is counted as the scaffolder
+    acts on it: `validate_flags` refuses a contradictory set (a code-only flag with no code
+    purpose, `unit` without `tests`), and `effective_flags` adds the default purpose and the
+    derived `checker`. Counting raw combinations reported a one-seat minimum - the empty set with
+    no purpose at all, which no real run can produce.
     """
     import itertools
 
@@ -102,15 +113,19 @@ def roster_range() -> tuple[int, int]:
               if "agents/" in str(e.get("dest", ""))
               and pathlib.Path(str(e.get("dest"))).stem != "dev-agent"]
 
+    derived = getattr(scaffold, "DERIVED_FLAGS", set())
     gating = sorted({f for e in agents
                      for f in (e.get("when") or []) + (e.get("when_any") or [])
-                     + (e.get("when_not") or [])})
-    counts = []
+                     + (e.get("when_not") or [])} - derived)
+    counts: dict[frozenset, int] = {}
     for r in range(len(gating) + 1):
         for combo in itertools.combinations(gating, r):
-            flags = set(combo)
-            counts.append(sum(1 for e in agents if scaffold.wanted(e, flags)))
-    return min(counts), max(counts)
+            raw = set(combo) | {"posix"}  # exactly one OS flag is mandatory; it gates no seat
+            if scaffold.validate_flags(raw):
+                continue
+            flags = scaffold.effective_flags(raw)
+            counts[frozenset(raw)] = sum(1 for e in agents if scaffold.wanted(e, flags))
+    return counts
 
 
 def flag_sync() -> list[str]:
@@ -357,13 +372,39 @@ REQUIRED_SUBSTR: dict[str, tuple[str, ...]] = {
 # heading - and a checker that flags those is a checker people learn to ignore.
 # PRESENTATION-OUTLINE.md is the deck's script and restates every asset count. It was outside
 # this set, so it still said "15 rules" and "6 rules unconditional" after both had moved.
-COUNT_FILES = {"README.md", "CHANGELOG.md", "docs/PRESENTATION-OUTLINE.md"}
+COUNT_FILES = {"README.md", "README.ja.md", "CHANGELOG.md", "docs/PRESENTATION-OUTLINE.md"}
+
+# The Japanese phrasings of the same four counts. The English patterns key on "23 hooks" and so
+# walked straight past site/index.ja.html ("23 のフック") and the deck's Japanese strings ("23フック")
+# while the real count moved on: a gate that cannot read a language says nothing about it.
+# Two word orders occur, number first ("23 のフック", "23フック") and noun first, as the video
+# copies write it ("フック10"). Two details keep these from crying wolf:
+#   - the number needs two or more digits in either order, because "終了コード 2 のフック" is an
+#     exit code, "1コマンド" is a singular and "エージェント1名" is one agent, none of them a count; and
+#   - "つの" is not an accepted joiner, because "2つのコマンド" counts something else (the two
+#     commands the intro names), not the shipped set.
+_JA_NUM = r"(?<![\d,.])(\d{2,3}) ?(?:の|個の)?"
+JA_COUNT_CHECKS = [
+    ("hook count (ja)",         _JA_NUM + r"(?:ブロッキング)?フック", "hooks"),
+    ("hook count (ja, noun first)", r"フック(\d{2,3})(?!\d)", "hooks"),
+    ("command count (ja)",      _JA_NUM + r"コマンド", "commands"),
+    ("command count (ja, noun first)", r"コマンド(\d{2,3})(?!\d)", "commands"),
+    ("agent count (ja)",        _JA_NUM + r"エージェント", "agents"),
+    ("agent count (ja, noun first)", r"エージェント(\d{2,3})(?!\d)", "agents"),
+    ("agent count (ja, seats)", r"エージェント (\d{1,3}) 席", "agents"),
+    ("rule count (ja)",         _JA_NUM + r"ルール", "rules"),
+    # The roster range in Japanese: "18席のうち3〜17席". The English range pattern needs "to" and
+    # "seats", so the Japanese figure (tailored-build.ja.svg) was never read at all.
+    ("roster total (ja)",       r"(\d+)席のうち", "agents"),
+    ("roster range low (ja)",   r"席のうち(\d+)(?:〜|~|から)\d+席", "roster_min"),
+    ("roster range high (ja)",  r"席のうち\d+(?:〜|~|から)(\d+)席", "roster_max"),
+]
 COUNT_CHECKS = [
     ("agent count",   rf"{NUM} agents,", "agents"),
     ("rule count",    rf"{NUM} rules(?:,| -)", "rules"),
     ("command count", rf"{NUM} (?:slash )?commands,", "commands"),
     ("hook count",    rf"{NUM} (?:blocking )?hooks", "hooks"),
-]
+] + [c for c in JA_COUNT_CHECKS]
 
 # The exact "after" byte figure that follows the known baseline constant in a before|after row. The
 # token columns are prefixed "~" and so are not captured; the detail-table rows do not carry the
@@ -416,7 +457,7 @@ MEDIA_CHECKS = [
     # picture; the picture's own provenance lives in docs/assets/CAPTURED.json.
     ("media captured score",    r"harness (\d+)/100", "cap_score"),
     ("media captured score ja", r"(\d+)/100 と採点", "cap_score"),
-]
+] + [("media " + n, pat, key) for n, pat, key in JA_COUNT_CHECKS]
 # "N/N" pairs (the eval badge). Only equal pairs are claims; 04/05-style dates are not, and a pair
 # far from the canonical count (a video timestamp, a score in an example) is not either.
 # The optional spaces matter. A clip rendered the eval result as "26 / 26" and this regex,
@@ -531,7 +572,37 @@ def self_test(c: dict[str, int]) -> list[str]:
         "media session tax en":  "keeping {tax_pct}% of rule content out of the session",
         "media session tax ja prose": "ルール本文の{tax_pct}%が既定セッションの外に出る",
     }
+    # One probe per Japanese count pattern, built from the canonical figures. Each is written the
+    # way a real page writes it, so a pattern that drifts away from the page's phrasing dies here.
+    ja_probes = {
+        "hook count (ja)":         "{hooks} のフックと 3 つのコマンド",
+        "hook count (ja, noun first)": "ブロッキングフック{hooks}",
+        "command count (ja)":      "{hooks} のフックと {commands} のコマンド",
+        "command count (ja, noun first)": "コマンド{commands}",
+        "agent count (ja)":        "{agents} のエージェントから席を選ぶ",
+        "agent count (ja, noun first)": "エージェント{agents}",
+        "agent count (ja, seats)": "alt エージェント {agents} 席と、モジュールごと",
+        "rule count (ja)":         "{rules} のルール、うち {scoped_rules} は対象パスでのみ",
+        "roster total (ja)":       "{agents}席のうち{roster_min}〜{roster_max}席、加えて実在する",
+        "roster range low (ja)":   "{agents}席のうち{roster_min}〜{roster_max}席、加えて実在する",
+        "roster range high (ja)":  "{agents}席のうち{roster_min}〜{roster_max}席、加えて実在する",
+    }
+    for n, probe in ja_probes.items():
+        lines[n] = probe
+        lines["media " + n] = probe
     dead = []
+    # roster_range is a computation, not a pattern, so it proves itself differently: every purpose
+    # a real run can scaffold fields at least one working seat beside the orchestrator. A minimum
+    # of 1 means it counted a flag set the scaffolder refuses or never produces.
+    if c["roster_min"] < 2:
+        dead.append(f"roster_range: minimum {c['roster_min']} counts a flag set no real run "
+                    "produces - it must expand flags the way scaffold.py does")
+    sys.path.insert(0, str(ROOT / "harness-bootstrap" / "scripts"))
+    import scaffold  # noqa: E402
+    refused = [sorted(f) for f in roster_counts() if scaffold.validate_flags(set(f))]
+    if refused:
+        dead.append(f"roster_range: counts {len(refused)} flag set(s) the scaffolder refuses, "
+                    f"e.g. {refused[0]}")
     for name, pat, key in (CHECKS + COUNT_CHECKS + BYTE_CHECKS + MEDIA_CHECKS
                            + SPLIT_CHECKS + BENCH_CHECKS):
         probe = lines[name].format(**c)
@@ -598,6 +669,11 @@ def main() -> int:
         if "*" in text:
             text = text.replace("*", " ")
         rel = p.relative_to(ROOT).as_posix()
+        # benchmark/results/vX.Y.Z.md is a dated snapshot: raw benchmark output of that release
+        # beside its predecessor's, written by a script. Its figures are a record of those two
+        # runs, not a claim about today, so holding them to today's numbers would falsify them.
+        if rel.startswith("benchmark/results/"):
+            continue
         text_lower = text.lower()
         # The shields badge states the suite result outright, so both halves must be the
         # real case count. Checked separately from the prose rule below, which only looks
@@ -612,6 +688,8 @@ def main() -> int:
         # A changelog entry states what was true at ITS release: "5/5" in an older section is a
         # correct historical record, not a stale claim, and rewriting it would falsify the
         # history. Current-state documents get no such exemption.
+        # benchmark/results/vX.Y.Z.md quotes a past release's raw benchmark output beside the
+        # current one on purpose; its older figures are the baseline, not a stale claim.
         historical = rel.endswith("CHANGELOG.md")
         # Eval badge in prose: "26/26" near eval-ish words is a claim about the suite. This drifted
         # across fifteen files at once while only the media files were scanned.

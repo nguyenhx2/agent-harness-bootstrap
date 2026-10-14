@@ -308,8 +308,8 @@
       <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">ループをスモークテスト</span>
       <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
       <div class="col" style="max-width:23%">
-        <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">両方のグラフを構築</span>
-        <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">code-graph.py + docs-graph.py、その後graph-html.py: harness-graph.html + specs-graph.html</span>
+        <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">マップを構築</span>
+        <span class="sub" style="font-size:clamp(7px,0.98vw,12px)">code-graph.py: モジュール境界、docs-graph.py --check: 孤立ID、harness-graph.py --html</span>
       </div>
       <span class="arrow" style="font-size:clamp(10px,1.4vw,20px)">&#8594;</span>
       <span class="chip green fadein" style="font-size:clamp(8px,1.2vw,17px);padding:.45em .7em">あなたのツールへ移植</span>
@@ -372,7 +372,7 @@
                       [3000,'その後モデルがオーケストレーションを配線し、分析のギャップからPhase 1の種をまく。']]},
     {s:9,d:7200,caps:[[500,'品質ゲートが構造・コスト・安全性・裏付け・引き継ぎを確認する。'],
                       [2200,'全てgreen: ループを最初から最後までスモークテストする - 実際のタスク、セッションログの1行、/task-resume。'],
-                      [4200,'その後両方のナレッジグラフを構築し、インタラクティブHTMLとして書き出す - コード依存関係とドキュメントのトレーサビリティ。'],
+                      [4200,'その後マップを構築する - モジュール境界のチェック、孤立した仕様ID、ハーネスグラフのHTML。'],
                       [6400,'最後に選択したツールへ移植する。']],
      fn:function(){var e=q('done');e.classList.remove('grow');
        setTimeout(function(){e.classList.add('grow')},5000);}},

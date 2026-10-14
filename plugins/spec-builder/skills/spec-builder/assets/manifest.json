@@ -92,6 +92,12 @@
       "src": "commands/spec-retract.md",
       "dest": ".claude/commands/spec-retract.md",
       "subst": false
+    },
+    {
+      "src": "scripts/spec-check.py",
+      "dest": ".claude/scripts/spec-check.py",
+      "subst": false,
+      "exec": true
     }
   ]
 }

@@ -120,7 +120,7 @@ class Flow(Scene):
         d_label = Text("dispatches", font=FONT, font_size=19, color=DIM).next_to(dispatch, LEFT, buff=0.05).shift(UP*0.1)
         r_label = Text("records", font=FONT, font_size=19, color=DIM).next_to(record, UP, buff=0.05)
         self.play(Create(dispatch), FadeIn(d_label), run_time=0.5)
-        caption(self, "An orchestrator dispatches scoped specialist agents.", hold=0.9, y=-3.5, size=24)
+        caption(self, "Small work stays in the main session. Guarded work goes to the orchestrator.", hold=0.9, y=-3.5, size=24)
         self.play(Create(record), FadeIn(r_label), run_time=0.5)
 
         # hooks block a bad action

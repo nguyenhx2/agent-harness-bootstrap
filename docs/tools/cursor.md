@@ -1,5 +1,7 @@
 # The harness in Cursor
 
+**English** · [日本語](cursor.ja.md)
+
 Cursor does not run the skills. It runs the harness the skills produce. Cursor reads `AGENTS.md` and
 `.cursor/rules/*.mdc`; enforcement runs through `.cursor/hooks.json` and a generated adapter that
 translates Cursor's hook payload to the shape the existing `.claude/hooks/*.sh` expect, then translates
@@ -42,7 +44,9 @@ The adapter maps a shell event to the Bash guards (`guard-main-commit`, `check-c
 | `agent-history` | not ported | Not applicable in Cursor |
 | `.cursor/rules/*.mdc` | Loaded by Cursor | Advice only |
 
-Everything reachable through a shell command or a file read blocks the same as in Claude Code.
+Everything reachable through a shell command or a file read blocks the same as in Claude Code. The
+porter ports only these guards: the rest of the hook set (`guard-destructive`, the task-board guards,
+the verification ledger inside `guard-agent-spawn`, the opt-in strict hooks) stays Claude Code only.
 
 ## Honest limits
 

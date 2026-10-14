@@ -30,25 +30,26 @@ nobody agreed to - and it is not something a hook can catch, because a fabricate
 looks identical to a real one. This step is the actual gate; `guard-task-scope` only enforces that
 the claim is written down.
 
-1. Determine the next TASK-NNN, sequential across `docs/tasks/active/`, `docs/tasks/pending/`, and
-   `docs/tasks/done/`. The board allocates the number; never reuse one, and never overwrite an
-   existing task file on a collision.
-2. Copy `docs/templates/TASK.md` to `docs/tasks/active/TASK-NNN-<slug>.md` and fill: title, goal,
-   owner agent, dependencies, priority, phase, created date, `requested_by`, and acceptance
-   criteria. Acceptance criteria are observable and testable outcomes, not process steps.
+1. Register it with one command - it allocates the next TASK-NNN, fills the template into
+   `docs/tasks/active/`, adds and verifies the board row, and logs the first row:
 
-   `requested_by` records WHAT WAS ASKED FOR - the user's own words, or the issue this came from.
-   Not `user`, which is a label rather than a record, and not an agent name: an agent cannot
-   approve its own task. The `guard-task-scope` hook refuses a task file without it, and refuses
-   one with fewer than two real acceptance criteria - work with nothing observable to satisfy is a
-   step inside a task, or a change small enough to just make.
-3. Set `status: Planned`. The task becomes `Active` only when an agent is actually dispatched to
-   it. The five states are defined in the frontmatter of `docs/templates/TASK.md`:
-   `Planned | Active | Blocked | Pending | Done`.
-4. Add the row to the task index in `docs/tasks/master-plan.md`. Read the row back after writing
-   it: a board write can fail silently while the task file lands.
-5. Append the first session-log row to the task file, recording that it was created and registered.
-6. If `.claude/state/code-graph.json` exists, seed a `**Relevant modules:**` line under "Inputs and
+   ```
+   python .claude/scripts/task.py new "<title>" --owner <seat> \
+     --requested-by "<the user's words, or the issue>" \
+     --criterion "<observable outcome>" --criterion "<another>" \
+     [--goal "..."] [--deps TASK-NNN,...] [--priority P0|P1|P2] [--phase N] [--fr FR-NN] \
+     [--files "<paths the work may touch>"]
+   ```
+
+   With `--fr`, the task links to an FR: name the criterion IDs (`AC-nn.n`) instead of copying their
+   text, and `task.py` re-runs `.claude/scripts/spec-check.py --write` (when the repo has it), so
+   `docs/specs/index.json` lists the new task and never goes stale.
+
+   `--requested-by` records what was asked for - not `user`, not an agent name. Criteria are
+   observable outcomes, not process steps; fewer than two is refused, like `guard-task-scope`
+   refuses it. The task stays `Planned` until an agent is actually dispatched
+   (`task.py move TASK-NNN Active`).
+2. If `.claude/state/code-graph.json` exists, seed a `**Relevant modules:**` line under "Inputs and
    context" in the task file: find the module(s) whose `owner` field (in the graph) matches this
    task's owner agent, then list them plus every module with a direct edge INTO them (its `"to"`
    equal to the owner's module - the direct dependents, i.e. what else the graph says would be

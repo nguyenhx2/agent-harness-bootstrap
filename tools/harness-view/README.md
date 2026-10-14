@@ -1,9 +1,20 @@
 # harness-view
 
+**English** · [日本語](README.ja.md)
+
 A standalone, deterministic analyzer for a repo that ran the `harness-bootstrap`
 skill. It reads `.claude/` (agents, rules, commands, hooks, settings), the task
 board and the code graph, and shows how everything is wired together. No AI
 involved - it only reads files and reports relationships.
+
+It does not assume a coding repository. A research or writing harness (a
+`researcher`, a `writer`, an `editor`, no tests, no code graph) scans and
+assesses on the same terms, and an [orchestrator-kit](SCHEMA.md#task-board)
+install - its `.agent-base/tasks` board, its seat-registered guard hooks and
+its spawn allowlist - is read as well. What it reads from each file is listed in
+[SCHEMA.md](SCHEMA.md): every documented subagent frontmatter field, hooks on
+any event from settings.json and from a seat's own `hooks:`, `skills:` preloads
+and `Agent(a, b)` spawn grants as edges.
 
 The skill's own HTML output (`docs/context/harness-graph.html`) needs nothing
 but Python and a browser; this tool is the power version: a native binary with
@@ -137,8 +148,10 @@ The icon is generated from the project mark (`docs/assets/logo-mark.svg`) by
 ```
 harness-view scan   [path] [-o out.json]  # write .claude/state/harness-graph.json
 harness-view serve  [path] [--port 7420]  # local web UI at http://127.0.0.1:7420/
-harness-view watch  [path]                # rebuild the graph on .claude/ or docs/ changes
-harness-view assess [path] [--json]       # score the harness; exit 1 on a high finding
+harness-view watch  [path]                # rebuild on .claude/, docs/ or .agent-base/ changes
+harness-view assess [path] [--json] [--lang ja] [--since prev.json]
+                                          # score the harness; exit 1 on a high finding
+harness-view rubric [--lang ja]           # print the rubric every score comes from
 ```
 
 What each one actually prints, against a real harness:
@@ -166,11 +179,14 @@ harness-view: rebuilt (219 nodes, 655 edges)
   commands, with edge-type labels) and **Graph** (force-directed). The legend
   toggles node types; modules, tasks and scripts are hidden by default. Every
   request to `/graph.json` re-scans, so the page is always current; an optional
-  10 second auto-refresh keeps it live. Clicking a node traces its connected
+  10 second auto-refresh keeps it live, and leaves the layout and zoom alone
+  when nothing changed. Clicking a node traces its connected
   subgraph: the node, its neighbours, and the edges between any two of them are
   drawn with a marching dash while everything unrelated fades back. Hooks carry
-  a `PRE`/`POST`/`STOP` badge for the event they fire on, blocking hooks in
-  red; tasks carry their board status; a disabled item is dashed, red-bordered
+  a badge for the event they fire on (`PRE`, `POST`, `PERM`, `PROMPT`, `START`,
+  `STOP`, `SUB-`, `COMPACT`, ...), tool-gating hooks in red; tasks carry their
+  board status, or `DRIFT` when the board disagrees with itself; a disabled item
+  is dashed, red-bordered
   and struck through. A third **Master plan** tab appears only when the repo has
   `docs/tasks/master-plan.md`.
 - The path box in the header re-points the viewer at any repo with a `.claude/`
@@ -184,57 +200,91 @@ harness-view: rebuilt (219 nodes, 655 edges)
 ## Assessment
 
 `assess` scores a harness against the quality gate that `harness-bootstrap`
-already asserts, and reports what it saw with the file that proves it. It is a
-plain rules engine: no model, no network, no judgment calls. The same engine
-backs the **Assess** tab in the web UI and `GET /assess?root=<path>`, so a
-browser and a CI job cannot disagree about the same repo.
+already asserts. It is a plain rules engine: no model, no network, no judgment
+calls. The same engine backs the **Assess** tab and `GET /assess?root=<path>`, so
+a browser and a CI job cannot disagree about the same repo.
+
+Every finding is action-oriented. It names:
+
+- the **rule**: a rubric id such as `COST-01`, published in [RUBRIC.md](RUBRIC.md)
+- the **evidence**: `file:line` - the key's own line, or the closing `---` where a
+  missing key belongs
+- **why** it matters, and the concrete **fix**: a command or an exact edit
+- where it is safe, a **one-click fix** through the existing `POST /agent` write
+  path (pin a model, set an effort, give a seat an explicit tool list, strip
+  write tools from a reviewer, drop a bare `Agent`). It is offered only when the
+  agent editor would accept the edit, and the page asks before it writes.
 
 ```
-$ harness-view assess D:/Projects/msboost
-harness assessment: D:/Projects/msboost
-  overall 64/100   high 0  medium 15  low 55
-    Board health    95/100  (1 findings)
-    Cost control     0/100  (33 findings)
-    Docs quality    28/100  (36 findings)
-    Safety         100/100  (0 findings)
-    Traceability   100/100  (0 findings)
+$ harness-view assess tools/harness-view/tests/fixture
+harness assessment: .../tools/harness-view/tests/fixture
+  purposes: code (roster)
+  overall 98/100   high 0  medium 0  low 5
+    Safety           94/100  (3 findings)
+    ...
+  fix these first:
+    1. [SAF-08] The deny list covers force push, recursive delete and secret reads. x2  (effort 1, overall after 99)
+    ...
+  findings, worst first:
+    [low BRD-02] task `TASK-01` has no status
+        at: docs/tasks/active/TASK-01.md:1
+        fix: Add `status: Pending` (or the board's real state) to the frontmatter of the task file.
 ```
 
-It exits 1 when any high finding is outstanding, so it can gate a pipeline:
-
-```
-harness-view assess . --json > assessment.json   # exit 1 blocks the build
-```
-
-### What it checks
-
-| Category | Checks |
+| Flag | Does |
 |---|---|
-| Safety | reviewers hold no `Edit`/`Write`; only the orchestrator holds `Agent`; registered hooks exist on disk and hook files are registered; the four guardrail layers are present (deny rules, a blocking hook, `agent-guardrails.md`, a review gate) |
-| Cost control | every agent pins `model` and `effort`; every agent has an explicit `tools` list; every rule that can be path-scoped carries `paths:` |
-| Traceability | tasks are owned by seats that exist; commands do not run scripts that are absent |
-| Board health | Blocked tasks name what would unblock them; tasks carry a status |
-| Docs quality | no blank line inside a Markdown table (it silently ends the table on GitHub and here) |
+| `--json` | the full assessment, for CI; exit 1 when a high finding is outstanding |
+| `--lang ja` | every title, reason, fix and label in Japanese |
+| `--since prev.json` | compare with an earlier `--json` output: findings fixed and new, every score that moved |
+| `--purpose research,docs` | override the detected purposes |
 
-### What the score is, and is not
+`harness-view rubric [--lang ja]` prints the rubric itself.
 
-Each category starts at 100 and loses 12 per high finding, 5 per medium and 2
-per low, floored at 0. The overall figure is the plain mean of the five. Those
-weights are a stated convention, not a measurement, and the UI shows the
-derivation rather than hiding it behind one number.
+### Fix these first
 
-It does not measure whether the rules say anything useful for your codebase,
-whether an agent's scope matches how the code is really organised, whether a
-hook that exists actually blocks what it claims to, or anything at all about
-code quality. A clean report means every rule here passed, not that the harness
-is good.
+The worklist groups findings by rule and orders the rules by **weight x count /
+effort** (effort 1 = one click or one line, 2 = a small edit, 3 = a decision or a
+new file). Each card says what full marks means, how to get there, how many
+one-click fixes it has, and what the overall score would be with that rule
+cleared. The Assess tab shows the top three and folds the rest.
+
+### What changed since the last check
+
+The server keeps the previous assessment of each root in memory. Re-checking -
+after a one-click fix, or after you edited files by hand - shows the score
+before and after, the findings fixed, the findings new, and the graph nodes added
+or removed. Nothing is written into the repository. In CI, `--since` does the
+same with a saved JSON file.
+
+### The score, and how to reproduce it
+
+Each of six categories (Safety, Cost control, Traceability, Board health, Docs
+quality, Contract) starts at 100 and loses the weight of each finding in it:
+high 12, medium 5, low 2, info 0, floored at 0. Overall is the integer mean of
+the six. Every category card shows its own arithmetic (`100 - COST-01 1x12 = 88`),
+and `tests/rubric_test.rs` recomputes every score from the published weights.
+The weights are a stated convention, not a measurement.
+
+### Purpose-aware rules
+
+A rule applies to `all` repositories, to `code`, or to `non-code` (research,
+strategy, docs). The purposes come from the `purpose_*` flags in
+`.claude/state/vars.json`, else from the roster (a `researcher` means research, a
+`writer` or `editor` docs, a dev or review seat code), else default to code. So
+a research repository is not told to add `/review-changes`, and is told when no
+read-only seat checks its deliverables (`SAF-13`). The tab says which purposes
+were found and which rules were therefore not applied.
+
+It does not measure whether the rules say anything useful, whether an agent's
+scope matches how the work is organised, whether a hook really blocks what it
+claims to, or the quality of the code or the writing. A clean report means every
+rule passed, not that the harness is good.
 
 ### Findings link back to the graph
 
 Every finding that names a node carries a **show in graph** button: it unhides
 that node type if you had filtered it out, switches to the graph, selects the
-node and lights its connections. A finding you cannot locate is a complaint,
-not a report.
+node and lights its connections.
 
 ## Runtime toggles
 
@@ -295,7 +345,8 @@ page open in another tab from silently mutating `.claude/` while `serve` runs.
 `GET /file?root=<repo>&path=<repo-relative path>` backs the sidebar's Preview
 and the Master plan tab. It is read-only and deliberately narrow:
 
-- only `.claude/` and `docs/` are readable - nothing else in the repo is served
+- only `.claude/`, `docs/`, `.agent-base/` (the task board) and the known
+  instruction files are readable - nothing else in the repo is served
 - both sides are canonicalized and the result must still sit inside the root,
   so `..`, an absolute path, and a symlink pointing out of the tree are all
   refused by the same check rather than by pattern-matching the string
@@ -429,7 +480,8 @@ remember that choice separately.
 ## Development
 
 ```
-cargo test          # scanner fixtures, determinism, toggle round trips
+cargo test          # scanner fixtures, determinism, toggle round trips,
+                    # the orchestrator-kit fixture (tests/kit-fixture)
 cargo build --release
 ```
 

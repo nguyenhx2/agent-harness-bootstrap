@@ -2,7 +2,7 @@
 //! harness-bootstrap skill. Subcommands: scan, serve, watch. No AI involved;
 //! it only reads files and reports relationships.
 
-use harness_view::{assess, scan, serve, watch, VERSION};
+use harness_view::{assess, rubric, scan, serve, watch, VERSION};
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -13,7 +13,9 @@ fn usage() -> ! {
          harness-view scan  [path] [-o out.json]   write .claude/state/harness-graph.json\n  \
          harness-view serve [path] [--port 7420]   local web UI (Flow + Graph views, toggles)\n  \
          harness-view watch [path]                 rebuild the graph on .claude/ or docs/ changes\n  \
-         harness-view assess [path] [--json]       score the harness; exit 1 on a high finding\n  \
+         harness-view assess [path] [--json] [--lang ja] [--since prev.json] [--purpose code,docs]\n  \
+                                                   score the harness; exit 1 on a high finding\n  \
+         harness-view rubric [--lang ja]           print the rubric every score comes from\n  \
          harness-view --version                    print the version\n\
          \n\
          Run with no arguments (or double-click the executable) to serve the\n\
@@ -44,6 +46,9 @@ fn main() {
     let mut out: Option<PathBuf> = None;
     let mut port: u16 = 7420;
     let mut json_out = false;
+    let mut ja = false;
+    let mut since: Option<PathBuf> = None;
+    let mut purpose: Option<Vec<String>> = None;
     let mut i = if launched_bare { 0 } else { 1 };
     while i < args.len() {
         match args[i].as_str() {
@@ -59,10 +64,34 @@ fn main() {
                     .unwrap_or_else(|| usage());
             }
             "--json" => json_out = true,
+            "--lang" => {
+                i += 1;
+                ja = args.get(i).map(|l| l == "ja").unwrap_or_else(|| usage());
+            }
+            "--since" => {
+                i += 1;
+                since = Some(args.get(i).map(PathBuf::from).unwrap_or_else(|| usage()));
+            }
+            "--purpose" => {
+                i += 1;
+                purpose = Some(
+                    args.get(i)
+                        .unwrap_or_else(|| usage())
+                        .split(',')
+                        .map(|p| p.trim().trim_start_matches("purpose_").to_string())
+                        .filter(|p| !p.is_empty())
+                        .collect(),
+                );
+            }
             a if !a.starts_with('-') => path = PathBuf::from(a),
             _ => usage(),
         }
         i += 1;
+    }
+    // The rubric is a document about this binary, not about a repository.
+    if cmd == "rubric" {
+        print!("{}", rubric::markdown(if ja { "ja" } else { "en" }));
+        return;
     }
     let path = path.canonicalize().unwrap_or(path);
     // The .claude/ precondition belongs to the commands that ACT on one named
@@ -94,7 +123,7 @@ fn main() {
                 exit(1);
             }
         },
-        "assess" => match assess::assess_cli(&path, json_out) {
+        "assess" => match assess::assess_cli(&path, &assess::CliOpts { json: json_out, ja, since, purposes: purpose }) {
             Ok(code) => std::process::exit(code),
             Err(e) => { eprintln!("harness-view: {e}"); std::process::exit(2); }
         },

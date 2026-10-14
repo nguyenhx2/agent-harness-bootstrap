@@ -5,7 +5,7 @@ argument-hint: <topic>
 
 Brainstorm **$1**. If $1 is empty, ask for the topic and stop.
 
-Dispatch `brainstormer`, with `tech-researcher` for evidence:
+Dispatch `strategist`, after `researcher` when the options need evidence:
 
 1. Frame the decision: what is actually being chosen, what constraints bind it, and what is already
    fixed by an Accepted ADR.

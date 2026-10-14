@@ -9,6 +9,15 @@
 #   2. Overriding a roster seat's model at spawn time. The roster is where cost and capability are
 #      decided; a per-spawn override silently re-prices a seat (a haiku seat billed at opus rates)
 #      or downgrades a gate. Change the roster file, not the spawn.
+# and, through .claude/scripts/verify-plan.py --dispatch-check, the ways a mission burns tokens.
+# Every check is keyed on the CONTENT a seat would look at, never on the wording or the task:
+#   3. Re-running a review or the suite on content that already PASSED in the ledger
+#      (.claude/state/verify-ledger.jsonl); a dispatch with no recorded result is not a run.
+#   4. A seat dispatched twice on one content with no result since, or an identical brief.
+#   5. A third review round on the same files of one task (or one branch, for task-less work).
+#   6. Dispatching past a task's budget (default 24, "dispatch_budget" in .claude/verify-map.json).
+#   The human overrides are documented in .claude/hooks/README.md, and deliberately not in any
+#   message this hook prints.
 #
 # Read-only built-in types may be permitted in .claude/hooks/spawn-allowlist (one name per line,
 # '#' comments). The shipped default allows Explore and Plan - both read-only - and nothing else.
@@ -135,6 +144,21 @@ if [ -n "$override" ] && [ -f "$agents_dir/$stype.md" ]; then
   fi
 fi
 
+# --- ledger, rounds and budget (roster seats only) -------------------------
+# Runs last, on every allow path, so a dispatch another check refuses is never recorded as run.
+# No interpreter or no script: allow - the other checks above still hold.
+ledger_check() {
+  local vp="$base_cwd/.claude/scripts/verify-plan.py" py=""
+  [ -f "$agents_dir/$stype.md" ] && [ -f "$vp" ] || return 0
+  if command -v python3 >/dev/null 2>&1; then py=python3
+  elif command -v python >/dev/null 2>&1; then py=python
+  else return 0
+  fi
+  printf '%s' "$payload" | "$py" "$vp" --target "$base_cwd" --dispatch-check
+  [ $? -eq 2 ] && exit 2
+  return 0
+}
+
 # --- 3. task linkage for write-capable seats ------------------------------
 # Registered work is enforceable here: a dispatch to a seat that can Edit or Write names a
 # registered task, or the work is an orphan the board cannot see. Read-only seats (reviewers,
@@ -152,6 +176,7 @@ if [ -f "$agents_dir/$stype.md" ]; then
   if printf '%s' "$seat_tools" | grep -Eq '(^|[,: ])(Edit|Write)(,| |$)'; then
     if ! printf '%s' "${JF[3]}" | grep -qE 'TASK-[0-9]{1,5}' &&
        printf '%s' "${JF[3]}" | grep -qiE '(^|[^A-Za-z])TIER:[[:space:]]*(direct|standard)([^A-Za-z]|$)'; then
+      ledger_check
       exit 0
     fi
     # No -d gate here. It used to skip the whole check when the board was missing, and the
@@ -174,4 +199,5 @@ if [ -f "$agents_dir/$stype.md" ]; then
   fi
 fi
 
+ledger_check
 exit 0

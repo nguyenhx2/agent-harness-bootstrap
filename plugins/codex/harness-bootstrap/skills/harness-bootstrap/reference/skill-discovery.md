@@ -5,6 +5,15 @@ this procedure is refusals. A skill is procedural text the model will follow: in
 accepting instructions from the internet, so the gate is content review, not popularity, whichever
 source it came from.
 
+One flow, three owners, no step described twice:
+
+| Step | Owner |
+|---|---|
+| find and vet an existing skill | this file |
+| create one when nothing fits and the gap is project-specific | `/new-skill` (installed command) |
+| wire it to a seat, re-review, record | `/skill-wire` (installed command) |
+| lint a project skill: metadata, references, trigger cases, orphans | `.claude/scripts/skill-check.py` |
+
 ## Where skills come from
 
 Four source types. None replace the content review below - they only change how much you know before
@@ -137,10 +146,22 @@ Never installed, regardless of approval or source:
 - direct `.zip`/URL installs, or an unpinned marketplace entry (no `source.sha`) - both bypass the one
   thing a registry gives you: a fixed, re-checkable artifact.
 
+## When nothing fits: create, or put it elsewhere
+
+No candidate survives, and the gap is this project's own workflow or domain - its release ritual,
+its data conventions, its deploy checks? That is `/new-skill`. Most gaps are not skills at all: a
+convention belongs in `CLAUDE.md`, a path-scoped constraint in a rule, a one-shot procedure in a
+command, a deterministic step in a script. `/new-skill` holds that decision table and stops when
+the answer is "elsewhere"; it scaffolds from `.claude/templates/skill/`, writes the six trigger
+cases, and ends by calling `/skill-wire`. During the bootstrap itself, only record the gap in the
+report - a skill is written once the workflow has actually recurred, not predicted from the source.
+
 ## After install: wiring
 
 Installing puts a skill on disk; it serves nobody until wired to a seat. That is `/skill-wire`
-(installed command), which re-runs the content review at wire time - install-time review does not
+(installed command), which adds the skill to the seat's `skills:` frontmatter - roster seats hold
+no `Skill` tool, so a preload is how a seat gets a skill at all - and re-runs the content review at
+wire time - install-time review does not
 cover a later update (`npx skills update`, or a marketplace auto-update - both are re-review
 triggers). A plugin-sourced skill lives under the plugin's own directory, not `.claude/skills/`;
 `/skill-wire` locates it there, and the review covers the WHOLE plugin bundle (hooks, MCP config,

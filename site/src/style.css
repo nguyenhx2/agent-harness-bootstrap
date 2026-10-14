@@ -475,21 +475,32 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
 
 /* ------- figure 4: the routing tier, and figure 5: the viewer route */
 
-/* Three alternatives, not three stages, so only the chosen lane energizes. The
+/* Four alternatives, not four stages, so only the chosen lane energizes. The
    lane is the variable; the branch gate and the reviewed MR below it are the
    constant, so they stay live under every tier. Lighting the result while
    leaving the gate between it dark read as a change that reached the MR
    without passing the gate, which is the one thing this drawing must not say. */
-.tr:has(#tier-1:checked) :is([data-lv="1"], [data-lv="2"], [data-lv="5"], [data-lv="6"]),
-.tr:has(#tier-2:checked) :is([data-lv="1"], [data-lv="3"], [data-lv="5"], [data-lv="6"]),
-.tr:has(#tier-3:checked) :is([data-lv="1"], [data-lv="4"], [data-lv="5"], [data-lv="6"]) { --on: 1; }
+.tr:has(#tier-1:checked) :is([data-lv="1"], [data-lv="2"], [data-lv="6"], [data-lv="7"]),
+.tr:has(#tier-2:checked) :is([data-lv="1"], [data-lv="3"], [data-lv="6"], [data-lv="7"]),
+.tr:has(#tier-3:checked) :is([data-lv="1"], [data-lv="4"], [data-lv="6"], [data-lv="7"]),
+.tr:has(#tier-4:checked) :is([data-lv="1"], [data-lv="5"], [data-lv="6"], [data-lv="7"]) { --on: 1; }
 
 .tr [data-lv="1"] { --i: 0; }
-.tr [data-lv="2"], .tr [data-lv="3"], .tr [data-lv="4"] { --i: 1; }
-.tr [data-lv="5"] { --i: 2; }
-.tr [data-lv="6"] { --i: 3; }
+.tr :is([data-lv="2"], [data-lv="3"], [data-lv="4"], [data-lv="5"]) { --i: 1; }
+.tr [data-lv="6"] { --i: 2; }
+.tr [data-lv="7"] { --i: 3; }
 
-.tr .dgm { width: min(100%, 26rem); margin-inline: auto; }
+/* Four lanes need a wider drawing than three did: at 420 units the lane labels
+   keep their size on a desktop and still read at phone width. */
+.tr .dgm { width: min(100%, 32rem); margin-inline: auto; }
+/* Below the breakpoint four side-by-side lanes shrink their labels past reading
+   size, so the phone gets the same net drawn with the lanes stacked, as N1 does. */
+.tr .tr__v { width: min(100%, 22rem); }
+.tr__h { display: none; }
+@media (min-width: 56rem) {
+  .tr__h { display: block; }
+  .tr__v { display: none; }
+}
 /* N5 carries no picker: it draws one fixed route, so it ships energized. */
 .vw { width: min(100%, 28rem); margin-inline: auto; }
 .vwfig { margin-top: var(--s-2); }
@@ -634,9 +645,12 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   .fit:has(#fit-1:checked) .rd[data-rd="1"],
   .fit:has(#fit-2:checked) .rd[data-rd="2"],
   .fit:has(#fit-3:checked) .rd[data-rd="3"],
+  .fit:has(#fit-4:checked) .rd[data-rd="4"],
+  .fit:has(#fit-5:checked) .rd[data-rd="5"],
   .tr:has(#tier-1:checked) .rd[data-rd="1"],
   .tr:has(#tier-2:checked) .rd[data-rd="2"],
-  .tr:has(#tier-3:checked) .rd[data-rd="3"] { display: block; }
+  .tr:has(#tier-3:checked) .rd[data-rd="3"],
+  .tr:has(#tier-4:checked) .rd[data-rd="4"] { display: block; }
 }
 
 @media (min-width: 62rem) {
@@ -683,9 +697,14 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   background: currentColor;
   opacity: 0.5;
 }
-.fit:has(#fit-1:checked) .seat:nth-child(-n + 7),
-.fit:has(#fit-2:checked) .seat:nth-child(-n + 11),
-.fit:has(#fit-3:checked) .seat:nth-child(-n + 15) {
+/* A purpose profile is not a prefix of a bigger one - a docs repo's writer is
+   not in a monorepo's roster - so each seat names the presets it belongs to in
+   data-p, rather than the grid being ordered so that a count could select it. */
+.fit:has(#fit-1:checked) .seat[data-p~="1"],
+.fit:has(#fit-2:checked) .seat[data-p~="2"],
+.fit:has(#fit-3:checked) .seat[data-p~="3"],
+.fit:has(#fit-4:checked) .seat[data-p~="4"],
+.fit:has(#fit-5:checked) .seat[data-p~="5"] {
   opacity: 1;
   border-style: solid;
   border-color: var(--live);
@@ -693,9 +712,11 @@ code, kbd, samp, pre { font-family: var(--mono); font-size: 0.9em; }
   color: var(--on-field);
   transform: translateY(-1px);
 }
-.fit:has(#fit-1:checked) .seat:nth-child(-n + 7)::before,
-.fit:has(#fit-2:checked) .seat:nth-child(-n + 11)::before,
-.fit:has(#fit-3:checked) .seat:nth-child(-n + 15)::before { background: var(--live); opacity: 1; }
+.fit:has(#fit-1:checked) .seat[data-p~="1"]::before,
+.fit:has(#fit-2:checked) .seat[data-p~="2"]::before,
+.fit:has(#fit-3:checked) .seat[data-p~="3"]::before,
+.fit:has(#fit-4:checked) .seat[data-p~="4"]::before,
+.fit:has(#fit-5:checked) .seat[data-p~="5"]::before { background: var(--live); opacity: 1; }
 @supports not selector(:has(*)) { .seat { opacity: 1; } }
 
 .tally {

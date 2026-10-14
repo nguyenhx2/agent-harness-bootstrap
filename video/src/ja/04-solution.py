@@ -187,10 +187,10 @@ class Solution(Scene):
         a4 = down_arrow(reads.get_bottom(), claude.get_top())
 
         grid = VGroup(
-            box("エージェント16\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
-            box("ルール16\n常時7、スコープ9", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
-            box("コマンド22", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
-            box("フック10", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("エージェント18\nmodel + effort", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("ルール17\n常時7、スコープ10", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
+            box("コマンド23", GREEN, GREEN_HI, w=3.2, h=0.9, fs=18),
+            box("フック26", GREEN, GREEN_HI, w=3.2, h=0.9, fs=17),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.3, 0.3)).move_to([RX, -0.35, 0])
 
         board = box("docs/tasks/  -  クラッシュを生き延びるボード", NEUTRAL, WHITE, w=6.8, h=0.7, fs=17).move_to(
@@ -246,7 +246,7 @@ class Solution(Scene):
         w2l = Text("進捗を記録する", font=JFONT, font_size=17, color=DIM).next_to(w2, UP, buff=0.12)
 
         self.play(Create(w1), FadeIn(w1l), run_time=0.45)
-        caption(self, "オーケストレーターがボードに対しスコープを絞った専門エージェントを起動する。", hold=1.0, y=-3.4, size=21)
+        caption(self, "Guardedの作業はオーケストレーターが受け、スコープを絞った専門エージェントを起動する。", hold=1.0, y=-3.4, size=21)
         self.play(Create(w2), FadeIn(w2l), run_time=0.45)
         caption(self, "ディスク上のボードが、作業中の進捗を記録する。", hold=1.1, y=-3.4, size=23)
 
@@ -275,8 +275,8 @@ class Solution(Scene):
         caption(self, "契約書、強制、永続する状態、選ばれた請求額。", hold=1.2, y=-3.4, size=24)
 
         ev = VGroup(
-            tag("ガードレール評価 122/122", GREEN_HI, fs=19),
-            tag("Opus -> Haiku: バイト単位で同一の安全性", GREEN_HI, fs=19),
+            tag("ガードレール評価 250/250", GREEN_HI, fs=19),
+            tag("フックの判定にモデルは関与しない", GREEN_HI, fs=19),
         ).arrange(RIGHT, buff=0.4).move_to([0, -2.05, 0])
         ports = Text(
             "シェルスクリプト + グロブルール  |  Claude Code・Cursor・Codexへ強制ごと移植",

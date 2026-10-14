@@ -50,8 +50,8 @@ class SkillsAndView(Scene):
     """The operating flow of the overview figure, then the three mechanisms that
     keep it honest: skill discovery, skill wire, and harness-view.
 
-    Mirrors docs/assets/harness-loom.svg beat for beat, so the clip and the figure
-    cannot drift into telling different stories.
+    Follows docs/assets/harness-overview.svg left to right - input, spec-builder, the
+    harness, state on disk, harness-view - so the clip and the figure tell one story.
     """
 
     def construct(self):
@@ -179,7 +179,7 @@ class SkillsAndView(Scene):
         fit = RoundedRectangle(width=5.4, height=2.5, corner_radius=0.14, fill_color=BG,
                                fill_opacity=1.0, stroke_color=GREEN_HI, stroke_width=2)
         fit.move_to([3.5, -0.85, 0])
-        fit_t = Text("7 to 15 of the 16 seats", font=FONT, font_size=21, color=GREEN_HI)
+        fit_t = Text("3 to 17 of the 18 seats", font=FONT, font_size=21, color=GREEN_HI)
         fit_t.move_to(fit.get_center() + 0.72 * UP)
         fit_lines = VGroup(*[Text(s, font=FONT, font_size=16, color=DIM)
                              for s in ["derived from the contract",

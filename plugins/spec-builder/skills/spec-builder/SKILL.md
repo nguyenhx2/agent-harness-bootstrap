@@ -1,7 +1,7 @@
 ---
 name: spec-builder
-version: 1.19.3
-description: Build the requirements contract for a project - a selective set of numbered BA spec sections under docs/specs/ with stable IDs (FR/NFR/BR/UC/US/DS/DT), acceptance criteria, and grep-verifiable traceability. The core (overview, glossary, FRs, NFRs, open issues, revision history, index) always; stakeholders, business flows, access control, data model, integrations, UI wireframes, feasibility, and a design-system appendix when selected. Do NOT use it to digest documents into a knowledge base, to build the .claude agent harness (that is harness-bootstrap), or to write code or ADRs. Works from any raw input - an idea, meeting notes, a transcript, a PRD, legacy docs, or a codebase - in the user's language. Use this WHENEVER the user wants requirements written, structured, or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して" - and their equivalents in any language. It never invents a requirement; anything unstated becomes a flagged open issue instead of a guess.
+version: 1.20.0
+description: Writes the requirements contract for a project under docs/specs/ from raw input - an idea, meeting notes, a transcript, a PRD, legacy docs or a codebase - in the user's language. Stable FR IDs, Given/When/Then acceptance criteria, flagged assumptions and open issues, a one-page confirmation sheet a PO or client answers yes/no/change, and a JSON index agents read instead of whole documents. Never invents a requirement. Research, strategy and docs repos get a lighter contract. Use when requirements must be written, confirmed, updated or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して", or the same in any language. Not for building the .claude agent harness (harness-bootstrap), digesting documents into a knowledge base, or writing code or ADRs.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---
 
@@ -20,6 +20,10 @@ priorities, the security posture, the feasibility call. Do not regenerate the sh
 `13-revision-history`. The rest are selected by what the input material actually contains - a
 backend batch service has no wireframes to specify, and an empty section is noise that erodes trust
 in the filled ones. Section numbers are stable whether or not their neighbors exist.
+
+**A repository whose product is not code gets the light contract.** Research questions, a decision
+brief, or a docs scope - each item an `FR-nn` with `Done when` criteria - in README, 05, 11 and 13
+only. It is selected by the same purpose flags harness-bootstrap uses (step 4).
 
 ## The rule that governs everything
 
@@ -60,7 +64,9 @@ candidate feature list, the roles, the constraints, and the output language from
 brought. Infer *structure*, ask for *decisions*: priorities, permission scope, NFR targets, volumes,
 and security posture are always asked.
 
-**3. Select the sections and confirm the FR list** - one gate, before writing anything else:
+**3. Select the sections and confirm the FR list** - one gate, before writing anything else.
+First the shape: a repo that ships no code (research, strategy, docs) takes the light contract and
+skips the section selection below - its four files are fixed.
 
 - The FR list with *proposed* MoSCoW priorities, the roles, and the open issues so far.
 - The section selection: core always; recommend each optional section only when the material shows
@@ -98,7 +104,12 @@ python scripts/scaffold.py --target <repo> --vars vars.json
 }
 ```
 
-Two kinds of flags, all lowercase in `vars.json` (markers inside templates are UPPERCASE):
+Three kinds of flags, all lowercase in `vars.json` (markers inside templates are UPPERCASE):
+
+- **Purpose flags**, the same as harness-bootstrap's: `purpose_code`, `purpose_research`,
+  `purpose_strategy`, `purpose_docs`. Any non-code purpose without `purpose_code` scaffolds the
+  light contract and needs no `.sections.json`; section flags are then refused. None at all means
+  the full set, as before.
 
 - **Section flags** (from step 3): `stakeholders`, `flows`, `access`, `db` (08), `integration`,
   `ui` (10), `feasibility`, `design` (14). An unset flag skips the file. Section 11 is core, not
@@ -148,11 +159,29 @@ Three sections carry the load, and they are the three most often thinned out:
 - **12** (when selected) - every FR appears with Yes / Partial / No and a reason. "Partial" and
   "No" are the most valuable output of this skill: cheap now, expensive in month four.
 
-**6. Verify.** The quality gate below. Then surface the open issues to the user - they cannot
-correct an assumption you did not tell them you made. Once the set is complete, offer to invoke
+**6. Verify and confirm.** `python .claude/scripts/spec-check.py --write` (installed by the
+scaffold; add `--lang ja` for a Japanese reader) writes the two derived files and checks the set:
+unique IDs, criteria on every live FR in checkable form, open issues defined and owned, and the
+derived files in step with the spec. Fix every FAIL, then run the quality gate below.
+
+- `docs/specs/confirmation.md` is the page the PO or client answers - each FR in plain words, its
+  criteria, its open issues, and a yes / no / change column. Hand it over with the open issues;
+  they cannot correct an assumption you did not tell them you made.
+- `docs/specs/index.json` is what agents read first, so a task touching one FR loads one block.
+
+When the sheet comes back, re-run `--write` (the replies are kept), fold each `change` in through
+`/spec-ingest`, and set **Status**: Confirmed on each yes with one revision row. Once the set is complete, offer to invoke
 `harness-bootstrap` via the **`Skill`** tool with `FR_LIST` (section 05's FR IDs, verbatim, in
 order) and `GLOSSARY_SEED` (section 03's terms) prefilled; state the handoff in words if the tool
 is unavailable.
+
+## Into the agentic loop
+
+A confirmed FR enters the loop as FR, then task, implement, verify-plan, review, done, with its
+criteria as the oracle at every step - and a criterion found wrong goes back to the spec, never
+around it. Most changes need none of that: a change that leaves every promise on the sheet intact
+needs no spec work, and one that adds behaviour inside an agreed FR needs one appended criterion.
+The step table and the proportion rule: [`reference/agentic-loop.md`](reference/agentic-loop.md).
 
 ## Re-running on an existing spec
 
@@ -173,7 +202,8 @@ industries; no safety attribute): [`reference/ba-standards.md`](reference/ba-sta
 
 **The output is the input contract for `harness-bootstrap`**: 05 clusters into the dev-agent
 roster, 08 sets `db`, 10 sets `ui`, 07 sets `ai` and deny-rule strictness, 12 seeds the Phase 1
-backlog (by hand - no automated reader). Full consumption map: ba-standards.md Part 3.
+backlog (by hand - no automated reader). Full consumption map: ba-standards.md Part 3. Agents on
+the harness side read `docs/specs/index.json` first and open one FR block at its anchor.
 
 ### Living specs: /spec-ingest and /spec-retract
 
@@ -190,12 +220,12 @@ the update discipline:
 Both record to `docs/context/tool-changelog.md`. Versioning is the revision history plus git - no
 side channel.
 
-### The specs graph
+### The traceability check
 
 When the set is complete (and after any later edit), if the repo carries the harness scripts:
-`python .claude/scripts/docs-graph.py` then `python .claude/scripts/graph-html.py` ->
-`docs/context/specs-graph.html`, a self-contained interactive graph with orphan IDs called out.
-Not installed yet: the graph arrives with harness-bootstrap's verify step; move on.
+`python .claude/scripts/docs-graph.py --check` prints every orphan ID - one mentioned once and
+referenced nowhere. Name each one as unstarted work or a dead reference. Not installed yet: the
+check arrives with harness-bootstrap; move on.
 
 ## Composes with harness-bootstrap
 
@@ -226,9 +256,11 @@ unresolved `{{VAR}}`s, and `{{FR_LIST}}` is one of them - build it from 05 verba
 **Traceability** (each check applies only when both endpoint sections are selected)
 - [ ] Every FR appears in 12's feasibility table. Verify: `grep -o 'FR-[0-9]*'` over 05 (file or
       folder) and 12, `sort -u` both, diff - they match exactly.
-- [ ] Every FR has acceptance criteria including one negative case. Verify: for each `## FR-nn`
-      heading, at least two `AC-nn.n` lines before the next `##`, one opening with "Given" plus an
-      invalid or missing precondition.
+- [ ] Every FR has acceptance criteria in Given/when/then or Done-when form, including one
+      negative case. Verify: `spec-check.py` exits 0 and prints no single-criterion warning; read
+      each FR's criteria for the invalid or missing precondition.
+- [ ] The confirmation sheet and the index match the spec. Verify: `spec-check.py` without
+      `--write` exits 0 (it fails `stale` otherwise).
 - [ ] Every screen in 10 names an FR; every user-facing FR names a screen. Verify: 10's FR set is
       a subset of 05's; every user-facing FR in 05 appears in 10.
 - [ ] Every component in 10's Elements tables has a `DS-nn` row in 14 (when 14 is selected); every

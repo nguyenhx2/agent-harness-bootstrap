@@ -296,9 +296,9 @@ class HarnessBootstrap(Scene):
             font=JFONT, font_size=14, color=DIM, line_spacing=0.8,
         ).next_to(gate, DOWN, buff=0.22)
         smoke = chip("ループをスモークテスト", GREEN, GREEN_HI, fs=15, h=0.85, w=3.1).move_to([-1.95, 1.6, 0])
-        graphs = chip("両方のグラフを構築", GREEN, GREEN_HI, fs=16, h=0.85, w=3.1).move_to([1.4, 1.6, 0])
+        graphs = chip("マップを構築", GREEN, GREEN_HI, fs=16, h=0.85, w=3.1).move_to([1.4, 1.6, 0])
         gr2 = Text(
-            "code-graph.py + docs-graph.py、\nその後 graph-html.py:\nharness-graph.html + specs-graph.html",
+            "code-graph.py: モジュール境界\ndocs-graph.py --check: 孤立ID\nharness-graph.py --html",
             font=JFONT, font_size=13, color=DIM, line_spacing=0.8,
         ).next_to(graphs, DOWN, buff=0.22)
         port = chip("あなたのツールへ移植", GREEN, GREEN_HI, fs=16, h=0.85, w=3.1).move_to([4.85, 1.6, 0])
@@ -312,7 +312,7 @@ class HarnessBootstrap(Scene):
         self.play(Create(pa1), FadeIn(allg), GrowFromCenter(smoke), run_time=0.5)
         caption(self, "全てgreen: ループを最初から最後までスモークテストする - 実際のタスク、セッションログの1行、/task-resume。", hold=0.9, y=-3.35, size=18)
         self.play(Create(pa2), GrowFromCenter(graphs), FadeIn(gr2), run_time=0.5)
-        caption(self, "その後両方のナレッジグラフを構築し、インタラクティブHTMLとして書き出す - コード依存関係とドキュメントのトレーサビリティ。", hold=1.3, y=-3.35, size=17)
+        caption(self, "その後マップを構築する - モジュール境界のチェック、孤立した仕様ID、ハーネスグラフのHTML。", hold=1.3, y=-3.35, size=17)
         self.play(Create(pa3), GrowFromCenter(port), run_time=0.5)
         caption(self, "最後に選択したツールへ移植する。", hold=0.9, y=-3.35, size=23)
 

@@ -1,5 +1,7 @@
 # Getting Started
 
+**English** · [[日本語|Getting-Started-ja]]
+
 ## Install
 
 Download the bundle from the [latest release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)
@@ -44,17 +46,22 @@ optional. It produces an Inventory Report - the stack, the modules, the conventi
 risky operations it found, and the gaps - and shows it to you before anything is written. Everything
 after this is parameterised by what that report found.
 
-**2. It asks you what code cannot decide.** Documentation language, commit identity, data
-sensitivity, which actions must be gated, how long-lived the project is, whether you want tests
-automated. It asks in batches, and in the language you write in. Anything the analysis already
-answered is not asked again.
+**2. It asks you what code cannot decide.** The first question is what the repo is for (code,
+research, strategy, docs, in any combination); everything after it is asked only where that purpose
+needs it. Then documentation language, commit identity, data sensitivity, which actions must be gated,
+how long-lived the project is, whether you want tests automated. The closed choices are one
+pre-answered questionnaire of at most two calls, in the language you write in, and anything the
+analysis already answered is not asked again. If you have no specs yet it hands over to
+`spec-builder` instead of just noting the gap.
 
 **3. It shows you the plan before writing.** What will be created, what will be kept, what will be
 modified, and the roster with each seat's model and effort. You confirm, or you change it.
 
 **4. It scaffolds.** The scaffolder **never overwrites an existing file**. It reports each file as
 `ADDED`, `KEPT` (already identical) or `CONFLICT` (exists and differs). A `CONFLICT` is not an
-error - it is the reconciliation queue, and you resolve each one by hand.
+error - it is the reconciliation queue, and you resolve each one by hand. It also writes a short
+`CLAUDE.md` into each module it found, and ends by checking that every link between the seats, hooks,
+rules and commands resolves.
 
 **5. You get a summary and a next step.** Usually `/task-resume`, or `spec-builder` if there are no
 specs yet.
@@ -65,12 +72,15 @@ The harness is not finished until the loop has run once. Create one real task, r
 board, and resume it:
 
 ```bash
-/task-new          # writes docs/tasks/active/TASK-001.md and registers it in master-plan.md
-/task-resume       # picks it up, dispatches the owning agent
+/new-task          # asks, then writes docs/tasks/active/TASK-001.md and registers it in master-plan.md
+/task-resume       # reads the task's checkpoint and picks up from the next step
 /review-changes    # the review gate, before you open a PR
 ```
 
-If `/task-resume` finds nothing, the board is empty - which is itself the answer. In a brownfield
+`/new-task` opens a task only for work you agreed to, and only after you say yes. From then on task
+state changes through `python .claude/scripts/task.py`, which keeps the file, its folder and the board
+row in step; a hand edit of a board row is refused. If `/task-resume` finds nothing, the board is
+empty - which is itself the answer. In a brownfield
 repo the analysis seeds the board from the gap list, so there is real work waiting on day one.
 
 ## Verify it actually guards
@@ -81,10 +91,12 @@ Do not take the guardrails on trust. From the repository:
 python eval/guardrail_eval.py
 ```
 
-It scaffolds a real harness and fires known-bad and known-good payloads at it, per hook flavour. The
-same command is what CI runs. If you want to see the difference the harness makes, `benchmark.py`
+It scaffolds a real harness (with the strict hooks, the long-session hooks and the database guard on)
+and fires known-bad and known-good payloads at it, per hook flavour. No model is consulted. The same
+command is what CI runs. If you want to see the difference the harness makes, `benchmark.py`
 runs the must-block payloads against a harnessed repo and against the same repo with `.claude/`
-removed.
+removed. To check that the harness hangs together, run `python .claude/scripts/harness-check.py` in
+your repo: it names the file and line of any link that points at nothing.
 
 ## Removing it
 

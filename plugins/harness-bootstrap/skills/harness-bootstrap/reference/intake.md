@@ -46,6 +46,67 @@ express default, and skipping it leaves its `{{VAR}}` unset. The scaffolder writ
 and only then fails on the unresolved variable, so the cost lands at the very end. Before scaffolding
 in express mode, check the vars table below and confirm every row has a value.
 
+## The initialisation questionnaire - two calls, pre-answered
+
+The closed choices that shape the harness are asked as ONE questionnaire of at most two
+`AskUserQuestion` calls, each with at most 4 questions of 2 to 4 options. Every option list is built
+from the analysis, not from this file: the option the evidence supports goes first, labelled
+"(Recommended)", and its description quotes the evidence ("`playwright.config.ts` and 41 `*.spec.ts`
+files found"). **A question the analysis settled with strong evidence is not asked** - it becomes a
+row in the plan echo the user confirms at the end. Few questions, each one a real decision.
+
+**Call 1 - the shape of the harness**
+
+| # | Question | Options (2-4), evidence-ordered | Sets |
+|---|---|---|---|
+| 1 | **Purpose** (multi-select) - what does this repo produce? | Code / Research / Strategy / Documentation - pass 0 pre-selects | `purpose_*` - see Q0 below |
+| 2 | **Team shape** | code: Lean (one merged reviewer) / Standard (split reviewers) / Long-running (+ `strategist`, `researcher`, `history-tracker`) / High-throughput (Long-running + `merge-manager`). Non-code: Lean / Long-running | `solo_review`, `long`, `merge_gate` - replaces horizon, granularity and merging below |
+| 3 | **Hook strictness** | Standard / Strict | `hooks_strict` - see Batch D |
+| 4 | **Verification appetite** | code: Unit + e2e / Unit only / E2e only / None (Q13). Non-code: check every finished deliverable / check only what leaves the repo | `tests`, `unit`, `e2e`; non-code: recorded in `tool-changelog.md` |
+
+Recommend from evidence: a repo with one module and one contributor is Lean; more than three
+modules or a CI matrix is Standard; a `docs/architecture/decisions/` with several ADRs, or a
+roadmap, is Long-running; more than a few open PRs a day is High-throughput. Testing follows the
+test config actually found; with none, recommend Unit + e2e for a product and None for a prototype.
+
+**Call 2 - policy, skills and only what Call 1 left open**
+
+| # | Question | Options | Sets |
+|---|---|---|---|
+| 5 | **Deployment rights** (code repos with a deploy command; never defaulted) | Human-only / Agent with approval / Agent, non-prod only | `deploy_ask` - Q18 |
+| 6 | **Methodology** (code repos; TDD options only when Call 1 chose a test kind) | DDD / TDD / TDD + DDD / Lightweight | `ddd`, `tdd`, `light` - Q14 |
+| 7 | **Skills** (multi-select; skipped in audit mode) | Search and wire skills for these seats / Create a project skill for a recurring workflow (`/new-skill` after the scaffold) / Skip for now | runs step 2.5 of `SKILL.md`; nothing installs without a per-skill tick |
+| 8 | **Effort profile** | Default / Economy / Thorough - Call 1's team shape picks the recommendation | Q16 |
+
+A non-code repo drops 5 and 6, so its whole questionnaire is six questions. A third call is used
+only for what detection could not settle and the user must decide: the DB seats (Q19), data
+sensitivity (Q15), the optional add-ons. Agent-history detail, the doc language and the target
+tools take their recommended values and appear in the plan echo, where one word changes them.
+
+Free text never goes through `AskUserQuestion`: project identity, the commit identity, and all of
+Batch H stay in chat.
+
+## Q0 - what the repo is for (always first)
+
+**[AQ, multi-select; CONFIRM in brownfield - pass 0 of [`codebase-analysis.md`](codebase-analysis.md)]**
+Which of these does this repository exist to produce? One or more.
+
+| Answer | flag | Seats it adds | Verification it adds |
+|---|---|---|---|
+| **Code (Recommended when the repo has source)** | `purpose_code` | the code roster ([`roster.md`](roster.md)) | tests, code + security review |
+| **Research** - answers to questions, with evidence | `purpose_research` | `researcher`, `checker` | citations and sources |
+| **Strategy** - decisions, options, recommendations | `purpose_strategy` | `strategist`, `researcher`, `checker` | assumptions and options |
+| **Documentation** - a documentation set as the product | `purpose_docs` | `writer`, `checker` | accuracy, links, style |
+
+No answer means `purpose_code`, which is also the express default when analysis found source code;
+a repo with no source and no answer is asked, never defaulted. **The answer gates the rest of the
+interview:** without `purpose_code`, skip Batch B except Q10 (dev OS), skip Q13-14, Batch E and the
+DB half of Q18, and set none of the code-only flags (`db*`, `ai`, `tdd`, `ddd`, `light`, `unit`,
+`e2e`, `tests`, `solo_review`, `merge_gate`) - the scaffolder refuses them. The variables those
+questions would have filled still need a value: `-` for every command, framework and glob that has
+no meaning here (`{{TEST_CMD}}`, `{{UNIT_FRAMEWORK}}`, `{{ORM}}`, `{{SOURCE_GLOBS}}` and the like),
+and the docs lint or build command in `{{LINT_CMD}}` / `{{BUILD_CMD}}` when one exists.
+
 ## Batch A - project identity
 
 1. **[chat]** Project name, domain, one-line purpose. Brownfield: a manifest's `name` field or the repo
@@ -63,6 +124,11 @@ in express mode, check the vars table below and confirm every row has a value.
    to fail.
 3. **[CONFIRM - presence of `docs/specs/`]** Do specs already exist? If not, invoke `spec-builder` via
    the `Skill` tool first (state the handoff if unavailable) - the bootstrap is better with FRs.
+   **Hand it the purpose answer; never let it be asked twice.** The handoff states the confirmed
+   `purpose_*` flags from Q0 and says they are settled, so spec-builder writes them into its own
+   `vars.json` flags and skips its own purpose question. Without `purpose_code` it scaffolds the
+   light contract (README, 05, 11, 13); with it, the full set. When spec-builder ran first, read
+   its `vars.json` flags instead and treat Q0 as answered - confirm it in the plan echo.
 
 **Q3a - Target AI tools - [AQ, multi-select; CONFIRM - pass 9 of
 [`codebase-analysis.md`](codebase-analysis.md)].** Which tools must this harness run in? Sets
@@ -183,14 +249,25 @@ review through `/hooks`. Until both are done the ported guards sit on disk and a
 
 ## Batch D - quality and safety
 
-**Roster shape - [AQ, 3 questions, one call, asked alongside the roster/preset step].** The user, not
-the preset table, decides how heavy the agent team is. Echo the resulting roster afterwards.
+**Roster shape - [AQ, asked as Call 1's "Team shape" and "Hook strictness" questions above].** The
+user, not the preset table, decides how heavy the agent team is. The bullets below are what the
+team-shape options set, kept here as the reference; they are not asked one by one. Echo the
+resulting roster afterwards.
 - **Project horizon** - Short and focused (Recommended below preset L) / Long-term, multi-week (flag
-  `long`: adds `brainstormer` + `tech-researcher` for decision work and `history-tracker` to curate
-  the run archive - seats that only pay off on a project long enough to forget its own decisions).
+  `long`: adds `strategist` + `researcher` for decision work and `history-tracker` to curate the run
+  archive - seats that only pay off on a project long enough to forget its own decisions).
 - **Role granularity** - Split reviewers (Recommended for M/L: `code-reviewer` + `security-reviewer`,
   two independent passes catch more) / One merged `reviewer` (flag `solo_review`: one pass, both
-  lenses - the lean choice for preset S and solo work).
+  lenses - the lean choice for preset S and solo work). Code repos only.
+- **Merging** - The human merges (Recommended) / A delegated `merge-manager` (flag `merge_gate`:
+  only for a steady stream of parallel PRs, and only with the strict gate in `roster.md`). Code
+  repos only.
+- **Hook strictness** - Standard (Recommended) / Strict (flag `hooks_strict`: also blocks large or
+  binary commits, uploads to hosts outside `.claude/hooks/egress-allowlist`, unpinned dependency
+  installs, pasted secrets, mid-session settings changes that weaken the harness, and a "done"
+  with no evidence - for repos where one bad command costs more than an occasional false block).
+  Destructive shell commands (`rm -rf` on the repo, a force push to a protected branch,
+  `git reset --hard`, a remote DROP) are blocked in both answers: that guard ships by default.
 - **Priority** - Speed / Balanced / Highest quality. Not a flag: steers the Q16 effort profile
   (Speed -> Economy, Highest quality -> Thorough) and how aggressively the roster is trimmed.
   Cross-reference, do not re-ask Q16.
@@ -367,6 +444,7 @@ variable or flag; the remaining variables come from the analysis.
 
 | Answer | Goes to |
 |---|---|
+| 0 what the repo is for | flags `purpose_code`, `purpose_research`, `purpose_strategy`, `purpose_docs` (none means `purpose_code`); `checker` is derived from the non-code ones and never written |
 | 1 project name, domain, purpose | `{{PROJECT_NAME}}`, `{{PROJECT_SLUG}}` (kebab-case of the name, used in `.env.example`), `{{DOMAIN}}`, `{{DOMAIN_DESCRIPTION}}` |
 | 2 docs language | `{{DOC_LANGUAGE}}` - recorded in `docs/README.md`; authored `docs/` prose only |
 | 3 specs exist | `{{FR_LIST}}` (from the specs, if any); otherwise the `spec-builder` handoff |
@@ -380,7 +458,7 @@ variable or flag; the remaining variables come from the analysis.
 | 10 dev OS | flag `windows` or `posix`; `{{HOOK_RUNNER}}`/`{{HOOK_EXT}}` are DERIVED from the flag by the scaffolder - do not set them in vars.json |
 | 11 git platform + review tooling + commit identity + CI bots | `{{PR_OR_MR}}`, `{{CI_PLATFORM}}`, `{{GIT_PLATFORM}}`, `{{PR_CLI}}`, `{{CI_STATUS_CMD}}`; flag `pr_cli` when a CLI was chosen; identity: no var; bot answer: no var, `known-issues.md` + merge-manager exception if fielded. `{{PR_CLI}}` and `{{CI_STATUS_CMD}}` take `-` on the no-CLI path and MUST still be set - the scaffolder fails on an unresolved variable |
 | 12 default branch + commit convention | `{{DEFAULT_BRANCH}}`; `{{COMMIT_TYPES}}`, `{{COMMIT_SCOPES}}` |
-| roster shape (asked with the preset step) | flags `long`, `solo_review`; priority answer steers Q16; `{{AGENT_ROSTER_TABLE}}` (the confirmed roster, rendered as the AGENTS.md table) |
+| roster shape (asked with the preset step) | flags `long`, `solo_review`, `merge_gate`; priority answer steers Q16; `{{AGENT_ROSTER_TABLE}}` (the confirmed roster, rendered as the AGENTS.md table) |
 | 13 testing choice + frameworks + commands | flags `unit`, `e2e`, `tests`; `{{UNIT_FRAMEWORK}}`, `{{E2E_FRAMEWORK}}`, `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{BUILD_CMD}}`, `{{TEST_GLOBS}}` (framework vars only for selected kinds; unselected take `-`) |
 | 14 methodology | flags `tdd`/`ddd`/`light` - `ddd` ships `rules/ddd.md` plus the bounded-context blocks in `/implement-fr` and the dev agents; `tdd` ships NO file, only the tests-first blocks in `testing.md`, `00-overview.md`, `/implement-fr`, `qa-test`, `AGENTS.md`. What a test is FOR is unconditional (`rules/testing.md`), because the tautology it prevents is not an ordering problem |
 | 15 data sensitivity + compliance regime + lifecycle + AI product | `{{PII_OR_DATA}}`; flag `ai`; regime/lifecycle - no var, into `security-privacy.md` or `known-issues.md` |
@@ -390,7 +468,7 @@ variable or flag; the remaining variables come from the analysis.
 | 18 control level | flag `deploy_ask`; extra deny entries for stack-specific destructive commands |
 | optional add-ons (asked at the end of Batch D) | flags `terse` (ships `rules/output-style.md`) and `rtk` (ships `hooks/rtk-rewrite.{sh,ps1}` and sets `RTK_TELEMETRY_DISABLED=1` in settings.json). No vars. Both default OFF and are removable later with `/harness-toggle` |
 | 19 DB agents + seed policy | flags `db_engineer`, `db_seeder` (with `db`, gate their seats and `/seed-db`); seed scope |
-| 20 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` |
+| 20 destructive DB command | `{{DB_RESET_CMD}}`, `{{DB_RESET_PATTERN}}` (its deny rule ships only with `db`) |
 | 21-22 branding, icons, a11y | flag `ui`, `{{UI_GLOBS}}`; `rules/frontend.md` body |
 | 23 audit scope | flag `audit`, `{{WORKSPACE_ROOT}}`, `{{REPO_DIR_LIST}}` |
 | 24 model sovereignty | `{{MODEL_PUBLIC}}`, `{{MODEL_INTERNAL}}`, `{{MODEL_CONFIDENTIAL}}`, `{{MODEL_RESTRICTED}}` |
@@ -401,10 +479,12 @@ variable or flag; the remaining variables come from the analysis.
 | - deploy command (from analysis or Q6) | `{{DEPLOY_CMD}}` |
 | - glossary seed rows (from spec section 03 when spec-builder hands off; `-` if none) | `{{GLOSSARY_SEED}}` |
 | - module paths, routing, dev agents | `{{MODULE_PATHS}}`, `{{ROUTING_TABLE}}`, `{{DEV_AGENT_NAME}}` - from the analysis |
+| - per-module guidance (from the analysis, no question) | the `modules` list in `vars.json`: one `{path, owner, invariants, commands}` per module or large directory, rendered into `<path>/CLAUDE.md` (40 lines at most) |
 
-Flags are exactly: `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`,
-`unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `terse`, `rtk`, `pr_cli`,
-`target_cursor`, `target_codex`, and exactly one of `windows`/`posix`.
+Flags are exactly: `purpose_code`, `purpose_research`, `purpose_strategy`, `purpose_docs`, `ui`,
+`db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`,
+`deploy_ask`, `long`, `solo_review`, `merge_gate`, `hooks_strict`, `terse`, `rtk`, `pr_cli`, `target_cursor`,
+`target_codex`, and exactly one of `windows`/`posix`. `checker` is derived, never written.
 `ddd` is the default methodology; `tdd` is opt-in and `light` replaces both - never assumed. `tests`
 is derived: set it whenever `unit` or `e2e` is set, never alone.
 

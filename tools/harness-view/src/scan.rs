@@ -30,6 +30,9 @@ const REVIEWERS: &[&str] = &[
 /// it cannot read is simply absent from the node meta.
 fn frontmatter(text: &str) -> BTreeMap<String, Value> {
     let mut out = BTreeMap::new();
+    // A file saved by a Windows editor can start with a UTF-8 BOM, and then the
+    // first line is "\u{feff}---": every key in it used to vanish.
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut lines = text.lines();
     match lines.next() {
         Some(l) if l.trim() == "---" => {}
@@ -138,13 +141,192 @@ fn as_list(v: &Value) -> Vec<String> {
             .collect(),
         Value::String(s) => {
             let inner = s.trim().trim_start_matches('[').trim_end_matches(']');
-            inner
-                .split(',')
-                .map(unquote)
+            split_top(inner)
+                .into_iter()
+                .map(|p| unquote(&p))
                 .filter(|p| !p.is_empty())
                 .collect()
         }
         _ => Vec::new(),
+    }
+}
+
+/// Split on commas that sit outside parentheses, brackets and quotes, so
+/// `Agent(researcher, writer), Read` is two tools and not three fragments.
+fn split_top(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut cur = String::new();
+    let mut depth = 0i32;
+    let mut quote: Option<char> = None;
+    for c in s.chars() {
+        if let Some(q) = quote {
+            if c == q {
+                quote = None;
+            }
+            cur.push(c);
+            continue;
+        }
+        match c {
+            '"' | '\'' => quote = Some(c),
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => depth -= 1,
+            ',' if depth <= 0 => {
+                out.push(std::mem::take(&mut cur).trim().to_string());
+                continue;
+            }
+            _ => {}
+        }
+        cur.push(c);
+    }
+    if !cur.trim().is_empty() {
+        out.push(cur.trim().to_string());
+    }
+    out
+}
+
+/// The frontmatter as a tree: nested maps and lists by indentation, which the
+/// flat reader above cannot see. Claude Code's subagent format nests three
+/// fields - `hooks:`, `mcpServers:` and `experimental:` - and a seat's own hook
+/// registrations live in the first of them. Scalars stay strings; a `[a, b]`
+/// flow list becomes an array. Anything it cannot read is left out.
+pub fn frontmatter_tree(text: &str) -> Map<String, Value> {
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let mut it = text.lines();
+    if it.next().map(|l| l.trim()) != Some("---") {
+        return Map::new();
+    }
+    let mut lines: Vec<(usize, String)> = Vec::new();
+    for l in it {
+        if l.trim() == "---" {
+            break;
+        }
+        let t = l.trim_end();
+        let body = t.trim_start();
+        if body.is_empty() || body.starts_with('#') {
+            continue;
+        }
+        lines.push((t.len() - body.len(), body.to_string()));
+    }
+    let mut i = 0;
+    match yaml_block(&lines, &mut i, 0) {
+        Value::Object(m) => m,
+        _ => Map::new(),
+    }
+}
+
+fn yaml_scalar(s: &str) -> Value {
+    let t = strip_comment(s.trim());
+    if t.starts_with('[') && t.ends_with(']') {
+        return Value::Array(
+            split_top(&t[1..t.len() - 1])
+                .into_iter()
+                .map(|x| unquote(&x))
+                .filter(|x| !x.is_empty())
+                .map(Value::String)
+                .collect(),
+        );
+    }
+    let single = t.starts_with('\'');
+    let u = unquote(&t);
+    Value::String(if single { u.replace("''", "'") } else { u })
+}
+
+/// `key: rest` when the line opens a mapping entry. A quoted or flow scalar,
+/// or a colon not followed by a space (`Bash(git commit:*)`), is not one.
+fn yaml_kv(s: &str) -> Option<(String, String)> {
+    if s.starts_with(['"', '\'', '[', '{']) {
+        return None;
+    }
+    let idx = s.find(": ").or(if s.ends_with(':') { Some(s.len() - 1) } else { None })?;
+    let key = s[..idx].trim();
+    if key.is_empty() || key.contains(' ') {
+        return None;
+    }
+    Some((unquote(key), s[idx + 1..].trim().to_string()))
+}
+
+fn is_item(body: &str) -> bool {
+    body == "-" || body.starts_with("- ")
+}
+
+fn yaml_block(lines: &[(usize, String)], i: &mut usize, indent: usize) -> Value {
+    let Some((ind0, first)) = lines.get(*i) else {
+        return Value::Null;
+    };
+    let indent = (*ind0).max(indent);
+    if is_item(first) {
+        let mut arr = Vec::new();
+        while let Some((ind, body)) = lines.get(*i) {
+            if *ind != indent || !is_item(body) {
+                break;
+            }
+            let rest = body[1..].trim_start().to_string();
+            let col = indent + body.len() - rest.len();
+            *i += 1;
+            if rest.is_empty() {
+                match lines.get(*i) {
+                    Some((n, _)) if *n > indent => {
+                        let n = *n;
+                        arr.push(yaml_block(lines, i, n));
+                    }
+                    _ => arr.push(Value::Null),
+                }
+            } else if let Some((k, v)) = yaml_kv(&rest) {
+                // `- key: value` opens a map whose later keys sit at `col`
+                let mut m = Map::new();
+                let first_val = yaml_value(lines, i, col, &v);
+                m.insert(k, first_val);
+                if lines.get(*i).map(|l| l.0) == Some(col) {
+                    if let Value::Object(more) = yaml_block(lines, i, col) {
+                        m.extend(more);
+                    }
+                }
+                arr.push(Value::Object(m));
+            } else {
+                arr.push(yaml_scalar(&rest));
+            }
+        }
+        return Value::Array(arr);
+    }
+    let mut m = Map::new();
+    while let Some((ind, body)) = lines.get(*i) {
+        if *ind != indent || is_item(body) {
+            break;
+        }
+        *i += 1;
+        if let Some((k, v)) = yaml_kv(body) {
+            let val = yaml_value(lines, i, indent, &v);
+            m.insert(k, val);
+        }
+    }
+    Value::Object(m)
+}
+
+/// The value after `key:` - inline, a block scalar, or a nested block.
+fn yaml_value(lines: &[(usize, String)], i: &mut usize, indent: usize, inline: &str) -> Value {
+    if matches!(inline, "|" | ">" | "|-" | ">-" | "|+" | ">+") {
+        let mut parts = Vec::new();
+        while let Some((ind, body)) = lines.get(*i) {
+            if *ind <= indent {
+                break;
+            }
+            parts.push(body.clone());
+            *i += 1;
+        }
+        let sep = if inline.starts_with('|') { "\n" } else { " " };
+        return Value::String(parts.join(sep));
+    }
+    if !inline.is_empty() {
+        return yaml_scalar(inline);
+    }
+    match lines.get(*i) {
+        Some((n, _)) if *n > indent => {
+            let n = *n;
+            yaml_block(lines, i, n)
+        }
+        // YAML lets a list sit at its key's own indent
+        Some((n, b)) if *n == indent && is_item(b) => yaml_block(lines, i, indent),
+        _ => Value::Null,
     }
 }
 
@@ -214,18 +396,327 @@ fn rel(root: &Path, tail: &str) -> String {
 }
 
 /// Pull the hook script name out of a registration command string.
-fn hook_name_from_command(cmd: &str) -> Option<String> {
+/// The `hooks/<name>.sh` (or `.ps1`) occurrence wins over any other `hooks/`
+/// in the line, so an argument such as `.claude/hooks/data` after the script
+/// cannot rename it; failing that, the last occurrence, as before.
+pub fn hook_name_from_command(cmd: &str) -> Option<String> {
     let norm = cmd.replace('\\', "/");
-    let idx = norm.rfind("hooks/")?;
-    let tail = &norm[idx + "hooks/".len()..];
-    let name: String = tail
-        .chars()
-        .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-        .collect();
-    if name.is_empty() {
-        None
+    let mut last = None;
+    let mut start = 0;
+    while let Some(i) = norm[start..].find("hooks/") {
+        let at = start + i + "hooks/".len();
+        let name: String = norm[at..]
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
+        if !name.is_empty() {
+            let after = &norm[at + name.len()..];
+            if after.starts_with(".sh") || after.starts_with(".ps1") {
+                return Some(name);
+            }
+            last = Some(name);
+        }
+        start = at;
+    }
+    last
+}
+
+/// Events whose hook gates a tool call: exit 2 stops the call or refuses the
+/// permission. A hook is `blocking` when any of its registrations is on one of
+/// these. Stop and UserPromptSubmit hooks can exit 2 as well, but most of them
+/// are advisory (a graph refresh, a log line), and badging every one of them
+/// "blocks the call" would say something the event alone cannot prove.
+pub const TOOL_GATE_EVENTS: &[&str] = &["PreToolUse", "PermissionRequest"];
+
+/// One hook registration, from settings.json or from a seat's own frontmatter.
+pub struct HookReg {
+    /// `settings` or `agent:<name>`
+    pub source: String,
+    pub event: String,
+    pub matcher: String,
+    /// The command, or for a prompt/agent/http hook its type and text.
+    pub command: String,
+    /// The `.claude/hooks/<name>` the command runs, when it runs one.
+    pub hook: Option<String>,
+}
+
+impl HookReg {
+    /// `PreToolUse Agent -> spawn-guard`, the form the viewer shows.
+    pub fn summary(&self) -> String {
+        let target = match &self.hook {
+            Some(h) => h.clone(),
+            None => cap(&self.command, 120),
+        };
+        if self.matcher == "*" || self.matcher.is_empty() {
+            format!("{} -> {target}", self.event)
+        } else {
+            format!("{} {} -> {target}", self.event, self.matcher)
+        }
+    }
+}
+
+fn cap(s: &str, n: usize) -> String {
+    let s = s.trim();
+    if s.chars().count() > n {
+        s.chars().take(n).collect::<String>() + "..."
     } else {
-        Some(name)
+        s.to_string()
+    }
+}
+
+/// Every registration in a `hooks:` value - settings.json's and a subagent
+/// frontmatter's share one shape: event -> [{matcher, hooks: [{type, command}]}].
+pub fn hook_regs(source: &str, hooks: &Value) -> Vec<HookReg> {
+    let mut out = Vec::new();
+    let Some(events) = hooks.as_object() else { return out };
+    for (event, groups) in events {
+        for group in groups.as_array().map(|a| a.as_slice()).unwrap_or(&[]) {
+            let matcher = group.get("matcher").and_then(|m| m.as_str()).unwrap_or("*");
+            for h in group.get("hooks").and_then(|x| x.as_array()).map(|a| a.as_slice()).unwrap_or(&[]) {
+                let ty = h.get("type").and_then(|t| t.as_str()).unwrap_or("command");
+                let cmd = h.get("command").and_then(|c| c.as_str());
+                let command = match cmd {
+                    Some(c) => c.to_string(),
+                    None => {
+                        let body = ["prompt", "url"]
+                            .iter()
+                            .find_map(|k| h.get(*k).and_then(|x| x.as_str()))
+                            .unwrap_or("");
+                        format!("{ty}: {body}")
+                    }
+                };
+                out.push(HookReg {
+                    source: source.to_string(),
+                    event: event.clone(),
+                    matcher: matcher.to_string(),
+                    hook: cmd.and_then(hook_name_from_command),
+                    command,
+                });
+            }
+        }
+    }
+    out
+}
+
+/// Registrations declared in the active seats' own frontmatter. Public for the
+/// assessment, which must see a registration whose hook file is missing - and
+/// a missing file produces no node to find it through.
+pub fn agent_hook_regs(root: &Path) -> Vec<HookReg> {
+    let mut out = Vec::new();
+    for name in md_stems(&root.join(".claude/agents")) {
+        let text = fs::read_to_string(root.join(".claude/agents").join(format!("{name}.md")))
+            .unwrap_or_default();
+        if let Some(h) = frontmatter_tree(&text).get("hooks") {
+            out.extend(hook_regs(&format!("agent:{name}"), h));
+        }
+    }
+    out
+}
+
+/// A seat whose job is to judge work rather than produce it. The fixed names are
+/// the scaffolder's; the suffixes catch the same role under another spelling
+/// (`security-privacy-reviewer`, `fact-checker`); `checker` is the skill's own
+/// review gate for research, strategy and docs repositories, and `editor` the
+/// one a writing repository usually names.
+pub fn is_review_seat(name: &str) -> bool {
+    REVIEWERS.contains(&name)
+        || name == "editor"
+        || name == "checker"
+        || ["reviewer", "-checker", "auditor", "critic", "verifier"]
+            .iter()
+            .any(|s| name.ends_with(s))
+}
+
+/// The seats an `Agent(a, b)` (or legacy `Task(a, b)`) grant names. None when
+/// the tool list grants spawning without naming anyone, or not at all.
+pub fn spawn_targets(tools: &[String]) -> Option<Vec<String>> {
+    let mut out: Vec<String> = Vec::new();
+    let mut named = false;
+    for t in tools {
+        for head in ["Agent(", "Task("] {
+            if let Some(inner) = t.strip_prefix(head).and_then(|r| r.strip_suffix(')')) {
+                named = true;
+                out.extend(split_top(inner).into_iter().map(|x| unquote(&x)).filter(|x| !x.is_empty()));
+            }
+        }
+    }
+    if named {
+        out.sort();
+        out.dedup();
+        Some(out)
+    } else {
+        None
+    }
+}
+
+/// The subagent frontmatter fields beyond model/effort/maxTurns/tools/description
+/// (code.claude.com/docs/en/sub-agents, "Supported frontmatter fields"). Each is
+/// added only when the file sets it, flattened to a string, a bool or a list of
+/// strings so every viewer can print it without knowing the field.
+fn agent_meta_extra(
+    stem: &str,
+    fm: &BTreeMap<String, Value>,
+    tree: &Map<String, Value>,
+    meta: &mut Map<String, Value>,
+) {
+    let flat = |k: &str| match fm.get(k) {
+        Some(Value::String(s)) => Some(unquote(&strip_comment(s))),
+        _ => None,
+    };
+    if let Some(n) = flat("name") {
+        // Claude Code dispatches by `name:`, not by the file name. Say so when
+        // they differ, or the graph names a seat nobody can call.
+        if !n.is_empty() && n != stem {
+            meta.insert("name".into(), json!(n));
+        }
+    }
+    for k in ["permissionMode", "memory", "isolation", "color"] {
+        if let Some(v) = flat(k).filter(|v| !v.is_empty()) {
+            meta.insert(k.into(), json!(v));
+        }
+    }
+    for k in ["background", "omitClaudeMd"] {
+        match flat(k).as_deref() {
+            Some("true") => {
+                meta.insert(k.into(), json!(true));
+            }
+            Some("false") => {
+                meta.insert(k.into(), json!(false));
+            }
+            Some(v) if !v.is_empty() => {
+                meta.insert(k.into(), json!(v));
+            }
+            _ => {}
+        }
+    }
+    if let Some(Value::String(p)) = tree.get("initialPrompt") {
+        if !p.trim().is_empty() {
+            meta.insert("initialPrompt".into(), json!(cap(p, 300)));
+        }
+    }
+    for k in ["disallowedTools", "skills"] {
+        if let Some(v) = fm.get(k) {
+            let list = as_list(v);
+            if !list.is_empty() {
+                meta.insert(k.into(), json!(list));
+            }
+        }
+    }
+    // mcpServers: a list of server names, inline definitions keyed by name, or both
+    let mut servers: Vec<String> = Vec::new();
+    match tree.get("mcpServers") {
+        Some(Value::Array(a)) => {
+            for x in a {
+                match x {
+                    Value::String(s) => servers.push(s.clone()),
+                    Value::Object(m) => servers.extend(m.keys().cloned()),
+                    _ => {}
+                }
+            }
+        }
+        Some(Value::Object(m)) => servers.extend(m.keys().cloned()),
+        Some(Value::String(s)) => servers.extend(as_list(&Value::String(s.clone()))),
+        _ => {}
+    }
+    if !servers.is_empty() {
+        meta.insert("mcpServers".into(), json!(servers));
+    }
+    if let Some(h) = tree.get("hooks") {
+        let regs: Vec<String> = hook_regs("", h).iter().map(HookReg::summary).collect();
+        if !regs.is_empty() {
+            meta.insert("hooks".into(), json!(regs));
+        }
+    }
+    let ttl = tree
+        .get("experimental")
+        .and_then(|e| e.get("cacheTtl"))
+        .and_then(|v| v.as_str())
+        .map(String::from)
+        .or_else(|| flat("experimental.cacheTtl"));
+    if let Some(t) = ttl.filter(|t| !t.is_empty()) {
+        meta.insert("cacheTtl".into(), json!(t));
+    }
+    if let Some(Value::Array(tools)) = meta.get("tools") {
+        let tools: Vec<String> = tools.iter().filter_map(|t| t.as_str().map(String::from)).collect();
+        if let Some(t) = spawn_targets(&tools) {
+            meta.insert("spawns".into(), json!(t));
+        }
+    }
+}
+
+/// The state folders of an orchestrator-kit task board, in board order.
+pub const BOARD_STATES: &[&str] = &["pending", "active", "completed", "canceled"];
+
+/// Where the task board lives: `env.TASK_BOARD_DIR` in settings.json when it is
+/// a relative path inside the repo, else `.agent-base/tasks` - the kit's default
+/// - when that directory exists. None when there is no board.
+pub fn board_dir(root: &Path, settings: Option<&Value>) -> Option<String> {
+    let from_env = settings
+        .and_then(|v| v.get("env"))
+        .and_then(|e| e.get("TASK_BOARD_DIR"))
+        .and_then(|d| d.as_str())
+        .map(|d| d.replace('\\', "/").trim_matches('/').to_string())
+        .filter(|d| {
+            !d.is_empty()
+                && !d.contains(':')
+                && !d.split('/').any(|s| s == ".." || s.is_empty())
+        });
+    let pick = from_env.unwrap_or_else(|| ".agent-base/tasks".to_string());
+    if root.join(&pick).is_dir() {
+        Some(pick)
+    } else {
+        None
+    }
+}
+
+/// One row of a board's TASKS.md: | ID | task | agent | state | deps | mission |
+pub struct IndexRow {
+    pub title: String,
+    pub owner: String,
+    pub state: String,
+    pub deps: String,
+}
+
+/// TASKS.md rows keyed by TASK id. Columns are read by position, the layout
+/// task.sh writes; a row whose first cell is not a TASK id is not a task.
+pub fn board_index(path: &Path) -> BTreeMap<String, IndexRow> {
+    let mut out = BTreeMap::new();
+    let text = fs::read_to_string(path).unwrap_or_default();
+    for line in text.lines() {
+        let t = line.trim();
+        if !t.starts_with('|') {
+            continue;
+        }
+        let cells: Vec<String> = t.trim_matches('|').split('|').map(|c| c.trim().to_string()).collect();
+        let id = cells.first().cloned().unwrap_or_default();
+        if !id.starts_with("TASK-") || id.len() < 6 {
+            continue;
+        }
+        let cell = |i: usize| cells.get(i).cloned().filter(|s| s != "-").unwrap_or_default();
+        out.insert(
+            id,
+            IndexRow { title: cell(1), owner: cell(2), state: cell(3), deps: cell(4) },
+        );
+    }
+    out
+}
+
+fn board_has_index(root: &Path, board: Option<&str>) -> bool {
+    board.map(|b| root.join(b).join("TASKS.md").is_file()).unwrap_or(false)
+}
+
+/// `TASK-007-fix-login` -> `TASK-007`: the id task.sh keys the index by.
+pub fn task_id(stem: &str) -> String {
+    let digits: String = stem
+        .strip_prefix("TASK-")
+        .unwrap_or("")
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    if digits.is_empty() {
+        stem.to_string()
+    } else {
+        format!("TASK-{digits}")
     }
 }
 
@@ -337,6 +828,7 @@ pub fn scan(root: &Path) -> Value {
     // disabled/agents and still belongs in the graph, greyed out
     // (harness-graph.py scans both trees; parity depends on it) ---
     let mut agent_names: Vec<String> = Vec::new();
+    let mut agent_regs: Vec<HookReg> = Vec::new();
     for (dir_tail, dis) in [(".claude/agents", false), (".claude/disabled/agents", true)] {
         for name in md_stems(&root.join(dir_tail)) {
         let path = root.join(dir_tail).join(format!("{name}.md"));
@@ -369,6 +861,15 @@ pub fn scan(root: &Path) -> Value {
         }
         if let Some(d) = description(&fm) {
             meta.insert("description".to_string(), Value::String(d));
+        }
+        let tree = frontmatter_tree(&text);
+        agent_meta_extra(&name, &fm, &tree, &mut meta);
+        if !dis {
+            if let Some(h) = tree.get("hooks") {
+                for r in hook_regs(&format!("agent:{name}"), h) {
+                    agent_regs.push(r);
+                }
+            }
         }
         nodes.insert(
             format!("agent:{name}"),
@@ -495,67 +996,87 @@ pub fn scan(root: &Path) -> Value {
     }
 
     // --- settings.json: which hooks are registered, and under what ---
-    let mut registrations: BTreeMap<String, (String, String)> = BTreeMap::new();
     let settings_path = claude.join("settings.json");
     let have_settings = settings_path.is_file();
+    let settings_v: Option<Value> = fs::read_to_string(&settings_path)
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok());
+    let settings_regs: Vec<HookReg> = settings_v
+        .as_ref()
+        .and_then(|v| v.get("hooks"))
+        .map(|h| hook_regs("settings", h))
+        .unwrap_or_default();
     if have_settings {
-        if let Ok(txt) = fs::read_to_string(&settings_path) {
-            if let Ok(v) = serde_json::from_str::<Value>(&txt) {
-                if let Some(events) = v.get("hooks").and_then(|h| h.as_object()) {
-                    for (event, arr) in events {
-                        let groups: &[Value] =
-                            arr.as_array().map(|a| a.as_slice()).unwrap_or(&[]);
-                        for group in groups {
-                            let matcher = group
-                                .get("matcher")
-                                .and_then(|m| m.as_str())
-                                .unwrap_or("*");
-                            let hooks: &[Value] = group
-                                .get("hooks")
-                                .and_then(|x| x.as_array())
-                                .map(|a| a.as_slice())
-                                .unwrap_or(&[]);
-                            for h in hooks {
-                                if let Some(cmd) = h.get("command").and_then(|c| c.as_str()) {
-                                    if let Some(name) = hook_name_from_command(cmd) {
-                                        registrations
-                                            .entry(name)
-                                            .or_insert((event.clone(), matcher.to_string()));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        nodes.insert(
-            "settings".into(),
-            json!({"id": "settings", "type": "settings", "label": "settings.json",
+        let mut node = json!({"id": "settings", "type": "settings", "label": "settings.json",
                    "file": rel(root, ".claude/settings.json"), "disabled": false,
                    // Editable through the same key-and-name write path the
                    // instruction files use, which is why settings.json has an
                    // entry in instruction::FILES despite not being one.
-                   "edit": {"key": "settings", "name": ""}}),
-        );
+                   "edit": {"key": "settings", "name": ""}});
+        // Registrations that run no file in .claude/hooks/: an inline command, a
+        // Python hook, a prompt or http hook. They fire all the same, and a
+        // viewer that only drew hook files hid every SessionStart one-liner.
+        let other: Vec<String> = settings_regs
+            .iter()
+            .filter(|r| r.hook.as_ref().map(|h| !hook_files.contains_key(h)).unwrap_or(true))
+            .map(HookReg::summary)
+            .collect();
+        if !other.is_empty() {
+            node["meta"] = json!({ "otherHooks": other });
+        }
+        nodes.insert("settings".into(), node);
     }
 
     for (name, (file, disabled)) in &hook_files {
         let id = format!("hook:{name}");
         let mut meta = Map::new();
-        let registered = registrations.contains_key(name);
+        let regs: Vec<&HookReg> = settings_regs
+            .iter()
+            .chain(agent_regs.iter())
+            .filter(|r| r.hook.as_deref() == Some(name.as_str()))
+            .collect();
+        let registered = !regs.is_empty();
         meta.insert("registered".into(), json!(registered));
-        if let Some((event, matcher)) = registrations.get(name) {
-            meta.insert("event".into(), json!(event));
-            meta.insert("matcher".into(), json!(matcher));
-            meta.insert("blocking".into(), json!(event == "PreToolUse"));
+        if let Some(first) = regs.first() {
+            meta.insert("event".into(), json!(first.event));
+            meta.insert("matcher".into(), json!(first.matcher));
+            let gates = regs.iter().any(|r| TOOL_GATE_EVENTS.contains(&r.event.as_str()));
+            meta.insert("blocking".into(), json!(gates));
+        }
+        // Registered more than once (two events, or settings plus a seat): list
+        // every one, because the first alone under-reports what the hook guards.
+        let mut seen: Vec<String> = Vec::new();
+        for r in &regs {
+            let s = if r.matcher == "*" { r.event.clone() } else { format!("{} {}", r.event, r.matcher) };
+            if !seen.contains(&s) {
+                seen.push(s);
+            }
+        }
+        if seen.len() > 1 {
+            meta.insert("events".into(), json!(seen));
+        }
+        // A hook a seat registers in its own frontmatter fires only while that
+        // seat runs. `scope` names the seats; absent means session-wide.
+        let mut scope: Vec<String> = regs
+            .iter()
+            .filter_map(|r| r.source.strip_prefix("agent:").map(String::from))
+            .collect();
+        scope.sort();
+        scope.dedup();
+        if !scope.is_empty() {
+            for a in &scope {
+                edges.push((format!("agent:{a}"), id.clone(), "triggers".into(), 0));
+            }
+            if !regs.iter().any(|r| r.source == "settings") {
+                meta.insert("scope".into(), json!(scope));
+            }
         }
         nodes.insert(
             id.clone(),
             json!({"id": id, "type": "hook", "label": name,
                    "file": rel(root, file), "disabled": disabled, "meta": Value::Object(meta)}),
         );
-        if registered && have_settings {
+        if have_settings && regs.iter().any(|r| r.source == "settings") {
             edges.push(("settings".into(), format!("hook:{name}"), "triggers".into(), 0));
         }
     }
@@ -689,18 +1210,93 @@ pub fn scan(root: &Path) -> Value {
     }
     walk_tasks(&root.join("docs").join("tasks"), &mut task_files, root);
     task_files.sort();
-    for (stem, relpath) in &task_files {
+    // The orchestrator-kit board: <board>/{pending,active,completed,canceled}/
+    // TASK-NNN[-slug].md plus a TASKS.md index, kept in step by task.sh. The
+    // folder IS the state, so it stands in for a missing `status:`.
+    let board = board_dir(root, settings_v.as_ref());
+    let mut board_files: Vec<(String, String)> = Vec::new();
+    if let Some(b) = &board {
+        if !b.starts_with("docs/tasks") {
+            walk_tasks(&root.join(b), &mut board_files, root);
+            board_files.sort();
+        }
+    }
+    let index = board.as_deref().map(|b| board_index(&root.join(b).join("TASKS.md"))).unwrap_or_default();
+    let mut indexed_seen: BTreeSet<String> = BTreeSet::new();
+    let all_tasks: Vec<(String, String, bool)> = task_files
+        .iter()
+        .map(|(s, r)| (s.clone(), r.clone(), false))
+        .chain(board_files.iter().map(|(s, r)| (s.clone(), r.clone(), true)))
+        .collect();
+    for (stem, relpath, on_board) in &all_tasks {
         let body = fs::read_to_string(root.join(relpath)).unwrap_or_default();
-        let fm = frontmatter(&body);
+        let mut fm = frontmatter(&body);
+        // task.sh writes `agent:` and `depends_on:` where the docs/tasks
+        // templates write `owner:` and `deps:`; same fields, other spelling.
+        for (canon, alias) in [("owner", "agent"), ("deps", "depends_on")] {
+            if !fm.contains_key(canon) {
+                if let Some(v) = fm.get(alias).cloned() {
+                    fm.insert(canon.into(), v);
+                }
+            }
+        }
         // The board fields, in the order the templates declare them. Everything
         // here is what makes a task row readable without opening the file.
         let mut meta = Map::new();
         for key in ["title", "status", "fr", "owner", "deps", "priority", "phase"] {
             if let Some(Value::String(v)) = fm.get(key) {
                 let v = unquote(&strip_comment(v));
-                if !v.is_empty() {
+                // task.sh writes `-` for "none"; on its board that is no value at all
+                if !v.is_empty() && (!*on_board || v != "-") {
                     meta.insert(key.to_string(), Value::String(v));
                 }
+            }
+        }
+        if *on_board {
+            let folder = Path::new(relpath)
+                .parent()
+                .and_then(|p| p.file_name())
+                .and_then(|x| x.to_str())
+                .unwrap_or("")
+                .to_string();
+            if BOARD_STATES.contains(&folder.as_str()) {
+                if !meta.contains_key("status") {
+                    meta.insert("status".into(), json!(folder));
+                }
+                // task.sh check, restated: folder, `status:` and the index row
+                // must agree. Record what disagrees rather than pick a winner.
+                let mut drift: Vec<String> = Vec::new();
+                if let Some(s) = meta.get("status").and_then(|v| v.as_str()) {
+                    if s != folder {
+                        drift.push(format!("status: {s} but the file is in {folder}/"));
+                    }
+                }
+                let id = task_id(stem);
+                match index.get(&id) {
+                    Some(row) if row.state != folder => {
+                        drift.push(format!("TASKS.md says {} but the file is in {folder}/", row.state))
+                    }
+                    Some(_) => {}
+                    None if board_has_index(root, board.as_deref()) => {
+                        drift.push("no row in TASKS.md".into())
+                    }
+                    None => {}
+                }
+                indexed_seen.insert(id);
+                if !drift.is_empty() {
+                    meta.insert("drift".into(), json!(drift));
+                }
+            }
+            for key in ["mission", "attempts"] {
+                if let Some(Value::String(v)) = fm.get(key) {
+                    let v = unquote(&strip_comment(v));
+                    if !v.is_empty() && v != "-" {
+                        meta.insert(key.to_string(), Value::String(v));
+                    }
+                }
+            }
+            if let Some(b) = &board {
+                meta.insert("board".into(), json!(b));
             }
         }
         let mut node = Map::new();
@@ -739,6 +1335,33 @@ pub fn scan(root: &Path) -> Value {
                 if body.contains(m.as_str()) {
                     edges.push((format!("task:{stem}"), format!("mod:{m}"), "references".into(), 0));
                 }
+            }
+        }
+    }
+    // A TASKS.md row whose file is in no state folder: the index promises work
+    // the board cannot show. It still gets a node, so the gap is visible.
+    for (id, row) in &index {
+        if indexed_seen.contains(id) || nodes.contains_key(&format!("task:{id}")) {
+            continue;
+        }
+        let mut meta = Map::new();
+        for (k, v) in [("title", &row.title), ("owner", &row.owner), ("status", &row.state), ("deps", &row.deps)] {
+            if !v.is_empty() {
+                meta.insert(k.into(), json!(v));
+            }
+        }
+        if let Some(b) = &board {
+            meta.insert("board".into(), json!(b));
+        }
+        meta.insert("drift".into(), json!(["in TASKS.md but no file in any state folder"]));
+        nodes.insert(
+            format!("task:{id}"),
+            json!({"id": format!("task:{id}"), "type": "task", "label": id,
+                   "disabled": false, "meta": Value::Object(meta)}),
+        );
+        for one in row.owner.split('+').map(str::trim).filter(|s| !s.is_empty()) {
+            if agent_names.iter().any(|a| a == one) {
+                edges.push((format!("agent:{one}"), format!("task:{id}"), "owns".into(), 0));
             }
         }
     }
@@ -922,16 +1545,69 @@ pub fn scan(root: &Path) -> Value {
 
     content_edges(root, &mut nodes, &mut edges);
 
-    if agent_names.iter().any(|a| a == "orchestrator") {
-        for agent in &agent_names {
-            if agent != "orchestrator" {
-                edges.push(("agent:orchestrator".into(), format!("agent:{agent}"), "spawns".into(), 0));
+    // Who can start whom. `Agent(a, b)` in a seat's tools names exactly who it
+    // may spawn; the orchestrator, or any seat holding a bare `Agent`, can spawn
+    // every other seat on the roster.
+    for agent in &agent_names {
+        let m = nodes.get(&format!("agent:{agent}")).and_then(|n| n.get("meta"));
+        let named: Option<Vec<String>> = m
+            .and_then(|m| m.get("spawns"))
+            .and_then(|s| s.as_array())
+            .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect());
+        let bare = m
+            .and_then(|m| m.get("tools"))
+            .and_then(|t| t.as_array())
+            .map(|a| a.iter().any(|t| matches!(t.as_str(), Some("Agent") | Some("Task"))))
+            .unwrap_or(false);
+        let targets: Vec<&String> = match &named {
+            Some(list) => agent_names.iter().filter(|a| list.contains(a)).collect(),
+            None if agent == "orchestrator" || bare => agent_names.iter().collect(),
+            None => Vec::new(),
+        };
+        for t in targets {
+            if t != agent {
+                edges.push((format!("agent:{agent}"), format!("agent:{t}"), "spawns".into(), 0));
             }
         }
     }
-    for r in REVIEWERS {
+    // orchestrator-kit's spawn-guard.sh admits, besides the roster, the built-in
+    // agents listed one per line in .claude/hooks/spawn-allowlist. Built-ins are
+    // not nodes, so the list rides on the seat whose guard reads it.
+    let allow_path = claude.join("hooks").join("spawn-allowlist");
+    if let Ok(txt) = fs::read_to_string(&allow_path) {
+        let allow: Vec<String> = txt
+            .lines()
+            .map(|l| l.split('#').next().unwrap_or("").trim().to_string())
+            .filter(|l| !l.is_empty())
+            .collect();
+        let readers: BTreeSet<String> = agent_regs
+            .iter()
+            .filter(|r| {
+                r.hook
+                    .as_ref()
+                    .and_then(|h| hook_files.get(h))
+                    .and_then(|(f, _)| fs::read_to_string(root.join(f)).ok())
+                    .map(|t| t.contains("spawn-allowlist"))
+                    .unwrap_or(false)
+            })
+            .filter_map(|r| r.source.strip_prefix("agent:").map(String::from))
+            .collect();
+        let seats: Vec<String> = if readers.is_empty() {
+            agent_names.iter().filter(|a| *a == "orchestrator").cloned().collect()
+        } else {
+            readers.into_iter().collect()
+        };
+        for s in seats {
+            if let Some(Value::Object(n)) = nodes.get_mut(&format!("agent:{s}")) {
+                if let Some(Value::Object(m)) = n.get_mut("meta") {
+                    m.insert("spawnAllowlist".into(), json!(allow));
+                }
+            }
+        }
+    }
+    for r in &agent_names {
         // active seats only - a parked agent file reviews nothing
-        if agent_names.iter().any(|a| a == r) {
+        if is_review_seat(r) {
             edges.push((format!("agent:{r}"), "gate:merge-request".into(), "reviews".into(), 0));
         }
     }

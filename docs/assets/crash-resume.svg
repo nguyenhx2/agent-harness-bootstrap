@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="636" viewBox="0 0 880 636" role="img" aria-labelledby="cr-title cr-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <title id="cr-title">Crash and resume - the IDE died, what now</title>
-  <desc id="cr-desc">Crash and resume, in three columns. Before the crash, the agent appends session-log rows to the task file after every unit of work, so the log is the evidence. The crash destroys the conversation, the model's working memory and anything unsaved, but the branch, the task file up to its last written row, the board row and the run archive survive; the harness graph is derived, so it rebuilds rather than needing to survive. Resume then runs seven steps with an empty context: scan the active task directory for a task whose status is Active, Blocked or Planned; read the board and then that task file's session log and orchestration notes; verify the previous instance is actually terminated, remembering that a silent instance carrying a MISSION COMPLETE marker finished while one without it crashed; reconcile orphaned worktrees and branches against the board; reconcile the run archive, because a history entry newer than the last session-log row is a finished run nobody logged; verify against git state rather than any remembered summary; and continue from the last recorded row. Committed files and git state are trusted over any agent's final report.</desc>
+  <desc id="cr-desc">Crash and resume, in three columns. Before the crash, the agent appends session-log rows to the task file after every unit of work, so the log is the evidence. The crash destroys the conversation, the model's working memory and anything unsaved, but the branch, the task file up to its last written row, the board row and the run archive survive; the harness graph is derived, so it rebuilds rather than needing to survive. Resume then runs seven steps with an empty context: run task.py resume, which lists the unfinished tasks (status Active, Blocked or Planned), human gates first; read the digest of that task: its checkpoint, the open acceptance criteria and the last session-log rows; verify the previous instance is actually terminated, remembering that a silent instance carrying a MISSION COMPLETE marker finished while one without it crashed; reconcile orphaned worktrees and branches against the board; reconcile the run archive, because a history entry newer than the last session-log row is a finished run nobody logged; verify against git state rather than any remembered summary; and continue from the checkpoint's next step. Committed files and git state are trusted over any agent's final report.</desc>
 
   <rect x="0" y="0" width="880" height="636" rx="10" fill="#23272B"/>
 
@@ -73,13 +73,13 @@
 
   <rect x="548" y="118" width="22" height="22" rx="4" fill="#2D6A4F" stroke="#081C15" stroke-width="1"/>
   <text x="559" y="134" font-size="13" font-weight="700" fill="#D8F3DC" text-anchor="middle">1</text>
-  <text x="582" y="128" font-size="13" fill="#F8F9FA">scan docs/tasks/active/ for a task whose</text>
-  <text x="582" y="146" font-size="13" fill="#F8F9FA">status is Active, Blocked or Planned</text>
+  <text x="582" y="128" font-size="13" fill="#F8F9FA">task.py resume lists the unfinished tasks:</text>
+  <text x="582" y="146" font-size="13" fill="#F8F9FA">Active, Blocked or Planned, gates first</text>
 
   <rect x="548" y="164" width="22" height="22" rx="4" fill="#2D6A4F" stroke="#081C15" stroke-width="1"/>
   <text x="559" y="180" font-size="13" font-weight="700" fill="#D8F3DC" text-anchor="middle">2</text>
-  <text x="582" y="174" font-size="13" fill="#F8F9FA">read the board, then that task file's</text>
-  <text x="582" y="192" font-size="13" fill="#F8F9FA">session log and orchestration notes</text>
+  <text x="582" y="174" font-size="13" fill="#F8F9FA">read its digest: the checkpoint, the</text>
+  <text x="582" y="192" font-size="13" fill="#F8F9FA">open criteria, the last session-log rows</text>
 
   <rect x="548" y="210" width="22" height="22" rx="4" fill="#2D6A4F" stroke="#081C15" stroke-width="1"/>
   <text x="559" y="226" font-size="13" font-weight="700" fill="#D8F3DC" text-anchor="middle">3</text>
@@ -106,7 +106,7 @@
 
   <rect x="548" y="448" width="22" height="22" rx="4" fill="#2D6A4F" stroke="#081C15" stroke-width="1"/>
   <text x="559" y="464" font-size="13" font-weight="700" fill="#D8F3DC" text-anchor="middle">7</text>
-  <text x="582" y="458" font-size="13" fill="#F8F9FA">continue from the last recorded row</text>
+  <text x="582" y="458" font-size="13" fill="#F8F9FA">continue from the checkpoint's next step</text>
 
   <text x="548" y="494" font-size="13" fill="#DEE2E6">Trust the committed files and git over any</text>
   <text x="548" y="512" font-size="13" fill="#DEE2E6">agent's final report.</text>

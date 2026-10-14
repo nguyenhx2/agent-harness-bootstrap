@@ -1,0 +1,73 @@
+{
+  "eval_cases": 250,
+  "hooks": 26,
+  "roster_min": 3,
+  "roster_max": 17,
+  "seats": 18,
+  "review_rounds": 2,
+  "spawn_depth": 2,
+  "max_subagents": 4,
+  "spec_core": 6,
+  "spec_optional": 8,
+  "rubric": {
+    "rules": 30,
+    "categories": 6,
+    "weight_high": 12,
+    "worklist": [
+      {
+        "id": "SAF-01",
+        "slug": "reviewer-readonly",
+        "severity": "high",
+        "weight": 12,
+        "effort": 1,
+        "full": "Every review seat (reviewer, checker, auditor ...) has no Edit, Write or NotebookEdit.",
+        "full_ja": "すべてのレビュー担当（reviewer、checker、auditor など）が Edit・Write・NotebookEdit を持たない。"
+      },
+      {
+        "id": "COST-01",
+        "slug": "agent-tools",
+        "severity": "high",
+        "weight": 12,
+        "effort": 1,
+        "full": "Every agent has an explicit `tools:` list.",
+        "full_ja": "すべてのエージェントが明示的な `tools:` を持つ。"
+      },
+      {
+        "id": "COST-02",
+        "slug": "agent-model",
+        "severity": "medium",
+        "weight": 5,
+        "effort": 1,
+        "full": "Every agent sets `model:` to something other than `inherit`.",
+        "full_ja": "すべてのエージェントが `inherit` 以外の `model:` を設定している。"
+      }
+    ]
+  },
+  "cap_nodes": 219,
+  "cap_edges": 655,
+  "cap_score": 99,
+  "profiles": [
+    "code",
+    "research",
+    "strategy",
+    "docs"
+  ],
+  "tiers": [
+    {
+      "name": "Inline",
+      "who": "main session"
+    },
+    {
+      "name": "Direct",
+      "who": "owning agent"
+    },
+    {
+      "name": "Standard",
+      "who": "owning agent"
+    },
+    {
+      "name": "Guarded",
+      "who": "orchestrator"
+    }
+  ]
+}

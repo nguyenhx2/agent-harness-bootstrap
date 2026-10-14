@@ -492,13 +492,29 @@ pub fn tier_rows(text: &str) -> Vec<Value> {
             continue;
         }
         let lower: Vec<String> = head.iter().map(|c| c.to_lowercase()).collect();
-        if lower[0] != "tier" || !lower.iter().any(|c| c.contains("who runs")) {
+        let english = lower[0] == "tier" && lower.iter().any(|c| c.contains("who runs"));
+        // The same table in another language - orchestrator-kit writes it as
+        // `| 区分 | 変更の内容 | 誰が行うか |` - is recognised by its rows: the tier
+        // names are identifiers and stay English whatever the prose around them.
+        let named_rows = lines
+            .iter()
+            .skip(i + 1)
+            .filter(|l| !is_separator(l))
+            .take_while(|l| cells(l).len() >= 3)
+            .filter(|l| {
+                matches!(cells(l).first().map(|s| s.as_str()), Some("Direct" | "Standard" | "Guarded"))
+            })
+            .count();
+        if !english && named_rows < 2 {
             continue;
         }
-        let who_at = lower.iter().position(|c| c.contains("who runs")).unwrap_or(2);
+        let who_at = lower
+            .iter()
+            .position(|c| c.contains("who runs") || c.contains("誰"))
+            .unwrap_or(2);
         let change_at = lower
             .iter()
-            .position(|c| c.contains("change"))
+            .position(|c| c.contains("change") || c.contains("変更"))
             .unwrap_or(1);
         let adds_at = lower.iter().position(|c| c.contains("adds")).unwrap_or(3);
         let mut out = Vec::new();

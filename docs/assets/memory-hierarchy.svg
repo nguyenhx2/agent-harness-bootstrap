@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="780" viewBox="0 0 880 780" role="img" aria-labelledby="mh-title mh-desc" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <title id="mh-title">Memory hierarchy - RAM is volatile; disk is not</title>
-  <desc id="mh-desc">The memory hierarchy of an agent harness in four tiers. Tier 1, always-RAM, is volatile and billed every turn: CLAUDE.md importing AGENTS.md, the 6 unconditional rules (00-overview, agent-guardrails, model-policy, ai-governance, task-tracking and conventional-commits, joined by output-style when the terse flag is set), the agent's own body, and its tool schemas. Tier 2, lazy-RAM, is also volatile but billed only on touch: 9 path-scoped rules carrying a paths frontmatter glob, four of which are installed only when a flag asked for them, and which together hold 63 percent of the 16 rules' content. A red boundary line marks that everything above it is already lost. Below it, tier 3, disk, is durable committed markdown: the master-plan board, one task file per task with its append-only session log, and the committed disabled.json ledger recording which rule, command or hook has been turned off. Tier 4, the archive, is append-only and capped: the run archive under .claude/state/history, written by the agent-history hook on SubagentStop, whose detail level is a choice of full, summary, minimal or off and whose retention cap keeps only the newest N per-run files.</desc>
+  <desc id="mh-desc">The memory hierarchy of an agent harness in four tiers. Tier 1, always-RAM, is volatile and billed every turn: CLAUDE.md importing AGENTS.md, the 6 unconditional rules (00-overview, agent-guardrails, model-policy, ai-governance, task-tracking and conventional-commits, joined by output-style when the terse flag is set), the agent's own body, and its tool schemas. Tier 2, lazy-RAM, is also volatile but billed only on touch: 10 path-scoped rules carrying a paths frontmatter glob, four of which are installed only when a flag asked for them, and which together hold 73 percent of the 17 rules' content. A red boundary line marks that everything above it is already lost. Below it, tier 3, disk, is durable committed markdown: the master-plan board, one task file per task with its append-only session log, and the committed disabled.json ledger recording which rule, command or hook has been turned off. Tier 4, the archive, is append-only and capped: the run archive under .claude/state/history, written by the agent-history hook on SubagentStop, whose detail level is a choice of full, summary, minimal or off and whose retention cap keeps only the newest N per-run files.</desc>
 
   <rect x="0" y="0" width="880" height="780" rx="10" fill="#23272B"/>
 
@@ -31,11 +31,11 @@
   <text x="46" y="298" font-size="13" fill="#E9ECEF">billed only on touch</text>
 
   <rect x="200" y="236" width="7" height="7" fill="#F8F9FA"/>
-  <text x="216" y="243" font-size="13" fill="#F8F9FA">9 path-scoped rules, each carrying a paths: frontmatter glob</text>
+  <text x="216" y="243" font-size="13" fill="#F8F9FA">10 path-scoped rules, each carrying a paths: frontmatter glob</text>
   <text x="216" y="265" font-size="13" fill="#F8F9FA">code-quality, testing, security-privacy, performance, data-model,</text>
-  <text x="216" y="285" font-size="13" fill="#F8F9FA">ddd, frontend, docs-workflow, ip-compliance</text>
-  <text x="216" y="307" font-size="13" fill="#E9ECEF">4 of the 9 above are flag-gated (testing, data-model, ddd, frontend); output-style makes 16 rules in all.</text>
-  <text x="216" y="333" font-size="13" font-weight="700" fill="#F8F9FA">68% of the rule content. Enters context only when Claude touches a matching file.</text>
+  <text x="216" y="285" font-size="13" fill="#F8F9FA">ddd, frontend, docs-workflow, ip-compliance, model-tiers</text>
+  <text x="216" y="307" font-size="13" fill="#E9ECEF">4 of the 10 above are flag-gated (testing, data-model, ddd, frontend); output-style makes 17 rules in all.</text>
+  <text x="216" y="333" font-size="13" font-weight="700" fill="#F8F9FA">73% of the rule content. Enters context only when Claude touches a matching file.</text>
 
   <!-- the loss boundary -->
   <line x1="28" y1="372" x2="852" y2="372" stroke="#9D0208" stroke-width="3" stroke-dasharray="8 4"/>

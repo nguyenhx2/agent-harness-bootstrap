@@ -38,6 +38,7 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 ## FR-01 <requirement name> {#fr-01}
 
 **Priority**: Must
+**Status**: Draft
 **Actor**: <role{{#IF_STAKEHOLDERS}} from [02](02-stakeholders.md){{/IF_STAKEHOLDERS}}>
 **Trigger**: <what causes this to happen>
 
@@ -87,8 +88,17 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 ### Acceptance criteria
 
 <!-- Observable, testable, and written so a QA engineer who has never met the stakeholder can tell
-     pass from fail. Given/When/Then is a good default. Include at least one negative case - the
-     path where it goes wrong is part of the requirement, not an afterthought. -->
+     pass from fail. Include at least one negative case - the path where it goes wrong is part of
+     the requirement, not an afterthought.
+
+     The form is fixed, because a test, a reviewer and spec-check.py all read it: one line each,
+     `AC-<FR number>.<n>`, then "Given <precondition>, when <action>, then <observable outcome>."
+     Behaviour that has no trigger may use "Done when <observable check>." The keywords stay
+     English in every language; the clauses are in the spec's language. Each criterion is the
+     oracle for exactly one test or check, which names it by ID.
+
+     **Status** is Draft until the confirmation sheet comes back yes, then Confirmed. Withdrawn or
+     Superseded keep the block and the ID. Values are English, whatever the prose language. -->
 
 - [ ] AC-01.1 Given <precondition>, when <action>, then <observable outcome>.
 - [ ] AC-01.2 Given <invalid precondition>, when <action>, then <the error the user sees>.
@@ -106,6 +116,7 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
      criterion is always on the requirement everyone thought was small. -->
 
 **Priority**: Should
+**Status**: Draft
 **Actor**: <role>
 **Trigger**: <trigger>
 
@@ -129,6 +140,7 @@ tags: [specs, requirements, {{PROJECT_SLUG}}]
 ### Acceptance criteria
 
 - [ ] AC-02.1 Given <precondition>, when <action>, then <observable outcome>.
+- [ ] AC-02.2 Given <invalid precondition>, when <action>, then <the error the user sees>.
 
 ### Dependencies
 

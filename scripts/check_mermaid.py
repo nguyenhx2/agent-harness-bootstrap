@@ -95,7 +95,7 @@ def render(src: str) -> tuple[bool, str]:
         cfg.write_text('{"args": ["--no-sandbox", "--disable-setuid-sandbox"]}', encoding="utf-8")
 
         r = subprocess.run(
-            ["npx", "-y", "@mermaid-js/mermaid-cli@11",
+            ["npx", "-y", "@mermaid-js/mermaid-cli@11.17.0",
              "-i", str(mmd), "-o", str(out), "-q", "-p", str(cfg)],
             capture_output=True, text=True, shell=(sys.platform == "win32"),
         )

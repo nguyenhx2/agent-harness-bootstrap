@@ -7,7 +7,7 @@ package manager in this repo.
 | File | Library | Version | Licence | Source |
 |---|---|---|---|---|
 | `marked.min.js` | [marked](https://github.com/markedjs/marked) | 12.0.2 | MIT (`LICENSE.marked.txt`) | `https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js` |
-| `purify.min.js` | [DOMPurify](https://github.com/cure53/DOMPurify) | 3.1.6 | Apache-2.0 OR MPL-2.0 (`LICENSE.dompurify.txt`) | `https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js` |
+| `purify.min.js` | [DOMPurify](https://github.com/cure53/DOMPurify) | 3.4.16 | Apache-2.0 OR MPL-2.0 (`LICENSE.dompurify.txt`) | `https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.min.js` |
 
 ## Why these two
 

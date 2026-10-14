@@ -1219,13 +1219,13 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepac { position: fixed; z-index: 60; min-width: 190px; max-width: 380px;
   max-height: 248px; overflow-y: auto; background: var(--panel); color: var(--ink);
   border: 1px solid var(--line); border-radius: 7px; box-shadow: 0 6px 18px rgba(15,23,42,.18);
-  font: inherit; font-size: 12px; padding: 3px; }
+  font: inherit; font-size: 14px; padding: 3px; }
 .stepac-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 6px;
   border-radius: 5px; cursor: default; }
 .stepac-row .v { flex: 1 1 auto; word-break: break-all; }
-.stepac-row .k { flex: 0 0 auto; font-size: 10px; color: var(--dim); }
+.stepac-row .k { flex: 0 0 auto; font-size: 11px; color: var(--dim); }
 .stepac-row.on { background: #eef2ff; color: #1e1b4b; }
-.stepac-hint { padding: 3px 6px; font-size: 10px; color: var(--dim);
+.stepac-hint { padding: 3px 6px; font-size: 11px; color: var(--dim);
   border-top: 1px solid var(--line); margin-top: 2px; }
 /* sticky, so both hint rows stay on screen while the results scroll under them */
 .stepac-foot { position: sticky; bottom: -3px; background: var(--panel); margin: 0 -3px -3px;
@@ -1233,7 +1233,7 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepac-foot .stepac-hint:first-child { margin-top: 0; }
 /* the second row says what OPENS the list; only the keys themselves are marked */
 .stepac-keys { margin-top: 0; padding-top: 3px; padding-bottom: 4px; }
-.stepac-key { font: 10px/1.4 ui-monospace, Consolas, monospace; font-weight: 700;
+.stepac-key { font: 11px/1.4 ui-monospace, Consolas, monospace; font-weight: 700;
   color: #1e1b4b; background: #eef2ff; border: 1px solid #c7d2fe;
   border-radius: 4px; padding: 0 4px; }
 .stepac-row .k.k-agent { color: #4338ca; } .stepac-row .k.k-rule { color: #b45309; }
@@ -1265,8 +1265,8 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
    bottom of a 320px panel. The row scrolls instead. */
 .stepe-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 5px;
   max-height: 74px; overflow-y: auto; }
-.stepe-chips .l { font-size: 10px; color: var(--dim); }
-.stepe-chip { font-size: 10px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--line);
+.stepe-chips .l { font-size: 11px; color: var(--dim); }
+.stepe-chip { font-size: 11px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--line);
   background: #f8fafc; color: #475569; word-break: break-all; }
 .stepe-chip.k-agent { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
 .stepe-chip.k-rule { background: #fff7ed; border-color: #fed7aa; color: #b45309; }
@@ -1291,12 +1291,12 @@ ol.steps.flow > li:has(+ li.stepins:last-child)::after { content: none; }
 .stepe-grid th, .stepe-grid td { border: 1px solid var(--line); padding: 2px; vertical-align: top; }
 .stepe-grid thead th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; }
 .stepe-grid .rowh { background: #f8fafc; width: 58px; white-space: nowrap; text-align: center;
-  font-size: 10px; color: var(--dim); }
+  font-size: 11px; color: var(--dim); }
 .stepe-grid .rowh button { padding: 0 4px; line-height: 1.4; }
 .stepe-grid .colh { display: flex; gap: 3px; align-items: center; }
 .stepe-grid .colh button { padding: 0 4px; line-height: 1.4; }
 .stepe-grid svg.ico { width: 11px; height: 11px; }
-.stepe-cell { width: 100%; box-sizing: border-box; font: inherit; font-size: 12px;
+.stepe-cell { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px;
   border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; background: transparent;
   color: inherit; resize: none; overflow: hidden; white-space: pre-wrap;
   word-break: break-word; line-height: 1.45; display: block; }

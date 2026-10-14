@@ -19,6 +19,18 @@ vars.json shape:
       "vars":  { "PROJECT_NAME": "acme", "DEFAULT_BRANCH": "main", ... },
       "flags": ["ui", "db", "posix"]
     }
+  Purpose profiles are flags too - purpose_code, purpose_research, purpose_strategy,
+  purpose_docs - and combine ("flags": ["purpose_code", "purpose_docs", ...]). Naming none
+  means purpose_code (see PURPOSE_FLAGS), so a vars.json written before profiles existed
+  scaffolds exactly what it always did.
+
+Per-module CLAUDE.md (optional "modules" key in vars.json):
+    "modules": [{"path": "src/billing", "owner": "billing-dev",
+                 "invariants": "- amounts are integer cents", "commands": "- npm test -- billing"}]
+  Each entry renders assets/root/module-CLAUDE.md into <path>/CLAUDE.md - loaded by Claude Code
+  only when it reads files there, so module guidance costs nothing in other sessions. An existing
+  CLAUDE.md at that path is never overwritten, not even with --force, and a rendered file over
+  MODULE_CLAUDE_MAX_LINES fails the run before anything is written.
 
 Template syntax inside asset files:
     {{VAR_NAME}}                       -> substituted from vars
@@ -84,9 +96,74 @@ class ScaffoldError(Exception):
 KNOWN_FLAGS = {
     "ui", "db", "db_engineer", "db_seeder", "ai", "audit", "tdd", "ddd",
     "light", "unit", "e2e", "tests", "deploy_ask", "long", "solo_review",
-    "windows", "posix", "terse", "rtk", "pr_cli", "target_cursor",
-    "target_codex",
+    "windows", "posix", "terse", "rtk", "hooks_strict", "pr_cli", "target_cursor",
+    "target_codex", "purpose_code", "purpose_research", "purpose_strategy", "purpose_docs",
+    "merge_gate",
 }
+
+# Purpose profiles. A profile is an ordinary flag, so it gates manifest entries and template blocks
+# with no second mechanism, and they combine (`purpose_code` + `purpose_docs`). A vars.json naming
+# no profile gets `purpose_code`: every harness scaffolded before profiles existed was a code
+# harness, and re-running /harness-update on one must not quietly drop its dev, test and review
+# seats.
+PURPOSE_FLAGS = ("purpose_code", "purpose_research", "purpose_strategy", "purpose_docs")
+# Flags that describe code: a stack, a test suite, a methodology, a code review gate, the merge
+# seat. On a repo with no `purpose_code` they would field seats with nothing to work on, so they
+# are refused rather than ignored. `ui` is not here: a docs repo can have a brand and a site.
+CODE_ONLY = {"db", "db_engineer", "db_seeder", "ai", "tdd", "ddd", "light", "unit", "e2e",
+             "tests", "solo_review", "merge_gate"}
+# Derived, never written in vars.json: `checker` is set whenever a non-code purpose is, because
+# every non-code purpose shares the one read-only `checker` seat. Deriving it keeps "is a checker
+# fielded" a single question for the manifest and the templates instead of an OR over three flags.
+DERIVED_FLAGS = {"checker"}
+
+
+def effective_flags(flags: set[str]) -> set[str]:
+    """-> the flag set the scaffolder acts on: the given flags plus the derived ones."""
+    out = set(flags)
+    if not out & set(PURPOSE_FLAGS):
+        out.add("purpose_code")
+    if out & {"purpose_research", "purpose_strategy", "purpose_docs"}:
+        out.add("checker")
+    return out
+
+# A per-module CLAUDE.md is read whenever a file in that module is, so it is paid for on every
+# such read. It carries the owner, the scope, local invariants and local commands - nothing the
+# root files already say - and this budget keeps it that small.
+MODULE_CLAUDE_MAX_LINES = 40
+
+
+def module_problems(modules: object) -> list[str]:
+    """-> problems with the vars.json "modules" list itself (shape and path safety)."""
+    if modules is None:
+        return []
+    if not isinstance(modules, list):
+        return ['"modules" must be a list of {"path", "owner", ...} objects']
+    out: list[str] = []
+    for i, m in enumerate(modules):
+        path = str(m.get("path", "")).replace("\\", "/").strip("/") if isinstance(m, dict) else ""
+        if not path or not m.get("owner"):
+            out.append(f"modules[{i}] needs a non-empty \"path\" and \"owner\"")
+        elif path.startswith(("/", "~")) or ":" in path or ".." in path.split("/") \
+                or path.split("/")[0] in (".claude", ".git", "docs"):
+            out.append(f"modules[{i}].path `{path}` must be a relative module path inside the repo, "
+                       "outside .claude/, .git/ and docs/")
+    return out
+
+
+def render_module_claude(template: str, module: dict, flags: set[str]) -> str:
+    path = str(module["path"]).replace("\\", "/").strip("/")
+    values = {
+        "MODULE_NAME": str(module.get("name") or path.rsplit("/", 1)[-1]),
+        "MODULE_PATH": path + "/",
+        "MODULE_OWNER": str(module["owner"]),
+        "MODULE_INVARIANTS": str(module.get("invariants") or "- None recorded yet. Add one when a "
+                                 "rule holds here and nowhere else."),
+        "MODULE_COMMANDS": str(module.get("commands") or "- The root commands apply unchanged."),
+    }
+    body, _ = substitute(resolve_blocks(template, flags), values, "module-CLAUDE.md")
+    return body
+
 
 # OS flag -> the derived hook runner/extension vars. The flavor of the shipped
 # hook files and the commands registered in settings.json must never disagree;
@@ -100,10 +177,19 @@ OS_DERIVED = {
 }
 
 
-def validate_flags(flags: set[str]) -> list[str]:
-    """-> list of human-readable problems; empty means the flag set is sane."""
+def validate_flags(raw: set[str]) -> list[str]:
+    """-> list of human-readable problems; empty means the flag set is sane.
+
+    `raw` is the set as written in vars.json. Derived flags are computed here, so a check that
+    depends on the default purpose sees it, and a derived flag written by hand is refused.
+    """
     problems: list[str] = []
-    unknown = sorted(flags - KNOWN_FLAGS)
+    written = sorted(raw & DERIVED_FLAGS)
+    if written:
+        problems.append(f"{', '.join(written)} is derived (from the purpose flags) and must not "
+                        "be written in vars.json.")
+    flags = effective_flags(raw - DERIVED_FLAGS)
+    unknown = sorted(flags - KNOWN_FLAGS - DERIVED_FLAGS)
     if unknown:
         problems.append(
             f"unknown flag(s): {', '.join(unknown)}. "
@@ -122,6 +208,12 @@ def validate_flags(flags: set[str]) -> list[str]:
             problems.append(f"'{f}' requires 'tests' (tests is the derived "
                             "master switch; intake sets it whenever unit or "
                             "e2e is chosen).")
+    if "purpose_code" not in flags:
+        stray = sorted(flags & CODE_ONLY)
+        if stray:
+            problems.append(f"{', '.join(stray)} describe code, but the purpose set "
+                            f"({', '.join(sorted(flags & set(PURPOSE_FLAGS)))}) has no "
+                            "'purpose_code'. Add 'purpose_code' for a mixed repo, or drop them.")
     return problems
 
 
@@ -209,14 +301,15 @@ def main() -> int:
 
     cfg = json.loads(args.vars.read_text(encoding="utf-8"))
     variables: dict[str, str] = cfg.get("vars", {})
-    flags: set[str] = {f.lower() for f in cfg.get("flags", [])}
+    raw_flags: set[str] = {f.lower() for f in cfg.get("flags", [])}
 
-    problems = validate_flags(flags)
+    problems = validate_flags(raw_flags)
     if problems:
         print("FAIL: invalid flag set in vars.json:", file=sys.stderr)
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         return 1
+    flags: set[str] = effective_flags(raw_flags)
 
     # HOOK_RUNNER / HOOK_EXT are derived from the OS flag (see docstring).
     os_flag = "windows" if "windows" in flags else "posix"
@@ -276,6 +369,7 @@ def main() -> int:
     added: list[str] = []
     kept: list[str] = []
     conflicts: list[str] = []
+    merged: list[str] = []
     skipped: list[str] = []
     disabled_skips: list[str] = []
     all_missing: dict[str, set[str]] = {}
@@ -316,12 +410,53 @@ def main() -> int:
             if same_content(existing, payload):
                 kept.append(dest_rel)
                 continue
+            if dest_rel.replace("\\", "/") == ".claude/settings.json" and not args.force:
+                # A settings.json the user edited is never replaced, but a hook this skill version
+                # ships must still get registered, or /harness-update installs a hook nothing
+                # calls. Registrations are ADDED; nothing the user wrote is changed or removed.
+                stems = {d.rsplit("/", 1)[-1].rsplit(".", 1)[0] for d in disabled_dests
+                         if d.startswith(".claude/hooks/")}
+                result = merge_hook_registrations(existing, payload, stems)
+                if result is not None:
+                    new_bytes, added_regs = result
+                    pending.append((dest, new_bytes, False))
+                    merged.append(f"{dest_rel}: registered {', '.join(added_regs)}")
             conflicts.append(dest_rel)
             if not args.force:
                 continue
 
         pending.append((dest, payload, bool(entry.get("exec"))))
         added.append(dest_rel)
+
+    # ---- per-module CLAUDE.md ------------------------------------------------
+    module_list = cfg.get("modules")
+    problems = module_problems(module_list)
+    module_written: list[str] = []
+    module_kept: list[str] = []
+    template_path = assets / "root" / "module-CLAUDE.md"
+    if module_list and not problems and template_path.is_file() and not args.only:
+        template = template_path.read_text(encoding="utf-8")
+        for m in module_list:
+            rel = str(m["path"]).replace("\\", "/").strip("/") + "/CLAUDE.md"
+            dest = target / rel
+            if dest.exists():
+                module_kept.append(rel)  # never overwritten: it may be the team's own
+                continue
+            body = render_module_claude(template, m, flags)
+            n = len(body.splitlines())
+            if n > MODULE_CLAUDE_MAX_LINES:
+                problems.append(f"{rel} renders to {n} lines, over the {MODULE_CLAUDE_MAX_LINES}-"
+                                "line budget - move detail into a path-scoped rule")
+                continue
+            pending.append((dest, body.encode("utf-8"), False))
+            module_written.append(rel)
+            added.append(rel)
+    if problems:
+        print("FAIL: per-module CLAUDE.md:", file=sys.stderr)
+        for line in problems:
+            print(f"  - {line}", file=sys.stderr)
+        print("Nothing was written.", file=sys.stderr)
+        return 1
 
     # ---- report -------------------------------------------------------------
     def show(label: str, items: list[str]) -> None:
@@ -334,10 +469,13 @@ def main() -> int:
     verb = "WOULD ADD" if args.dry_run else "ADDED"
     show(verb, added)
     show("KEPT (already identical)", kept)
+    show("MODULE CLAUDE.md KEPT (exists - never overwritten)", module_kept)
     show("CONFLICT (exists and differs - not written)" if not args.force
          else "OVERWRITTEN (--force)", conflicts)
     show("DISABLED (respected - listed in .claude/disabled.json, not re-added)",
          disabled_skips)
+    show("WOULD MERGE" if args.dry_run else "MERGED (hook registrations added, nothing removed)",
+         merged)
     if skipped:
         print(f"\nSKIPPED by flags ({len(skipped)}): {', '.join(sorted(skipped)[:8])}"
               f"{' ...' if len(skipped) > 8 else ''}")
@@ -382,8 +520,8 @@ def main() -> int:
         import re as _re
         spawners = []
         for f in sorted(agents_dir.glob("*.md")):
-            head = f.read_text(encoding="utf-8", errors="replace")[:2000]
-            if _re.search(r"(^|[,\s\[\"\'])Agent([,\s\]\"\']|$)", tools_value(head)):
+            head = f.read_text(encoding="utf-8", errors="replace")[:4000]
+            if holds_agent(tools_value(head)):
                 spawners.append(f.stem)
         if len(spawners) > 1:
             print(f"\nFAIL: {len(spawners)} agents hold the Agent tool: {', '.join(spawners)}.")
@@ -400,6 +538,19 @@ def main() -> int:
             print(f"  {line}")
         print("An unwired control looks like protection and provides none.")
         return 1
+    # Integration check: every link between the parts resolves - seats named by commands and
+    # tables, cited rules, hook registrations, tiers, skills, tools, purpose. Same script the
+    # harness ships as .claude/scripts/harness-check.py, run from the skill's own copy.
+    checker = assets / "scripts" / "harness-check.py"
+    if not args.dry_run and not args.only and checker.is_file():
+        import subprocess as _sp
+        r = _sp.run([sys.executable, str(checker), "--target", str(target), "--stage", "scaffold"],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace")
+        print("\n" + (r.stdout.strip() if r.returncode else r.stdout.strip().splitlines()[-1]))
+        if r.returncode:
+            print("\nFAIL: harness-check found links that do not resolve (file:line and the fix "
+                  "are above). The files are written; fix the links before relying on them.")
+            return 1
     return 0
 
 
@@ -425,6 +576,79 @@ def tools_value(head: str) -> str:
             continue
         break
     return ", ".join(out)
+
+
+def _hook_stems(groups: object) -> set[str]:
+    """Hook script stems named anywhere in one event's list of matcher groups."""
+    import re as _re
+    out: set[str] = set()
+    for g in groups if isinstance(groups, list) else []:
+        for h in (g.get("hooks") if isinstance(g, dict) else None) or []:
+            cmd = h.get("command", "") if isinstance(h, dict) else ""
+            out.update(_re.findall(r"hooks/([A-Za-z0-9_-]+)\.(?:sh|ps1)", str(cmd)))
+    return out
+
+
+def merge_hook_registrations(existing: bytes, payload: bytes,
+                             disabled: set[str]) -> tuple[bytes, list[str]] | None:
+    """-> (merged settings.json, the registrations added), or None when there is nothing to add.
+
+    Adds each hook the rendered asset registers and the installed file does not, keyed by
+    (event, hook script): a hook the user registered under a different matcher, runner or timeout
+    counts as present and is left exactly as they wrote it. Nothing is removed or reordered, a hook
+    quarantined in disabled.json is never re-registered, and a second run finds nothing to add -
+    so this is safe to run on every update. An unparseable file on either side is left alone.
+    """
+    try:
+        cur = json.loads(existing.decode("utf-8"))
+        new = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(cur, dict) or not isinstance(new, dict):
+        return None
+    new_hooks = new.get("hooks")
+    if not isinstance(new_hooks, dict):
+        return None
+    cur_hooks = cur.setdefault("hooks", {})
+    if not isinstance(cur_hooks, dict):
+        return None
+    added: list[str] = []
+    for event, groups in new_hooks.items():
+        have = _hook_stems(cur_hooks.get(event))
+        for g in groups if isinstance(groups, list) else []:
+            if not isinstance(g, dict):
+                continue
+            missing = []
+            for h in g.get("hooks") or []:
+                stems = _hook_stems([{"hooks": [h]}])
+                if stems and not stems & (have | disabled):
+                    missing.append(h)
+                    have |= stems
+            if not missing:
+                continue
+            target_groups = cur_hooks.setdefault(event, [])
+            if not isinstance(target_groups, list):
+                continue
+            same = next((x for x in target_groups if isinstance(x, dict)
+                         and x.get("matcher") == g.get("matcher")
+                         and isinstance(x.get("hooks"), list)), None)
+            if same is None:
+                same = {k: v for k, v in g.items() if k != "hooks"}
+                same["hooks"] = []
+                target_groups.append(same)
+            same["hooks"].extend(missing)
+            added += [f"{event}:{s}" for h in missing for s in sorted(_hook_stems([{"hooks": [h]}]))]
+    if not added:
+        return None
+    nl = "\r\n" if b"\r\n" in existing else "\n"
+    text = json.dumps(cur, indent=2, ensure_ascii=False) + "\n"
+    return text.replace("\n", nl).encode("utf-8"), added
+
+
+def holds_agent(tools: str) -> bool:
+    """True when a tools value grants Agent, bare or in the `Agent(a, b)` allowlist form."""
+    import re as _re
+    return bool(_re.search(r"(^|[,\s\[\"\'])Agent([,\s\]\"\'(]|$)", tools))
 
 
 def wiring_problems(target: pathlib.Path) -> list[str]:
@@ -454,73 +678,28 @@ def wiring_problems(target: pathlib.Path) -> list[str]:
     for rel in ("docs/tasks/active", "docs/tasks/pending"):
         if not (target / rel).is_dir():
             out.append(f"{rel}/ is missing, and a shipped hook keys off it")
-    out.extend(seat_problems(target))
+    # Seat wiring is checked by harness-check, which runs at the end of every scaffold.
     return out
 
 
-# Seats whose whole value is that they do not change what they judge.
-REVIEW_SEATS = ("reviewer", "code-reviewer", "security-reviewer", "spec-guardian")
-# Markdown names the harness may cite before they exist: rules the bootstrap run authors for this
-# repo, the spec file written later, the run-archive index written at runtime, and the dev-agent
-# template's own name.
-AUTHORED_LATER = {"coding-standards.md", "tech-stack.md", "git-workflow.md",
-                  "13-revision-history.md", "index.md", "dev-agent.md"}
+# The seat checks - tools, maxTurns, model and effort, the single spawner, read-only review seats,
+# memory on a review seat, the tier table, cited rules and named seats - live in ONE place:
+# assets/scripts/harness-check.py, which the harness also ships. This wrapper asks it for exactly
+# those checks, so the scaffold and the shipped checker can never disagree about a seat.
+SEAT_CHECKS = {"seat-frontmatter", "review-readonly", "tier-table", "cite-missing", "agent-ref"}
 
 
 def seat_problems(target: pathlib.Path) -> list[str]:
-    """-> problems in how the seats are wired to their tools, models and the files they cite.
-
-    Each one shipped before as prose that nothing checked: a rule named by an agent that was never
-    installed (`task-control.md` was cited by five shipped files and existed only inside the
-    skill), a model edited in one agent file but not in the tier table that is supposed to decide
-    it, and a review seat granted the tools to change what it reviews.
-    """
-    import re as _re
-    out: list[str] = []
-    claude = target / ".claude"
-    agents = claude / "agents"
-    if not agents.is_dir():
-        return out
-
-    def head(f: pathlib.Path) -> str:
-        return f.read_text(encoding="utf-8", errors="replace")[:2000]
-
-    for seat in REVIEW_SEATS:
-        f = agents / f"{seat}.md"
-        if f.is_file() and _re.search(r"(^|[,\s])(Edit|Write)([,\s]|$)", tools_value(head(f))):
-            out.append(f"review seat {seat} holds Edit or Write - a reviewer that can edit has "
-                       "stopped being a reviewer")
-
-    tiers = claude / "rules" / "model-tiers.md"
-    if tiers.is_file():
-        for row in tiers.read_text(encoding="utf-8", errors="replace").splitlines():
-            cells = [c.strip() for c in row.strip().strip("|").split("|")]
-            if len(cells) != 4 or not _re.fullmatch(r"`(opus|sonnet|haiku|fable)`", cells[3]):
-                continue
-            want = cells[3].strip("`")
-            for seat in _re.findall(r"`([a-z0-9-]+)`", cells[2]):
-                f = agents / f"{seat}.md"
-                if not f.is_file():
-                    continue
-                m = _re.search(r"^model:\s*(\S+)", head(f), _re.MULTILINE)
-                if m and m.group(1) != want:
-                    out.append(f"{seat} runs on {m.group(1)} but model-tiers.md puts it in the "
-                               f"{cells[0]} tier ({want}) - change the table first, then the seat")
-
-    present = {p.name for p in target.rglob("*.md")}
-    cited: dict[str, str] = {}
-    files = [p for p in claude.rglob("*") if p.is_file() and p.suffix in (".md", ".sh", ".ps1")]
-    files += [p for p in (target / "AGENTS.md", target / "CLAUDE.md") if p.is_file()]
-    for f in files:
-        text = f.read_text(encoding="utf-8", errors="replace")
-        for m in _re.finditer(r"(?<![\w/.${-])(?:\.claude/rules/)?([a-z0-9][a-z0-9-]*\.md)\b", text):
-            name = m.group(1)
-            if name not in present and name not in AUTHORED_LATER:
-                cited.setdefault(name, f.relative_to(target).as_posix())
-    for name, where in sorted(cited.items()):
-        out.append(f"{where} cites {name}, which this harness does not contain - an agent told "
-                   "to obey a file that is not there obeys nothing")
-    return out
+    """-> the seat findings harness-check reports for `target`, one line each (file:line message)."""
+    import importlib.util as _ilu
+    checker = Path(__file__).resolve().parent.parent / "assets" / "scripts" / "harness-check.py"
+    spec = _ilu.spec_from_file_location("_harness_check", checker)
+    if spec is None or spec.loader is None:
+        return [f"harness-check not found at {checker} - the seat checks cannot run"]
+    hc = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(hc)
+    return [f"{f.file}:{f.line} {f.message}" for f in hc.run(Path(target), "scaffold")
+            if f.check in SEAT_CHECKS]
 
 
 if __name__ == "__main__":

@@ -12,7 +12,10 @@ harness's controls are which, citable from the quality gate and from `docs/CONTE
 | `permissions.deny` in `settings.json` | `Read(**/.env)`, `Read(**/*.pem)`, `Read(**/secrets/**)`, `Bash(git push --force:*)`, `Bash(rm -rf:*)`, plus a `{{RESTRICTED_DENIES}}` slot at the head of the list | What the agent cannot even **see**. The action never reaches a tool call |
 | **PreToolUse hooks**, exit code 2 | `protect-secrets`, `guard-main-commit`, `check-commit-msg`, `protect-adr` | What the agent cannot **do**: read a `.env`, commit to `main`, ship a non-conventional commit message, edit an ADR whose on-disk status is `Accepted` |
 | `tools:` allowlist in agent frontmatter | e.g. `code-reviewer` and `security-reviewer` get `Read, Grep, Glob, Bash` | What the agent cannot **reach**. A reviewer with `Edit` has stopped being a reviewer, and the frontmatter is what makes that structural rather than aspirational |
+| `disallowedTools` in agent frontmatter | `Edit, Write, NotebookEdit` on every read-only seat | The same boundary stated twice, so a later grant to `tools:` cannot quietly turn a judge into an author |
 | `maxTurns` | e.g. `history-tracker: maxTurns: 10` | The circuit breaker. `cost-model.md`: *"the cost of a stuck agent is unbounded"* |
+| Spawn caps in `settings.json` `env` | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=2`, `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS=4` | How deep and how wide delegation can go. Main session, orchestrator, seat - a third layer is withheld the `Agent` tool by the runtime, whatever a prompt says |
+| `scaffold.py` seat checks | every `.claude/agents/*.md` | At scaffold time, not at run time: a seat without `tools`, `model`, `effort` or `maxTurns`, a second seat holding `Agent`, a review seat with Edit, Write or `memory:`, or a `bypassPermissions` seat fails the run |
 
 `eval/guardrail_eval.py` scaffolds a harness and fires the guardrail payload suite at it, both
 must-block and must-allow cases, **all judged correctly**. The suite declares its own case count in
@@ -24,7 +27,9 @@ which is what the eval's header describes:
 > ADR. It cannot ship an AI-attribution trailer. Not because it knows better, but because the hook
 > exits 2 and the tool call never happens.`
 
-Swap Opus for Haiku and the result is byte-identical. **The safety floor is model-independent.**
+No model is consulted: the guardrails are shell scripts, so the result cannot depend on the model.
+The eval measures a harness scaffolded with the `hooks_strict`, `long` and `db` flags on (`VARS` in the
+script names the set). **The safety floor is model-independent.**
 
 ## Advisory
 
@@ -120,8 +125,9 @@ tool grants, `maxTurns`, board, task files, and run archive are byte-for-byte wh
 safety floor and the durable state sit underneath the model choice, not on top of it.
 
 The diagram carries the caveat from `docs/ASSESSMENT.md` Gap 2: **model tier is swappable; model
-vendor is not.** `model:` accepts `opus | sonnet | haiku | fable` and nothing else, so re-pointing
-the roster at a self-hosted or third-party model is a **port**, not a config change - there is no
+vendor is not.** `model:` accepts the aliases `opus | sonnet | haiku | fable`, a full `claude-*`
+model ID, or `inherit` - all Anthropic models - so re-pointing the roster at a self-hosted or
+third-party model is a **port**, not a config change - there is no
 execution adapter here. Nor is the tier table a *generator*: each agent file still names its own
 `model:`, so a tier swap is a table edit AND a frontmatter sweep. What is enforced is that the two
 agree: `scaffold.py` refuses a harness in which a seat's `model:` contradicts its row in

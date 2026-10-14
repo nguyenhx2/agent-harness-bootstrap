@@ -1,31 +1,34 @@
 #!/usr/bin/env python3
-"""Export the harness's knowledge graphs as two self-contained interactive HTML files.
+"""Render the HARNESS graph as a self-contained interactive HTML page.
 
-  docs/context/specs-graph.html    the DOCS graph: spec sections, requirements, ADRs, tasks,
-                                   and the ID references that tie them together (traceability)
-  docs/context/harness-graph.html  the HARNESS graph: agents, hooks, rules, commands,
-                                   settings.json, code modules, tasks, and the wiring between
-                                   them - rendered from the canonical
-                                   .claude/state/harness-graph.json (built by harness-graph.py)
+  docs/context/harness-graph.html  agents, hooks, rules, commands, settings.json, code modules,
+                                   tasks, and the wiring between them - rendered from the
+                                   canonical .claude/state/harness-graph.json (built by
+                                   harness-graph.py, which calls this module with --html)
 
-The harness page has TWO views: Flow (deterministic layered left-to-right lanes with labeled
-edges - gates, triggers, enforces, reviews, owns) and Graph (force layout). Both files are
-single-file HTML with inline vanilla JS: no CDN, no network, they open from disk anywhere.
-Stdlib only to generate.
+The page has TWO views: Flow (deterministic layered left-to-right lanes with labeled edges -
+gates, triggers, enforces, reviews, owns) and Graph (force layout). Single-file HTML with inline
+vanilla JS: no CDN, no network, it opens from disk anywhere. Stdlib only to generate.
 
-Inputs (build them first):
-  .claude/state/docs-graph.json      from docs-graph.py     (specs graph)
-  .claude/state/harness-graph.json   from harness-graph.py  (harness graph; if missing, the
-                                     scanner is invoked in-process as a fallback)
+The docs graph is no longer drawn: a force layout of every ID reference in a real spec tree is
+decoration, and `docs-graph.py` prints the orphan list that is the actionable part.
+
+Input:
+  .claude/state/harness-graph.json   from harness-graph.py (if missing, the scanner is invoked
+                                     in-process as a fallback)
 
 Usage:
-  python .claude/scripts/graph-html.py             # writes both files (skips one if its input is missing)
+  python .claude/scripts/graph-html.py
 """
 from __future__ import annotations
 
 import json
 import pathlib
 import sys
+
+# Importing a sibling script must not leave bytecode in .claude/scripts/: a stray .pyc there
+# is an untracked file, and verify-plan.py would ask for a review of it.
+sys.dont_write_bytecode = True
 
 CAT_COLORS = {
     "agent": "#35348f", "hook": "#b3261e", "rule": "#1e6f50", "command": "#8a6d00",
@@ -349,32 +352,6 @@ def render(title: str, subtitle: str, nodes: list, edges: list, cats: list[str],
             .replace("__DATA__", embed_json({"nodes": nodes, "edges": edges})))
 
 
-def specs_graph(root: pathlib.Path) -> str | None:
-    src = root / ".claude" / "state" / "docs-graph.json"
-    if not src.exists():
-        return None
-    try:
-        g = json.loads(src.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError, AttributeError, KeyError, TypeError) as e:
-        # contract: never fail the caller - a broken input narrows the output
-        print(f"graph-html: {src} unreadable ({e}); skipping the specs graph",
-              file=sys.stderr)
-        return None
-    # .get, not [], and outside the try above: a valid-JSON dict with no "edges" key would
-    # otherwise raise here, past the guard, and take the caller down with it.
-    _raw = g.get("edges") if isinstance(g, dict) else None
-    g_edges = [e for e in (_raw if isinstance(_raw, list) else []) if isinstance(e, dict)]
-    linked = {e["from"] for e in g_edges} | {e["to"] for e in g_edges}
-    nodes = [{"id": d, "label": d.split("/")[-1], "cat": "doc", "detail": d}
-             for d in sorted(linked)]
-    edges = [{"from": e["from"], "to": e["to"], "refs": e.get("refs", 1)} for e in g_edges]
-    out = root / "docs" / "context" / "specs-graph.html"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render("Specs graph", "documents linked by shared requirement / decision / task IDs",
-                          nodes, edges, ["doc"]), encoding="utf-8")
-    return out.relative_to(root).as_posix()
-
-
 def _node_detail(n: dict) -> str:
     meta = n.get("meta") or {}
     parts = []
@@ -450,7 +427,7 @@ def main() -> int:
     root = pathlib.Path(sys.argv[sys.argv.index("--target") + 1]).resolve() \
         if "--target" in sys.argv else pathlib.Path(".").resolve()
     wrote = []
-    for fn in (specs_graph, harness_graph):
+    for fn in (harness_graph,):
         res = fn(root)
         if res:
             wrote.append(res)

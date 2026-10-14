@@ -6,34 +6,76 @@ Agent bodies live in `assets/claude/agents/`; the scaffolder copies them, so you
 the prose. The chosen roster must appear 1:1 in the orchestrator's routing table and the AGENTS.md
 roster table: no orphan agents, no unrouted work.
 
+## Purpose profiles - which seats a repo gets
+
+The first intake question is what the repo is FOR. One or more of these flags; none means
+`purpose_code`, which is the roster every earlier version of this skill produced.
+
+| Purpose | Seats (beyond `orchestrator`) | Verification | What it never gets |
+|---|---|---|---|
+| `purpose_code` | dev agent(s), the review gate, `spec-guardian`, `ba-analyst`, `debugger`, `devops`, + `qa-test` (`tests`), DB seats (`db*`), `merge-manager` (`merge_gate`) | tests, code + security review, `/secret-scan` at the branch boundary | - |
+| `purpose_research` | `researcher`, `checker` | every claim traced to a source that says it; primary over secondary; dates current | unit tests, code or security review |
+| `purpose_strategy` | `strategist`, `researcher` (evidence for the matrix), `checker` | assumptions that flip the recommendation, genuinely distinct options, criteria fixed before scoring | unit tests, code or security review |
+| `purpose_docs` | `writer`, `checker` | accuracy against the source, links and anchors, one fact in one place, house style | unit tests, code or security review |
+
+Purposes combine: `purpose_code` + `purpose_docs` adds `writer` and `checker` beside the code
+roster; `checker` then covers the non-code deliverables while the code review gate keeps the code.
+**One `checker` serves every non-code purpose** - its body carries one section per purpose,
+resolved at scaffold time - so a research + strategy + docs repo has five seats, not eight. The
+code-only flags (`db*`, `ai`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `solo_review`,
+`merge_gate`) are refused without `purpose_code` rather than fielding seats with nothing to do.
+
 ## The allocation table
 
-Every generated agent carries `model:` and `effort:` explicitly - unset `model:` means `inherit`,
-which silently bills mechanical work at the caller's tier.
+Every generated agent carries `model:`, `effort:`, `tools:` and `maxTurns:` explicitly - unset
+`model:` means `inherit`, which silently bills mechanical work at the caller's tier, and
+`scaffold.py` refuses a seat missing any of them.
 
 | Agent | model | effort | tools | maxTurns | Why |
 |---|---|---|---|---|---|
-| `orchestrator` | `opus` | `high` | `Read, Grep, Glob, Bash, Write, Edit, Agent, TaskCreate, TaskUpdate, TaskList, TaskOutput` | - | Plans, decomposes, judges results. Highest-leverage seat. Write/Edit is for `docs/` and `.claude/` only - it never authors product code |
+| `orchestrator` | `opus` | `high` | `Read, Grep, Glob, Bash, Write, Edit, Agent, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskOutput` | 60 | Plans, decomposes, judges results. Highest-leverage seat. Write/Edit is for the board only - it never does a seat's work |
 | `debugger` | `opus` | `xhigh` | `Read, Grep, Glob, Bash` | 30 | Root-cause under incomplete information is the hardest single-agent task on the roster, and it is low-volume. The one seat that earns `xhigh` unconditionally. Read-only: it diagnoses, the owner fixes |
 | `code-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | The safety net. Read-only forever - a reviewer that edits code has become a dev agent and lost its independence |
 | `security-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | Secrets/PII/authz gate. Read-only |
 | `reviewer` (flag `solo_review`) | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | The merged code+security gate for preset S: one pass, both lenses. Replaces the two seats above; never fielded alongside them |
-| `merge-manager` (installed unconditionally; ACTIVE only with the strict gate below) | `opus` | `high` | `Read, Grep, Glob, Bash` | 20 | A gate, not an author. Only field it with the strict gate below |
-| `<domain>-dev` / `app-dev` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | Implementation against a settled spec. Raise to `xhigh` for a known-hard refactor, not by default |
-| `frontend-ui-dev` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | As above, scoped to UI |
-| `data-modeler` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | - | Schema design follows the ERD; judgment is bounded by the data dictionary |
-| `db-engineer` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | - | Operations, not design. Forward migrations only |
-| `qa-test` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | - | Tests map 1:1 to stated acceptance criteria - a settled contract, so `medium` suffices |
+| `merge-manager` (flag `merge_gate`) | `opus` | `medium` | `Read, Grep, Glob, Bash` | 20 | A gate, not an author: it checks a fixed list, so `medium`. Fielded only with the strict gate below |
+| `<domain>-dev` / `app-dev` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | 60 | Implementation against locked criteria; a third attempt escalates effort ([`cost-model.md`](cost-model.md)). Raise to `high` or `xhigh` for a known-hard refactor, not by default |
+| `frontend-ui-dev` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | 60 | As above, scoped to UI |
+| `data-modeler` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob, Bash` | 40 | Schema design follows the ERD; judgment is bounded by the data dictionary |
+| `db-engineer` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | 40 | Operations, not design. Forward migrations only |
+| `qa-test` | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, Bash` | 40 | Tests map to stated acceptance criteria - a settled contract, so `medium` suffices |
 | `spec-guardian` | `sonnet` | `medium` | `Read, Grep, Glob` | 15 | Checks a diff against written criteria. Read-only, no Bash - it has nothing to run |
-| `ba-analyst` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob` | - | Prose quality matters; writes only inside `docs/` |
-| `devops` | `sonnet` | `medium` | `Read, Grep, Glob, Bash` | - | Pipelines and environments. Never edits CI to skip a check |
-| `brainstormer` | `sonnet` | `high` | `Read, Grep, Glob, WebSearch, WebFetch` | 20 | Diverges, scores a trade-off matrix, recommends. Read-only on code |
-| `tech-researcher` | `sonnet` | `medium` | `Read, Grep, Glob, Bash, WebSearch, WebFetch` | 20 | Cited evidence against project constraints. Never sends project data to external services |
+| `ba-analyst` | `sonnet` | `high` | `Read, Write, Edit, Grep, Glob` | 40 | Prose quality matters; writes only inside `docs/` |
+| `devops` | `sonnet` | `medium` | `Read, Grep, Glob, Bash` | 40 | Pipelines and environments. Never edits CI to skip a check |
+| `researcher` (`purpose_research`, `purpose_strategy` or `long`) | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob, WebSearch, WebFetch` | 40 | Gathers sources and writes a cited synthesis under `docs/`. Under `purpose_code` it also evaluates libraries, providers and approaches against the project's constraints |
+| `strategist` (`purpose_strategy` or `long`) | `opus` | `high` | `Read, Write, Edit, Grep, Glob` | 30 | Frames a decision, scores distinct options, writes the memo. A judgment call under incomplete information, hence `opus`. It writes the memo it produces, so the decision lands as a file, not a chat message |
+| `writer` (`purpose_docs`) | `sonnet` | `medium` | `Read, Write, Edit, Grep, Glob` | 40 | Documentation from a stated source. Writing to a settled source is `medium` work |
+| `checker` (any non-code purpose) | `opus` | `high` | `Read, Grep, Glob, WebFetch, WebSearch` | 25 | The non-code review gate: sources, red team, or docs accuracy. Read-only, like every reviewer |
 | `history-tracker` | `haiku` | `low` | `Read, Grep, Glob, Bash` | 10 | Summarizes an append-only archive. High volume, no judgment |
 | `db-seeder` | `haiku` | `low` | `Read, Write, Edit, Grep, Glob, Bash` | 15 | Runs a deterministic script against a schema. Synthetic data only, local/dev targets only |
 | `<repo>-auditor` (audit mode) | `opus` | `high` | `Read, Grep, Glob, Bash` | 30 | Manual analysis that must catch what the scanners miss. Same role as a reviewer |
 | `perf-reviewer` (audit mode) | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | As above, for performance |
 | `sast-runner` (audit mode) | `haiku` | `low` | `Read, Grep, Glob, Bash` | 15 | Runs a pinned scanner suite and normalizes output. Explicitly never judges severity |
+
+## Frontmatter, field by field - what each seat sets and why
+
+Claude Code accepts more fields than `model`, `effort` and `tools`
+([sub-agents reference](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields)).
+Each is used where it earns its place and deliberately left out elsewhere:
+
+| Field | Where it is set | Why there, and not elsewhere |
+|---|---|---|
+| `disallowedTools: Edit, Write, NotebookEdit` | every read-only seat: the reviewers, `spec-guardian` (also `Bash`), `debugger`, `merge-manager`, `devops`, `history-tracker`, `checker` | Belt and braces beside `tools:`, so a later `/agent-permissions` grant cannot quietly turn a judge into an author. Writers omit it: their `tools:` allowlist already excludes what they do not hold |
+| `Agent` in `tools:` | `orchestrator` only | The single dispatch point. `scaffold.py` refuses a second seat holding `Agent`, bare or as `Agent(a, b)`. The `Agent(a, b)` allowlist form is not used: it binds only when the orchestrator runs as the main thread, is ignored in a subagent, and would be a second roster list to keep in sync - `guard-agent-spawn` already enforces the roster |
+| `memory: project` | `researcher`, `writer`, the dev agents | Seats that get better at THIS repo across sessions: reliable sources, house style, a module's pitfalls. Never on a read-only seat - memory grants Write and Edit, and `scaffold.py` refuses it on a review seat. Never task state: that lives on the board |
+| `permissionMode: dontAsk` | the code review seats, `spec-guardian`, `history-tracker` | A gate must not stall on a prompt mid-review; what it needs is pre-approved, and anything else is denied rather than asked. Every other seat inherits the session's mode, which is the human's dial (`/harness-tune`). `bypassPermissions` is refused on any seat |
+| `omitClaudeMd: true` | the review seats, `spec-guardian`, `history-tracker`, `checker` | Seats that take everything from their brief and the rules they cite: skipping `CLAUDE.md` and `AGENTS.md` saves about 200 lines of context per dispatch. Older Claude Code ignores the field |
+| `initialPrompt` | `orchestrator` | Applies only when it runs as the main session (`claude --agent orchestrator`): the session opens on the board restore instead of a blank prompt |
+| `experimental.cacheTtl: 1h` | `orchestrator` | It waits on children longer than the default 5-minute cache window, so its long prefix is otherwise re-written after every child returns |
+| `isolation: worktree` | none in frontmatter | It branches from the default branch, not the caller's HEAD, and would put every Direct fix on a side branch. The orchestrator asks for it per dispatch (`isolation: "worktree"` on the Agent call) when parallel writers would collide |
+| `skills:` | none by default | A preload injects the whole skill on every dispatch. `/skill-wire` adds one to the seat that always needs it, once the skill is installed and reviewed |
+| `hooks:` | none by default | Hooks that bind every seat live in `settings.json`. An agent-scoped hook is the right home for a rule that binds one seat - limiting the orchestrator's writes to the board is the obvious candidate - once such a hook script ships |
+| `mcpServers`, `background` | unset | MCP access is granted per project through `/agent-permissions`; `background` would hide a seat the caller is waiting on |
 
 Any agent not in this table - a new `<domain>-dev`, a project-specific one-off - is classified with
 the decision rule in [`cost-model.md`](cost-model.md), not guessed by analogy to the closest-sounding
@@ -49,7 +91,7 @@ name. Record the pick in `docs/context/tool-changelog.md`.
 
 ## Tiers - what to field
 
-### Tier 0 - core (every project, no exceptions)
+### Tier 0 - core (every `purpose_code` project, no exceptions)
 
 | Agent | Why it is unconditional |
 |---|---|
@@ -62,9 +104,9 @@ name. Record the pick in `docs/context/tool-changelog.md`.
 ### Tier 1 - standard delivery (accept by default, decline consciously)
 
 `qa-test` (any logic worth testing - i.e. almost always) · `debugger` (a test suite or CI exists) ·
-`ba-analyst` (specs live in the repo) · `devops` (a CI pipeline or a hosting target exists) ·
-`merge-manager` (its seat file always installs; route merges to it only with the gate below,
-otherwise the human merges and the seat stays idle).
+`ba-analyst` (specs live in the repo) · `devops` (a CI pipeline or a hosting target exists).
+`merge-manager` is fielded only with flag `merge_gate` and the gate below; without it the human
+merges, which is the right default for almost every team.
 
 ### Tier 2 - conditional by stack
 
@@ -76,8 +118,11 @@ call - shared layers get an owner so ownership is unambiguous) · one `<domain>-
 
 ### Tier 3 - planning and audit (multi-week projects; flag `long`)
 
-`brainstormer` + `tech-researcher` (structured decisions feeding ADRs) · `history-tracker` (curates the
-run archive written by the `agent-history` hook). Shipped only when the `long` flag is set - the
+`strategist` + `researcher` (structured decisions feeding ADRs, with cited evidence) ·
+`history-tracker` (curates the run archive written by the `agent-history` hook). The same two seats
+are the base of the strategy and research purposes, so one pair serves both the code planning work
+and the non-code purposes.
+In a code repo they ship only when the `long` flag is set - the
 roster-shape question in intake asks for the project horizon; a short project pays for these seats
 without using them.
 
@@ -88,9 +133,9 @@ Pick the closest, then adjust with the tiers.
 - **S - script / CLI / library, single domain (5-6 ACTIVE seats).** `orchestrator`, `app-dev`,
   `qa-test` (if tests are chosen), `reviewer` (the merged gate, flag `solo_review` - the
   recommended shape here; split reviewers remain the alternative), `spec-guardian`. **This is the
-  floor** - below it the Guarded flow has missing seats. Honesty note: the manifest also
-  installs `debugger`, `ba-analyst`, `devops`, and `merge-manager` unconditionally; on preset S
-  they simply receive no routing missions until the project grows into them.
+  floor** - below it the Guarded flow has missing seats. Honesty note: a code repo also installs
+  `debugger`, `ba-analyst` and `devops`; on preset S they receive no routing missions until the
+  project grows into them.
 - **M - web/API app with a DB (9-12).** Tier 0 + `qa-test`, `debugger`, `ba-analyst`, `devops`,
   + `frontend-ui-dev` (if UI) + `data-modeler` (+ `db_engineer`/`db_seeder` flags as DB work grows)
   + 1-3 `<domain>-dev`. Split reviewers recommended.
@@ -120,11 +165,15 @@ spec module code is also what its FR IDs carry (`FR-BLG-01`), so the agent's `de
 list, the routing table, and the folder name all say the same thing. A module folder with no owning
 dev agent is the same defect as a code module with none.
 
+Each module also gets a small `CLAUDE.md` of its own (the `modules` list in `vars.json`, rendered
+from `assets/root/module-CLAUDE.md`): its owner seat, its scope, and the invariants and commands that
+hold only there. That is where module-specific guidance goes instead of the root files.
+
 Rule of thumb: a dev agent owns something describable in one sentence ("the scoring engine"). More
 than ~5 dev agents at bootstrap is speculative splitting; fewer than one per 2-3 FRs on a large
 product produces a future grab-bag.
 
-## `merge-manager` - the optional delegated merge gate
+## `merge-manager` - the optional delegated merge gate (flag `merge_gate`)
 
 Field it when parallel dev agents produce a steady stream of PRs and manual merging is the
 bottleneck; skip it on a solo or low-volume project. What makes it safe:
@@ -143,7 +192,8 @@ bottleneck; skip it on a solo or low-volume project. What makes it safe:
 ## Roster completeness check
 
 Before finishing, verify the formation can actually play the Guarded flow - every seat filled
-by exactly one agent. A seat here is a seat the flow can call when it needs it, not a seat every
+by exactly one agent. The table is the code flow; a non-code repo's flow is the brief, the producer
+(`researcher` / `strategist` / `writer`), `checker`, and the `orchestrator` - nothing else. A seat here is a seat the flow can call when it needs it, not a seat every
 change must pass through:
 
 | Flow step | Seat | Filled by |
@@ -155,7 +205,7 @@ change must pass through:
 | Review secrets/data | security gate | `security-reviewer` (or `reviewer` under `solo_review`) |
 | Open PR/MR, CI | pipeline | `devops` (or the dev agent on Preset S - say so) |
 | Failure diagnosis | root cause | `debugger` (or the user - say so) |
-| Decide + record | planning | `brainstormer`/`tech-researcher` → ADR (or the user) |
+| Decide + record | planning | `strategist`/`researcher` → ADR (or the user) |
 | Route, supervise, record | control | `orchestrator` |
 
 If a seat is intentionally unfilled, AGENTS.md must name who covers it instead. An unnamed seat is how

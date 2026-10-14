@@ -1,5 +1,7 @@
 # Agent Harness Bootstrap
 
+**English** · [[日本語|Home-ja]]
+
 Two Claude Code skills and a viewer. One writes specs both you and the AI understand. One fits an
 agent team to your repo. The third lets you see the whole thing and switch any part of it off.
 
@@ -39,14 +41,14 @@ instead, and the page follows.
 repo - into one contract written to international standards, with stable requirement IDs.
 `harness-bootstrap` reads your code, then builds the `.claude/` harness that fits it: a roster
 derived from the contract and the modules that exist, rules scoped to paths that exist, and hooks
-that block rather than advise. The guardrails are shell scripts and exit codes, so swapping every
-agent from Opus to Haiku leaves the safety floor byte-identical. `harness-view` reads the result and
-scores it, with no model in the loop.
+that block rather than advise. The guardrails are shell scripts and exit codes: no model is consulted, so the safety
+floor cannot depend on the model. `harness-view` reads the result and scores it, with no model in the
+loop.
 
 ## Proof you can run yourself
 
 ```bash
-python eval/guardrail_eval.py                        # the safety floor, per hook flavour
+python eval/guardrail_eval.py                        # the safety floor, per hook flavour (strict, long, db flags on)
 python benchmark/benchmark.py                        # harnessed vs a bare repo
 python harness-bootstrap/scripts/port.py --self-test # the Cursor and Codex adapter
 python scripts/check_numbers.py                      # every published figure vs the scripts

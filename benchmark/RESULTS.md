@@ -1,5 +1,7 @@
 # Benchmark results
 
+**English** · [日本語](RESULTS.ja.md)
+
 What you get for adopting `harness-bootstrap`, measured against the three things you would
 otherwise do: nothing, it by hand, or plain prompting with no control layer. Everything below is
 counted from files on disk or produced by a real run, and reproduced by one command.
@@ -12,10 +14,10 @@ python benchmark/benchmark.py
 
 | | No harness | harness-bootstrap |
 |---|---:|---:|
-| Known-bad actions blocked (15 hook payloads) | **0** | **15** |
-| Bytes of harness you author yourself | **326,087** | **0** |
-| Rule bytes loaded into every agent session | **0** | **28,821** |
-| Time to stand it up | - | ~0.2s |
+| Known-bad actions blocked (67 hook payloads) | **0** | **67** |
+| Bytes of harness you author yourself | **652,677** | **0** |
+| Rule bytes loaded into every agent session | **0** | **23,047** |
+| Time to stand it up | - | under 2s |
 
 The third row is not a typo and it is not in our favour. A bare agent carries no rules because
 there are none to enforce. That is the trade this project is making, and a benchmark that hid it
@@ -27,22 +29,27 @@ The same known-bad payloads that `eval/guardrail_eval.py` fires, sent to a gener
 a bare repo. The two repos have identical files and identical git history. The only difference is
 the presence of `.claude/`.
 
+The harness here is the eval's own: scaffolded with the flags in `VARS` in `guardrail_eval.py`,
+`hooks_strict`, `long` and `db` among them. So the strict hooks, the long-session hooks and the
+migration guard are part of the 67, and a default install carries fewer hooks than the harness
+measured. The payloads are the must-block cases of the eval's hook suite, replayed in order and
+imported rather than re-declared.
+
 ```mermaid
 xychart-beta
-    title "Known-bad payloads blocked, of 15"
+    title "Known-bad payloads blocked, of 67"
     x-axis ["Bare repo, no harness", "harness-bootstrap"]
-    y-axis "Payloads blocked" 0 --> 15
-    bar [0, 15]
+    y-axis "Payloads blocked" 0 --> 67
+    bar [0, 67]
 ```
 
 | | Blocked | Of cases |
 |---|---:|---:|
-| Bare repo, no harness | 0 | 15 |
-| harness-bootstrap | 15 | 15 |
+| Bare repo, no harness | 0 | 67 |
+| harness-bootstrap | 67 | 67 |
 
-All 15 payloads had no hook to receive them in the bare repo: it contains 0 hook files and no
-`settings.json`. The 15 break down as 6 secret reads, 4 off-roster or escalated agent spawns,
-3 commit-message violations, 1 commit straight to the default branch, and 1 edit to an Accepted ADR.
+All 67 payloads had no hook to receive them in the bare repo: it contains 0 hook files and no
+`settings.json`.
 
 "Nothing stopped it" is demonstrated, not asserted. The script performs the underlying actions in
 the bare repo and checks them by effect:
@@ -55,7 +62,8 @@ the bare repo and checks them by effect:
 | Edit an Accepted ADR | COMPLETED | file grew 25 to 53 bytes |
 
 This is the claim the project actually rests on. The guardrails are hooks and deny rules - shell
-scripts, exit codes and glob matching - so the result does not move when the model does.
+scripts, exit codes and glob matching - so no model is consulted and the result cannot depend on the
+model.
 
 ## Baseline B - by hand
 
@@ -64,17 +72,17 @@ weighing what landed.
 
 | Kind | Files | Bytes |
 |---|---:|---:|
-| Scripts | 7 | 87,969 |
-| Rules | 15 | 78,202 |
-| Hooks | 11 | 66,774 |
-| Commands | 20 | 36,695 |
-| Agents | 10 | 26,053 |
-| Docs scaffolding | 10 | 15,415 |
-| Root files | 5 | 12,172 |
-| `settings.json` | 1 | 2,807 |
-| **Total** | **79** | **326,087** |
+| Scripts | 12 | 324,988 |
+| Hooks | 15 | 119,298 |
+| Rules | 16 | 79,300 |
+| Commands | 21 | 54,622 |
+| Agents | 9 | 31,814 |
+| Root files | 8 | 20,197 |
+| Docs scaffolding | 15 | 18,492 |
+| `settings.json` | 1 | 3,966 |
+| **Total** | **97** | **652,677** |
 
-Around 90,600 estimated tokens if a model authors it instead of you.
+Around 181,300 estimated tokens if a model authors it instead of you.
 
 Two honest qualifications:
 
@@ -82,9 +90,10 @@ Two honest qualifications:
   `tech-stack.md`, `coding-standards.md`, `git-workflow.md`, the orchestrator's routing table and
   each dev agent's scope. Those three rules ship as no asset at all, deliberately: they are
   decisions about your repo and no template can make them for you.
-- **The scripts row is the most arguable line.** Those seven are working tools - the graph scanners,
-  the toggle, the env reader, the board checker - not configuration. A team doing this by hand might
-  reasonably not build them, in which case the honest figure is 238,118 bytes, not 326,087.
+- **The scripts row is the most arguable line.** Those twelve are working tools - the graph
+  scanners, the task board CLI, the verification planner, the toggle, the env reader, the checkers -
+  not configuration. A team doing this by hand might reasonably not build them, in which case the
+  honest figure is 327,689 bytes, not 652,677.
 
 Deliberately not stated in hours. Hours are not measurable from a repository, and any number here
 would be a guess wearing a lab coat.
@@ -98,17 +107,17 @@ every agent, forever. That is rent.
 xychart-beta
     title "Rule bytes carried into every agent session"
     x-axis ["Bare agent", "Unconditional rules", "Path-scoped, on demand"]
-    y-axis "Bytes" 0 --> 60000
-    bar [0, 30643, 52113]
+    y-axis "Bytes" 0 --> 70000
+    bar [0, 23047, 62365]
 ```
 
 | | Rules | Bytes | Tokens (est.) |
 |---|---:|---:|---:|
 | Bare agent, no harness | 0 | 0 | 0 |
-| Unconditional, always loaded | 7 | 28,821 | ~8,006 |
-| Path-scoped, loaded on demand | 10 | 60,290 | ~16,747 |
+| Unconditional, always loaded | 7 | 23,047 | ~6,402 |
+| Path-scoped, loaded on demand | 10 | 62,365 | ~17,324 |
 
-68% of rule content stays out of the default session. The seven that cannot be scoped are the ones
+73% of rule content stays out of the default session. The seven that cannot be scoped are the ones
 no glob can match: `00-overview`, `agent-guardrails`, `task-tracking`, `conventional-commits` (it
 governs commit *messages*, not files, which is why it is kept under 25 lines on purpose),
 `output-style` (it governs how the agent writes, which no path predicts), and the two governance
@@ -122,15 +131,34 @@ with a harness than without. Output quality, task success rate, time to a correc
 burden are all real and all absent from this page, because none of them can be counted from a
 repository. Baseline A measures enforcement, not judgment.
 
+## Process - what a session carries and what one change costs
+
+The harness decides how much process a change gets, and that is measurable on the rendered files.
+
+- **What every session and subagent carries**: `AGENTS.md`, `CLAUDE.md` and the unconditional rules.
+  31,179 bytes (8 files) with `ui`, `db`, `ai`, `ddd` and `tests` on; 27,308 bytes (7 files) with
+  `tests` only.
+- **Who runs each tier**: Inline is the main session itself, Direct is the owning seat called
+  straight, Standard is the owning seat with a task file only when the work must survive a
+  compaction, and Guarded is the orchestrator, one at a time.
+- **The review gate per change class** (`verify-plan.py`): a docs-only or config-only diff needs no
+  review seat and no test run; one source file earns code review and the full suite once; auth code
+  and a dependency bump add the security review. The secret scan always runs.
+- **The verification ledger**: in a simulated mission (3 units, a final check, a fix round, a
+  re-review) the review and suite dispatches fall from 17 gate runs to 11, and the other 6 are
+  refused by `guard-agent-spawn` with a ledger line to cite.
+- **Resuming a task with 40 session-log rows**: 8,253 bytes read whole, 5,901 bytes with the log
+  bounded by `task.py`, and a 966-byte `task.py resume` digest (~268 tokens).
+
 ## Scaffold
 
-A first run takes **~0.2s** (0.18-0.31s across runs), creates 91 paths, and exits 0. A re-run
-reports `KEPT` and clobbers nothing. An unresolved `{{VAR}}` makes it exit non-zero rather than ship
-a placeholder into a rule.
+A first run takes **under 2s** (0.8-1.7s across runs on a machine with other work running), creates
+120 paths, and exits 0. A re-run reports `KEPT` and clobbers nothing. An unresolved `{{VAR}}` makes it
+exit non-zero rather than ship a placeholder into a rule.
 
-The comparison is not a fifth of a second against some other number of seconds. It is deterministic
-file copying against a model generating ~90,000 output tokens, which takes minutes, costs real
-money, and can hallucinate a hook that does not run.
+The comparison is not a second against some other number of seconds. It is deterministic file
+copying against a model generating ~180,000 output tokens, which takes minutes, costs real money,
+and can hallucinate a hook that does not run.
 
 ## For the record - against the predecessor skill
 
@@ -138,10 +166,11 @@ This benchmark used to compare `harness-bootstrap` against `project-bootstrap`, 
 replaced. That number is kept because it is true, and demoted because it answers "did our rewrite
 beat our last attempt", which matters to us and to nobody choosing whether to adopt this.
 
-Read path: 234,196 to 138,187 bytes, about -41%.
+Read path: 234,196 to 178,719 bytes, about -24%.
 
-That figure moves whenever the skill's reference docs change, and it has moved twice this cycle as
-capability landed. A benchmark that only ever improves is a marketing document.
+That figure moves whenever the skill's reference docs change, and it has moved down since the last
+release as capability landed (purpose profiles, the verification ledger, intake questionnaires). A
+benchmark that only ever improves is a marketing document.
 
 ## Methodology
 
@@ -151,8 +180,8 @@ capability landed. A benchmark that only ever improves is a marketing document.
 - **Baseline A imports the eval's own payload suite** rather than re-declaring it, so the safety
   number cannot drift from the suite it claims to represent. It runs the `.sh` hook flavor and is
   skipped with a message if `bash` is unavailable.
-- **Baseline A counts only the 29 must-block payloads** in the eval's hook suite. The eval's full
-  122 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
+- **Baseline A counts only the 67 must-block payloads** in the eval's hook suite. The eval's full
+  250 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
   measure different properties and are not safety wins.
 - **The bare repo is built from the same fixtures** as the harnessed one, then has `.claude/`
   removed. If it lacked the `.env` or the ADR, "nothing was blocked" would be trivially true.
@@ -161,3 +190,5 @@ capability landed. A benchmark that only ever improves is a marketing document.
 
 Hardware: Windows 11, Python 3.13. Scaffold timings are wall-clock, single run.
 Run `python benchmark/benchmark.py --skip-guardrails` to skip Baseline A, the only slow part.
+Two runs at once need `HARNESS_BENCH_WORKDIR` pointing at separate directories, or each deletes the
+other's harness mid-run.

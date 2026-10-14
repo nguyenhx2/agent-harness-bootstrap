@@ -48,9 +48,12 @@ Procedure:
      silently into a seat. In module form the owner is the dev agent that owns
      `docs/specs/modules/<module>/`.
    - Business rules -> `docs/context/business-rules.md` and note for `spec-guardian`.
-   - Then rebuild traceability: `python .claude/scripts/docs-graph.py` and
-     `python .claude/scripts/graph-html.py`. New orphan IDs are the ingest's loose ends - list
-     them.
+   - Then check traceability: `python .claude/scripts/docs-graph.py --check`. The orphan IDs it
+     prints are the ingest's loose ends - list them.
+   - Regenerate the confirmation sheet and the agent index:
+     `python .claude/scripts/spec-check.py --write`. Replies already in the sheet are kept; a new
+     or changed FR shows up there with an empty Decision, which is the cue to send it back for
+     confirmation. Every FAIL it prints is part of this ingest, not a later chore.
 6. **Report**: sections touched, IDs added/changed, conflicts and their resolutions, ripples
    applied, orphans created. Record the ingest in `docs/context/tool-changelog.md`.
 

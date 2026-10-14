@@ -5,28 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
-## v1.18.0
+## v1.20.0
 
-Process proportional to the change: a tier table decides whether work goes straight to the owning
-agent or through the orchestrator, and the review gate runs once on the branch instead of after
-every agent. harness-view gains a roster editor, an editable Command Steps panel, and custom
-dialogs. See each skill's own CHANGELOG for detail.
-
-## v1.18.1
-
-harness-view gains instruction-file nodes, a visible tier model, a grid editor for tables in a
-command's steps, and `@` mentions. The landing page is rebuilt as an introduction that follows the
-README's argument, with the clips folded in and re-rendered from the page's own palette. The deck
-drops from 30 slides to 25 and teaches the current routing model. Two published figures that
-nothing was deriving are now derived, and updating a harness to a new skill version stops reporting
-line endings as conflicts.
-
-## v1.18.2
-
-harness-view finds every per-folder `CLAUDE.md` rather than only the root one, and colours the tool
-catalogue by category. The landing page stops breaking lines with room to spare, turns its symptom
-list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
-and gains Claude Code, Codex and Cursor marks.
+A harness that fits the repo's purpose, and proportion that is enforced rather than described.
+Purpose profiles size the roster for code, research, strategy or docs work. A verification ledger
+and the spawn hook refuse a review or test that already passed on the same content, cutting a
+simulated mission from 17 to 11 gate runs. Seats carry deliberate frontmatter, intake asks at most
+two questionnaires, and `harness-check.py` proves every cross-link at the end of a scaffold.
+spec-builder writes a sheet a human confirms and an index an agent reads. harness-view explains
+every deduction with a rule, the evidence and the fix. New intro video, overview diagram, README,
+landing page and deck, in English and Japanese. Measured against v1.19.3:
+[`benchmark/results/v1.20.0.md`](benchmark/results/v1.20.0.md).
 
 ## v1.19.3
 
@@ -59,6 +48,29 @@ A bar for what earns a task - agreed with the user, few and large - enforced by 
 and asked for explicitly by `/new-task`. The bootstrapped scanner catches up to harness-view on
 per-folder `CLAUDE.md`, `assess` flags stub nested contracts, and the write-path figure stops
 measuring the size of rules the skill ships. Eval is 112/112 per hook flavour.
+
+## v1.18.2
+
+harness-view finds every per-folder `CLAUDE.md` rather than only the root one, and colours the tool
+catalogue by category. The landing page stops breaking lines with room to spare, turns its symptom
+list into questions bound to their answers, documents all eight post-bootstrap tuning commands,
+and gains Claude Code, Codex and Cursor marks.
+
+## v1.18.1
+
+harness-view gains instruction-file nodes, a visible tier model, a grid editor for tables in a
+command's steps, and `@` mentions. The landing page is rebuilt as an introduction that follows the
+README's argument, with the clips folded in and re-rendered from the page's own palette. The deck
+drops from 30 slides to 25 and teaches the current routing model. Two published figures that
+nothing was deriving are now derived, and updating a harness to a new skill version stops reporting
+line endings as conflicts.
+
+## v1.18.0
+
+Process proportional to the change: a tier table decides whether work goes straight to the owning
+agent or through the orchestrator, and the review gate runs once on the branch instead of after
+every agent. harness-view gains a roster editor, an editable Command Steps panel, and custom
+dialogs. See each skill's own CHANGELOG for detail.
 
 ## Unreleased
 
