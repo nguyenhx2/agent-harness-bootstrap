@@ -11,7 +11,7 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="ライセンス: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval ワークフロー"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-290%2F290%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 290/290 ケース"></a>
+  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-312%2F312%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 312/312 ケース"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="フック 26 本"></a>
 </p>
@@ -71,6 +71,34 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.ja.md`](docs/PLUGIN.
 <p align="center">
   <img src="docs/assets/harness-overview.ja.svg" alt="全体像。持ち込むもの (アイデア、議事録、既存資料、既存または空のリポジトリ、書きかけの仕様) は spec-builder に流れ、一つの契約になる。harness-bootstrap はその契約とコードベースを読み、六つの部品を組む: パス単位のルール、シェルでブロックするフック、目的に合わせたロースター、Inline・Direct・Standard・Guarded のティアへのルーティング、配線されたスキル、過不足のない検証。作業はタスクボード、実行履歴、チェックポイントとしてディスクに状態を残し、harness-view はハーネスとその状態を読んで表示・採点・切り替え・監視する。" width="960">
 </p>
+
+## 設計によるセキュリティ
+
+エージェントと取り消せない操作の間で、指示はいちばん弱い層です。だから 5 つある層の最初の 1 つにすぎません。
+その下の各層は、モデルが言いくるめられないものが判定します: ランタイム、権限システム、シェルスクリプトの終了コード、
+そして最後にあなたです。
+
+<p align="center">
+  <img src="docs/assets/security-layers.ja.svg" alt="エージェントの次の操作と実行の間にある 5 つのセキュリティ層。SOFT はモデルが判定する AGENTS.md、パス限定ルール、席のプロンプト。SCOPED はランタイムが判定する席ごとのツール許可、読み取り専用のレビュアー、maxTurns、固定モデル、生成上限、検証台帳。FORCED は権限システムが判定する拒否ルールで、秘密ファイル、force push、hard reset、rm -rf、デプロイ、DB リセットを止める。HARD はシェルスクリプトが exit 2 で判定するブロックするフックで、失敗時は止める。HUMAN はすべての層の上にあり、ハーネス自身の設定とフックへのエージェントの編集は確認を求め、シェルからの書き込みは拒否し、HARD の制御を外すには入力した語句がコミットされたファイルに記録される。下には証明と、強制していないこと。" width="100%">
+</p>
+
+| 層 | 判定するもの | 守るもの | 破られうるところ |
+|---|---|---|---|
+| **Soft** - ガイダンス | モデル | `AGENTS.md`、パス限定のルール、各席のプロンプト。下の実測ベンチマークでは、フックが動く前に危険な依頼をすべて拒否した | モデルが上書きすることも、コンパクションで落ちることもある |
+| **Scoped** - 席の制限 | Claude Code のランタイム | 席ごとの tools 許可リスト (レビュー席は Edit と Write を `disallowedTools` にも持つ)、`maxTurns`、固定のモデルと effort、生成の深さ 2・同時 4 まで、検証台帳 | 呼べるツールを制限するが、持っているツールで何をするかは制限しない |
+| **Forced** - 拒否ルール | 権限システム | `.env*`、鍵、`secrets/` の読み取り。force push、`reset --hard`、`rm -rf`、デプロイ、DB リセット。PR の作成・マージとデプロイは確認を求める | 前方一致のみ: `rm -fr` や `git push origin main --force` は通り抜ける。だから次の層がある |
+| **Hard** - ブロックするフック | シェルスクリプトの終了コード | 常時: `protect-secrets`、`protect-harness`、`guard-destructive`、`guard-main-commit`、`check-commit-msg`、`protect-adr`、`guard-agent-spawn`、`guard-board`、`guard-task-scope`。`hooks_strict` で: `guard-egress`、`secret-guard`、`guard-config`、`guard-large-file`、`guard-deps`、`stop-evidence`。クラッシュやタイムアウトでも止める | コマンドの読み取りはベストエフォート: 実行時に組み立てたファイル名には届かない |
+| **Human** - 人だけ | あなた | `settings.json` やフックへのエージェントの編集は確認を求め、シェルからの書き込みは拒否する。HARD の制御を外すには `disable <name>` を自分で入力し、`.claude/disabled.json` にコミットされる。検証台帳を越える再レビューは、あなた自身の指示に `REVERIFY` を書いたときだけ | - |
+
+**v1.21.2 で再監査。** 生成したハーネスに回避の試みを当てたところ、次のものが通り抜けました: パイプ、リダイレクト、括弧が直後に
+続く `.env` (`cat .env|base64`)、シェルがグロブ・引用符・波括弧から組み立てる名前 (`cat .e?v`、`cat .e""nv`、
+`cat {.env,x}`)、ツリー全体への `grep -r`、リポジトリのルートでの `find . -delete`、そしてシェル経由でガードを書き換える操作です。
+すべて塞ぎ、ガードレール評価のケースに加えました。最後の 1 つは Claude Code で実機確認しています:
+`bypassPermissions` モードで、`protect-harness` がなければ `echo >> .claude/hooks/...` がガードを書き換え、あれば拒否されました。
+
+**強制していないこと (明記):** 読めるテキストをどのモデルプロバイダーに送るか (捕まえるツール呼び出しがない)、誰も名指ししていない
+パスの秘密、`guard-agent-scope` (助言のみ: ペイロードに呼び出し元の席がない)、外部送信と実行中の設定変更 (`hooks_strict` が必要)。
+全体の順位付け: [`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md)。
 
 ## 解決する問題
 
@@ -192,7 +220,7 @@ python scripts/check_numbers.py     # 公開している数値がすべてスク
 
 ガードレール評価は、フックの系統 (`.sh` と `.ps1`) ごとに `hooks_strict`、`db`、`long` とテスト系の
 フラグを有効にした実際のハーネスを生成し、そこにペイロードを当てます。結果は系統ごとに 290/290
-(123 must-block、167 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
+(134 must-block、178 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
 通すことです。エージェントの振る舞いや、既定の構成は測っていません。ケース一覧: [`eval/README.md`](eval/README.md)。
 ベンチマークの注意点: [`benchmark/RESULTS.md`](benchmark/RESULTS.md)。
 

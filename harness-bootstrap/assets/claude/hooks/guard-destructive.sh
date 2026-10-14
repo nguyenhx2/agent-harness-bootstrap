@@ -8,6 +8,7 @@
 #      drive root or a top-level folder on a drive, `.`/`..`/`*`, or `.git` (and anything with
 #      --no-preserve-root); the same targets for PowerShell's Remove-Item / ri / rd / rmdir / del /
 #      erase with -Recurse (any abbreviation; -Force is not needed to delete a tree) and cmd's /s
+#      `find` with -delete or -exec rm on the same targets
 #   2. a force push (--force, -f, --force-with-lease, or a `+refspec`) to {{DEFAULT_BRANCH}},
 #      main, master, production, prod or release/* - explicit refspec or, failing that, the
 #      branch currently checked out (--all / --mirror count as protected)
@@ -174,7 +175,7 @@ read_payload
 # Every block below needs one of these words in the command: a deletion verb or `git` standing
 # as its own token, or DROP / TRUNCATE. Written case-insensitively so the gate is never narrower
 # than the case-folding checks it fronts.
-FAST_GATE='(^|[^A-Za-z0-9_-])([Rr][Mm]|[Rr][Ii]|[Rr][Dd]|[Rr][Mm][Dd][Ii][Rr]|[Dd][Ee][Ll]|[Ee][Rr][Aa][Ss][Ee]|[Rr][Ee][Mm][Oo][Vv][Ee]-[Ii][Tt][Ee][Mm]|[Gg][Ii][Tt])([^A-Za-z0-9_-]|$)|[Dd][Rr][Oo][Pp]|[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee]'
+FAST_GATE='(^|[^A-Za-z0-9_-])([Rr][Mm]|[Rr][Ii]|[Rr][Dd]|[Rr][Mm][Dd][Ii][Rr]|[Dd][Ee][Ll]|[Ee][Rr][Aa][Ss][Ee]|[Rr][Ee][Mm][Oo][Vv][Ee]-[Ii][Tt][Ee][Mm]|[Gg][Ii][Tt]|[Ff][Ii][Nn][Dd])([^A-Za-z0-9_-]|$)|[Dd][Rr][Oo][Pp]|[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee]'
 fast_str command && fast_unmatched "$FAST_GATE" && exit 0
 # --- full parse ------------------------------------------------------------------------------
 # Also fork-free, except `git rev-parse` for a forced push and the host scan for DROP/TRUNCATE.
@@ -309,6 +310,44 @@ while IFS= read -r seg; do
         ;;
     esac
     case "$tok" in
+      # find with -delete, or -exec rm, deletes everything it walks: the same targets as rm -rf.
+      # The start paths are the words before the first expression token; none means '.'. A test
+      # that narrows what matches (-name '*.pyc', -mtime +7) makes it a cleanup, not a wipe.
+      find|*/find)
+        del=0; starts=(); inexpr=0; narrow=0
+        for ((j = i + 1; j < n; j++)); do
+          unq "${toks[j]}"; a=$UQ
+          if [ "$inexpr" -eq 0 ]; then
+            case "$a" in
+              -H|-L|-P) continue ;;
+              -*|'('|'!'|'\(') inexpr=1 ;;
+              *) starts+=("$a"); continue ;;
+            esac
+          fi
+          [ "$a" = "-delete" ] && del=1
+          case "$a" in
+            -name|-iname|-path|-ipath|-wholename|-iwholename|-regex|-iregex|-newer|-mtime|-mmin|-atime|-amin|-size|-user|-empty) narrow=1 ;;
+          esac
+          case "$a" in
+            -exec|-execdir|-ok|-okdir)
+              if [ $((j + 1)) -lt "$n" ]; then
+                unq "${toks[j + 1]}"
+                case "$UQ" in rm|*/rm|shred|unlink) del=1 ;; esac
+              fi
+              ;;
+          esac
+        done
+        if [ "$del" -eq 1 ] && [ "$narrow" -eq 0 ]; then
+          [ "${#starts[@]}" -eq 0 ] && starts=(.)
+          for t in "${starts[@]}"; do
+            if is_danger_target "$t"; then
+              unq "$t"
+              block "find that deletes, run on '$UQ', would delete the repository, the home directory or a system path. Point find at the specific build output you mean, or ask the user to do this by hand."
+            fi
+          done
+        fi
+        break
+        ;;
       rm|*/rm)
         rec=0; force=0; npr=0; targets=(); opts=1
         for ((j = i + 1; j < n; j++)); do

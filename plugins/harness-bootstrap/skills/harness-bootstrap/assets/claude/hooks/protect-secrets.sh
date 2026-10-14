@@ -85,7 +85,10 @@ allow_pattern='\.env\.example$'
 # freely (`strings .env`, `rtk read .env`, any wrapper installed tomorrow). Match the FILE
 # instead, then subtract the forms that may legitimately name it. Best-effort by nature - a
 # command can obfuscate the path - which is why settings.json deny rules sit behind this.
-cmd_pattern='(^|[^a-zA-Z0-9_./-])[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([[:space:]]|$|"|'"'"'|;|&)'
+# The name ends at anything a file name cannot contain - a pipe, a redirect, a bracket, a comma
+# from brace expansion - not only at a space or quote: `cat .env|base64` and `(cat .env)` once
+# walked past a terminator list that stopped at space, quote, ; and &.
+cmd_pattern='(^|[^a-zA-Z0-9_./-])[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([^a-zA-Z0-9_.-]|$)'
 # Scrubbed off BEFORE the test, so a command whose only secret mentions are these is allowed:
 #   > .env.local                  writing a local env file is setup, not disclosure
 #   .env.example                  the tracked placeholder
@@ -93,7 +96,8 @@ cmd_pattern='(^|[^a-zA-Z0-9_./-])[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?([[:space:
 #   cp .env.example .env.local    seeding a local file from the example
 # Scrubbing rather than a second allow-regex matters: `cat .env > .env.bak` must still block,
 # and it does, because only the redirect target is removed and `cat .env` survives the scrub.
-cmd_scrub='s/(cp|copy|mv|Copy-Item)[[:space:]]+[^[:space:]]*\.env\.example[[:space:]]+[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/>>?[[:space:]]*[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/[^[:space:]]*\.env\.example//g; s/[^[:space:]]*env-read\.py[^;&|]*//g'
+#   --exclude='.env*'             grep told NOT to read it
+cmd_scrub='s/--exclude(-dir)?=[^[:space:]]*//g; s/(cp|copy|mv|Copy-Item)[[:space:]]+[^[:space:]]*\.env\.example[[:space:]]+[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/>>?[[:space:]]*[^[:space:]]*\.env(\.[a-zA-Z0-9_-]+)?//g; s/[^[:space:]]*\.env\.example//g; s/[^[:space:]]*env-read\.py[^;&|]*//g'
 db_reset_pattern='{{DB_RESET_PATTERN}}'
 
 # --- fast path: decide the common case with bash builtins only ---------------------------------
@@ -169,11 +173,103 @@ fast_db_unmatched() {
 }
 case $payload in
   *'"file_path"'*) ;;
-  *) fast_str command && fast_unmatched '\.[Ee][Nn][Vv]' && fast_db_unmatched && exit 0 ;;
+  # Also falls through for a dot-name carrying a glob, quote, brace or backslash (`.e?v`,
+  # `.e""nv`) and for any grep: see 2b below.
+  *) fast_str command && fast_unmatched '\.[Ee][Nn][Vv]' \
+       && fast_unmatched '\.[^[:space:]/]*[][*?{"'"'"'\`]' \
+       && fast_unmatched '[Gg][Rr][Ee][Pp]' && fast_db_unmatched && exit 0 ;;
 esac
-json_fields tool_input.file_path tool_input.command
+json_fields tool_input.file_path tool_input.command cwd
 path="${JF[0]}"
 cmd="${JF[1]}"
+cwd_posix=${JF[2]//\\//}
+cwd_posix=${cwd_posix%/}
+
+block_env() {
+  echo "BLOCKED: $1 Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed)." >&2
+  exit 2
+}
+
+# shell_words CMD: section 2b, with builtins only. The shell rewrites a name before the command
+# sees it, so a literal match is not enough.
+#   Quote removal: `.e""nv` and `.e\nv` are `.env` by the time cat opens them.
+#   Globbing: a word that a .env name would match (`.e?v`, `.env*`, `.e[n]v`, `.*`) is the file.
+#     Only a word whose last part starts with a dot can match one: a wildcard never matches a
+#     leading dot.
+#   Recursive grep: `grep -r KEY .` prints every match inside .env on the way. Refused when it
+#     searches the working directory, or a directory holding a .env file, with no --include or
+#     env --exclude filter. A .env deeper down than the named directory is not looked for.
+shell_words() {
+  local c=$1 s w b line i n g rec inc opts pat_seen dir d f found had_nc=0
+  local -a ws paths
+  c=${c//\"/}; c=${c//\'/}; c=${c//\\/}; c=${c//\`/}
+  # the literal test again, on the scrubbed command ($2) with its quotes removed
+  s=$2
+  s=${s//\"/}; s=${s//\'/}; s=${s//\\/}; s=${s//\`/}
+  # an --exclude pattern names what grep must NOT read, so it does not count as naming the file
+  while [[ $s =~ (--exclude(-dir)?=[^[:space:]]*) ]]; do s=${s//"${BASH_REMATCH[1]}"/}; done
+  [[ $s =~ $cmd_pattern ]] && block_env "this command names a .env file once its quotes are removed."
+  shopt -q nocasematch && had_nc=1
+  set -f
+  # likewise an --exclude pattern is not a word that reads a file
+  read -ra ws <<< "${c//[;&|()<>=,\{\}]/ }"
+  for i in "${!ws[@]}"; do
+    case ${ws[i]} in --exclude|--exclude-dir) unset 'ws[i+1]' ;; esac
+  done
+  set +f
+  shopt -s nocasematch
+  for w in "${ws[@]}"; do
+    case $w in *[*?[]*) ;; *) continue ;; esac
+    b=${w##*/}
+    [ "${b:0:1}" = "." ] || continue
+    if [[ .env == $b || .env.local == $b || .env.production == $b ]]; then
+      [ "$had_nc" -eq 1 ] || shopt -u nocasematch
+      block_env "the pattern '$w' expands to a .env file."
+    fi
+  done
+  [ "$had_nc" -eq 1 ] || shopt -u nocasematch
+  s=${c//&&/$'\n'}; s=${s//||/$'\n'}; s=${s//;/$'\n'}; s=${s//|/$'\n'}
+  while IFS= read -r line; do
+    set -f; read -ra ws <<< "$line"; set +f
+    n=${#ws[@]}; g=-1
+    for ((i = 0; i < n; i++)); do
+      case ${ws[i]} in grep|egrep|fgrep|*/grep) g=$i; break ;; esac
+    done
+    [ "$g" -ge 0 ] || continue
+    rec=0; inc=0; opts=1; pat_seen=0; paths=()
+    for ((i = g + 1; i < n; i++)); do
+      w=${ws[i]}
+      if [ "$opts" -eq 1 ] && [ "$w" = "--" ]; then opts=0; continue; fi
+      if [ "$opts" -eq 1 ]; then
+        case $w in
+          --recursive|--dereference-recursive|--directories=recurse) rec=1; continue ;;
+          --include|--include=*|--exclude=*env*|--exclude-dir=*) inc=1; continue ;;
+          -e|-f|--regexp=*|--file=*) pat_seen=1; continue ;;
+          --*) continue ;;
+          -*) case $w in *[rR]*) rec=1 ;; esac; continue ;;
+        esac
+      fi
+      if [ "$pat_seen" -eq 0 ]; then pat_seen=1; continue; fi
+      paths+=("$w")
+    done
+    [ "$rec" -eq 1 ] && [ "$inc" -eq 0 ] || continue
+    [ "${#paths[@]}" -eq 0 ] && paths=(.)
+    for dir in "${paths[@]}"; do
+      [ "$dir" = "/" ] || dir=${dir%/}
+      found=0
+      case $dir in .|./|..|'*'|/|"$cwd_posix") found=1 ;; esac
+      if [ "$found" -eq 0 ]; then
+        d=$dir
+        case $d in /*|[A-Za-z]:/*) ;; *) d="$cwd_posix/$d" ;; esac
+        for f in "$d"/.env "$d"/.env.*; do
+          if [ -e "$f" ] && [ "${f%.env.example}" = "$f" ]; then found=1; break; fi
+        done
+      fi
+      [ "$found" -eq 1 ] && block_env "grep -r through '$dir' would print what is inside a .env file on the way. Add --include='*.ts' (or --exclude='.env*'), or use the Grep tool."
+    done
+  done <<< "$s"
+  return 0
+}
 
 # --- 1. file access ---------------------------------------------------------------------------
 if [ -n "$path" ]; then
@@ -192,6 +288,7 @@ if [ -n "$cmd" ]; then
     echo "BLOCKED: this command names a .env file. Values never enter the transcript. Read .env.example for the variable list, or use .claude/scripts/env-read.py (list/check/diff, or run to execute with the values loaded but never printed)." >&2
     exit 2
   fi
+  shell_words "$cmd" "$cmd_scrubbed"
   if printf '%s' "$cmd" | grep -Eqi "$db_reset_pattern"; then
     echo "BLOCKED: destructive DB command. Schema changes go through the controlled migration flow; DB resets must be run by the user themselves." >&2
     exit 2

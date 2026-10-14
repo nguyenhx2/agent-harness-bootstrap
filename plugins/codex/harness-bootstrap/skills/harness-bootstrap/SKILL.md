@@ -1,6 +1,6 @@
 ---
 name: harness-bootstrap
-version: 1.21.1
+version: 1.21.2
 description: Bootstraps or standardizes the AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Covers code repos and repos dedicated to research, strategy or documentation, plus a read-only audit mode beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure. Not for writing a specification set - that is spec-builder.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---

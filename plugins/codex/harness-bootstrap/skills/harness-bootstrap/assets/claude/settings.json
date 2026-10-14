@@ -90,6 +90,17 @@
         ]
       },
       {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_RUNNER}} .claude/hooks/protect-harness.{{HOOK_EXT}}",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
         "matcher": "Read|Edit|Write|Bash|PowerShell",
         "hooks": [
           {

@@ -7,6 +7,7 @@
 #      drive root or a top-level folder on a drive, `.`/`..`/`*`, or `.git` (and anything with
 #      --no-preserve-root); the same targets for Remove-Item / ri / rd / rmdir / del / erase with
 #      -Recurse (any abbreviation; -Force is not needed to delete a tree) and cmd's /s
+#      `find` with -delete or -exec rm on the same targets
 #   2. a force push (--force, -f, --force-with-lease, or a `+refspec`) to {{DEFAULT_BRANCH}},
 #      main, master, production, prod or release/* - explicit refspec or, failing that, the
 #      branch currently checked out (--all / --mirror count as protected)
@@ -56,7 +57,7 @@ function Get-FastString([string]$raw, [string]$key) {
 # below).
 try {
     $fc = Get-FastString $raw 'command'
-    if ($null -ne $fc -and -not ($fc.ToLower() -cmatch '(^|[^a-z0-9_-])(rm|ri|rd|rmdir|del|erase|remove-item|git)([^a-z0-9_-]|$)' -or $fc -match 'drop|truncate')) { exit 0 }
+    if ($null -ne $fc -and -not ($fc.ToLower() -cmatch '(^|[^a-z0-9_-])(rm|ri|rd|rmdir|del|erase|remove-item|git|find)([^a-z0-9_-]|$)' -or $fc -match 'drop|truncate')) { exit 0 }
 } catch { }
 
 try {
@@ -158,6 +159,36 @@ foreach ($seg in $segments) {
                 foreach ($t in $targets) {
                     if (Test-DangerTarget $t) {
                         Block "$tok with -Recurse on '$t' would delete the repository, the home directory or a system path. Remove the specific build output you mean, or ask the user to do this by hand."
+                    }
+                }
+            }
+            break
+        }
+        # find with -delete, or -exec rm, deletes everything it walks: the same targets as rm -rf.
+        # The start paths are the words before the first expression token; none means '.'. A test
+        # that narrows what matches (-name '*.pyc', -mtime +7) makes it a cleanup, not a wipe.
+        if ($tok -ceq 'find' -or $tok -clike '*/find') {
+            $del = $false; $starts = @(); $inExpr = $false; $narrow = $false
+            $narrowing = @('-name', '-iname', '-path', '-ipath', '-wholename', '-iwholename', '-regex', '-iregex', '-newer', '-mtime', '-mmin', '-atime', '-amin', '-size', '-user', '-empty')
+            for ($j = $i + 1; $j -lt $n; $j++) {
+                $a = Unquote $toks[$j]
+                if (-not $inExpr) {
+                    if (@('-H', '-L', '-P') -ccontains $a) { continue }
+                    if ($a.StartsWith('-') -or $a -ceq '(' -or $a -ceq '!' -or $a -ceq '\(') { $inExpr = $true }
+                    else { $starts += $a; continue }
+                }
+                if ($a -ceq '-delete') { $del = $true }
+                if ($narrowing -ccontains $a) { $narrow = $true }
+                if (@('-exec', '-execdir', '-ok', '-okdir') -ccontains $a -and $j + 1 -lt $n) {
+                    $x = Unquote $toks[$j + 1]
+                    if (@('rm', 'shred', 'unlink') -ccontains $x -or $x -clike '*/rm') { $del = $true }
+                }
+            }
+            if ($del -and -not $narrow) {
+                if ($starts.Count -eq 0) { $starts = @('.') }
+                foreach ($t in $starts) {
+                    if (Test-DangerTarget $t) {
+                        Block ("find that deletes, run on '" + (Unquote $t) + "', would delete the repository, the home directory or a system path. Point find at the specific build output you mean, or ask the user to do this by hand.")
                     }
                 }
             }

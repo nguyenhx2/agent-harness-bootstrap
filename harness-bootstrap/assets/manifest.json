@@ -740,6 +740,21 @@
       "exec": true
     },
     {
+      "src": "claude/hooks/protect-harness.ps1",
+      "dest": ".claude/hooks/protect-harness.ps1",
+      "when": [
+        "windows"
+      ]
+    },
+    {
+      "src": "claude/hooks/protect-harness.sh",
+      "dest": ".claude/hooks/protect-harness.sh",
+      "when": [
+        "posix"
+      ],
+      "exec": true
+    },
+    {
       "src": "claude/hooks/guard-destructive.ps1",
       "dest": ".claude/hooks/guard-destructive.ps1",
       "when": [

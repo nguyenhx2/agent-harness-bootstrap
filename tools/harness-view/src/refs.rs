@@ -158,20 +158,32 @@ fn marked_spans(line: &str) -> Vec<String> {
     out
 }
 
+/// Maximal runs of `keep` characters in `s`, as slices of it. The passes below
+/// used to copy every word into a fresh String, which is where a 500 KB harness
+/// spent most of its scan: in the allocator, not in the matching.
+fn runs(s: &str, keep: fn(char) -> bool) -> impl Iterator<Item = &str> {
+    let mut start: Option<usize> = None;
+    s.char_indices().chain(std::iter::once((s.len(), ' '))).filter_map(move |(i, c)| {
+        if keep(c) {
+            start.get_or_insert(i);
+            None
+        } else {
+            start.take().map(|a| &s[a..i])
+        }
+    })
+}
+
 /// Every harness item `text` references, as (kind, name).
 pub fn references(text: &str, inv: &Inventory) -> BTreeSet<(&'static str, String)> {
     let norm = text.replace('\\', "/");
     let mut out = BTreeSet::new();
 
-    // paths, bare file names and /commands
-    let mut cur = String::new();
-    for c in norm.chars().chain(std::iter::once(' ')) {
-        if word_char(c) {
-            cur.push(c);
-        } else if !cur.is_empty() {
-            let w = cur.trim_end_matches('.').to_string();
-            path_refs(&w, inv, &mut out);
-            cur.clear();
+    // paths, bare file names and /commands. A word with no `/` can only be a
+    // bare hook or script file name, so ordinary prose never reaches path_refs.
+    for word in runs(&norm, word_char) {
+        let w = word.trim_end_matches('.');
+        if w.contains('/') || w.ends_with(".sh") || w.ends_with(".ps1") || w.ends_with(".py") {
+            path_refs(w, inv, &mut out);
         }
     }
 
@@ -185,18 +197,12 @@ pub fn references(text: &str, inv: &Inventory) -> BTreeSet<(&'static str, String
     }
 
     // bare hyphenated slugs
-    let mut cur = String::new();
-    for c in norm.chars().chain(std::iter::once(' ')) {
-        if slug_char(c) {
-            cur.push(c);
-        } else if !cur.is_empty() {
-            let w = cur.trim_matches('-').to_string();
-            if w.contains('-') {
-                if let Some(kind) = inv.by_name(&w, false) {
-                    out.insert((kind, w));
-                }
+    for word in runs(&norm, slug_char) {
+        let w = word.trim_matches('-');
+        if w.contains('-') {
+            if let Some(kind) = inv.by_name(w, false) {
+                out.insert((kind, w.to_string()));
             }
-            cur.clear();
         }
     }
     out
@@ -226,4 +232,105 @@ pub fn id_for(kind: &str, name: &str) -> String {
         k => k,
     };
     format!("{prefix}:{name}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The extractor before v1.21.2, verbatim: the oracle the faster one must match.
+    fn references_v1(text: &str, inv: &Inventory) -> BTreeSet<(&'static str, String)> {
+        let norm = text.replace('\\', "/");
+        let mut out = BTreeSet::new();
+        let mut cur = String::new();
+        for c in norm.chars().chain(std::iter::once(' ')) {
+            if word_char(c) {
+                cur.push(c);
+            } else if !cur.is_empty() {
+                let w = cur.trim_end_matches('.').to_string();
+                path_refs(&w, inv, &mut out);
+                cur.clear();
+            }
+        }
+        for line in norm.lines() {
+            for span in marked_spans(line) {
+                if let Some(kind) = inv.by_name(&span, true) {
+                    out.insert((kind, span));
+                }
+            }
+        }
+        let mut cur = String::new();
+        for c in norm.chars().chain(std::iter::once(' ')) {
+            if slug_char(c) {
+                cur.push(c);
+            } else if !cur.is_empty() {
+                let w = cur.trim_matches('-').to_string();
+                if w.contains('-') {
+                    if let Some(kind) = inv.by_name(&w, false) {
+                        out.insert((kind, w));
+                    }
+                }
+                cur.clear();
+            }
+        }
+        out
+    }
+
+    fn inventory() -> Inventory {
+        let mut inv = Inventory::default();
+        let add = |set: &mut BTreeSet<String>, names: &[&str]| {
+            for n in names {
+                set.insert(n.to_string());
+            }
+        };
+        add(&mut inv.agent, &["code-reviewer", "orchestrator", "security-reviewer", "ba-analyst", "qa-test"]);
+        add(&mut inv.skill, &["docs-sync", "impeccable", "release", "endpoint-scaffold", "spec-builder"]);
+        add(&mut inv.rule, &["repo-invariants", "layering", "security-privacy", "testing", "agent-guardrails"]);
+        add(&mut inv.command, &["review", "review-changes", "harness-tune", "secret-scan"]);
+        add(&mut inv.hook, &["_lib", "protect-secrets", "guard-main-commit", "guard-pr-merge", "guard-destructive"]);
+        add(&mut inv.script, &["check-env", "env-read", "verify-plan", "task", "harness-check"]);
+        inv
+    }
+
+    /// Text files under `dir`, recursively, until `out` holds `cap` of them.
+    fn texts(dir: &std::path::Path, out: &mut Vec<String>, cap: usize) {
+        let Ok(rd) = std::fs::read_dir(dir) else { return };
+        for e in rd.flatten() {
+            if out.len() >= cap {
+                return;
+            }
+            let p = e.path();
+            if p.is_dir() {
+                let name = e.file_name().to_string_lossy().to_string();
+                if !matches!(name.as_str(), "target" | "node_modules" | ".git") {
+                    texts(&p, out, cap);
+                }
+            } else if let Ok(t) = std::fs::read_to_string(&p) {
+                out.push(t);
+            }
+        }
+    }
+
+    #[test]
+    fn the_fast_extractor_matches_the_previous_one() {
+        let inv = inventory();
+        let mut corpus: Vec<String> = vec![
+            r#"see `.claude/rules/layering.md` and .claude\hooks\protect-secrets.sh, then /review."#.into(),
+            r#"**docs-sync** runs `check-env.sh`; source "$(dirname "$0")/_lib.sh" -- code-reviewer..."#.into(),
+            "\u{e9}t\u{e9} `release` \u{2014}security-privacy\u{2014} /harness-tune.\n---ba-analyst--- x.py".into(),
+            String::new(),
+        ];
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        texts(&root.join("tests"), &mut corpus, 300);
+        texts(&root.join("../../.claude"), &mut corpus, 700);
+        texts(&root.join("../../harness-bootstrap/assets"), &mut corpus, 1200);
+        assert!(corpus.len() > 50, "too small a corpus to prove anything: {}", corpus.len());
+        let mut hits = 0;
+        for t in &corpus {
+            let want = references_v1(t, &inv);
+            hits += want.len();
+            assert_eq!(references(t, &inv), want, "the extractors disagree");
+        }
+        assert!(hits > 20, "the corpus never references the inventory: {hits}");
+    }
 }
