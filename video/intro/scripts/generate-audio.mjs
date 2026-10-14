@@ -68,6 +68,19 @@ async function post(url, body, key) {
   return res;
 }
 
+// Bytes from the API are written only after they prove to be audio: an MP3 starts with an ID3 tag
+// or an MPEG frame sync, and nothing here needs more than 20 MB. A proxy error page or a changed
+// response shape then fails loudly instead of landing in a committed .mp3.
+const MAX_AUDIO = 20 * 1024 * 1024;
+function audioBytes(buf, what) {
+  const b = Buffer.from(buf);
+  const id3 = b.length > 3 && b.toString('latin1', 0, 3) === 'ID3';
+  const sync = b.length > 2 && b[0] === 0xff && (b[1] & 0xe0) === 0xe0;
+  if (!(id3 || sync)) throw new Error(`${what}: response is not MP3 audio`);
+  if (b.length > MAX_AUDIO) throw new Error(`${what}: ${b.length} bytes exceeds the ${MAX_AUDIO}-byte cap`);
+  return b;
+}
+
 const manifestPath = path.join(AUDIO, 'ASSETS.json');
 function loadManifest() {
   return existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
@@ -93,7 +106,7 @@ async function voice(key, lang, force) {
     key,
   );
   const j = await res.json();
-  writeFileSync(out, Buffer.from(j.audio_base64, 'base64'));
+  writeFileSync(out, audioBytes(Buffer.from(String(j.audio_base64 ?? ''), 'base64'), 'narration'));
   writeFileSync(alignmentFile(lang), JSON.stringify({alignment: j.alignment}, null, 0) + '\n');
   const m2 = loadManifest();
   m2.narration = m2.narration && !m2.narration.voice_id ? m2.narration : {};
@@ -119,7 +132,7 @@ async function music(key, force) {
   }
   const body = {prompt: MUSIC_PROMPT, music_length_ms: ms, model_id: 'music_v1', force_instrumental: true};
   const res = await post(`${API}/music?output_format=mp3_44100_128`, body, key);
-  writeFileSync(out, Buffer.from(await res.arrayBuffer()));
+  writeFileSync(out, audioBytes(await res.arrayBuffer(), 'music'));
   m.music = {endpoint: 'POST /v1/music', ...body};
   saveManifest(m);
   console.log(`  wrote   music.mp3 (${ms} ms requested)`);
@@ -135,7 +148,7 @@ async function sfx(key, force) {
       continue;
     }
     const res = await post(`${API}/sound-generation`, {...body, prompt_influence: 0.5}, key);
-    writeFileSync(out, Buffer.from(await res.arrayBuffer()));
+    writeFileSync(out, audioBytes(await res.arrayBuffer(), name));
     m.sfx[name] = {endpoint: 'POST /v1/sound-generation', ...body, prompt_influence: 0.5};
     console.log(`  wrote   ${name}.mp3`);
   }
