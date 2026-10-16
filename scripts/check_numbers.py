@@ -386,7 +386,7 @@ COUNT_FILES = {"README.md", "README.ja.md", "CHANGELOG.md", "docs/PRESENTATION-O
 _JA_NUM = r"(?<![\d,.])(\d{2,3}) ?(?:の|個の)?"
 JA_COUNT_CHECKS = [
     ("hook count (ja)",         _JA_NUM + r"(?:ブロッキング)?フック", "hooks"),
-    ("hook count (ja, noun first)", r"フック(\d{2,3})(?!\d)", "hooks"),
+    ("hook count (ja, noun first)", r"フック ?(\d{2,3})(?!\d)", "hooks"),
     ("command count (ja)",      _JA_NUM + r"コマンド", "commands"),
     ("command count (ja, noun first)", r"コマンド(\d{2,3})(?!\d)", "commands"),
     ("agent count (ja)",        _JA_NUM + r"エージェント", "agents"),
@@ -404,6 +404,11 @@ COUNT_CHECKS = [
     ("rule count",    rf"{NUM} rules(?:,| -)", "rules"),
     ("command count", rf"{NUM} (?:slash )?commands,", "commands"),
     ("hook count",    rf"{NUM} (?:blocking )?hooks", "hooks"),
+    # The shields badges in both READMEs. README.ja.md read "hooks-26" for a release after the
+    # count reached 27: the URL has no word the prose patterns key on, and its alt text put the
+    # noun first with a space ("フック 26 本"), which the noun-first pattern did not allow.
+    ("hook badge",    r"badge/hooks-(\d+)-", "hooks"),
+    ("agent badge",   r"badge/agents-(\d+)%20", "agents"),
 ] + [c for c in JA_COUNT_CHECKS]
 
 # The exact "after" byte figure that follows the known baseline constant in a before|after row. The
@@ -573,6 +578,8 @@ def self_test(c: dict[str, int]) -> list[str]:
     ja_probes = {
         "hook count (ja)":         "{hooks} のフックと 3 つのコマンド",
         "hook count (ja, noun first)": "ブロッキングフック{hooks}",
+        "hook badge":             "img.shields.io/badge/hooks-{hooks}-blue.svg",
+        "agent badge":            "img.shields.io/badge/agents-{agents}%20%2B%20dev%20template",
         "command count (ja)":      "{hooks} のフックと {commands} のコマンド",
         "command count (ja, noun first)": "コマンド{commands}",
         "agent count (ja)":        "{agents} のエージェントから席を選ぶ",

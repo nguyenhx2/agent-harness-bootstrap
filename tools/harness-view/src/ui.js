@@ -2557,6 +2557,7 @@ const A_TEXT = {
     none: "No findings. That means every rule this engine checks passed, not that the harness is good.",
     at: "at", fix: "fix", show: "show in graph", rubric: "Rubric", rubricNote: "Every rule, its weight, effort and what full marks means. Also published as RUBRIC.md.",
     applies: "applies", notApplied: "rules not applied to this purpose",
+    na: "nothing to assess", capped: "capped at Safety while a high Safety finding is open",
     confirm: "Apply this fix?", apply: "Apply", cancel: "Cancel", applied: "Fix applied",
     applying: "applying",
   },
@@ -2574,6 +2575,7 @@ const A_TEXT = {
     none: "指摘はありません。検査したルールがすべて通ったという意味で、ハーネスが良いという意味ではありません。",
     at: "根拠", fix: "修正", show: "グラフで表示", rubric: "採点基準", rubricNote: "すべてのルールと、その重み・手間・満点の条件。RUBRIC.ja.md としても公開しています。",
     applies: "対象", notApplied: "この目的では適用しないルール",
+    na: "検査対象なし", capped: "安全性に high の指摘がある間は、安全性の点数が上限",
     confirm: "この修正を適用しますか?", apply: "適用", cancel: "キャンセル", applied: "修正を適用しました",
     applying: "適用中",
   },
@@ -2805,6 +2807,10 @@ function renderAssessment(a) {
   big.textContent = a.scores.overall;
   const of = document.createElement("span"); of.className = "amuted"; of.textContent = "/100";
   overall.append(big, of);
+  if (a.scores.capped_by_safety) {
+    const cap = document.createElement("div"); cap.className = "amuted"; cap.textContent = T("capped");
+    overall.append(cap);
+  }
   head.append(left, overall);
   host.append(head);
 
@@ -2815,6 +2821,15 @@ function renderAssessment(a) {
     const card = document.createElement("div"); card.className = "acat";
     const t = document.createElement("div"); t.className = "acat-t";
     const nm = document.createElement("span"); nm.textContent = alang === "ja" && v.label_ja ? v.label_ja : name;
+    // nothing to assess is not the same as full marks, and it is not averaged
+    if (v.applies === false) {
+      const sc = document.createElement("b"); sc.className = "amuted"; sc.textContent = "n/a";
+      t.append(nm, sc);
+      const f = document.createElement("div"); f.className = "amuted"; f.textContent = T("na");
+      card.append(t, f);
+      cats.append(card);
+      continue;
+    }
     const sc = document.createElement("b"); sc.className = scoreClass(v.score); sc.textContent = v.score;
     t.append(nm, sc);
     const f = document.createElement("div"); f.className = "amuted";

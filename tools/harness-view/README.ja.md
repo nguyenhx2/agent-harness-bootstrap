@@ -248,7 +248,11 @@ harness assessment: .../tools/harness-view/tests/fixture
 
 六つのカテゴリー(Safety、Cost control、Traceability、Board health、Docs quality、Contract)は
 それぞれ 100 から始まり、そのカテゴリー内の指摘ごとに重みの分だけ減点されます: high 12、
-medium 5、low 2、info 0 で、下限は 0 です。全体スコアは六つの整数平均です。各カテゴリーのカードには
+medium 5、low 2、info 0 で、下限は 0 です。検査対象のないカテゴリー(タスクのない Board health、
+タスク・コマンド・スキルのない Traceability)は、無条件の 100 ではなく n/a と表示します。全体スコアは
+対象となるカテゴリーの整数平均で、安全性に high の指摘が残っている間は安全性の点数が上限になります。
+deny リストも止めるフックもないハーネスは、ドキュメントがどれほど整っていても 88 点にはなりません。
+各カテゴリーのカードには
 それぞれの計算式(`100 - COST-01 1x12 = 88`)が表示され、`tests/rubric_test.rs` は公開されている
 重みからすべてのスコアを再計算します。重みは明示された取り決めであり、測定値ではありません。
 

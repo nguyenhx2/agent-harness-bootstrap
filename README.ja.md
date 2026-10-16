@@ -13,7 +13,7 @@
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
   <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-312%2F312%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 312/312 ケース"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
-  <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-26-blue.svg" alt="フック 26 本"></a>
+  <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="フック 27 本"></a>
 </p>
 
 実際のリポジトリに AI エージェントを載せると、失敗の仕方はだいたい決まっています。読むべきでないものを読み、
@@ -29,8 +29,17 @@
 | [**harness-bootstrap**](harness-bootstrap/) | Claude Code スキル | コードベースと契約を読み、それに合った `.claude/` ハーネスを組み立てます。リポジトリの目的とモジュールに合わせた規模のチーム、必要な場所でだけ読み込まれるルール、そして**シェルでブロックする**フック。 |
 | [**harness-view**](tools/harness-view/) | Rust 製バイナリ (各[リリース](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest)に各プラットフォーム版) | ハーネス全体をライブのグラフで描き、公開ルーブリックで採点します。指摘ごとにルール、ファイルと行、直し方を示し、モデルは介在しません。このリポジトリ以外で作られたハーネスも読めます。 |
 
-**なぜ重要か:** 安全の土台は指示文ではなく、シェルスクリプトと終了コードです。フックの判定にモデルは
-関与しないため、エージェントがどのモデルで動いてもガードレールの結果は変わりません。
+**エージェントに「守って」と頼むのをやめ、守らせるハーネスを与える。**
+
+- **固定のキットではなく、このリポジトリ専用。** チーム、ルール、各ルールが読み込まれる場所は、
+  コードベースと契約から導きます。ドキュメントのリポジトリとモノレポでは、別のハーネスになります。
+- **頼むのではなく、止めるガードレール。** フックはツール呼び出しの前に終了コード 2 で止める
+  シェルスクリプトです。モデルは関与しないため、結果はエージェントのモデルに左右されず、
+  [ガードレール評価](#自分で確かめる)が CI のたびに全ケースを確かめます。
+- **リスクに見合った検証。** 1 ファイルの修正はそのまま作業に入ります。計画、オーケストレーター、
+  レビューが付くのは複数の領域にまたがる変更だけで、通過済みのレビューは繰り返しません。
+- **ブラックボックスではなく、操作盤。** harness-view はすべてのエージェント、ルール、フックを示し、
+  公開ルーブリックで採点し、制御を外すときは記録と段階付きの判断としてだけ外します。
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/?lang=ja">
@@ -188,7 +197,7 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.ja.md`](docs/PLUGIN.
   <img src="docs/assets/harness-view-assess.png" alt="harness-view の Assess タブ。実際のハーネスを 100 点満点中 99 点と採点し、6 つのカテゴリのバーと、ルール、証拠、直し方つきの低重大度の指摘 2 件を優先順に表示している" width="860">
 </p>
 
-スクリーンショットは実際のハーネスで、ノード 219、エッジ 655、採点は 99/100 です。
+スクリーンショットは実際のハーネスで、ノード 219、エッジ 655、採点は 98/100 です。
 [`RUBRIC.ja.md`](tools/harness-view/RUBRIC.ja.md) と [Harness View](docs/wiki/Harness-View-ja.md) を参照してください。
 
 <!-- BENCHMARK -->

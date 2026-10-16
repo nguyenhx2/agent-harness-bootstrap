@@ -118,5 +118,5 @@ hand: re-run the deriver, then re-render. Because this file is the scene source 
 - lean scene: review bounded at 2 rounds; spawn depth 2, at most 4 concurrent subagents
 - loop scene: tiers Inline (main session), Direct (owning agent), Standard (owning agent), Guarded (orchestrator)
 - spec scene: 6 core sections, up to 8 optional
-- assess scene: 30 rubric rules in 6 categories, a high finding weighs 12; worklist shows SAF-01, COST-01, COST-02; a real harness, 219 nodes, 655 edges, scored 99/100
+- assess scene: 31 rubric rules in 6 categories, a high finding weighs 12; worklist shows SAF-01, COST-01, COST-02; a real harness, 219 nodes, 655 edges, scored 98/100
 [//]: # (figures:end)

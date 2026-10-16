@@ -22,6 +22,12 @@ python scripts/drawio_clean.py docs/assets/src/security-layers.drawio raw.svg do
 "C:/Program Files/draw.io/draw.io.exe" -x -f svg --svg-theme light -o raw.svg docs/assets/src/security-layers.ja.drawio
 python scripts/drawio_clean.py docs/assets/src/security-layers.ja.drawio raw.svg docs/assets/security-layers.ja.svg
 
+"C:/Program Files/draw.io/draw.io.exe" -x -f svg --svg-theme light -o raw.svg docs/assets/src/control-layers.drawio
+python scripts/drawio_clean.py docs/assets/src/control-layers.drawio raw.svg docs/assets/control-layers.svg
+
+"C:/Program Files/draw.io/draw.io.exe" -x -f svg --svg-theme light -o raw.svg docs/assets/src/harness-architecture.drawio
+python scripts/drawio_clean.py docs/assets/src/harness-architecture.drawio raw.svg docs/assets/harness-architecture.svg
+
 python scripts/check_svg.py
 ```
 

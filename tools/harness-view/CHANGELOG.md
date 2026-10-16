@@ -7,6 +7,26 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.22.0] - 2026-10-16
+
+### Added
+
+- **SAF-14, harness-unprotected (Safety, medium).** A harness whose blocking hooks are active but
+  whose `.claude/hooks/` and `.claude/settings*.json` nothing guards is reported: a guard an agent
+  can rewrite is one `echo >> .claude/hooks/...` away from `exit 0`. An active `protect-harness`
+  hook, or a deny or ask entry naming `.claude/hooks`, satisfies it. The rubric has 31 rules.
+
+### Changed
+
+- **A category with nothing to assess is n/a, not 100.** Board health with no tasks, and
+  Traceability with no tasks, commands or skills, are shown as n/a on the page and in the CLI and
+  are left out of the overall mean. Before, an absent board scored as a perfect one.
+- **An open high Safety finding caps the overall score at Safety.** The mean of the categories that
+  apply still stands otherwise. A harness with no deny list, no blocking hook and no review gate
+  went from 88 to 59. The JSON carries `applies` per category and `capped_by_safety`; the worklist's
+  "overall after fixing" uses the same method, so fixing the capping finding shows its real worth.
+  `RUBRIC.md` and `RUBRIC.ja.md` state the method; `tests/rubric_test.rs` recomputes it.
+
 ## [1.21.2] - 2026-10-14
 
 ### Changed

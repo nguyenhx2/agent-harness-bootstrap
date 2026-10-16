@@ -478,6 +478,29 @@ fn check_guardrail_layers(c: &Ctx, out: &mut Vec<Finding>, purposes: &[String]) 
     if gating == 0 {
         let line = line_where(&text, |l| l.contains("\"hooks\""));
         out.push(Finding::new("no-blocking-hook", "", "").at(settings_file.clone(), line));
+    } else {
+        // The guards are files an agent can write to. Something has to stand
+        // in front of them: the shipped `protect-harness` hook (any spelling
+        // that keeps the role), or a deny or ask entry naming the hooks folder.
+        let guarded_by_hook = c.of_type("hook").iter().any(|n| {
+            let name = Ctx::name(n);
+            !Ctx::disabled(n) && (name.contains("protect-harness") || name.contains("guard-harness"))
+        });
+        let guarded_by_permission = serde_json::from_str::<Value>(&text)
+            .ok()
+            .and_then(|v| v.get("permissions").cloned())
+            .map(|p| {
+                ["deny", "ask"].iter().any(|k| {
+                    p.get(*k).and_then(|a| a.as_array()).is_some_and(|a| {
+                        a.iter().filter_map(|x| x.as_str()).any(|e| e.contains(".claude/hooks"))
+                    })
+                })
+            })
+            .unwrap_or(false);
+        if !guarded_by_hook && !guarded_by_permission {
+            let line = line_where(&text, |l| l.contains("\"PreToolUse\"")).or(line_where(&text, |l| l.contains("\"hooks\"")));
+            out.push(Finding::new("harness-unprotected", "", "").node("settings").at(settings_file.clone(), line));
+        }
     }
 
     if !c.root.join(".claude/rules/agent-guardrails.md").is_file() {
@@ -905,23 +928,50 @@ fn statistics(c: &Ctx) -> Value {
 
 // --------------------------------------------------------------------- scores
 
+/// Categories with nothing to assess in this repository: Board health without
+/// a task, Traceability without a task, command or skill. They are reported
+/// n/a and left out of the overall mean, so an absent board does not count as
+/// a perfect one.
+fn not_applicable(c: &Ctx) -> Vec<&'static str> {
+    let tasks = !c.of_type("task").is_empty();
+    let mut out = Vec::new();
+    if !tasks {
+        out.push("Board health");
+        if c.of_type("command").is_empty() && c.of_type("skill").is_empty() {
+            out.push("Traceability");
+        }
+    }
+    out
+}
+
+fn category_score(findings: &[&Finding], cat: &str) -> u32 {
+    let penalty: u32 = findings.iter().filter(|f| f.rule().category == cat).map(|f| f.rule().sev.weight()).sum();
+    100u32.saturating_sub(penalty.min(100))
+}
+
+/// A high Safety finding is open: the overall score is capped at Safety.
+fn safety_capped(findings: &[&Finding]) -> bool {
+    findings.iter().any(|f| f.rule().category == "Safety" && f.rule().sev == Sev::High)
+}
+
 /// Overall score of a set of findings: the method in `rubric::METHOD`.
-fn overall_of(findings: &[&Finding]) -> u32 {
-    let n = rubric::CATEGORIES.len() as u32;
-    let sum: u32 = rubric::CATEGORIES
+fn overall_of(findings: &[&Finding], na: &[&str]) -> u32 {
+    let live: Vec<u32> = rubric::CATEGORIES
         .iter()
-        .map(|(cat, _)| {
-            let penalty: u32 =
-                findings.iter().filter(|f| f.rule().category == *cat).map(|f| f.rule().sev.weight()).sum();
-            100u32.saturating_sub(penalty.min(100))
-        })
-        .sum();
-    sum.checked_div(n).unwrap_or(100)
+        .filter(|(cat, _)| !na.contains(cat))
+        .map(|(cat, _)| category_score(findings, cat))
+        .collect();
+    let mean = live.iter().sum::<u32>().checked_div(live.len() as u32).unwrap_or(100);
+    if safety_capped(findings) {
+        mean.min(category_score(findings, "Safety"))
+    } else {
+        mean
+    }
 }
 
 /// Category scores with their derivation: which rules took how much, so the
 /// number can be checked against RUBRIC.md by hand.
-fn scores(findings: &[Finding]) -> Value {
+fn scores(findings: &[Finding], na: &[&str]) -> Value {
     let mut cats = Map::new();
     for (cat, cat_ja) in rubric::CATEGORIES {
         let mine: Vec<&Finding> = findings.iter().filter(|f| f.rule().category == *cat).collect();
@@ -940,6 +990,7 @@ fn scores(findings: &[Finding]) -> Value {
             cat.to_string(),
             json!({
                 "score": 100u32.saturating_sub(penalty.min(100)),
+                "applies": !na.contains(cat),
                 "findings": mine.len(),
                 "penalty": penalty,
                 "label_ja": cat_ja,
@@ -950,7 +1001,8 @@ fn scores(findings: &[Finding]) -> Value {
     let all: Vec<&Finding> = findings.iter().collect();
     json!({
         "categories": Value::Object(cats),
-        "overall": overall_of(&all),
+        "overall": overall_of(&all, na),
+        "capped_by_safety": safety_capped(&all),
         "method": rubric::METHOD[0],
         "method_ja": rubric::METHOD[1],
         "not_measured": rubric::NOT_MEASURED.iter().map(|x| x[0]).collect::<Vec<_>>(),
@@ -962,9 +1014,9 @@ fn scores(findings: &[Finding]) -> Value {
 /// `points * 6 / effort` (points = weight times count; 6 keeps efforts 1, 2 and
 /// 3 integral), then severity, then id. `gain` is what the overall score would
 /// become with that rule's findings gone - honest about the floor at 0.
-fn worklist(findings: &[Finding]) -> Value {
+fn worklist(findings: &[Finding], na: &[&str]) -> Value {
     let all: Vec<&Finding> = findings.iter().collect();
-    let now = overall_of(&all);
+    let now = overall_of(&all, na);
     let mut groups: BTreeMap<&str, Vec<&Finding>> = BTreeMap::new();
     for f in findings {
         groups.entry(f.rule().id).or_default().push(f);
@@ -977,7 +1029,7 @@ fn worklist(findings: &[Finding]) -> Value {
             continue;
         }
         let rest: Vec<&Finding> = all.iter().copied().filter(|f| f.rule().id != id).collect();
-        let after = overall_of(&rest);
+        let after = overall_of(&rest, na);
         let priority = points * 6 / u32::from(r.effort.max(1));
         let one_click = fs_.iter().filter(|f| f.action.is_some()).count();
         // One finding: its fix verbatim. Several: the fix with the subject left
@@ -1138,6 +1190,7 @@ pub fn assess_with(root: &Path, graph: &Value, purpose_override: Option<Vec<Stri
         "high": count(Sev::High), "medium": count(Sev::Medium),
         "low": count(Sev::Low), "info": count(Sev::Info),
     });
+    let na = not_applicable(&c);
     let skipped: Vec<&str> = rubric::RULES.iter().filter(|r| !applies(r, &purposes)).map(|r| r.id).collect();
 
     // Without the strip a canonicalized Windows path printed as `//?/D:/...`.
@@ -1148,8 +1201,8 @@ pub fn assess_with(root: &Path, graph: &Value, purpose_override: Option<Vec<Stri
         "root": root_text,
         "purposes": {"list": purposes, "source": source, "rules_not_applied": skipped},
         "counts": counts,
-        "scores": scores(&f),
-        "worklist": worklist(&f),
+        "scores": scores(&f, &na),
+        "worklist": worklist(&f, &na),
         "statistics": statistics(&c),
         "findings": f.iter().map(|x| x.to_json()).collect::<Vec<_>>(),
     })
@@ -1198,9 +1251,17 @@ pub fn assess_cli(root: &Path, o: &CliOpts) -> Result<i32, String> {
         "  {} {}/100   high {}  medium {}  low {}",
         ["overall", "総合"][i], a["scores"]["overall"], counts["high"], counts["medium"], counts["low"]
     );
+    if a["scores"]["capped_by_safety"].as_bool() == Some(true) {
+        println!("  {}", ["(capped at Safety: a high Safety finding is open)",
+                          "（安全性に high の指摘があるため、安全性の点数が上限）"][i]);
+    }
     if let Some(cats) = a["scores"]["categories"].as_object() {
         for (k, v) in cats {
             let label = if o.ja { v["label_ja"].as_str().unwrap_or(k).to_string() } else { k.clone() };
+            if v["applies"].as_bool() == Some(false) {
+                println!("    {:<16} {:>7}  ({})", label, "n/a", ["nothing to assess", "検査対象なし"][i]);
+                continue;
+            }
             println!("    {:<16} {:>3}/100  ({} {})", label, v["score"], v["findings"], ["findings", "件"][i]);
         }
     }
