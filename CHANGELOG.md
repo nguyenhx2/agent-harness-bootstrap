@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.22.0
+
+A score that means what it says. harness-view gave a harness with no deny list, no blocking hook
+and no review gate 88/100, because a missing board counted as a perfect one and a Safety hole
+weighed no more than a Docs one. Now a category with nothing to assess reads n/a and is left out of
+the mean, and while a high Safety finding is open the overall score cannot exceed Safety: that same
+harness scores 59. A new rule, SAF-14, reports guards that nothing guards, the gap `protect-harness`
+closed in v1.21.2. The README says in four lines what sets the project apart, the control-surfaces
+diagrams are redrawn to match what the code does, and the number gate now reads the README badges,
+where the Japanese hook badge was a release behind.
+
 ## v1.21.2
 
 Security by design, re-audited. The README opens a new section that draws the five layers

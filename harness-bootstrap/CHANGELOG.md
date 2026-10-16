@@ -6,6 +6,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.22.0] - 2026-10-16
+
+### Changed
+
+- `reference/control-surfaces.md`: both diagrams are redrawn from draw.io sources in the light
+  style of the README's security figure. The control-layers figure no longer says agents cannot be
+  toggled (every seat is SOFT, the orchestrator and review seats HARD), and it lists
+  `protect-harness` and `guard-destructive` where they belong.
+
 ## [1.21.2] - 2026-10-14
 
 A re-audit of the guards, by firing bypass attempts at a scaffolded harness. Every form below

@@ -3,7 +3,7 @@
 What matters is **enforced** versus **advisory**. This page says which of the harness's controls are
 which; the quality gate and `docs/CONTEXT-MANAGEMENT.md` cite it.
 
-<img src="../../docs/assets/control-layers.svg" alt="Control layers ranked by hardness. The four enforcement layers named in the quality gate: settings.json deny rules, PreToolUse hooks that exit 2, the agent-guardrails rule, and the review commands. Shown enforced alongside them but outside the four: the per-agent tools allowlist and maxTurns. A runtime band underneath covers /harness-toggle and the committed .claude/disabled.json ledger. Rules, agent bodies, and effort remain advisory">
+<img src="../../docs/assets/control-layers.svg" alt="Control layers ranked by hardness: layer 1, settings.json deny rules; layer 2, PreToolUse hooks that exit 2, protect-harness among them; the seat frontmatter, enforced but outside the four; layer 3, the agent-guardrails rule, and layer 4, the review commands, both advisory, as each runs on the model. Below: protect-harness guarding the guards' files, and /harness-toggle with its HARD and SOFT tiers and the .claude/disabled.json ledger">
 
 ## Enforced: the model does not get a vote
 

@@ -260,6 +260,18 @@ pub const RULES: &[Rule] = &[
         fix: ["Add `.claude/agents/checker.md` with `tools: Read, Grep, Glob, WebFetch, WebSearch` and `disallowedTools: Edit, Write, NotebookEdit` (the skill ships one for non-code purposes).",
               "`tools: Read, Grep, Glob, WebFetch, WebSearch` と `disallowedTools: Edit, Write, NotebookEdit` を持つ `.claude/agents/checker.md` を加える（スキルは非コード用に同梱している）。"],
     },
+    Rule {
+        id: "SAF-14", check: "harness-unprotected", category: "Safety", sev: Sev::Medium, effort: 2,
+        applies: Applies::All,
+        title: ["nothing guards the hooks and settings the guardrails live in",
+                "ガードレールを収めたフックと設定を守るものがない"],
+        full: ["An active hook (such as `protect-harness`) or a permissions entry guards `.claude/settings*.json` and `.claude/hooks/`.",
+               "有効なフック（`protect-harness` など）か permissions の項目が `.claude/settings*.json` と `.claude/hooks/` を守っている。"],
+        why: ["A guard an agent can rewrite is one `echo >> .claude/hooks/...` away from `exit 0`; every other layer is only as strong as the files that hold it.",
+              "エージェントが書き換えられるガードは、`echo >> .claude/hooks/...` 一つで `exit 0` になります。ほかのすべての層は、それを収めたファイルと同じ強さしかありません。"],
+        fix: ["Install `protect-harness` (`/harness-update` adds it) and register it on PreToolUse with matcher `Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell` in `.claude/settings.json`.",
+              "`protect-harness` を導入し（`/harness-update` で追加される）、`.claude/settings.json` の PreToolUse に matcher `Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell` で登録する。"],
+    },
     // ------------------------------------------------------- Cost control
     Rule {
         id: "COST-01", check: "agent-tools", category: "Cost control", sev: Sev::High, effort: 1,
@@ -485,13 +497,8 @@ pub fn render(t: &str, name: &str, extra: &str) -> String {
 
 /// The scoring method, stated once so the page, the CLI and the document agree.
 pub const METHOD: [&str; 2] = [
-    "Each category starts at 100 and loses the weight of every finding in it (high 12, medium 5, \
-     low 2, info 0), floored at 0. A rule that does not apply to this repository's purpose is not \
-     checked. Overall is the integer mean of the six categories, rounded down. The weights are a \
-     stated convention, not a measurement.",
-    "各カテゴリーは 100 点から始まり、そのカテゴリーの指摘ごとに重み（high 12、medium 5、low 2、\
-     info 0）を引き、0 点で止まります。リポジトリの目的に当てはまらないルールは検査しません。総合点は \
-     6 カテゴリーの平均の整数部分です。重みは取り決めであり、測定値ではありません。",
+    "Each category starts at 100 and loses the weight of every finding in it (high 12, medium 5,      low 2, info 0), floored at 0. A rule that does not apply to this repository's purpose is not      checked, and a category with nothing to assess (Board health with no tasks; Traceability with      no tasks, commands or skills) is marked n/a rather than scored 100. Overall is the integer mean      of the six categories, n/a ones left out, rounded down; while a high Safety finding is open it      is capped at the Safety score, because a harness is only as trustworthy as its guardrails.      The weights are a stated convention, not a measurement.",
+    "各カテゴリーは 100 点から始まり、そのカテゴリーの指摘ごとに重み（high 12、medium 5、low 2、     info 0）を引き、0 点で止まります。リポジトリの目的に当てはまらないルールは検査しません。検査対象が     ないカテゴリー（タスクのないタスクボード、タスク・コマンド・スキルのないトレーサビリティ）は 100 点     ではなく n/a とします。総合点は 6 カテゴリーのうち n/a を除いたものの平均の整数部分です。安全性に      high の指摘が残っている間は、総合点は安全性の点数を上限とします。ハーネスの信頼性はガードレール以上に     はならないからです。重みは取り決めであり、測定値ではありません。",
 ];
 
 pub const NOT_MEASURED: [[&str; 2]; 4] = [

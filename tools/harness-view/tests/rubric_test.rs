@@ -50,9 +50,11 @@ fn code_repo(name: &str) -> PathBuf {
     write(&d, ".claude/settings.json", r#"{
   "permissions": { "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)", "Read(./**/.env)"] },
   "hooks": { "PreToolUse": [ { "matcher": "Bash",
-    "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" } ] } ] }
+    "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" },
+               { "type": "command", "command": "bash .claude/hooks/protect-harness.sh" } ] } ] }
 }"#);
     write(&d, ".claude/hooks/protect-secrets.sh", "#!/bin/sh\nexit 0\n");
+    write(&d, ".claude/hooks/protect-harness.sh", "#!/bin/sh\nexit 0\n");
     write(&d, ".claude/rules/agent-guardrails.md", "# guardrails\n");
     write(&d, ".claude/commands/review-changes.md", "# review\n");
     write(&d, ".claude/agents/orchestrator.md",
@@ -103,7 +105,7 @@ fn the_score_is_reproducible_from_the_rubric() {
     write(&d, ".claude/rules/frontend.md", "# frontend\n");
     write(&d, ".claude/hooks/orphan.sh", "#!/bin/sh\n");
     for a in [run(&d), run(&manifest().join("tests/kit-fixture")), run(&manifest().join("tests/fixture"))] {
-        let mut sum = 0u32;
+        let (mut sum, mut live, mut safety) = (0u32, 0u32, 100u32);
         for (cat, _) in rubric::CATEGORIES {
             let penalty: u32 = a["findings"]
                 .as_array()
@@ -117,9 +119,21 @@ fn the_score_is_reproducible_from_the_rubric() {
             assert_eq!(c["score"], score, "{cat}");
             let derived: u64 = c["derivation"].as_array().unwrap().iter().map(|x| x["points"].as_u64().unwrap()).sum();
             assert_eq!(derived, u64::from(penalty), "{cat}: derivation does not add up");
-            sum += score;
+            if c["applies"] != false {
+                sum += score;
+                live += 1;
+            }
+            if *cat == "Safety" {
+                safety = score;
+            }
         }
-        assert_eq!(a["scores"]["overall"], sum / rubric::CATEGORIES.len() as u32);
+        let high_safety = a["findings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|f| f["category"] == "Safety" && f["severity"] == "high");
+        let mean = sum / live;
+        assert_eq!(a["scores"]["overall"], if high_safety { mean.min(safety) } else { mean });
     }
 }
 

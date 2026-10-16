@@ -80,7 +80,7 @@ Real, derived, and re-runnable by the visitor:
 - a bare repository blocks 0/67 benchmark payloads; the same repository, harnessed, blocks all 67
 - 75% of rule content stays out of the default session, because 10 of 17 rules are path-scoped
 - a run installs 3 to 17 of the 18 seats (docs-only repo at the low end)
-- `harness-view` scored 99/100 on a real harness, over 219 nodes and 655 edges, with two findings
+- `harness-view` scored 98/100 on a real harness, over 219 nodes and 655 edges, with two findings
   worth one point each (SAF-02 and COST-06) (the two shipped screenshots; provenance in `docs/assets/CAPTURED.json`)
 - the delivery pipeline, the tailoring step and the five control layers, each of which the page
   draws itself as a live diagram rather than importing as a picture

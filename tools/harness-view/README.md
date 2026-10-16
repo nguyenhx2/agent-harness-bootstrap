@@ -260,8 +260,12 @@ same with a saved JSON file.
 
 Each of six categories (Safety, Cost control, Traceability, Board health, Docs
 quality, Contract) starts at 100 and loses the weight of each finding in it:
-high 12, medium 5, low 2, info 0, floored at 0. Overall is the integer mean of
-the six. Every category card shows its own arithmetic (`100 - COST-01 1x12 = 88`),
+high 12, medium 5, low 2, info 0, floored at 0. A category with nothing to
+assess - Board health with no tasks, Traceability with no tasks, commands or
+skills - reads n/a instead of a free 100. Overall is the integer mean of the
+categories that apply, and while a high Safety finding is open it is capped at
+the Safety score: a harness with no deny list or no blocking hook is not an 88,
+whatever its docs look like. Every category card shows its own arithmetic (`100 - COST-01 1x12 = 88`),
 and `tests/rubric_test.rs` recomputes every score from the published weights.
 The weights are a stated convention, not a measurement.
 

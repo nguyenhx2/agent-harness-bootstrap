@@ -29,8 +29,19 @@ and it comes in three parts that work in order:
 | [**harness-bootstrap**](harness-bootstrap/) | A Claude Code skill | Reads your codebase and that contract, then builds the `.claude/` harness that fits it: a team sized to the repo's purpose and modules, rules that load only where they apply, and hooks that **block in the shell**. |
 | [**harness-view**](tools/harness-view/) | A Rust binary, one per platform on every [release](https://github.com/nguyenhx2/agent-harness-bootstrap/releases/latest) | Draws the whole harness as a live graph and scores it against a published rubric. Every finding names its rule, the file and line, and the fix, and no model is involved. It also reads harnesses this repo did not build. |
 
-**Why it matters:** the safety floor is shell scripts and exit codes, not instructions. No model is
-consulted when a hook decides, so the guardrail result cannot depend on which model an agent runs.
+**Stop prompting your agents to behave. Give them a harness that enforces it.**
+
+- **Built for this repository, not a fixed kit.** The team, the rules and where each rule loads are
+  derived from the codebase and the contract, so a docs repository and a monorepo get different
+  harnesses.
+- **Guardrails that block, not ask.** A hook is a shell script that exits 2 before the tool call
+  runs. No model is consulted, so the result cannot depend on which model an agent runs, and the
+  [guardrail eval](#proof-you-can-run) proves every case on every CI run.
+- **Verification sized to the risk.** A one-file fix goes straight to the work; only a change that
+  crosses domains earns a plan, an orchestrator and a review, and a review that already passed is
+  not run again.
+- **A control panel, not a black box.** harness-view shows every agent, rule and hook, scores them
+  against a published rubric, and switches a control off only as a recorded, graded decision.
 
 <p align="center">
   <a href="https://nguyenhx2.github.io/agent-harness-bootstrap/video/">
@@ -200,7 +211,7 @@ Read [`spec-builder/SKILL.md`](spec-builder/SKILL.md) and
   <img src="docs/assets/harness-view-assess.png" alt="harness-view Assess tab scoring a real harness 99 out of 100: six category bars, and two low findings ordered as a fix-first worklist, each with its rule, evidence and fix" width="860">
 </p>
 
-The screenshot is a real harness: 219 nodes, 655 edges, scored 99/100. Read
+The screenshot is a real harness: 219 nodes, 655 edges, scored 98/100. Read
 [`RUBRIC.md`](tools/harness-view/RUBRIC.md) and [Harness View](docs/wiki/Harness-View.md).
 
 <!-- BENCHMARK -->

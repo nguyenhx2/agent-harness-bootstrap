@@ -42,9 +42,11 @@ fn good(root: &Path) {
     write(root, ".claude/settings.json", r#"{
       "permissions": { "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)", "Read(./**/.env)"] },
       "hooks": { "PreToolUse": [ { "matcher": "Bash",
-        "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" } ] } ] }
+        "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" },
+                   { "type": "command", "command": "bash .claude/hooks/protect-harness.sh" } ] } ] }
     }"#);
     write(root, ".claude/hooks/protect-secrets.sh", "#!/bin/sh\nexit 0\n");
+    write(root, ".claude/hooks/protect-harness.sh", "#!/bin/sh\nexit 0\n");
     write(root, ".claude/rules/agent-guardrails.md", "# guardrails\n");
     write(root, ".claude/rules/testing.md", "---\npaths:\n  - \"tests/**\"\n---\n# testing\n");
     write(root, ".claude/commands/review-changes.md", "# review\n");
@@ -290,4 +292,75 @@ tools: Read, Grep, Bash
     let found = checks(&run(&d));
     assert!(found.contains(&"skill-wire-missing".to_string()),
             "a wire to an uninstalled skill should be reported, got {found:?}");
+}
+
+#[test]
+fn unguarded_hooks_are_reported_and_either_guard_silences_it() {
+    // the guards themselves are writable: SAF-14
+    let d = tmp("harness-unguarded");
+    good(&d);
+    write(&d, ".claude/settings.json", r#"{
+      "permissions": { "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)", "Read(./**/.env)"] },
+      "hooks": { "PreToolUse": [ { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" } ] } ] }
+    }"#);
+    let _ = fs::remove_file(d.join(".claude/hooks/protect-harness.sh"));
+    assert!(checks(&run(&d)).contains(&"harness-unprotected".to_string()));
+
+    // a permissions entry naming the hooks folder is a guard too
+    write(&d, ".claude/settings.json", r#"{
+      "permissions": { "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)", "Read(./**/.env)"],
+                       "ask": ["Edit(.claude/hooks/**)"] },
+      "hooks": { "PreToolUse": [ { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" } ] } ] }
+    }"#);
+    assert!(!checks(&run(&d)).contains(&"harness-unprotected".to_string()));
+
+    // the baseline guards with the hook
+    let g = tmp("harness-guarded");
+    good(&g);
+    assert!(!checks(&run(&g)).contains(&"harness-unprotected".to_string()));
+}
+
+#[test]
+fn a_category_with_nothing_to_assess_is_not_scored_100() {
+    let d = tmp("na");
+    good(&d);
+    let a = run(&d);
+    let c = &a["scores"]["categories"];
+    // no task on disk: there is no board to be healthy
+    assert_eq!(c["Board health"]["applies"], false);
+    // a command exists, so Traceability has something to check
+    assert_eq!(c["Traceability"]["applies"], true);
+    assert_eq!(c["Safety"]["applies"], true);
+
+    // one finding in Cost control: the mean is over the five that apply
+    write(&d, ".claude/agents/app-dev.md",
+          "---\nname: app-dev\nmodel: sonnet\neffort: medium\nmaxTurns: 20\n---\nbody\n"); // no tools
+    let a = run(&d);
+    let cost = a["scores"]["categories"]["Cost control"]["score"].as_u64().unwrap();
+    assert!(cost < 100);
+    assert_eq!(a["scores"]["overall"].as_u64().unwrap(), (400 + cost) / 5);
+}
+
+#[test]
+fn an_open_high_safety_finding_caps_the_overall_score() {
+    let d = tmp("cap");
+    good(&d);
+    // no deny list at all: SAF-07, high
+    write(&d, ".claude/settings.json", r#"{
+      "hooks": { "PreToolUse": [ { "matcher": "Bash",
+        "hooks": [ { "type": "command", "command": "bash .claude/hooks/protect-secrets.sh" },
+                   { "type": "command", "command": "bash .claude/hooks/protect-harness.sh" } ] } ] }
+    }"#);
+    let a = run(&d);
+    let safety = a["scores"]["categories"]["Safety"]["score"].as_u64().unwrap();
+    assert_eq!(safety, 88);
+    assert_eq!(a["scores"]["capped_by_safety"], true);
+    // the mean would be 97; the open door holds it at Safety
+    assert_eq!(a["scores"]["overall"].as_u64().unwrap(), safety);
+    // and the worklist says what closing it is worth
+    let w = &a["worklist"][0];
+    assert_eq!(w["rubric"], "SAF-07");
+    assert_eq!(w["overall_after"], 100);
 }

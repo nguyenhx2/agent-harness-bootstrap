@@ -148,7 +148,7 @@ Standard は合意済みの FR に基準を 1 つ追加、Guarded は新しい F
 重み x 件数 / 手間で並ぶ作業リスト、ワンクリック修正、前回からの変化、そして 6 カテゴリ (Safety、
 Cost control、Traceability、Board health、Docs quality、Contract) の公開ルーブリック
 (`tools/harness-view/RUBRIC.ja.md`)。スクリーンショットは実在のハーネスです。ノード 219、エッジ 655、
-採点は 99/100。
+採点は 98/100。
 
 ---
 

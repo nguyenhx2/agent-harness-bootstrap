@@ -153,7 +153,7 @@ why; `harness-check.py` proves every cross-link points at something real.
 worklist ordered by weight x count / effort, one-click fixes, what changed since the last check, and
 a published rubric (`tools/harness-view/RUBRIC.md`) across six categories: Safety, Cost control,
 Traceability, Board health, Docs quality, Contract. The screenshot is a real harness: 219 nodes,
-655 edges, scored 99/100.
+655 edges, scored 98/100.
 
 ---
 

@@ -8,7 +8,7 @@ Every rule `harness-view assess` applies. Each finding names its rule id, the ev
 
 ## How the score is computed
 
-Each category starts at 100 and loses the weight of every finding in it (high 12, medium 5, low 2, info 0), floored at 0. A rule that does not apply to this repository's purpose is not checked. Overall is the integer mean of the six categories, rounded down. The weights are a stated convention, not a measurement.
+Each category starts at 100 and loses the weight of every finding in it (high 12, medium 5,      low 2, info 0), floored at 0. A rule that does not apply to this repository's purpose is not      checked, and a category with nothing to assess (Board health with no tasks; Traceability with      no tasks, commands or skills) is marked n/a rather than scored 100. Overall is the integer mean      of the six categories, n/a ones left out, rounded down; while a high Safety finding is open it      is capped at the Safety score, because a harness is only as trustworthy as its guardrails.      The weights are a stated convention, not a measurement.
 
 | severity | weight |
 |---|---|
@@ -126,6 +126,14 @@ Each category starts at 100 and loses the weight of every finding in it (high 12
 - finding: no read-only seat checks the deliverable
 - why: Without a seat that only reads, every claim and every figure is approved by whoever wrote it.
 - fix: Add `.claude/agents/checker.md` with `tools: Read, Grep, Glob, WebFetch, WebSearch` and `disallowedTools: Edit, Write, NotebookEdit` (the skill ships one for non-code purposes).
+
+### SAF-14 `harness-unprotected`
+
+- severity: medium (weight 5) · effort: 2 · applies: all
+- full marks: An active hook (such as `protect-harness`) or a permissions entry guards `.claude/settings*.json` and `.claude/hooks/`.
+- finding: nothing guards the hooks and settings the guardrails live in
+- why: A guard an agent can rewrite is one `echo >> .claude/hooks/...` away from `exit 0`; every other layer is only as strong as the files that hold it.
+- fix: Install `protect-harness` (`/harness-update` adds it) and register it on PreToolUse with matcher `Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell` in `.claude/settings.json`.
 
 ## Cost control
 

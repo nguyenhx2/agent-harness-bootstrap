@@ -10,7 +10,7 @@
   "spec_core": 6,
   "spec_optional": 8,
   "rubric": {
-    "rules": 30,
+    "rules": 31,
     "categories": 6,
     "weight_high": 12,
     "worklist": [
@@ -45,7 +45,7 @@
   },
   "cap_nodes": 219,
   "cap_edges": 655,
-  "cap_score": 99,
+  "cap_score": 98,
   "profiles": [
     "code",
     "research",
