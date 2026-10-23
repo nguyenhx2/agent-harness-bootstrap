@@ -30,7 +30,7 @@ flowchart LR
 
 | クライアント | 読むもの | このリポジトリでの置き場所 |
 |---|---|---|
-| Claude Code | ディレクトリ直下の `SKILL.md` (単一スキルのプラグイン) | `.claude-plugin/marketplace.json` |
+| Claude Code | スキルフォルダーの `.claude-plugin/plugin.json` と、直下の `SKILL.md` | スキルフォルダー。`.claude-plugin/marketplace.json` に掲載 |
 | Codex | `.codex-plugin/plugin.json` | `plugins/codex/<skill>/`。`.agents/plugins/marketplace.json` に掲載 |
 | Cursor、VS Code、Copilot、Kiro、ChatGPT | プラグインのルートにある Agent Plugins の `plugin.json` | `plugins/<skill>/` |
 
@@ -48,6 +48,24 @@ flowchart LR
 ```
 
 どちらか一方でも、両方でもインストールできます。追加の設定は要りません。
+
+Claude Code ではスキルフォルダーそのものが、Claude のプラグインディレクトリにそのまま出せるプラグインです。
+`.claude-plugin/plugin.json` と `icon.png`、プラグインが何を実行し何を送り何を取りに行くかを書いた `README.md`、
+マニフェストに記した AGPL ライセンスがそろっており、`claude plugin validate ./harness-bootstrap --profile
+directory --strict` は二つとも通ります。マニフェストは `build_plugins.py` が、アイコンは `make_icons.py` が
+生成するので、どちらも手では編集しません。
+
+## どのエージェントでも: `skills` CLI
+
+```bash
+npx skills add nguyenhx2/agent-harness-bootstrap --skill harness-bootstrap --skill spec-builder
+```
+
+[skills.sh](https://skills.sh) の CLI は、二つのスキルフォルダーをエージェントのスキルディレクトリにコピーします
+(Claude Code なら `.claude/skills/`。`-a codex`、`-a cursor` などで対象を選び、`-g` で全プロジェクト共通に
+入れます)。二つのスキル名を必ず指定してください。`--skill` を付けないと、このリポジトリに同梱している
+`impeccable` スキルも候補に出ます。プラグインのコマンド (`/harness-update` など) はスクリプトを
+`${CLAUDE_PLUGIN_ROOT}` から探すので、この経路では入りません。コマンドが必要ならプラグインの経路を使ってください。
 
 ## Codex
 
@@ -85,9 +103,10 @@ zip からインストールした場合と同じく、各スキルは `SKILL.md
 /plugin update spec-builder@agent-harness-bootstrap
 ```
 
-Claude Code のプラグインには自前の `plugin.json` がないので、更新を提示するかどうかは
-`.claude-plugin/marketplace.json` の各エントリの `version` フィールドで決まります。両方のエントリはリリースごとに
-上がり、上げ忘れたリリースは `validate_release.py` が失敗させます ([`RELEASING.ja.md`](RELEASING.ja.md) を参照)。
+更新を提示するかどうかは、各スキルの `.claude-plugin/plugin.json` と、`.claude-plugin/marketplace.json` の
+エントリにある `version` で決まります。前者はスキルのバージョンから `build_plugins.py` が書き、後者と食い違うと
+`build_plugins.py` は実行を拒否します。どちらかを上げ忘れたリリースは `validate_release.py` が失敗させます
+([`RELEASING.ja.md`](RELEASING.ja.md) を参照)。
 
 ## プラグインの経路か zip の経路か
 

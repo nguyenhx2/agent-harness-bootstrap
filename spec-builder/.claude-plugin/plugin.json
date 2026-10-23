@@ -1,0 +1,19 @@
+{
+  "name": "spec-builder",
+  "version": "1.22.1",
+  "description": "Builds a selective BA specification set under docs/specs/ with stable requirement IDs and traceability, from any raw input, without inventing requirements.",
+  "author": {
+    "name": "nguyenhx2",
+    "url": "https://github.com/nguyenhx2"
+  },
+  "homepage": "https://github.com/nguyenhx2/agent-harness-bootstrap",
+  "repository": "https://github.com/nguyenhx2/agent-harness-bootstrap",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "agent",
+    "harness",
+    "skills",
+    "guardrails",
+    "specifications"
+  ]
+}

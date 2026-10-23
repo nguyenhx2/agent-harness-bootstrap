@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
+## v1.22.1
+
+Ready for two more ways in. Each skill folder is now a plugin the Claude plugin directory accepts:
+a generated `.claude-plugin/plugin.json`, a square icon rendered from the project mark, and a
+README that says what the plugin runs, sends and fetches. `claude plugin validate --profile
+directory --strict` passes for both. The README and `docs/PLUGIN.md` add the `skills` CLI route,
+`npx skills add nguyenhx2/agent-harness-bootstrap --skill harness-bootstrap --skill spec-builder`,
+which installs the two skills into Claude Code, Codex, Cursor and the other agents that CLI
+supports. The repository's own `release` skill is marked internal so that CLI no longer offers it.
+`validate_release.py` now checks the new manifests' version and licence.
+
 ## v1.22.0
 
 A score that means what it says. harness-view gave a harness with no deny list, no blocking hook

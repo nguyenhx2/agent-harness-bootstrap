@@ -7,6 +7,11 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.22.1] - 2026-10-23
+
+No functional change. The version moves with the repo release, which packages the two skills for
+the Claude plugin directory and the `skills` CLI; the UI screenshots are retaken from this build.
+
 ## [1.22.0] - 2026-10-16
 
 ### Added

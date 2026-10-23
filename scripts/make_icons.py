@@ -13,6 +13,7 @@ Outputs:
     tools/harness-view/assets/icon-<N>.png      flat PNG set (docs, macOS bundles)
     tools/harness-view/assets/icon.icns         macOS container, PNG-backed
     tools/harness-view/assets/favicon.b64       32x32 PNG, base64, for the served page
+    <skill>/.claude-plugin/icon.png             512x512, the Claude plugin directory listing
 
 Why a renderer rather than a converter: cairosvg and friends are not installed
 and pull in native libraries. The mark uses a small, closed subset of SVG (path
@@ -37,6 +38,12 @@ import xml.etree.ElementTree as ET
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "docs" / "assets" / "logo-mark.svg"
 OUT = ROOT / "tools" / "harness-view" / "assets"
+# The Claude plugin directory looks for a square PNG at .claude-plugin/icon.png, 512 to 2048 px.
+# It takes the icon only the first time a plugin is saved in the portal, so it has to be in place
+# before the first submission, not added later.
+PLUGIN_ICONS = [ROOT / skill / ".claude-plugin" / "icon.png"
+                for skill in ("harness-bootstrap", "spec-builder")]
+PLUGIN_ICON_SIZE = 512
 
 # Rendered once at this size, then downsampled per target. Downsampling from a
 # single high-resolution master keeps the small sizes crisper than rendering
@@ -313,11 +320,22 @@ def check() -> int:
     for name in ("favicon.b64", "icon.icns"):
         if not (OUT / name).is_file():
             problems.append(f"{name} is missing")
+    for icon in PLUGIN_ICONS:
+        rel = icon.relative_to(ROOT).as_posix()
+        raw = icon.read_bytes() if icon.is_file() else b""
+        # PNG signature, then the IHDR chunk: width and height as big-endian u32 at 16 and 20.
+        if raw[:8] != b"\x89PNG\r\n\x1a\n":
+            problems.append(f"{rel} is missing or not a PNG")
+        else:
+            w, h = int.from_bytes(raw[16:20], "big"), int.from_bytes(raw[20:24], "big")
+            if w != h or not 512 <= w <= 2048:
+                problems.append(f"{rel} is {w}x{h}; the plugin directory wants a square 512-2048")
     if problems:
         for p in problems:
             print("  - " + p)
         return 1
-    print(f"ok: icons present, icon.ico carries {ICO_SIZES}")
+    print(f"ok: icons present, icon.ico carries {ICO_SIZES}, "
+          f"{len(PLUGIN_ICONS)} plugin icon(s) square")
     return 0
 
 
@@ -351,6 +369,11 @@ def main() -> int:
     b64 = base64.b64encode(buf.getvalue()).decode()
     (OUT / "favicon.b64").write_text(b64, encoding="utf-8")
     print(f"favicon.b64       32x32, {len(b64)} base64 chars")
+
+    for icon in PLUGIN_ICONS:
+        icon.parent.mkdir(parents=True, exist_ok=True)
+        master.resize((PLUGIN_ICON_SIZE, PLUGIN_ICON_SIZE), Image.LANCZOS).save(icon, format="PNG")
+        print(f"{icon.relative_to(ROOT).as_posix():<44}{PLUGIN_ICON_SIZE}x{PLUGIN_ICON_SIZE}")
     return 0
 
 
