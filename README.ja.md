@@ -58,6 +58,17 @@
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
+**[`skills`](https://skills.sh) CLI が対応するエージェント** (Claude Code、Codex、Cursor、Copilot など)
+なら、単体のスキルとして:
+
+```bash
+npx skills add nguyenhx2/agent-harness-bootstrap --skill harness-bootstrap --skill spec-builder
+```
+
+二つのスキル名を必ず指定してください。`--skill` を付けないと、このリポジトリが自分のサイト用に同梱している
+外部のデザインスキル `impeccable` も候補に出てきます。プラグインとして入れると `/harness-update` などのコマンドも付きます。スキルとして入れると
+二つのスキルだけが入ります。
+
 あとは対象のリポジトリで:
 
 ```text

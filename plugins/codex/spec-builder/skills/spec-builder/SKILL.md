@@ -1,6 +1,6 @@
 ---
 name: spec-builder
-version: 1.22.0
+version: 1.22.1
 description: Writes the requirements contract for a project under docs/specs/ from raw input - an idea, meeting notes, a transcript, a PRD, legacy docs or a codebase - in the user's language. Stable FR IDs, Given/When/Then acceptance criteria, flagged assumptions and open issues, a one-page confirmation sheet a PO or client answers yes/no/change, and a JSON index agents read instead of whole documents. Never invents a requirement. Research, strategy and docs repos get a lighter contract. Use when requirements must be written, confirmed, updated or standardized - "build specs", "tạo specs", "viết tài liệu phân tích yêu cầu", "要件定義を作成して", or the same in any language. Not for building the .claude agent harness (harness-bootstrap), digesting documents into a knowledge base, or writing code or ADRs.
 allowed-tools: Bash(python:*), Bash(python3:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent
 ---

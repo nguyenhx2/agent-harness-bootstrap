@@ -6,6 +6,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.22.1] - 2026-10-23
+
+### Added
+
+- `.claude-plugin/plugin.json` and `.claude-plugin/icon.png`, so the skill folder is a complete
+  plugin for the Claude plugin directory. Both are generated (`build_plugins.py`, `make_icons.py`);
+  Claude Code still loads the root `SKILL.md` and all eight commands with the manifest present.
+- `README.md` / `README.ja.md`: what the plugin does, how to install it as a plugin or through
+  `npx skills add`, and what it runs, sends and fetches.
+
 ## [1.22.0] - 2026-10-16
 
 ### Changed

@@ -31,7 +31,7 @@ copies them into the two generated trees, and CI fails if a copy drifts (`--chec
 
 | Client | Reads | Where it lives here |
 |---|---|---|
-| Claude Code | `SKILL.md` at the directory root (single-skill plugin) | `.claude-plugin/marketplace.json` |
+| Claude Code | `.claude-plugin/plugin.json` in the skill folder, `SKILL.md` at its root | the skill folders, listed by `.claude-plugin/marketplace.json` |
 | Codex | `.codex-plugin/plugin.json` | `plugins/codex/<skill>/`, listed by `.agents/plugins/marketplace.json` |
 | Cursor, VS Code, Copilot, Kiro, ChatGPT | Agent Plugins `plugin.json` at the plugin root | `plugins/<skill>/` |
 
@@ -49,6 +49,25 @@ outside its root does not work either: Codex copies only the plugin root into it
 ```
 
 Install either plugin, or both. No further configuration is needed.
+
+Each skill folder is also a complete plugin for the Claude plugin directory:
+`.claude-plugin/plugin.json` and `icon.png`, a `README.md` that says what the plugin runs, sends and
+fetches, and the AGPL licence named in the manifest. `claude plugin validate ./harness-bootstrap
+--profile directory --strict` passes for both. `build_plugins.py` writes the manifest and
+`make_icons.py` renders the icon, so neither is edited by hand.
+
+## Any agent, through the `skills` CLI
+
+```bash
+npx skills add nguyenhx2/agent-harness-bootstrap --skill harness-bootstrap --skill spec-builder
+```
+
+[skills.sh](https://skills.sh)'s CLI copies the two skill folders into the agent's skills
+directory (`.claude/skills/` for Claude Code; `-a codex`, `-a cursor` and others pick the agent,
+`-g` installs for every project). Name both skills: without `--skill` it also lists this
+repository's vendored `impeccable` skill. The skills route does not install the plugin commands
+(`/harness-update` and the rest), because they resolve their scripts through
+`${CLAUDE_PLUGIN_ROOT}`; use the plugin route when you want them.
 
 ## Codex
 
@@ -86,10 +105,10 @@ Each skill also triggers on the phrases in its `SKILL.md` description, as it doe
 /plugin update spec-builder@agent-harness-bootstrap
 ```
 
-The Claude Code plugins have no `plugin.json` of their own, so the `version` field of each entry in
-`.claude-plugin/marketplace.json` decides whether an update is offered. Both entries move with every
-release, and `validate_release.py` fails a release that forgets them (see
-[`RELEASING.md`](RELEASING.md)).
+Whether an update is offered depends on the `version` in each skill's `.claude-plugin/plugin.json`
+and in its `.claude-plugin/marketplace.json` entry. `build_plugins.py` writes the first from the
+skill version and refuses to run when the second disagrees, and `validate_release.py` fails a
+release that forgets either (see [`RELEASING.md`](RELEASING.md)).
 
 ## Plugin route or zip route
 

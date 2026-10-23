@@ -2,6 +2,8 @@
 name: release
 description: Cut a release of this repo - bump the version, write the CHANGELOG section, run the eval and benchmarks, build the installable .zip artifacts with a VERSION inside, tag, and publish to GitHub with standard-format notes. Use when the user asks to "release", "cut a release", "publish a version", "tag a version", "phát hành", "ra bản mới", or after a batch of changes that should ship.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Bash(gh:*), Read, Write, Edit, Grep, Glob, AskUserQuestion
+metadata:
+  internal: true
 ---
 
 # Release

@@ -167,12 +167,12 @@ def main() -> int:
                 "the release attaches its binaries, so it must say what changed in them"
             )
 
-    # The plugin marketplace is the THIRD place the version lives, and the one a /plugin
-    # update actually reads: the skills ship without a plugin.json, so the marketplace
-    # entry's version field alone decides whether installed plugins see a new release. A
-    # release that bumps the SKILL.md files but not marketplace.json ships an update that
-    # plugin users never receive - silently, which is how the version badge went stale for
-    # five releases before it was gated.
+    # The plugin marketplace is the THIRD place the version lives, and one a /plugin update
+    # actually reads. A release that bumps the SKILL.md files but not marketplace.json ships an
+    # update that plugin users never receive - silently, which is how the version badge went
+    # stale for five releases before it was gated. Each skill folder also carries its own
+    # `.claude-plugin/plugin.json` (the Claude plugin directory requires it), and Claude Code
+    # prefers that version over the marketplace entry's, so it is checked below as well.
     mkt = ROOT / ".claude-plugin" / "marketplace.json"
     if mkt.is_file():
         try:
@@ -188,6 +188,20 @@ def main() -> int:
             elif required and mv != required:
                 errs.append(f".claude-plugin/marketplace.json: plugin `{name}` is {mv}, the "
                             f"release is {required} - plugin users stay on the old build")
+    for skill in SKILLS:
+        man = ROOT / skill / ".claude-plugin" / "plugin.json"
+        if not man.is_file():
+            errs.append(f"{skill}/.claude-plugin/plugin.json is missing - the Claude plugin "
+                        "directory refuses the plugin without it; run build_plugins.py")
+            continue
+        try:
+            pv = json.loads(man.read_text(encoding="utf-8")).get("version")
+        except ValueError as e:
+            errs.append(f"{skill}/.claude-plugin/plugin.json does not parse: {e}")
+            continue
+        if required and pv != required:
+            errs.append(f"{skill}/.claude-plugin/plugin.json is {pv}, the release is {required} "
+                        "- Claude Code reads this version first; run build_plugins.py")
 
     # The harness-view UI screenshots burn the running binary's version into their
     # footer pixels, where no text gate can see it: the shipped assess screenshot read
@@ -224,7 +238,10 @@ def main() -> int:
             errs.append("LICENSE does not name a licence this check knows - teach it the new one "
                         "rather than leaving the manifests unchecked")
         else:
-            for man in sorted(ROOT.glob("plugins/**/plugin.json")):
+            for man in sorted([*ROOT.glob("plugins/**/plugin.json"),
+                               *(ROOT / s / ".claude-plugin" / "plugin.json" for s in SKILLS)]):
+                if not man.is_file():
+                    continue
                 try:
                     got = json.loads(man.read_text(encoding="utf-8")).get("license")
                 except ValueError as e:

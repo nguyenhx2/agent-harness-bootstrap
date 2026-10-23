@@ -63,6 +63,17 @@ In **Claude Code**:
 /plugin install spec-builder@agent-harness-bootstrap
 ```
 
+In **any agent the [`skills`](https://skills.sh) CLI supports** (Claude Code, Codex, Cursor, Copilot
+and more), as plain skills:
+
+```bash
+npx skills add nguyenhx2/agent-harness-bootstrap --skill harness-bootstrap --skill spec-builder
+```
+
+Name both skills: without `--skill` the CLI also offers `impeccable`, a third-party design skill
+this repository vendors for its own site. The plugin route adds the `/harness-update` family of
+commands; the skills route installs the two skills alone.
+
 Then, in your repo:
 
 ```text

@@ -51,6 +51,17 @@ That is the same contract `build_wiki.py` has for the wiki.
 The copies are byte-identical, so git stores one blob for both paths and the repository grows by
 tree entries rather than by content.
 
+CLAUDE CODE GETS A MANIFEST TOO, IN PLACE
+-----------------------------------------
+Claude Code installs straight from the skill folder, so its manifest is written there:
+`<skill>/.claude-plugin/plugin.json`. Claude Code itself does not need one - a folder with a
+SKILL.md at its root loads as a single-skill plugin - but the Claude plugin directory refuses a
+submission without it, and with it `/plugin update` is driven by the manifest's version instead
+of only the marketplace entry's. Verified with `claude plugin details`: the root SKILL.md and all
+eight commands still load once the manifest is present. It is written here, from the same version
+and blurb as every other manifest, so it cannot drift; `.claude-plugin/` is not copied into the
+Codex and Agent Plugins trees, which have manifests of their own.
+
     python scripts/build_plugins.py            # write the tree
     python scripts/build_plugins.py --check    # verify it matches the skills (CI)
 """
@@ -79,7 +90,7 @@ ALLOWED = {"$schema", "name", "version", "description", "author", "homepage", "r
 NAME_RE = re.compile(r"^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$")
 
 # Files that belong to the developing repo, not to an installed skill.
-SKIP_NAMES = {"CHANGELOG.md", "__pycache__", ".gitignore"}
+SKIP_NAMES = {"CHANGELOG.md", "__pycache__", ".gitignore", ".claude-plugin"}
 SKIP_SUFFIX = {".pyc"}
 
 REPO_URL = "https://github.com/nguyenhx2/agent-harness-bootstrap"
@@ -179,6 +190,22 @@ def codex_manifest(skill: str, version: str) -> dict:
     }
 
 
+def claude_manifest(skill: str, version: str) -> dict:
+    """Claude Code reads `.claude-plugin/plugin.json`. The plugin directory wants name,
+    description, author and version, and a version raised with every release."""
+    return {
+        "name": skill,
+        "version": version,
+        "description": blurb(skill),
+        "author": {"name": "nguyenhx2", "url": "https://github.com/nguyenhx2"},
+        "homepage": REPO_URL,
+        "repository": REPO_URL,
+        "license": LICENSE_ID,
+        "keywords": ["agent", "harness", "skills", "guardrails",
+                     "specifications" if skill == "spec-builder" else "scaffolding"],
+    }
+
+
 def write_json(path: pathlib.Path, body: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -235,7 +262,8 @@ def marketplace(version: str) -> dict:
     }
 
 
-def build(out: pathlib.Path, agents_dir: pathlib.Path) -> list[str]:
+def build(out: pathlib.Path, agents_dir: pathlib.Path,
+          claude_root: pathlib.Path = ROOT) -> list[str]:
     version = repo_version()
     mkt_v = claude_marketplace_version()
     if mkt_v != version:
@@ -255,6 +283,10 @@ def build(out: pathlib.Path, agents_dir: pathlib.Path) -> list[str]:
         write_json(codex_root / ".codex-plugin" / "plugin.json", codex_manifest(skill, version))
         copy_skill(skill, codex_root / "skills" / skill)
         lines.append(f"  ok    plugins/{CODEX_DIR}/{skill}: Codex manifest + {n} skill file(s)")
+
+        write_json(claude_root / skill / ".claude-plugin" / "plugin.json",
+                   claude_manifest(skill, version))
+        lines.append(f"  ok    {skill}/.claude-plugin/plugin.json: Claude manifest, v{version}")
     write_json(agents_dir / "marketplace.json", marketplace(version))
     # --check builds into a temp directory, which is not under ROOT, so the label is fixed
     # rather than derived: relative_to() would raise there and take the check down with it.
@@ -370,7 +402,7 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
-        build(tmp / "plugins", tmp / ".agents" / "plugins")
+        build(tmp / "plugins", tmp / ".agents" / "plugins", tmp / "claude")
         problems = []
         if not OUT.is_dir():
             problems.append("plugins/ does not exist - run scripts/build_plugins.py")
@@ -382,6 +414,13 @@ def main() -> int:
             problems.append(".agents/plugins/marketplace.json is missing")
         elif not same_content(mk, want):
             problems.append(".agents/plugins/marketplace.json differs from what the skills imply")
+        for skill in SKILLS:
+            have = ROOT / skill / ".claude-plugin" / "plugin.json"
+            if not have.is_file():
+                problems.append(f"{skill}/.claude-plugin/plugin.json is missing")
+            elif not same_content(have, tmp / "claude" / skill / ".claude-plugin" / "plugin.json"):
+                problems.append(f"{skill}/.claude-plugin/plugin.json differs from what the "
+                                "skills imply")
 
     if problems:
         print("  FAIL  the committed plugin tree does not match the skills:")
