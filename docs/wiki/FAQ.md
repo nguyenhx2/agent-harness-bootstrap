@@ -99,8 +99,8 @@ processes rather than 4 on a default harness.
 
 Possibly, and the questionnaire has a lightweight answer for that: minimal ceremony, no methodology
 rule, the review gate kept. The leanest code build is six seats, and a research or documentation
-repo needs as few as three. Small work is also never forced through the orchestrator: an Inline or
-Direct change goes straight to the main session or the owning seat. If that is still too much,
+repo needs as few as three. Small work is also never forced through the orchestrator: the main
+session does the work at every tier, and the orchestrator runs only when you ask. If that is still too much,
 delete `.claude/`.
 
 ## Does it send my code anywhere?

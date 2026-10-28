@@ -4,6 +4,17 @@ Decides the formation ("đội hình") and each seat's configuration; the scaffo
 bodies. Why the `model:`/`effort:` columns: [`cost-model.md`](cost-model.md). The roster appears 1:1
 in the AGENTS.md roster and routing tables: no orphan seats, no unrouted work.
 
+**What the roster is for.** The main session does the work at every tier, inside one repository
+and one domain - auth and schema included. A single agent loop with skills matched or beat routing
+work to writing seats in every case an external benchmark measured (CHANGELOG, 1.23.0), at a
+fraction of the cost and wall time. So the seats that earn a dispatch by default are the ones that earn their
+context: the **read-only reviewers** (required on Guarded changes), **readers that return a
+summary** (`debugger`, `researcher`, `spec-guardian`, `history-tracker`), and **independent
+parallel batches**. A writing seat (`<domain>-dev`, `qa-test`, `ba-analyst`, `data-modeler`,
+`writer`, ...) still ships: its scope is the ownership map, its module `CLAUDE.md` carries what it
+knows to the main session, and it is dispatched only when the user names it or the opt-in
+`orchestrator` runs a multi-domain mission.
+
 ## Purpose profiles - which seats a repo gets
 
 One or more purpose flags (intake Q0); none means `purpose_code`.
@@ -27,7 +38,7 @@ missing any of them.
 
 | Agent | model | effort | tools | maxTurns | Why |
 |---|---|---|---|---|---|
-| `orchestrator` | `opus` | `high` | `Read, Grep, Glob, Bash, Write, Edit, Agent, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskOutput` | 60 | Plans, decomposes, judges results. Highest-leverage seat. Write/Edit is for the board only - it never does a seat's work |
+| `orchestrator` | `opus` | `high` | `Read, Grep, Glob, Bash, Write, Edit, Agent, AskUserQuestion, TaskCreate, TaskUpdate, TaskList, TaskOutput` | 60 | Opt-in: plans, decomposes and judges a mission across several domains or repositories, only when the user asks for it. Write/Edit is for the board only - it never does a seat's work |
 | `debugger` | `opus` | `xhigh` | `Read, Grep, Glob, Bash` | 30 | Root-cause under incomplete information: the hardest, lowest-volume task, so the one seat on `xhigh`. Read-only: it diagnoses, the owner fixes |
 | `code-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | The safety net. Read-only forever - a reviewer that edits has lost its independence |
 | `security-reviewer` | `opus` | `high` | `Read, Grep, Glob, Bash` | 25 | Secrets/PII/authz gate. Read-only |
@@ -63,7 +74,7 @@ is set only where it earns its place:
 | `memory: project` | `researcher`, `writer`, the dev agents | Seats that improve at THIS repo across sessions (sources, house style, a module's pitfalls). Never on a read-only seat - memory grants Write and Edit, and `scaffold.py` refuses it. Never task state |
 | `permissionMode: dontAsk` | the code review seats, `spec-guardian`, `history-tracker` | A gate must not stall on a prompt; anything not pre-approved is denied. Other seats inherit the session's mode (`/harness-tune`). `bypassPermissions` is refused on any seat |
 | `omitClaudeMd: true` | the review seats, `spec-guardian`, `history-tracker`, `checker` | Seats that take everything from their brief and cited rules skip `CLAUDE.md` and `AGENTS.md` on every dispatch. Older Claude Code ignores the field |
-| `initialPrompt` | `orchestrator` | Applies only when it runs as the main session (`claude --agent orchestrator`): the session opens on the board restore instead of a blank prompt |
+| `initialPrompt` | `orchestrator` | Applies only if a user starts a session as it: the session opens on the board restore instead of a blank prompt. Not recommended - an always-orchestrator session paid the full planning and dispatch cost even for a one-line fix (CHANGELOG, 1.23.0) |
 | `experimental.cacheTtl: 1h` | `orchestrator` | It waits on children past the 5-minute cache window; otherwise its prefix is re-written after every child |
 | `isolation: worktree` | none in frontmatter | It branches from the default branch, not HEAD. The orchestrator sets it per dispatch when parallel writers would collide |
 | `skills:` | none by default | A preload injects the whole skill on every dispatch. `/skill-wire` adds one where a seat always needs it |
@@ -86,11 +97,11 @@ Classify a seat not in the allocation table with the decision rule in
 
 | Agent | Why it is unconditional |
 |---|---|
-| `orchestrator` | The entry point that makes the base *operate* under orchestration. Without it the roster is a folder of files |
-| `code-reviewer` | The review gate |
+| `code-reviewer` | The review gate - the independent read-only review a Guarded change requires |
 | `security-reviewer` | Secrets/data gate. On a tiny project the two reviewer seats merge into one `reviewer` (flag `solo_review`) - but the security **checklist** never disappears |
 | `spec-guardian` | Requirement-drift check, before and after every feature |
-| At least ONE dev agent | Someone has to write code. Minimum viable: a single `app-dev` owning all of `src/` |
+| At least ONE dev agent | The ownership map: every module has one owner, and the owner's scope and module `CLAUDE.md` are what the main session follows there. Minimum viable: a single `app-dev` owning all of `src/` |
+| `orchestrator` | Installed so a user can opt into it for a multi-domain mission. Nothing routes to it |
 
 ### Tier 1 - standard delivery (accept by default, decline consciously)
 
@@ -121,7 +132,7 @@ Pick the closest, then adjust with the tiers.
 - **S - script / CLI / library, single domain (5-6 ACTIVE seats).** `orchestrator`, `app-dev`,
   `qa-test` (if tests are chosen), `reviewer` (the merged gate, flag `solo_review` - the
   recommended shape here; split reviewers remain the alternative), `spec-guardian`. **This is the
-  floor** - below it the Guarded flow has missing seats. A code repo also installs `debugger`,
+  floor** - below it the Guarded gate has missing seats. A code repo also installs `debugger`,
   `ba-analyst` and `devops`; on preset S they get no routing until the project grows into them.
 - **M - web/API app with a DB (9-12).** Tier 0 + `qa-test`, `debugger`, `ba-analyst`, `devops`,
   + `frontend-ui-dev` (if UI) + `data-modeler` (+ `db_engineer`/`db_seeder` flags as DB work grows)
@@ -174,21 +185,22 @@ bottleneck; skip it on a solo or low-volume project. What makes it safe:
 
 ## Roster completeness check
 
-Every seat of the Guarded flow is filled by exactly one agent. The table is the code flow; a
-non-code flow is the brief, the producer (`researcher` / `strategist` / `writer`), `checker` and the
-`orchestrator`. A seat is one the flow can call, not one every change passes through:
+Every seat of the Guarded gate is filled by exactly one agent. The table is the code flow; a
+non-code flow is the brief, the main session drafting (with `researcher` / `strategist` / `writer`
+on the roster), and `checker`. A seat is one the flow can call, not one every change passes
+through:
 
 | Flow step | Seat | Filled by |
 |---|---|---|
 | Lock scope + criteria | requirement gate | `spec-guardian` |
-| Implement (per the chosen methodology) | owner | the `<domain>-dev` for that FR |
-| Tests | quality | `qa-test` (or manual verification when testing was declined - say so) |
+| Implement (per the chosen methodology) | owner | the main session, following the owning `<domain>-dev`'s scope and module `CLAUDE.md` |
+| Tests | quality | the main session, in the same change (or manual verification when testing was declined - say so) |
 | Review diff | code gate | `code-reviewer` (or `reviewer` under `solo_review`) |
 | Review secrets/data | security gate | `security-reviewer` (or `reviewer` under `solo_review`) |
 | Open PR/MR, CI | pipeline | `devops` (or the dev agent on Preset S - say so) |
 | Failure diagnosis | root cause | `debugger` (or the user - say so) |
 | Decide + record | planning | `strategist`/`researcher` → ADR (or the user) |
-| Route, supervise, record | control | `orchestrator` |
+| Route, supervise, record | control | the main session (the `orchestrator` only on a multi-domain mission the user opted into) |
 
 An intentionally unfilled seat is named in AGENTS.md with who covers it; an unnamed one is a gate
 silently skipped.

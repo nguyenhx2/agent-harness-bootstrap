@@ -269,7 +269,20 @@ def parse_stream(raw: str) -> dict:
                     outputs.append(block_text(b.get("content")))
         elif t == "system" and "hook" in str(e.get("subtype", "")):
             hooks.append(e)
-    usage = result.get("usage") or {}
+    # Tokens come from the final result's modelUsage: one entry per model, summed over the whole
+    # agent tree. `result.usage` covers only the main loop's last turn and misses subagents - a
+    # run that delegated most of its work reported a fraction of what it spent. It stays as the
+    # fallback for a stream with no modelUsage (an older Claude Code).
+    model_usage = result.get("modelUsage") or {}
+    if isinstance(model_usage, dict) and model_usage:
+        usage = {k: sum(int((m or {}).get(src) or 0) for m in model_usage.values())
+                 for k, src in (("input_tokens", "inputTokens"),
+                                ("output_tokens", "outputTokens"),
+                                ("cache_creation_input_tokens", "cacheCreationInputTokens"),
+                                ("cache_read_input_tokens", "cacheReadInputTokens"))}
+    else:
+        model_usage = {}
+        usage = result.get("usage") or {}
 
     def cmd(c):
         return str(c["input"].get("command", ""))
@@ -293,6 +306,10 @@ def parse_stream(raw: str) -> dict:
             "output_tokens": usage.get("output_tokens"),
             "cache_creation_input_tokens": usage.get("cache_creation_input_tokens"),
             "cache_read_input_tokens": usage.get("cache_read_input_tokens"),
+            "token_source": "modelUsage" if model_usage else "usage",
+            "tokens_by_model": {name: {k: int((m or {}).get(k) or 0) for k in (
+                "inputTokens", "outputTokens", "cacheCreationInputTokens",
+                "cacheReadInputTokens")} for name, m in model_usage.items()},
             "first_call_context_tokens": sum(int(fu.get(k) or 0) for k in (
                 "input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")),
             "tool_calls": len(calls),
@@ -448,6 +465,16 @@ def self_check(task_tree: dict) -> int:
         {"type": "result", "subtype": "success", "is_error": False, "result": "No bugs."})))
     print(f"  {'ok  ' if answered['success'] else 'FAIL'} review checker accepts an answer")
     bad += not answered["success"]
+    # Tokens are the whole tree's: two models in modelUsage sum, and a last-turn `usage` that
+    # disagrees is ignored. Without modelUsage, `usage` is the fallback.
+    tree = parse_stream(json.dumps({"type": "result", "usage": {"output_tokens": 7},
+                                    "modelUsage": {"main": {"outputTokens": 100},
+                                                   "sub": {"outputTokens": 900}}}))["metrics"]
+    last = parse_stream(json.dumps({"type": "result", "usage": {"output_tokens": 7}}))["metrics"]
+    ok = (tree["output_tokens"] == 1000 and tree["token_source"] == "modelUsage"
+          and last["output_tokens"] == 7 and last["token_source"] == "usage")
+    print(f"  {'ok  ' if ok else 'FAIL'} tokens sum the whole agent tree (modelUsage)")
+    bad += not ok
     work = pathlib.Path(tempfile.mkdtemp(prefix="hb-live-check-"))
     try:
         ctx = prepare(lt.TASKS_BY_ID["risky-git"], "bare", work, task_tree)

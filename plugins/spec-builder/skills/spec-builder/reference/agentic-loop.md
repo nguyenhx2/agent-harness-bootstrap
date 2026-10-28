@@ -41,7 +41,7 @@ The full spec cycle is for changes to the contract. Match the harness's tiers:
 | The change | What the spec needs | Then |
 |------------|---------------------|------|
 | **Inline / Direct** - a fix, a refactor, a typo, anything that leaves every criterion's outcome unchanged | nothing - no FR, no sheet, no task | do it; the existing criteria still hold, so the existing tests are the check |
-| **Standard** - new or changed behaviour inside an existing FR | one appended criterion (`AC-03.4`), `spec-check.py --write`, a revision row | the owning seat implements against it; the sheet shows the new line for the next confirmation |
+| **Standard** - new or changed behaviour inside an existing FR | one appended criterion (`AC-03.4`), `spec-check.py --write`, a revision row | implement against it (the harness's main session does the work); the sheet shows the new line for the next confirmation |
 | **Guarded** - a new FR, a changed priority, anything a stakeholder must agree to | the FR block, its criteria, the confirmation sheet answered | the full loop above |
 
 The test: **would a stakeholder reading the sheet see a different promise?** No: no spec work.

@@ -11,9 +11,10 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="ライセンス: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval ワークフロー"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-312%2F312%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 312/312 ケース"></a>
+  <a href="#自分で確かめる"><img src="https://img.shields.io/badge/guardrail%20eval-314%2F314%20per%20hook%20flavour-brightgreen.svg" alt="ガードレール評価: strict 構成で、フックの系統ごとに 314/314 ケース"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="フック 27 本"></a>
+  <a href="https://hub.xerj.org/contributors/nguyenhx2"><img src="https://hub.xerj.org/contributors/nguyenhx2/badge.svg" alt="XERJ Corpus Hub コントリビューター"></a>
 </p>
 
 実際のリポジトリに AI エージェントを載せると、失敗の仕方はだいたい決まっています。読むべきでないものを読み、
@@ -36,8 +37,9 @@
 - **頼むのではなく、止めるガードレール。** フックはツール呼び出しの前に終了コード 2 で止める
   シェルスクリプトです。モデルは関与しないため、結果はエージェントのモデルに左右されず、
   [ガードレール評価](#自分で確かめる)が CI のたびに全ケースを確かめます。
-- **リスクに見合った検証。** 1 ファイルの修正はそのまま作業に入ります。計画、オーケストレーター、
-  レビューが付くのは複数の領域にまたがる変更だけで、通過済みのレビューは繰り返しません。
+- **リスクに見合った検証。** 1 ファイルの修正はそのまま作業に入ります。テストと独立した
+  読み取り専用のレビューが付くのは危険な変更 (スキーマ、認証、お金、公開契約、マイグレーション、デプロイ) だけで、
+  通過済みのレビューは繰り返しません。
 - **ブラックボックスではなく、操作盤。** harness-view はすべてのエージェント、ルール、フックを示し、
   公開ルーブリックで採点し、制御を外すときは記録と段階付きの判断としてだけ外します。
 
@@ -142,7 +144,7 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.ja.md`](docs/PLUGIN.
 | 過不足のない検証 | `verify-plan.py` が差分を読み、必要なテストとレビューを決め、省いたゲートには理由を記録する。README の編集にセキュリティレビューは付かない | [`verify-plan.py`](harness-bootstrap/assets/scripts/verify-plan.py) |
 | 検証台帳とスポーンガード | `guard-agent-spawn` は、通過済みの内容へのレビューやテストの再実行、同一の指示、タスク予算を超える起動を拒否する。上書きできるのは人間だけで、指示に `REVERIFY: <理由>` を書くと一回だけ通る | [台帳の上書き](harness-bootstrap/assets/claude/hooks/README.md#overriding-the-verification-ledger-for-the-user-not-the-agent) |
 | レビューは二巡まで | 同じ内容への三巡目のレビューは拒否され、エージェントは止まって人に尋ねる | 同上 |
-| 席ごとの effort と上限 | 全席が `model`、`effort`、`tools`、`maxTurns` を明示する。オーケストレーターは新しいコンテキストに見合う大きさの仕事だけを委任し、`settings.json` が起動の深さを 2、同時実行を 4 に制限する | [`cost-model.md`](harness-bootstrap/reference/cost-model.md)、[`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md) |
+| 席ごとの effort と上限 | 全席が `model`、`effort`、`tools`、`maxTurns` を明示する。メインセッションは新しいコンテキストに見合う大きさの仕事だけを委任し、`settings.json` が起動の深さを 2、同時実行を 4 に制限する | [`cost-model.md`](harness-bootstrap/reference/cost-model.md)、[`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md) |
 
 ### 3. 「キーの漏洩が心配」
 
@@ -159,12 +161,16 @@ Codex、Cursor、VS Code、Copilot、Kiro は [`docs/PLUGIN.ja.md`](docs/PLUGIN.
 エージェント的なループ: **FR -> タスク -> 実装 -> verify-plan -> レビュー -> 完了**。どの段階でも仕様が
 判定基準です。手続きの重さは暦ではなく、変更の大きさで決まります:
 
-| ティア | いつ | 誰が |
+| ティア | いつ | 加わるもの |
 |---|---|---|
-| Inline | 質問、調べもの、小さな編集 | メインセッション自身。タスクファイルなし |
-| Direct | 一つのモジュール、元に戻せる、契約に触れない | 担当席を直接呼ぶ |
-| Standard | 複数ファイル、または背後に FR がある | 担当席。圧縮を越える必要があればタスクファイルを作る |
-| Guarded | 複数の席が順に動く、またはスキーマ、認証、お金、マイグレーション、デプロイ | オーケストレーターが全フローで |
+| Inline | 質問、調べもの、小さな編集 | 変えたものを 1 回確かめる |
+| Direct | 一つのモジュール、元に戻せる、契約に触れない | 各基準を自分で証明する |
+| Standard | 複数ファイル、または背後に FR がある | 変更に触れるテスト。圧縮を越える必要があればタスクファイルを作る |
+| Guarded | スキーマ、認証、お金、公開契約、マイグレーション、デプロイ、個人データ | テストと独立した読み取り専用のレビュー。必須 |
+
+どのティアでもメインセッションが作業します。サブエージェントを使うのは、独立したレビュアー、要約だけを返す大きな
+読み取り、互いに独立した並列のバッチです。オーケストレーターは、利用者が求めたときだけ、複数のドメインや
+リポジトリにまたがるミッションのために動きます。
 
 `task.py` はタスクのファイル、フォルダ、ボードの行を一つのコマンドで動かし、`task.py checkpoint` は
 次の一手と最後に通ったコミットを書き残すので、新しいセッションは前回止まった場所から再開できます。
@@ -240,7 +246,7 @@ python scripts/check_numbers.py     # 公開している数値がすべてスク
 
 ガードレール評価は、フックの系統 (`.sh` と `.ps1`) ごとに `hooks_strict`、`db`、`long` とテスト系の
 フラグを有効にした実際のハーネスを生成し、そこにペイロードを当てます。結果は系統ごとに 290/290
-(134 must-block、178 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
+(134 must-block、180 must-allow)。測っているのは、その構成のフックが止めるべきものを止め、通すべきものを
 通すことです。エージェントの振る舞いや、既定の構成は測っていません。ケース一覧: [`eval/README.md`](eval/README.md)。
 ベンチマークの注意点: [`benchmark/RESULTS.md`](benchmark/RESULTS.md)。
 

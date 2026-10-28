@@ -93,8 +93,8 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 Windows では `.ps1` のフックを使い、`$?` ではなく必ず `$LASTEXITCODE` を確認します。全体を確かめる
-には、このリポジトリの `python eval/guardrail_eval.py` が、本物の生成ハーネスに 290 のペイロードを
-撃ち込み 312/312 を期待します。そのハーネスは `hooks_strict`、`long`、`db` を有効にしているので、
+には、このリポジトリの `python eval/guardrail_eval.py` が、本物の生成ハーネスに 314 のペイロードを
+撃ち込み 314/314 を期待します。そのハーネスは `hooks_strict`、`long`、`db` を有効にしているので、
 既定のインストールにはもっと少ないフックしかありません。ツール自体でも、`.env` を読もうとしたり
 `main` にコミットしようとしたりして、それぞれがブロックされることを確かめてください。
 

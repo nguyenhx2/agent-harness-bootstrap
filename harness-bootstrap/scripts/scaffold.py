@@ -290,6 +290,34 @@ def substitute(text: str, variables: dict[str, str], src: str) -> tuple[str, set
     return VAR_RE.sub(repl, text), missing
 
 
+# A command variable the intake left unset ("none", "none (manual)", "-", "n/a", or empty).
+# settings.json lists each command as Bash(<cmd>:*), so an unset one rendered as Bash(none:*) in
+# the allow and deny lists: a rule for a command that does not exist, which reads as configured.
+UNSET_CMD = re.compile(r"^\s*(?:|-|n/?a|none(?:\b.*)?)\s*$", re.I)
+BASH_RULE = re.compile(r"^Bash\((?P<cmd>.*?)(?::\*)?\)$")
+
+
+def drop_unset_commands(body: str) -> str:
+    """-> settings.json text without the permission rules whose command is unset."""
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return body  # an invalid file is reported by the hook-registration check, not here
+    perms = data.get("permissions")
+    if not isinstance(perms, dict):
+        return body
+    dropped = False
+    for key in ("allow", "deny", "ask"):
+        rules = perms.get(key)
+        if not isinstance(rules, list):
+            continue
+        kept = [r for r in rules if not (isinstance(r, str) and (m := BASH_RULE.match(r))
+                                         and UNSET_CMD.match(m.group("cmd")))]
+        dropped |= len(kept) != len(rules)
+        perms[key] = kept
+    return json.dumps(data, indent=2, ensure_ascii=False) + "\n" if dropped else body
+
+
 def wanted(entry: dict, flags: set[str]) -> bool:
     need_all = entry.get("when") or []
     need_any = entry.get("when_any") or []
@@ -420,6 +448,8 @@ def main() -> int:
             body, missing = substitute(body, variables, src_rel)
             if missing:
                 all_missing[src_rel] = missing
+            if dest_rel.replace("\\", "/") == ".claude/settings.json" and not missing:
+                body = drop_unset_commands(body)
             payload = body.encode("utf-8")
         else:
             payload = verbatim_payload(src)

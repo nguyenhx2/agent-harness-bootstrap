@@ -165,13 +165,17 @@ ledger_check() {
 # researchers, spec-guardian) may be dispatched freely - planning-phase consultation does not need
 # a task yet.
 #
-# The exception is the tier table in AGENTS.md: Direct and Standard work goes to the owning seat
-# with NO task file, by design. A dispatch says so in writing - "TIER: direct" or "TIER: standard"
-# in its prompt - and is let through. Without that marker this check made the Direct tier
-# impossible to dispatch, so every one-module fix paid for /new-task, a question to the user and a
-# board row. The marker is a claim, like requested_by:, but a visible one: agent-history archives
-# the prompt, and a Guarded change dispatched as "direct" is a lie on the record, not an omission.
-if [ -f "$agents_dir/$stype.md" ]; then
+# The main session does the work at every tier (AGENTS.md), so a write-capable seat is dispatched
+# only when the user names it - Direct or Standard work, no task file - or by the orchestrator for
+# a registered task. The first says so in writing - "TIER: direct" or "TIER: standard" in its
+# prompt - and is let through. The marker is a claim, like requested_by:, but a visible one:
+# agent-history archives the prompt, and a Guarded change dispatched as "direct" is a lie on the
+# record, not an omission.
+#
+# The orchestrator itself is exempt. It is the seat that registers tasks, and its Write/Edit grant
+# is for the board, so requiring a TASK-NNN before it runs was a dead end: the mission stopped at
+# its first dispatch, every time.
+if [ -f "$agents_dir/$stype.md" ] && [ "$stype" != "orchestrator" ]; then
   seat_tools=$(sed -n '/^---$/,/^---$/p' "$agents_dir/$stype.md" | grep -E '^tools:' | head -1)
   if printf '%s' "$seat_tools" | grep -Eq '(^|[,: ])(Edit|Write)(,| |$)'; then
     if ! printf '%s' "${JF[3]}" | grep -qE 'TASK-[0-9]{1,5}' &&
@@ -189,7 +193,7 @@ if [ -f "$agents_dir/$stype.md" ]; then
     fi
     task_id=$(printf '%s' "${JF[3]}" | grep -oE 'TASK-[0-9]{1,5}' | head -1)
     if [ -z "$task_id" ]; then
-      echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. If this is Direct or Standard work (one module or one domain, off the Guarded list in AGENTS.md), say so: put 'TIER: direct' or 'TIER: standard' in the prompt. Guarded work needs a registered task: register it (see /new-task), put its code in the prompt, and dispatch again." >&2
+      echo "BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. The main session does the work at every tier (AGENTS.md): make the change in this session. Dispatch a writing seat only when the user named it - say which tier the change is, 'TIER: direct' or 'TIER: standard', in the prompt - or for a task registered with /new-task, with its TASK-NNN in the prompt." >&2
       exit 2
     fi
     if ! ls "$base_cwd/docs/tasks/active/"*"$task_id"* >/dev/null 2>&1; then

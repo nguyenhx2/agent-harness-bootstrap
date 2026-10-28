@@ -270,7 +270,7 @@ Each category starts at 100 and loses the weight of every finding in it (high 12
 - severity: info (weight 0) · effort: 2 · applies: all
 - full marks: An instruction file carries the Direct / Standard / Guarded tier table.
 - finding: AGENTS.md states no routing tiers
-- why: Without the tier table nothing says which changes go straight to the owning agent and which earn the orchestrator, so every change costs the heaviest process or none of it.
+- why: Without the tier table nothing says which changes need only a quick check and which require tests and an independent review, so every change costs the heaviest process or none of it.
 - fix: Add the tier table to AGENTS.md, as the skill's `assets/root/AGENTS.md` writes it.
 
 ### CON-03 `instruction-nested-stub`

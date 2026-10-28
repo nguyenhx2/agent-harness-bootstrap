@@ -6,6 +6,51 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 This skill is released together with `spec-builder` under one repo version - see
 [`docs/RELEASING.md`](../docs/RELEASING.md).
 
+## [1.23.0] - 2026-10-29
+
+The routing default changes, on evidence from an external audit and benchmark of v1.22.1 (155
+headless `claude -p` sessions, eight repositories, deterministic graders). On the high-risk task
+(an auth change plus a schema change) the shipped routing passed 18 of 24 runs; with the writing
+seats folded into the main session, or with no subagents at all, every run passed (26 of 26 each),
+at roughly 0.2 to 0.6 times the cost. Every failure traced to the two orchestrator defects fixed
+below. Unmeasured, and so left opt-in rather than removed: missions across several domains, where
+the orchestrator might still pay.
+
+### Changed
+
+- **The main session does the work at every tier.** `AGENTS.md`'s tier table now sets how much
+  checking a change gets, not who writes it. Inline, Direct and Standard are the main session with
+  the module's `CLAUDE.md` and path-scoped rules. Guarded - schema, auth, money, personal data, a
+  public contract, a migration, a deploy - is the main session plus a required gate: tests and the
+  independent read-only review (`/review-changes`).
+- **Subagents only where they earn their context:** the independent reviewer (required on Guarded,
+  or on request), a large read that returns only a summary, and independent parallel batches. The
+  main session waits for every dispatch and checks it before its final answer.
+- **Writing seats** (`<domain>-dev`, `qa-test`, `ba-analyst`, `data-modeler`, `writer`) still
+  ship as the ownership map; they are dispatched only when the user names one or the orchestrator
+  runs. `reference/roster.md` explains the shift and moves the orchestrator out of the core tier.
+- **The orchestrator is opt-in**: only when the user asks, for a mission across several domains or
+  repositories. No tier routes to it, and `CLAUDE.md` no longer recommends `claude --agent
+  orchestrator`. Its own "no orchestration needed" verdict now hands the work back to the main
+  session.
+- `data-modeler` no longer claims "any schema change", and `devops` no longer offers pipeline
+  edits it has no Edit or Write to make. `/db-migration` states its tier and ends at the
+  `/review-changes` gate. `/implement-fr` is run by the main session and dispatches the owning seat
+  only on request.
+- `SKILL.md` describes the new default instead of "orchestrator-driven task control".
+
+### Fixed
+
+- **`guard-agent-spawn` dead end.** It refused to dispatch the `orchestrator` without a
+  registered TASK-NNN, but the orchestrator is the seat that registers tasks, so every mission
+  stopped at its first dispatch. The orchestrator is now exempt, and the block message no longer suggests relabelling the tier. New eval case.
+- **Background orchestrator.** A dispatched orchestrator could still be running when the main
+  session gave its final answer ("still running, will report back"), and in a headless run that
+  work was lost. The main session now waits and verifies, and the orchestrator's close-out says
+  there is no later turn to report in.
+- **`scaffold.py` no longer writes `Bash(none:*)`** (or `Bash(none (manual):*)`, `Bash(-:*)`)
+  into `settings.json` when a command variable is unset. New eval case.
+
 ## [1.22.1] - 2026-10-23
 
 ### Added

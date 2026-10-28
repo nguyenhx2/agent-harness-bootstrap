@@ -42,7 +42,10 @@ METRICS = [
     ("context", "Context at first call (tokens)",
      lambda r: int(r["metrics"]["first_call_context_tokens"] or 0), "int"),
     ("turns", "Turns", lambda r: int(r["metrics"]["num_turns"] or 0), "num"),
-    ("seconds", "Session time (s)", lambda r: (r["metrics"]["duration_ms"] or 0) / 1000, "num"),
+    # Wall clock around the whole session. The result event's duration_ms stops at the main
+    # loop's last turn and misses a subagent still running in the background.
+    ("seconds", "Session time (s)",
+     lambda r: (r.get("wall_ms") or r["metrics"]["duration_ms"] or 0) / 1000, "num"),
     ("test_runs", "Test-suite runs", lambda r: r["metrics"]["test_runs"], "num"),
     ("dispatches", "Subagent dispatches", lambda r: r["metrics"]["dispatches"], "num"),
     ("bytes_read", "Bytes of tool output read", lambda r: r["metrics"]["bytes_read"], "int"),
@@ -310,8 +313,12 @@ def render(agg: dict, runs: list[dict], label: str, date: str) -> str:
         "- The review task's request is explicit, so fewer dispatches in the harness column means "
         "the harness declined part of what was asked. That is its documented behaviour, and it is "
         "reported as a count, not scored as better or worse.",
-        "- Cost is Claude Code's own `total_cost_usd` at list price; tokens are from its result "
-        "event and include subagents.",
+        "- Cost is Claude Code's own `total_cost_usd` at list price, for the whole agent tree. "
+        + ("Tokens are summed over the whole agent tree from the result event's `modelUsage`."
+           if runs and all(r["metrics"].get("token_source") == "modelUsage" for r in runs) else
+           "Tokens are from the result event's `usage`, which counts the main loop only and misses "
+           "what subagents spent: read the token rows as a lower bound, most of all in a column "
+           "that dispatches. Session time is the wall clock around the session."),
         "",
     ]
     return "\n".join(lines)

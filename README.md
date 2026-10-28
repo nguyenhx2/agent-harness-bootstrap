@@ -11,9 +11,10 @@
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/eval.yml/badge.svg" alt="CI: eval workflow"></a>
   <a href="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml"><img src="https://github.com/nguyenhx2/agent-harness-bootstrap/actions/workflows/codeql.yml/badge.svg" alt="CI: CodeQL"></a>
-  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-312%2F312%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 312/312 cases per hook flavour, on a strict scaffold"></a>
+  <a href="#proof-you-can-run"><img src="https://img.shields.io/badge/guardrail%20eval-314%2F314%20per%20hook%20flavour-brightgreen.svg" alt="Guardrail eval: 314/314 cases per hook flavour, on a strict scaffold"></a>
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="27 hooks"></a>
+  <a href="https://hub.xerj.org/contributors/nguyenhx2"><img src="https://hub.xerj.org/contributors/nguyenhx2/badge.svg" alt="XERJ Corpus Hub contributor"></a>
 </p>
 
 An AI agent on a real repository fails in predictable ways: it reads what it should not, edits what
@@ -37,9 +38,9 @@ and it comes in three parts that work in order:
 - **Guardrails that block, not ask.** A hook is a shell script that exits 2 before the tool call
   runs. No model is consulted, so the result cannot depend on which model an agent runs, and the
   [guardrail eval](#proof-you-can-run) proves every case on every CI run.
-- **Verification sized to the risk.** A one-file fix goes straight to the work; only a change that
-  crosses domains earns a plan, an orchestrator and a review, and a review that already passed is
-  not run again.
+- **Verification sized to the risk.** A one-file fix goes straight to the work; a risky change
+  (schema, auth, money, a public contract, a migration, a deploy) gets tests and an independent
+  read-only review, and a review that already passed is not run again.
 - **A control panel, not a black box.** harness-view shows every agent, rule and hook, scores them
   against a published rubric, and switches a control off only as a recorded, graded decision.
 
@@ -151,7 +152,7 @@ answer depends on an intake flag, the flag is named.
 | Proportionate verification | `verify-plan.py` reads the diff and says which tests and reviews it needs, and records why each skipped gate was skipped. A README edit does not earn a security review | [`verify-plan.py`](harness-bootstrap/assets/scripts/verify-plan.py) |
 | Verification ledger + spawn guard | `guard-agent-spawn` refuses a review or test run on content that already passed, an identical brief, and a dispatch past the task budget. Only a human can override, with `REVERIFY: <reason>` in the brief, once | [Overriding the ledger](harness-bootstrap/assets/claude/hooks/README.md#overriding-the-verification-ledger-for-the-user-not-the-agent) |
 | Two review rounds, then stop | A third review round on the same content is refused; the agent has to stop and ask | same |
-| Effort and caps per seat | Every seat pins `model`, `effort`, `tools` and `maxTurns`. The orchestrator delegates only work big enough to earn a fresh context, and `settings.json` caps spawn depth at 2 and concurrent subagents at 4 | [`cost-model.md`](harness-bootstrap/reference/cost-model.md), [`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md) |
+| Effort and caps per seat | Every seat pins `model`, `effort`, `tools` and `maxTurns`. The main session delegates only work big enough to earn a fresh context, and `settings.json` caps spawn depth at 2 and concurrent subagents at 4 | [`cost-model.md`](harness-bootstrap/reference/cost-model.md), [`control-surfaces.md`](harness-bootstrap/reference/control-surfaces.md) |
 
 ### 3. "I am worried about leaking keys."
 
@@ -168,12 +169,16 @@ answer depends on an intake flag, the flag is named.
 The agentic loop: **FR -> task -> implement -> verify-plan -> review -> done**, with the spec as the
 oracle at every step. Ceremony follows the change, not the calendar:
 
-| Tier | When | Who |
+| Tier | When | What it adds |
 |---|---|---|
-| Inline | A question, a lookup, a small edit | The main session, no task file |
-| Direct | One module, reversible, no contract touched | The owning seat, straight |
-| Standard | Several files or an FR behind it | The owning seat, task file if it must survive compaction |
-| Guarded | Several seats in order, or schema, auth, money, migrations, deploys | The orchestrator, full flow |
+| Inline | A question, a lookup, a small edit | One check of the thing changed |
+| Direct | One module, reversible, no contract touched | Prove each criterion yourself |
+| Standard | Several files or an FR behind it | Tests over what changed, task file if it must survive compaction |
+| Guarded | Schema, auth, money, a public contract, migrations, deploys, personal data | Tests and the independent read-only review, required |
+
+The main session does the work at every tier. Subagents are for the independent reviewer, a large
+read that returns a summary, and independent parallel batches; the orchestrator runs only when you
+ask for it, for a mission across several domains or repositories.
 
 `task.py` moves a task's file, folder and board row in one command, and `task.py checkpoint` writes
 the next step and last green commit so a fresh session resumes where the last one stopped.
@@ -253,8 +258,8 @@ python scripts/check_numbers.py     # every published figure matches its script
 ```
 
 The guardrail eval scaffolds a real harness per hook flavour (`.sh` and `.ps1`) with `hooks_strict`,
-`db`, `long` and the test flags on, then fires payloads at it: 312/312 per flavour (134 must-block,
-178 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
+`db`, `long` and the test flags on, then fires payloads at it: 314/314 per flavour (134 must-block,
+180 must-allow). It measures that the hooks of that scaffold block and allow what they should; it
 does not measure agent behaviour or a default scaffold. Cases: [`eval/README.md`](eval/README.md).
 Benchmark caveats: [`benchmark/RESULTS.md`](benchmark/RESULTS.md).
 

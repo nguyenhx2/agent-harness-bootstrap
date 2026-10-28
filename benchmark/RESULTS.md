@@ -124,9 +124,9 @@ xychart-beta horizontal
 
 - **What every session carries** (`AGENTS.md`, `CLAUDE.md`, the unconditional rules): 26,169 bytes
   in 8 files with `ui`, `db`, `ai`, `ddd` and `tests` on, 23,098 bytes in 7 files with `tests` only.
-- **Who runs each tier:** Inline is the main session, Direct the owning seat called straight,
-  Standard the owning seat with a task file only when the work must survive a compaction, Guarded
-  the orchestrator, one at a time.
+- **Who runs each tier:** the main session, at every tier. Standard adds a task file only when the
+  work must survive a compaction; Guarded adds the required gate, the tests and the independent
+  reviewer. The orchestrator is opt-in, for a mission across several domains or repositories.
 - **The review gate per change class** (`verify-plan.py`): a docs-only or config-only diff needs no
   review seat and no test run; one source file earns code review and the full suite once; auth code
   and a dependency bump add security review. The secret scan always runs.
@@ -163,7 +163,7 @@ either direction. A benchmark that only ever improves is a marketing document.
   cannot drift from the suite. It runs the `.sh` flavour and is skipped with a message if `bash` is
   unavailable.
 - **Baseline A counts only the 99 must-block payloads** of the eval's hook suite. The eval's full
-  312 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
+  314 cases per flavor include must-allow cases and the scaffold, ledger and toggle suites, which
   measure other properties and are not safety wins.
 - **The bare repo is built from the same fixtures** and then has `.claude/` removed. Without the
   `.env` or the ADR, "nothing was blocked" would be trivially true.

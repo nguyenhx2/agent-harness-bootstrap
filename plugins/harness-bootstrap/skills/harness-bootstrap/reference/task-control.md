@@ -1,7 +1,9 @@
-# Task control - the orchestrator's analyze / decompose / register / drive loop
+# Task control - the analyze / decompose / register / drive loop
 
 The procedure and the canonical state machine. `.claude/rules/task-tracking.md` (loaded every
 session) says WHERE state lives; the orchestrator and that rule link here and never restate it.
+The main session drives registered work itself; the opt-in `orchestrator` drives it only on a
+multi-domain mission the user asked it for, and "the driver" below is whichever of the two runs.
 
 ## The state machine (canonical - defined here, once)
 
@@ -87,7 +89,7 @@ bundle unrelated work.
 blocks at the cap, `env` blocks at once, `infra` only logs. A failed attempt may be re-dispatched
 ONCE to the same agent, with a brief that states what changed - an identical brief is a loop and is
 never sent. At `attempts: 3` the task goes `Blocked` in both places with what was tried, and the
-orchestrator escalates to the user. No exceptions.
+driver escalates to the user. No exceptions.
 
 **Spend capability before the user's attention.** Attempt three may raise the seat's tier: dispatch
 once at a higher `effort:` (or, for a genuinely hard problem, the next model up) with a brief saying

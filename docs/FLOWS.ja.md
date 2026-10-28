@@ -152,7 +152,7 @@ flowchart TD
     MISS["未解決の変数"]
     REC["手で調整"]
     GAP["判断が要るファイルを記述"]
-    WIRE["オーケストレーションを配線"]
+    WIRE["ボードを種まき"]
 
     ROSTER --> SK --> OS --> VARS --> DRY --> SC
     SC --> ADDED
@@ -179,7 +179,7 @@ flowchart TD
 
 | 手順 | 決めること |
 |---|---|
-| 編成 | 目的が土台を決めます。コード: オーケストレーター、レビューゲート、`spec-guardian`、開発エージェント (プリセット S/M/L)。リサーチ、戦略、ドキュメント: `checker` を含む 3 から 5 席。すべての席に `model`、`effort`、`tools`、`maxTurns` を明示します。 |
+| 編成 | 目的が土台を決めます。コード: オプトインのオーケストレーター、レビューゲート、`spec-guardian`、開発エージェント (プリセット S/M/L)。リサーチ、戦略、ドキュメント: `checker` を含む 3 から 5 席。すべての席に `model`、`effort`、`tools`、`maxTurns` を明示します。 |
 | スキル | 質問票で希望したときだけ。候補ごとにファイルを読み、個別のチェックなしには何も入れません。`/skill-wire` がスキルを席に割り当て、合うものがなければ `/new-skill` で作ります。 |
 | 開発 OS | Windows は `.ps1` のフック、macOS と Linux は `.sh`。`windows` / `posix` のどちらか 1 つだけを立てます。 |
 | `vars.json` | `vars` (名前、コマンド、glob)、`flags`、`modules` (各モジュールに 40 行以内の `CLAUDE.md`)。フラグ: 4 つの `purpose_*`、続いて `ui`、`db`、`db_engineer`、`db_seeder`、`ai`、`audit`、`tdd`、`ddd`、`light`、`unit`、`e2e`、`tests`、`deploy_ask`、`long`、`solo_review`、`merge_gate`、`hooks_strict`、`terse`、`rtk`、`pr_cli`、`target_cursor`、`target_codex`。 |
@@ -202,7 +202,7 @@ flowchart TD
     SM["タスク 1 つで試験"]
     MAPS["マップを作る"]
     PORT["Cursor、Codex へ移植"]
-    DONE(["オーケストレーションで稼働"])
+    DONE(["ハーネス導入完了"])
 
     GATE -->|"不合格"| FIX --> GATE
     GATE -->|"すべて合格"| HC --> HK --> SM --> MAPS --> PORT --> DONE
@@ -240,7 +240,7 @@ flowchart TD
 
 - **モデルが書くのは、テンプレートにできないものだけです。** ルーティング表、各開発エージェントの範囲、
   プロジェクト固有の 3 つのルールです。残りはすべてファイルのコピーです。
-- **単独で信用される席はありません。** オーケストレーターは振り分けますが `docs/` と `.claude/` の外には書けません。
+- **単独で信用される席はありません。** オプトインのオーケストレーターは計画とディスパッチをしますが `docs/` と `.claude/` の外には書けません。
   レビュアーはゲートを担いますが `Edit` も `Write` も持ちません。ボードはセッションログが証明できることだけを
   記録します。フックは、ディスパッチする側も含めてすべてのエージェントを縛ります。
 
@@ -345,8 +345,8 @@ flowchart TD
 
 ### 4a. まずティアを選ぶ
 
-すべての変更が完全なフローを通るわけではありません。生成された `AGENTS.md` のティア表が、何かをディスパッチする
-前に、その依頼にどれだけの手続きをかけるかを決めます。
+メインセッションは、どのティアでも 1 つのリポジトリ、1 つのドメインの中なら、認証やスキーマも含めて自分で作業
+します。生成された `AGENTS.md` のティア表が、何かを書く前に、その依頼にどれだけの確認をかけるかを決めます。
 
 ```mermaid
 flowchart TD
@@ -356,34 +356,50 @@ flowchart TD
     DI["Direct"]
     ST["Standard"]
     GU["Guarded"]
+    WORK["メインセッションが作業する"]
+    GATE["テストと独立レビュー、必須"]
 
     REQ --> T
     T -->|"小さく全体が見える"| IN
     T -->|"1 モジュール"| DI
     T -->|"1 ドメイン"| ST
-    T -->|"危険、複数の席"| GU
+    T -->|"スキーマ、認証、お金、契約、マイグレーション、デプロイ、個人データ"| GU
+    IN --> WORK
+    DI --> WORK
+    ST --> WORK
+    GU --> WORK
+    WORK -.->|"Guarded のみ"| GATE
 
     classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
     classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
     classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
 
     class REQ,T hum
-    class IN,DI,ST mod
-    class GU gate
+    class IN,DI,ST,WORK mod
+    class GU,GATE gate
 ```
 
-| ティア | いつ | 誰が | タスクファイル |
-|---|---|---|---|
-| Inline | 質問、調べもの、小さな編集 | メインセッション自身、サブエージェントなし | なし |
-| Direct | 1 モジュール、元に戻せる | 担当エージェントを直接 | なし - プロンプトに `TIER: direct` |
-| Standard | 1 ドメイン、複数ファイル | 担当エージェント | 圧縮をまたぐ必要があるときだけ - それ以外は `TIER: standard` |
-| Guarded | 順序のある 2 席以上、またはスキーマ、認証、お金、公開契約、マイグレーション、デプロイ、個人データ | `orchestrator` | あり、登録する |
+| ティア | 変更 | 加わるもの |
+|---|---|---|
+| Inline | 質問、調べもの、全体が見える小さな編集 | 変えたものを 1 回確かめる |
+| Direct | 1 モジュール、元に戻せる | 各基準を自分で証明し、どう確かめたかを述べる |
+| Standard | 1 ドメイン、複数ファイル、または背後に FR がある | 変更に触れるテスト (スイートがなければ手での確認)。圧縮をまたぐ必要があるときだけタスクファイル |
+| Guarded | スキーマ、認証、お金、公開契約、マイグレーション、デプロイ、個人データ | 下のゲート - 必須で、省略しない |
 
-`guard-agent-spawn` は、書き込みできる席に対して `TASK-NNN` の代わりに `TIER:` の行を受け付けます。変更に対して
-重すぎるティアは慎重さではなく欠陥です。長い Guarded のミッションでは、セッションをオーケストレーターとして
-始めることもできます: `claude --agent orchestrator`。
+変更に対して重すぎるティアは慎重さではなく欠陥です。Guarded の変更に軽いティアを当てるのは、この表が防ぐ
+ために存在する失敗です。
 
-このセクションの残りは **Guarded** のフローで、3 つのシーケンスに分けています。編成は既定 (`tests` あり、
+サブエージェントを既定でディスパッチするのは 3 つの場合だけです。読み取り専用の独立したレビュアー (Guarded では
+必須、頼まれたときも)、要約だけを返す大きな読み取り、互いに独立した並列のバッチです。メインセッションはすべての
+ディスパッチを待ち、最終回答の前に結果を確かめます。書き込みできる席 (開発エージェント、`qa-test`、
+`ba-analyst`、`data-modeler`、`writer`) は引き続き同梱されますが、利用者が名指ししたときだけ動きます。
+`guard-agent-spawn` は、プロンプトに `TASK-NNN` か `TIER: direct` / `TIER: standard` がなければそうしたディスパッチを
+拒みます。`orchestrator` はタスクを登録する側なので対象外です。
+
+`orchestrator` はオプトインです。利用者が求めたときだけ、複数のドメインやリポジトリにまたがるミッションのために
+動きます。どのティアもここへは振り分けません。
+
+このセクションの残りはコード向けの **Guarded** ゲートで、3 つのシーケンスに分けています。編成は既定 (`tests` あり、
 レビュアー分割) です。`tests` がなければ `qa-test` とそのゲートは存在しません。`solo_review` では 1 つの
 `reviewer` 席が 2 人のレビュアーの代わりになります。
 
@@ -393,26 +409,21 @@ flowchart TD
 sequenceDiagram
     autonumber
     actor User as 利用者
-    participant Orch as orchestrator
+    participant Main as メインセッション
     participant Board as タスクボード
     participant Spec as spec-guardian
 
-    User->>Orch: ミッション: FR-07 を実装
-    Orch->>Board: task.py resume、task.py check
-    Board-->>Orch: 未完了の作業が先
-    Orch->>Board: task.py new - Planned
-    Orch->>Board: task.py log - 最初の行
-    Orch->>Spec: 範囲と基準を固める
+    User->>Main: /implement-fr FR-07
+    Main->>Spec: 範囲と基準を固める
     Note over Spec: 読み取り専用、Bash なし
-    Spec-->>Orch: 契約確定、またはずれ
-    Orch->>Board: task.py move - Active
+    Spec-->>Main: 契約確定、またはずれ
+    Main->>Board: /new-task - Planned
+    Main->>Board: task.py move - Active
 ```
 
-- セッション開始時の走査は、フックではなくオーケストレーター本体の手順です。人のゲートの行が先、次に Active と
-  Blocked です。
 - 状態を動かすのは `task.py` だけです。タスクファイルのフロントマター、そのフォルダ、master-plan の行を一緒に
   書き、行を読み返します。`guard-board` は行の手編集をブロックします。
-- `spec-guardian` はミッションごとに 1 回、コードより前に動きます。FR は `docs/specs/index.json` で
+- `spec-guardian` は FR ごとに 1 回、コードより前に動きます。FR は `docs/specs/index.json` で
   `Confirmed` でなければなりません。
 
 ### 4c. ブランチで作る
@@ -420,21 +431,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Orch as orchestrator
-    participant Dev as domain-dev
+    participant Main as メインセッション
     participant Hooks as フック
     participant Board as タスクボード
 
-    Orch->>Dev: worktree で TASK-NNN を依頼
-    Note over Dev: 設計が先、テストはコードと一緒
-    Dev->>Hooks: Edit / Write
-    Hooks-->>Dev: 許可 - 終了 0
-    Dev->>Hooks: main で git commit
-    Hooks-->>Dev: ブロック - 終了 2
-    Dev->>Hooks: ブランチを切ってコミット
-    Hooks-->>Dev: メッセージ有効 - 終了 0
-    Dev->>Board: task.py log、checkpoint
-    Dev-->>Orch: 完了 - 事実ではなく主張
+    Note over Main: モジュールの CLAUDE.md を読み、設計が先
+    Main->>Hooks: Edit / Write
+    Hooks-->>Main: 許可 - 終了 0
+    Main->>Hooks: main で git commit
+    Hooks-->>Main: ブロック - 終了 2
+    Main->>Hooks: ブランチを切ってコミット
+    Hooks-->>Main: メッセージ有効 - 終了 0
+    Main->>Board: task.py checkpoint
 ```
 
 | フック | イベント | 役割 |
@@ -444,39 +452,41 @@ sequenceDiagram
 | `check-commit-msg` | PreToolUse、Bash | Conventional Commits を強制 |
 | `specs-reminder`、`graph-stale` | PostToolUse | 仕様を思い出させる、境界マップにないモジュール間インポートを指摘 |
 
-ブロックしてくるフックは、破ろうとしていたルールです。シェルの同等コマンドで回り道をしてはいけません。作っている
-間、開発エージェントは変更に触れるテストだけを走らせます。完全なスイートはゲートで 1 回だけ走ります。
+ブロックしてくるフックは、破ろうとしていたルールです。シェルの同等コマンドで回り道をしてはいけません。ルーティング
+表がその領域の担当を示します。メインセッションはそのモジュールの `CLAUDE.md` とそのパスのルールを読み、設計を
+タスクファイルに書き、テストをコードと一緒に出します。作っている間は変更に触れるテストだけを走らせ、完全な
+スイートはゲートで 1 回だけ走らせます。
 
-### 4d. ゲートは 1 回、そしてマージと完了
+### 4d. ゲートは 1 回、そして引き渡し
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Orch as orchestrator
+    participant Main as メインセッション
     participant Plan as verify-plan.py
-    participant QA as qa-test
     participant Rev as レビュアー
     participant Board as タスクボード
+    actor Human as 人
 
-    Orch->>Plan: この差分のゲートは?
-    Plan-->>Orch: 必須かスキップか
-    Note over Orch: /secret-scan、常に
-    Orch->>QA: 完全なスイートを 1 回
-    QA-->>Orch: 合格
-    Orch->>Rev: コードとセキュリティ、並列
-    Rev-->>Orch: 合格か指摘
-    Note over Orch,Rev: 最大 2 ラウンド
-    Orch->>Board: task.py gate
-    Note over Orch: 最新の先端でマージ
-    Orch->>Board: task.py move - Done
-    Orch->>Board: MISSION COMPLETE の行
+    Main->>Plan: この差分のゲートは?
+    Plan-->>Main: 必須かスキップか
+    Note over Main: /secret-scan、常に
+    Note over Main: 完全なスイートを 1 回
+    Main->>Rev: コードとセキュリティ、並列、読み取り専用
+    Rev-->>Main: 合格か指摘
+    Note over Main,Rev: 最大 2 ラウンド
+    Main->>Board: task.py gate
+    Main->>Human: レビュー済みの PR、証拠の対応表
+    Note over Human: マージするのは人
 ```
 
-- **ゲートはブランチで、プルリクエストの境界で 1 回だけ** 走ります。エージェントごとではありません。
-  エージェントごとのレビュアーは同じファイルを読み直し、同じ指摘を毎回返します。
+- **ゲートはブランチで、プルリクエストの境界で 1 回だけ** 走ります。ステップごとではありません。
+  ステップごとのレビュアーは同じファイルを読み直し、同じ指摘を毎回返します。
 - **何を走らせるかは差分が決めます。** `verify-plan.py` は各ゲートを必須かスキップかに分け、理由を示します。
   ドキュメントだけの変更に必要なのは秘密スキャンだけです。検証台帳は、まったく同じバイトで合格したゲートを
   スキップし、ファイルが変わったゲートを変更分に絞ります。
+- **独立レビューは Guarded の変更で必須です。** `/review-changes` は、どんなに小さくても Guarded の変更では省略
+  しません。`/db-migration` も同じゲートで終わります。
 - **`guard-agent-spawn` がディスパッチ時に強制します。** 合格済みの内容への再実行、3 ラウンド目のレビュー、
   同一の指示、タスクの予算 (`dispatch_budget`、既定 24) を超えるディスパッチを拒みます。
 - **レビュアーは編集できません。** どちらも `Edit` も `Write` も持ちません。編集するレビュアーは開発エージェントに
@@ -484,15 +494,16 @@ sequenceDiagram
   渡します。
 - **ゲートはその行があるときだけ数えます。** `task.py gate` は台帳の行とセッションログの行を 1 手で書きます。
   レビュアーの行がないログに「すべてのゲートが合格」と書くのが典型的な失敗です。
-- **マージの規則:** マージ担当は 1 人で直列、メインラインの最新の先端に対して。差分は 3 点で、共有リストは和集合、
-  `--ours` や `--theirs` は使いません。任意の `merge-manager` 席がいればそれが行い、いなければオーケストレーター
-  が行います。
-- **完了処理:** worktree を消し、マージ済みのブランチを消してから `MISSION COMPLETE` の行を書きます。マーカーが
-  あって静かなら完了、マーカーがなくて静かならクラッシュで、ファイルから再開します。
+- **このフローの中でマージする者はいません。** `/review-changes` はマージもデプロイもしません。マージするのは人で、
+  フラグ `merge_gate` があれば任意の `merge-manager` 席が、プルリクエストを 1 つずつ、メインラインの最新の先端に
+  対して行います。
+- **複数のドメインやリポジトリにまたがるミッション** で使うのが、オプトインの `orchestrator` です。セッション開始時に
+  ボードを走査し (`task.py resume`、`task.py check`)、席を計画してディスパッチし、状態を `docs/tasks/` に記録します。
+  こちらもマージはしません。
 
-**コスト:** オーケストレーター、レビュアー、デバッガーは Opus の席、開発エージェント、`qa-test`、`spec-guardian`
-は Sonnet、機械的な席 (`history-tracker`、`db-seeder`) は `low` effort の Haiku です。フックはシェルスクリプトで
-費用はかからず、「いいえ」と言える唯一の参加者です。
+**コスト:** レビュアーとデバッガーは Opus の席、開発エージェント、`qa-test`、`spec-guardian` は Sonnet、機械的な席
+(`history-tracker`、`db-seeder`) は `low` effort の Haiku です。フックはシェルスクリプトで費用はかからず、「いいえ」
+と言える唯一の参加者です。
 
 ## 5. spec-builder
 
@@ -654,7 +665,7 @@ flowchart LR
 
 ## 7. デリバリーコマンドをコマンドごとに
 
-開発エージェントやオーケストレーターが製品を作る間に使うコマンドです。ハーネス自体を調整するコマンドは
+メインセッションが製品を作る間に使うコマンドです。ハーネス自体を調整するコマンドは
 [`TUNING.ja.md`](TUNING.ja.md) にあります。
 
 ```mermaid
@@ -725,19 +736,20 @@ flowchart LR
 
 #### `/implement-fr <FR-id>`
 
-1 つの FR に対するセクション 4 の Guarded フローです。作業が Direct だと分かれば、そう言って担当エージェントに
-渡します。引数がなければ、Confirmed で yes と決まり、未解決の問いもタスクもない FR を一覧にして聞きます。
+1 つの FR に対するセクション 4 の Guarded ゲートを、メインセッションが実行します。作業が Direct だと分かれば、そう
+言ってそのティアで行います。引数がなければ、Confirmed で yes と決まり、未解決の問いもタスクもない FR を一覧にして聞きます。
 
 1. `docs/specs/index.json` の FR のエントリと、そのブロックだけを読みます。**`Confirmed` と `yes` でなければ
    止まります。**
 2. `spec-guardian` が範囲と基準を固めます。観察可能な基準のない FR はここで止まります。
-3. `/new-task` で登録し、Active に動かし、ルーティング表から担当を割り当てます。
+3. `/new-task` で登録し、Active に動かし、メインセッションで実装します。ルーティング表は領域の担当を示しますが、その席は利用者が頼んだ
+   ときだけディスパッチします。
 4. タスクファイルで設計してからコード: TDD ならテストが先、DDD なら同じ変更でテスト、スイートがなければ
    基準ごとの手作業の確認メモ。
 5. FR 全体が終わってから、`/review-changes TASK-NNN` を 1 回。
 6. 証拠マップ - `AC-nn.n` ごとにテスト、コマンド、画面を名指す 1 行 - とチェックポイントで閉じます。
 
-**書くもの:** セッションログの行、チェックポイント、コード (開発エージェント経由)。**拒むもの:** Confirmed でない
+**書くもの:** セッションログの行、チェックポイント、コード (メインセッション内)。**拒むもの:** Confirmed でない
 FR、デプロイ、レビューゲートの省略 (Lightweight でも)、証拠のない基準。**出荷:** `purpose_code`。
 
 #### `/db-migration <migration-name>`
@@ -882,7 +894,7 @@ JWT、秘密鍵のヘッダー、ハードコードされた `password=` など)
 | `/new-adr` | ADR ファイル、ADR 索引の行 | 常に |
 | `/new-spec-section` | 仕様のセクション、改訂履歴の行 | `purpose_code` |
 | `/scaffold-feature` | 骨組みのファイル、新しいドメインのルーティング行 | `purpose_code` |
-| `/implement-fr` | ログの行、チェックポイント、開発エージェント経由のコード | `purpose_code` |
+| `/implement-fr` | ログの行、チェックポイント、メインセッション内のコード | `purpose_code` |
 | `/db-migration` | マイグレーション、ERD と辞書、シードスクリプト、tool-changelog | `db` |
 | `/seed-db` | ローカルのデータベースの行だけ | `db` + `db_seeder` |
 | `/test` | ログの行 (合否、カバレッジ) | `tests` |

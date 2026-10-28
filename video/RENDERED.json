@@ -2,11 +2,11 @@
   "comment": "sha256 of the scene source each shipped clip was last rendered from. Written by scripts/check_media.py --update, verified by the same script.",
   "version": 1,
   "rendered_from": {
-    "video/gif/00-intro-poster.png": "6da7636b739117b7c56fff66296a2648fdd10f69348bda6da71ae894521ce24a",
-    "video/gif/00-intro.gif": "6da7636b739117b7c56fff66296a2648fdd10f69348bda6da71ae894521ce24a",
-    "video/gif/ja/00-intro-poster.png": "4812d8859a71a1b26244bd4c9f31060147fc360ee26f8754da5bdeb8132f4f32",
-    "video/gif/ja/00-intro.gif": "4812d8859a71a1b26244bd4c9f31060147fc360ee26f8754da5bdeb8132f4f32",
-    "video/mp4/00-intro.mp4": "6da7636b739117b7c56fff66296a2648fdd10f69348bda6da71ae894521ce24a",
-    "video/mp4/ja/00-intro.mp4": "4812d8859a71a1b26244bd4c9f31060147fc360ee26f8754da5bdeb8132f4f32"
+    "video/gif/00-intro-poster.png": "74c9a304d6d52f07790868ba805239a5ee4c0285ed1079e6cde5d77178370780",
+    "video/gif/00-intro.gif": "74c9a304d6d52f07790868ba805239a5ee4c0285ed1079e6cde5d77178370780",
+    "video/gif/ja/00-intro-poster.png": "d53bef9e39912a7848db631bb1bbd2631540f6f373ebbf459dc7b98d0ec0a9a0",
+    "video/gif/ja/00-intro.gif": "d53bef9e39912a7848db631bb1bbd2631540f6f373ebbf459dc7b98d0ec0a9a0",
+    "video/mp4/00-intro.mp4": "74c9a304d6d52f07790868ba805239a5ee4c0285ed1079e6cde5d77178370780",
+    "video/mp4/ja/00-intro.mp4": "d53bef9e39912a7848db631bb1bbd2631540f6f373ebbf459dc7b98d0ec0a9a0"
   }
 }

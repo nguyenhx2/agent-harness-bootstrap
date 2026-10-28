@@ -99,12 +99,14 @@ preload; `harness-view` reports a skill that sits on disk unwired).
 
 **Routing tiers**, as a ladder whose weight grows left to right. Most changes are Inline or Direct.
 
-| Tier | The change | Who runs it |
+| Tier | The change | What it adds |
 |---|---|---|
-| **Inline** | A question, a lookup, a doc or config edit, a fix you can see whole | The main session. No subagent, no task file |
-| **Direct** | One module, reversible, no contract, schema, auth, payment or infrastructure | The owning seat, called straight |
-| **Standard** | Several files, or a numbered requirement behind it | The owning seat; a task file only if it must survive a compaction |
-| **Guarded** | Several seats in order, or schema, auth, money, a migration, a deploy, personal data | The only tier that goes through the orchestrator |
+| **Inline** | A question, a lookup, a doc or config edit, a fix you can see whole | One check of the thing changed |
+| **Direct** | One module, reversible, no contract, schema, auth, payment or infrastructure | Prove each criterion yourself |
+| **Standard** | Several files, or a numbered requirement behind it | Tests over what changed; a task file only if it must survive a compaction |
+| **Guarded** | Schema, auth, money, a public contract, a migration, a deploy, personal data | Tests and the independent read-only reviewer, required |
+
+The main session does the work at every tier. The orchestrator is opt-in, for a mission across several domains or repositories.
 
 Every seat pins `model`, `effort`, `tools` and `maxTurns`; `settings.json` caps spawn depth and
 concurrent subagents. *"Choosing a heavier tier than the change needs is a defect, not caution."*
@@ -212,7 +214,7 @@ observes; neither tool has a subagent-spawn hook point.
 ## 5. Proof (4 min) - slides 22-24
 
 **The safety floor (slide 22):** `eval/guardrail_eval.py` scaffolds a real harness per hook flavour
-and fires 312 payloads at it: 134 must-block, 178 must-allow, 312/312 correct for `.sh` and for
+and fires 314 payloads at it: 134 must-block, 180 must-allow, 314/314 correct for `.sh` and for
 `.ps1`, with `hooks_strict`, `long` and `db` on. No model is consulted. The port adapter self-test
 is 34/34. *"A cheap model cannot commit a secret. Not because it knows better, but because the hook
 exits 2 and the tool call never happens."* Then the honest limit: this is the floor, not the
@@ -223,13 +225,13 @@ drifts.
 
 | Metric | Before | After | Change |
 |---|---:|---:|---:|
-| Read path (bytes pulled into context) | 234,196 | 136,872 | -42% |
+| Read path (bytes pulled into context) | 234,196 | 138,787 | -41% |
 | Read path (files read) | 24 | 10 | -58% |
 | Write path (bytes the model must author) | 95,064 | 9,439 | -90% |
 
 - 75% of rule content kept out of the default session
 - 18 agents, 17 rules, 23 commands, 27 hooks; a run installs 3 to 17 of the 18 seats
-- Guardrail eval 312/312 per hook flavour
+- Guardrail eval 314/314 per hook flavour
 
 Byte counts are exact; token figures are estimated at 3.6 chars per token.
 
@@ -288,7 +290,7 @@ Nothing is written until the one-screen plan is approved. Point to the repo, the
 | *Can the agent work around a hook?* | The deny list can be; it is a speed bump. Hooks fire before the tool runs and exit 2, git global options included |
 | *What if a hook crashes or hangs?* | A blocking guard fails closed: the call is blocked. A missing interpreter is the one case that warns and allows, because a guard that blocks everything gets switched off |
 | *Does a cheaper model break safety?* | No: no model is consulted, the guardrails are shell scripts. Code quality and review depth do degrade |
-| *Does this slow developers down?* | Not on small work. Inline and Direct skip the orchestrator and the task file, a docs change gets no reviewer, and the ledger refuses re-runs that would learn nothing |
+| *Does this slow developers down?* | Not on small work. Inline and Direct need no task file and no reviewer, a docs change gets no reviewer, and the ledger refuses re-runs that would learn nothing |
 | *Is this just a big CLAUDE.md?* | A CLAUDE.md is advice the model may forget after compaction. This is enforcement plus durable state |
 | *Who owns the policy decisions?* | You do. Governance rules ship as blanks; the skill never invents a licence policy or a classification table |
 
@@ -312,9 +314,9 @@ Checked by `scripts/check_numbers.py`; re-run it rather than editing a figure by
 
 - 18 agents (+1 dev-agent template), 17 rules, 23 commands, 27 hooks; a run installs 3 to 17 of the 18 seats
 - 7 unconditional rules, 10 path-scoped; 75% of rule content stays out of the default session
-- Guardrail eval 312/312 (134 must-block, 178 must-allow) per hook flavour with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 34/34
+- Guardrail eval 314/314 (134 must-block, 180 must-allow) per hook flavour with `hooks_strict`, `long` and `db` on, no model consulted; port adapter 34/34
 - spec-builder: 6 core sections, up to 8 optional
-- Four routing tiers: Inline, Direct, Standard, Guarded - only Guarded uses the orchestrator
+- Four routing tiers: Inline, Direct, Standard, Guarded - the main session does the work at every tier, and the orchestrator is opt-in
 - Five task states: `Planned`, `Active`, `Blocked`, `Pending`, `Done`
 - Four modes: Greenfield, Brownfield, Audit, Update
 - Four purposes: code, research, strategy, docs

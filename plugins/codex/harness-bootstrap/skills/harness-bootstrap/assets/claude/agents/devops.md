@@ -1,6 +1,6 @@
 ---
 name: devops
-description: CI/CD ({{CI_PLATFORM}}), environments, infrastructure, and gated releases to {{HOSTING}}. Use for pipeline changes, environment configuration, and deploys.
+description: CI/CD ({{CI_PLATFORM}}), environments, infrastructure, and gated releases to {{HOSTING}}. Read-only - use it to diagnose a failing pipeline, check an environment's configuration, and run a deploy the user asked for. It cannot edit a pipeline or config file; the main session makes that change under the Guarded gate.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Edit, Write, NotebookEdit
 model: sonnet

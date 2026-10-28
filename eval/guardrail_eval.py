@@ -75,11 +75,11 @@ BASH = find_bash()
 
 # Cases the suite runs per hook flavor. Asserted against the real count at the end of
 # main(), and read by scripts/check_numbers.py to police every published badge.
-CASES_PER_FLAVOR = 312
+CASES_PER_FLAVOR = 314
 # The same total split by intent. Quoted separately in the deck and the outline, so it needs its
 # own assertion: MUST_BLOCK + MUST_ALLOW == CASES_PER_FLAVOR is checked alongside them.
 MUST_BLOCK_PER_FLAVOR = 134
-MUST_ALLOW_PER_FLAVOR = 178
+MUST_ALLOW_PER_FLAVOR = 180
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKILL = ROOT / "harness-bootstrap"
@@ -273,6 +273,9 @@ def suite(repo: str, feature_repo: str) -> list[tuple]:
         ("allow: spawn a roster seat",       "guard-agent-spawn", 0, p("Agent", subagent_type="code-reviewer", prompt="review the diff for TASK-001")),
         ("allow: write seat with a task",    "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TASK-001: run the suite, log results")),
         ("allow: allowlisted Explore",       "guard-agent-spawn", 0, p("Agent", subagent_type="Explore", prompt="find the auth module")),
+        # The orchestrator registers the tasks, so it cannot be asked for one first (the G1 dead
+        # end: every opted-in mission stopped at its first dispatch).
+        ("allow: orchestrator, no task yet", "guard-agent-spawn", 0, p("Agent", subagent_type="orchestrator", prompt="mission: add audit logging to billing and reporting")),
         # The tier table's Direct and Standard rows have no task file; the dispatch says so instead.
         ("allow: write seat, TIER: direct",  "guard-agent-spawn", 0, p("Agent", subagent_type="qa-test", prompt="TIER: direct - pin the date-parser criterion with one test")),
         # Its own empty ledger: two earlier qa-test dispatches on the same content would otherwise
@@ -1075,6 +1078,21 @@ def run_scaffold_validation_suite(workdir: pathlib.Path, flavor: str) -> list[di
     r, _ = run_scaffold(workdir, f"flagcheck-valid-{flavor}", v)
     rec("flags: valid payload still succeeds", "scaffold-flags",
         r.returncode == 0, 0, r.returncode)
+
+    # --- an unset command variable leaves no permission rule behind ---
+    v = base_vars(flavor)
+    v["vars"] = dict(v["vars"], LINT_CMD="none", BUILD_CMD="none (manual)", DB_RESET_CMD="-")
+    r, t = run_scaffold(workdir, f"unset-cmd-{flavor}", v)
+    s = (t / ".claude" / "settings.json")
+    text = s.read_text(encoding="utf-8") if s.is_file() else ""
+    try:
+        valid = isinstance(json.loads(text), dict)
+    except json.JSONDecodeError:
+        valid = False
+    ok = (r.returncode == 0 and valid and "Bash(none" not in text and "Bash(-:" not in text
+          and "Bash(npm test:*)" in text)
+    rec("settings: an unset command emits no Bash(none:*) rule", "scaffold-settings",
+        ok, 0, r.returncode)
 
     # --- contradictory methodology combinations ---
     v = base_vars(flavor)

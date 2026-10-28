@@ -167,9 +167,9 @@
         </div>
 
         <dl class="record">
-          <div><dt>Guardrail eval</dt><dd><b>312/312</b> <span class="u-quiet">per hook flavour, strict hooks on</span></dd></div>
+          <div><dt>Guardrail eval</dt><dd><b>314/314</b> <span class="u-quiet">per hook flavour, strict hooks on</span></dd></div>
           <div><dt>Licence</dt><dd><b>AGPL-3.0</b> <span class="u-quiet">free for any use</span></dd></div>
-          <div><dt>Latest</dt><dd><b>v1.22.1</b> <span class="u-quiet">binaries attached</span></dd></div>
+          <div><dt>Latest</dt><dd><b>v1.23.0</b> <span class="u-quiet">binaries attached</span></dd></div>
           <div><dt>Port adapter</dt><dd><b>34/34</b> <span class="u-quiet">Cursor and Codex</span></dd></div>
         </dl>
       </div>
@@ -419,7 +419,7 @@
           <p class="rd__k">Stage S3 <b>the delivery loop</b></p>
           <p class="rd__t">Plan, build, verify, merge - inside what the harness allows.</p>
           <ul>
-            <li>Process is sized to the change: most work never touches the orchestrator</li>
+            <li>Process is sized to the change: the main session does the work, and the tier sets how much checking it gets</li>
             <li>Verification is planned from the diff, not repeated out of habit</li>
             <li>A hook that exits 2 stops the tool call before it happens</li>
           </ul>
@@ -443,7 +443,7 @@
     <div class="wrap">
       <h2 id="orch-h">Process sized to the change</h2>
       <p class="intro prose">Before anything is dispatched, the change is put in one of four tiers, and the
-        tier decides how much process it gets. Only Guarded work goes through the orchestrator.</p>
+        tier decides how much checking it gets. The main session does the work at every tier; the orchestrator is opt-in.</p>
 
       <figure class="tr__fig">
         <div class="plate">
@@ -483,25 +483,25 @@
               <rect class="n-box" x="6" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="15" y="96">INLINE</text>
               <text class="n-name" x="15" y="110">main session</text>
-              <text class="n-sub" x="15" y="122">no subagent</text>
+              <text class="n-sub" x="15" y="122">one check</text>
             </g>
             <g data-lv="3">
               <rect class="n-box" x="110" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="119" y="96">DIRECT</text>
-              <text class="n-name" x="119" y="110">owning seat</text>
-              <text class="n-sub" x="119" y="122">no task file</text>
+              <text class="n-name" x="119" y="110">main session</text>
+              <text class="n-sub" x="119" y="122">prove each</text>
             </g>
             <g data-lv="4">
               <rect class="n-box" x="214" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="223" y="96">STANDARD</text>
-              <text class="n-name" x="223" y="110">owning seat</text>
-              <text class="n-sub" x="223" y="122">+ a task file</text>
+              <text class="n-name" x="223" y="110">main session</text>
+              <text class="n-sub" x="223" y="122">tests on diff</text>
             </g>
             <g data-lv="5">
               <rect class="n-box" x="318" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="327" y="96">GUARDED</text>
-              <text class="n-name" x="327" y="110">orchestrator</text>
-              <text class="n-sub" x="327" y="122">one at a time</text>
+              <text class="n-name" x="327" y="110">main session</text>
+              <text class="n-sub" x="327" y="122">+ reviewer</text>
             </g>
             <g data-lv="6">
               <rect class="n-box" x="70" y="166" width="280" height="48" rx="3"/>
@@ -536,25 +536,25 @@
               <rect class="n-box" x="48" y="64" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="80">INLINE</text>
               <text class="n-name" x="60" y="96">main session</text>
-              <text class="n-sub" x="262" y="96" text-anchor="end">no subagent</text>
+              <text class="n-sub" x="262" y="96" text-anchor="end">one check</text>
             </g>
             <g data-lv="3">
               <rect class="n-box" x="48" y="116" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="132">DIRECT</text>
-              <text class="n-name" x="60" y="148">owning seat</text>
-              <text class="n-sub" x="262" y="148" text-anchor="end">no task file</text>
+              <text class="n-name" x="60" y="148">main session</text>
+              <text class="n-sub" x="262" y="148" text-anchor="end">prove each</text>
             </g>
             <g data-lv="4">
               <rect class="n-box" x="48" y="168" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="184">STANDARD</text>
-              <text class="n-name" x="60" y="200">owning seat</text>
-              <text class="n-sub" x="262" y="200" text-anchor="end">+ a task file</text>
+              <text class="n-name" x="60" y="200">main session</text>
+              <text class="n-sub" x="262" y="200" text-anchor="end">tests on diff</text>
             </g>
             <g data-lv="5">
               <rect class="n-box" x="48" y="220" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="236">GUARDED</text>
-              <text class="n-name" x="60" y="252">orchestrator</text>
-              <text class="n-sub" x="262" y="252" text-anchor="end">one at a time</text>
+              <text class="n-name" x="60" y="252">main session</text>
+              <text class="n-sub" x="262" y="252" text-anchor="end">+ reviewer</text>
             </g>
             <g data-lv="6">
               <rect class="n-box" x="40" y="284" width="240" height="48" rx="3"/>
@@ -575,7 +575,7 @@
             <p class="rd__k">Tier <b>Inline</b></p>
             <p class="rd__t">A question, a lookup, or a small edit you can see whole in one or two files.</p>
             <ul>
-              <li>The main session does it - no subagent, no orchestrator, no task file</li>
+              <li>The main session does it, with no subagent and no task file</li>
               <li>One check of the thing that changed</li>
             </ul>
             <p class="rd__out"><span>result</span> done in the session, and the branch still lands through a reviewed MR</p>
@@ -584,16 +584,16 @@
             <p class="rd__k">Tier <b>Direct</b></p>
             <p class="rd__t">One module, reversible, touching no contract, schema, auth, payment or infrastructure.</p>
             <ul>
-              <li>The owning seat is called straight, with <code>TIER: direct</code> in the dispatch</li>
-              <li>The seat proves each acceptance criterion itself, and reports how</li>
+              <li>The main session does it, with no subagent</li>
+              <li>It proves each acceptance criterion itself, and says how</li>
             </ul>
-            <p class="rd__out"><span>result</span> no orchestrator, no task file, one reviewed MR</p>
+            <p class="rd__out"><span>result</span> no dispatch, no task file, one reviewed MR</p>
           </div>
           <div class="rd" data-rd="3">
             <p class="rd__k">Tier <b>Standard</b></p>
             <p class="rd__t">One domain, several files, or a functional requirement behind it.</p>
             <ul>
-              <li>Still the owning seat, not the orchestrator</li>
+              <li>Still the main session, in one domain</li>
               <li>A task file when the work must survive a compacted session</li>
               <li>Tests over what changed, not the whole suite</li>
             </ul>
@@ -601,13 +601,14 @@
           </div>
           <div class="rd" data-rd="4">
             <p class="rd__k">Tier <b>Guarded</b></p>
-            <p class="rd__t">Two or more seats in a dependent order, or it touches schema, auth, money, a public contract, a migration, a deploy or personal data.</p>
+            <p class="rd__t">It touches schema, auth, money, a public contract, a migration, a deploy or personal data.</p>
             <ul>
-              <li>The orchestrator runs it, one at a time, never two on the same board</li>
-              <li><code>spec-guardian</code> locks the scope before anything is built</li>
+              <li>The main session does the work, then the independent read-only reviewer reads it - required, never skipped</li>
+              <li>For a new FR, <code>spec-guardian</code> locks the scope before anything is built</li>
               <li><code>/implement-fr FR-NN</code> is that flow, end to end</li>
+              <li>The orchestrator is opt-in: only when you ask, for a mission across several domains or repositories</li>
             </ul>
-            <p class="rd__out"><span>result</span> the full flow, and none of it is optional</p>
+            <p class="rd__out"><span>result</span> tests plus an independent review, and none of it is optional</p>
           </div>
         </figcaption>
       </figure>
@@ -893,7 +894,7 @@
       <p class="note">No model is consulted: the guardrails are shell scripts and exit codes, so the result
         cannot depend on the model. What a cheaper model changes is the quality of the work and the depth
         of the review - the ceiling, which this eval does not measure.</p>
-      <p class="src">312/312 per hook flavour, on a harness scaffolded with the strict, long-session and database
+      <p class="src">314/314 per hook flavour, on a harness scaffolded with the strict, long-session and database
         hooks on - re-run it with <code>py -3.13 eval/guardrail_eval.py</code></p>
     </div>
   </section>

@@ -7,6 +7,13 @@ This tool is versioned and released together with the two skills under one repo 
 [`docs/RELEASING.md`](../../docs/RELEASING.md). Its `Cargo.toml` version is gate-enforced against
 that number, so the binary can never report a version the release does not carry.
 
+## [1.23.0] - 2026-10-29
+
+### Changed
+
+- CON-02 (no routing tiers) explains the tier table by what it now decides - how much checking a
+  change gets - instead of "which changes earn the orchestrator". Scoring is unchanged.
+
 ## [1.22.1] - 2026-10-23
 
 No functional change. The version moves with the repo release, which packages the two skills for

@@ -92,8 +92,8 @@ echo '{"cwd":".","tool_name":"Bash","tool_input":{"command":"cat .env"}}' \
 ```
 
 On Windows use the `.ps1` hook and check `$LASTEXITCODE`, never `$?`. For the full sweep, the repo
-ships `python eval/guardrail_eval.py`, which fires 312 payloads at a real generated harness and
-expects 312/312. That harness has `hooks_strict`, `long` and `db` on, so a default install carries
+ships `python eval/guardrail_eval.py`, which fires 314 payloads at a real generated harness and
+expects 314/314. That harness has `hooks_strict`, `long` and `db` on, so a default install carries
 fewer hooks. In the tool itself, try to read `.env` or commit to `main` and confirm each is blocked.
 
 ## See also
