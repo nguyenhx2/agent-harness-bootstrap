@@ -1,6 +1,6 @@
 ---
 name: data-modeler
-description: Designs and modifies the {{ORM}} schema and its migrations, per the ERD and the data dictionary. Use for any schema change. Owns schema design, not DB operations.
+description: Designs and modifies the {{ORM}} schema and its migrations, per the ERD and the data dictionary. Dispatched when the user names it or the orchestrator runs a mission - by default the main session makes a schema change itself, under the Guarded gate (tests plus the independent review). Owns schema design, not DB operations.
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 effort: high

@@ -164,9 +164,9 @@
         </div>
 
         <dl class="record">
-          <div><dt>ガードレール評価</dt><dd><b>312/312</b> <span class="u-quiet">フック形式ごと、厳格フック有効</span></dd></div>
+          <div><dt>ガードレール評価</dt><dd><b>314/314</b> <span class="u-quiet">フック形式ごと、厳格フック有効</span></dd></div>
           <div><dt>ライセンス</dt><dd><b>AGPL-3.0</b> <span class="u-quiet">商用含め無償</span></dd></div>
-          <div><dt>最新版</dt><dd><b>v1.22.1</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
+          <div><dt>最新版</dt><dd><b>v1.23.0</b> <span class="u-quiet">バイナリ同梱</span></dd></div>
           <div><dt>移植アダプタ</dt><dd><b>34/34</b> <span class="u-quiet">Cursor と Codex</span></dd></div>
         </dl>
       </div>
@@ -410,7 +410,7 @@
           <p class="rd__k">段階 S3 <b>デリバリーループ</b></p>
           <p class="rd__t">計画、実装、検証、マージ - ハーネスが許す範囲の内側で。</p>
           <ul>
-            <li>手順の重さは変更の大きさで決まり、大半の作業はオーケストレーターを通らない</li>
+            <li>手順の重さは変更の大きさで決まり、作業はメインセッションが行い、階層は確認の厚さを決める</li>
             <li>検証は習慣で繰り返すのではなく、差分から計画される</li>
             <li>終了コード 2 のフックは、実行前にツール呼び出しを止める</li>
           </ul>
@@ -433,7 +433,7 @@
   <section class="sec tr" id="orchestrator" aria-labelledby="orch-h">
     <div class="wrap">
       <h2 id="orch-h">手順の重さは変更の大きさで決まる</h2>
-      <p class="intro prose">何かを割り当てる前に、その変更を四つの階層のどれかに置き、階層が手順の重さを決めます。オーケストレーターを通るのは Guarded の作業だけです。</p>
+      <p class="intro prose">何かを割り当てる前に、その変更を四つの階層のどれかに置き、階層が確認の厚さを決めます。どの階層でもメインセッションが作業し、オーケストレーターは任意です。</p>
 
       <figure class="tr__fig">
         <div class="plate">
@@ -473,25 +473,25 @@
               <rect class="n-box" x="6" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="15" y="96">INLINE</text>
               <text class="n-name" x="15" y="110">本セッション</text>
-              <text class="n-sub" x="15" y="122">委任しない</text>
+              <text class="n-sub" x="15" y="122">確認は一度</text>
             </g>
             <g data-lv="3">
               <rect class="n-box" x="110" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="119" y="96">DIRECT</text>
-              <text class="n-name" x="119" y="110">担当席が直接</text>
-              <text class="n-sub" x="119" y="122">タスクファイルなし</text>
+              <text class="n-name" x="119" y="110">本セッション</text>
+              <text class="n-sub" x="119" y="122">各基準を証明</text>
             </g>
             <g data-lv="4">
               <rect class="n-box" x="214" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="223" y="96">STANDARD</text>
-              <text class="n-name" x="223" y="110">担当席が実行</text>
-              <text class="n-sub" x="223" y="122">+ タスクファイル</text>
+              <text class="n-name" x="223" y="110">本セッション</text>
+              <text class="n-sub" x="223" y="122">変更分をテスト</text>
             </g>
             <g data-lv="5">
               <rect class="n-box" x="318" y="78" width="96" height="52" rx="3"/>
               <text class="n-code" x="327" y="96">GUARDED</text>
-              <text class="n-name" x="327" y="110">統括が実行</text>
-              <text class="n-sub" x="327" y="122">同時に一件だけ</text>
+              <text class="n-name" x="327" y="110">本セッション</text>
+              <text class="n-sub" x="327" y="122">+ 独立レビュー</text>
             </g>
             <g data-lv="6">
               <rect class="n-box" x="70" y="166" width="280" height="48" rx="3"/>
@@ -526,25 +526,25 @@
               <rect class="n-box" x="48" y="64" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="80">INLINE</text>
               <text class="n-name" x="60" y="96">本セッション</text>
-              <text class="n-sub" x="262" y="96" text-anchor="end">委任しない</text>
+              <text class="n-sub" x="262" y="96" text-anchor="end">確認は一度</text>
             </g>
             <g data-lv="3">
               <rect class="n-box" x="48" y="116" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="132">DIRECT</text>
-              <text class="n-name" x="60" y="148">担当席が直接</text>
-              <text class="n-sub" x="262" y="148" text-anchor="end">タスクファイルなし</text>
+              <text class="n-name" x="60" y="148">本セッション</text>
+              <text class="n-sub" x="262" y="148" text-anchor="end">各基準を証明</text>
             </g>
             <g data-lv="4">
               <rect class="n-box" x="48" y="168" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="184">STANDARD</text>
-              <text class="n-name" x="60" y="200">担当席が実行</text>
-              <text class="n-sub" x="262" y="200" text-anchor="end">+ タスクファイル</text>
+              <text class="n-name" x="60" y="200">本セッション</text>
+              <text class="n-sub" x="262" y="200" text-anchor="end">変更分をテスト</text>
             </g>
             <g data-lv="5">
               <rect class="n-box" x="48" y="220" width="224" height="44" rx="3"/>
               <text class="n-code" x="60" y="236">GUARDED</text>
-              <text class="n-name" x="60" y="252">統括が実行</text>
-              <text class="n-sub" x="262" y="252" text-anchor="end">同時に一件だけ</text>
+              <text class="n-name" x="60" y="252">本セッション</text>
+              <text class="n-sub" x="262" y="252" text-anchor="end">+ 独立レビュー</text>
             </g>
             <g data-lv="6">
               <rect class="n-box" x="40" y="284" width="240" height="48" rx="3"/>
@@ -565,7 +565,7 @@
             <p class="rd__k">階層 <b>Inline</b></p>
             <p class="rd__t">質問、調べもの、あるいは一、二ファイルで全体が見える小さな編集。</p>
             <ul>
-              <li>メインセッション自身が行う - サブエージェントもオーケストレーターもタスクファイルもなし</li>
+              <li>メインセッション自身が行う - サブエージェントもタスクファイルもなし</li>
               <li>変えた箇所を一度だけ確認する</li>
             </ul>
             <p class="rd__out"><span>結果</span> セッション内で完了し、ブランチはやはりレビュー済み MR を通って着地する</p>
@@ -574,16 +574,16 @@
             <p class="rd__k">階層 <b>Direct</b></p>
             <p class="rd__t">1 モジュール、巻き戻し可能、契約・スキーマ・認可・決済・インフラのいずれにも触れない。</p>
             <ul>
-              <li>担当席を直接呼ぶ。割り当てには <code>TIER: direct</code> を記す</li>
-              <li>席自身が各受け入れ基準を証明し、その方法を報告する</li>
+              <li>メインセッション自身が行う - サブエージェントなし</li>
+              <li>各受け入れ基準を自分で証明し、その方法を述べる</li>
             </ul>
-            <p class="rd__out"><span>結果</span> オーケストレーターもタスクファイルもなく、レビュー済み MR が一つ</p>
+            <p class="rd__out"><span>結果</span> 割り当てもタスクファイルもなく、レビュー済み MR が一つ</p>
           </div>
           <div class="rd" data-rd="3">
             <p class="rd__k">階層 <b>Standard</b></p>
             <p class="rd__t">1 ドメイン、複数ファイル、あるいは背後に機能要件がある変更。</p>
             <ul>
-              <li>これもオーケストレーターではなく担当席</li>
+              <li>ここでもメインセッションが、1 ドメインの中で行う</li>
               <li>圧縮されたセッションを越える必要があるならタスクファイルを登録する</li>
               <li>テストは全件ではなく、変更箇所に対して</li>
             </ul>
@@ -591,13 +591,14 @@
           </div>
           <div class="rd" data-rd="4">
             <p class="rd__k">階層 <b>Guarded</b></p>
-            <p class="rd__t">複数の席が順に依存する、またはスキーマ・認可・金銭・公開契約・マイグレーション・デプロイ・個人データに触れる。</p>
+            <p class="rd__t">スキーマ・認可・金銭・公開契約・マイグレーション・デプロイ・個人データに触れる。</p>
             <ul>
-              <li>統括役(オーケストレーター)が実行する - 同じボードで同時に二件は走らせない</li>
-              <li>実装の前に <code>spec-guardian</code> がスコープを固定する</li>
+              <li>メインセッションが作業し、その後に独立した読み取り専用のレビュアーが読む - 必須で、省略できない</li>
+              <li>新しい FR では、実装の前に <code>spec-guardian</code> がスコープを固定する</li>
               <li><code>/implement-fr FR-NN</code> がその一連の流れ</li>
+              <li>オーケストレーターは任意: 頼んだときだけ、複数のドメインやリポジトリにまたがるミッションに使う</li>
             </ul>
-            <p class="rd__out"><span>結果</span> フル手順、そのどれも省略できない</p>
+            <p class="rd__out"><span>結果</span> テストと独立レビュー、そのどれも省略できない</p>
           </div>
         </figcaption>
       </figure>
@@ -863,7 +864,7 @@
       </ul>
 
       <p class="note">モデルには一切問い合わせません。ガードレールはシェルスクリプトと終了コードなので、結果がモデルに左右されることはありません。安いモデルで変わるのは作業の質とレビューの深さ、すなわち上限であり、この評価はそれを測っていません。</p>
-      <p class="src">厳格・長期セッション・データベースのフックを有効にしたハーネスで、フック形式ごとに 312/312 - <code>py -3.13 eval/guardrail_eval.py</code> で自分で再実行できます</p>
+      <p class="src">厳格・長期セッション・データベースのフックを有効にしたハーネスで、フック形式ごとに 314/314 - <code>py -3.13 eval/guardrail_eval.py</code> で自分で再実行できます</p>
     </div>
   </section>
 

@@ -19,7 +19,7 @@ is complete - not after each step.
    | `/secret-scan` | anything - never skipped | - |
    | spec validation | `docs/specs/`, when `.claude/scripts/spec-check.py` exists: run it with `--write` | - |
 {{#IF_PURPOSE_CODE}}   | code review | code, tests, schema, dependencies, infrastructure | {{#IF_SOLO_REVIEW}}`reviewer`{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer`{{/IF_SOLO_REVIEW}} |
-   | security review | auth, secrets, input parsing, data handling, AI tool calls, dependencies, infrastructure, hooks | {{#IF_SOLO_REVIEW}}`reviewer`{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`security-reviewer`{{/IF_SOLO_REVIEW}} |
+   | security review | auth, payment, personal data, secrets, input parsing, data handling, AI tool calls, dependencies, infrastructure, hooks | {{#IF_SOLO_REVIEW}}`reviewer`{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`security-reviewer`{{/IF_SOLO_REVIEW}} |
 {{#IF_TESTS}}   | scoped tests, then the full suite once | behavior: code or schema, not docs or config | - |
    | end to end | a critical flow named in `.claude/verify-map.json` | - |
 {{/IF_TESTS}}   | spec check | a linked task, or a spec | `spec-guardian` |

@@ -1,14 +1,16 @@
 ---
 name: harness-bootstrap
-version: 1.22.1
-description: Bootstraps or standardizes the AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree and AGENTS.md + CLAUDE.md, so the repo runs under orchestrator-driven task control. Covers code repos and repos dedicated to research, strategy or documentation, plus a read-only audit mode beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure. Not for writing a specification set - that is spec-builder.
+version: 1.23.0
+description: Bootstraps or standardizes the AI-agent harness for a repo - analyzes the existing source first, then generates the .claude folder (agents with explicit model/effort/tool budgets, path-scoped rules, commands, hooks, settings.json), the docs tree and AGENTS.md + CLAUDE.md, so one main session works every change at the process it needs, with read-only reviewers as the required gate on risky ones. Covers code repos and repos dedicated to research, strategy or documentation, plus a read-only audit mode beside untouched source. Use when the user asks to "set up base", "thiet lap base coding", "chuan hoa claude folder", "chuan hoa source thanh claude ready", "khoi tao workspace cho AI agents", "set up agents for this repo", or adopts a project that should follow the standard structure. Not for writing a specification set - that is spec-builder.
 allowed-tools: Bash(python:*), Bash(python3:*), Bash(git:*), Read, Write, Edit, Grep, Glob, AskUserQuestion, Agent, WebSearch
 ---
 
 # Harness bootstrap
 
-Installs the standard operating harness: a roster of agents that know their scope and cost, rules
-that load only when relevant, hooks that fire, and a task board that survives context compaction.
+Installs the standard operating harness: one main session that does the work, rules and module
+files that load only when relevant, read-only reviewers that gate the risky changes, hooks that
+fire, and a task board that survives context compaction. Writing seats and the orchestrator are
+installed but opt-in - a single agent loop is the default for every change inside one repository.
 
 **The assets are real files.** `scripts/scaffold.py` installs everything under `assets/`. Your job is
 the decisions - roster, scope, variables - never retyping hooks or commands. Read each reference
@@ -88,8 +90,9 @@ copy the assets and substitute by hand, say so, and fix Python.
 
 **5. Author what only judgment can.**
 - The **roster and routing tables** in `AGENTS.md`: every seat appears, every module has exactly one
-  owner. They live there once. Adapt the Guarded tier row to this project's real irreversible
-  surfaces.
+  owner. They live there once. The routing table says who owns an area - the main session reads
+  that module's `CLAUDE.md` and does the work. Adapt the Guarded tier row to this project's real
+  irreversible surfaces.
 - Each dev agent's **scope**, from real paths. `dev-agent.md` is copied per domain by hand, so
   resolve its `{{#IF_...}}` blocks yourself.
 - The rules the scaffolder never ships - `tech-stack.md`, `coding-standards.md`, `git-workflow.md` -
@@ -101,7 +104,7 @@ Common assets (hooks, the deny core, the invariant rules, review knowledge bases
 templates, agent bodies) stay project-neutral so they remain diff-comparable and upgradable. A
 sentence that names a module, provider or brand comes from a `{{VAR}}` or an authored file.
 
-**6. Wire up orchestration.** Seed `docs/tasks/master-plan.md` - in brownfield, Phase 1 from the
+**6. Seed the board.** Seed `docs/tasks/master-plan.md` - in brownfield, Phase 1 from the
 analysis gap list, grouped into a few large tasks the user approves. The task lifecycle is
 [`reference/task-control.md`](reference/task-control.md), its single source.
 

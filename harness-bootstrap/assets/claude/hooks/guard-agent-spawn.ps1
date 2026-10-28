@@ -114,8 +114,10 @@ function Invoke-LedgerCheck {
 
 # --- 3. task linkage for write-capable seats ------------------------------
 # A dispatch to a seat that can Edit or Write must name a registered task, or the work is an
-# orphan the board cannot see. Read-only seats may be dispatched freely.
-if (Test-Path $seatFile) {
+# orphan the board cannot see. Read-only seats may be dispatched freely. The orchestrator is exempt:
+# it is the seat that registers tasks (see guard-agent-spawn.sh). -cne keeps the comparison
+# case-sensitive, as in the .sh flavor.
+if ((Test-Path $seatFile) -and ($stype -cne 'orchestrator')) {
     $toolsLine = $null
     $inFm2 = $false
     foreach ($line in Get-Content $seatFile) {
@@ -123,7 +125,7 @@ if (Test-Path $seatFile) {
         if ($inFm2 -and $line -match '^tools:\s*(.+)$') { $toolsLine = $Matches[1]; break }
     }
     if ($toolsLine -and $toolsLine -match '(^|[,\s])(Edit|Write)(,|\s|$)') {
-        # Direct and Standard work has no task file by design (the tier table in AGENTS.md).
+        # A seat the user named for Direct or Standard work has no task file by design (AGENTS.md).
         # A dispatch that says "TIER: direct" or "TIER: standard" and names no task passes;
         # see guard-agent-spawn.sh for why the marker is a visible claim rather than a hole.
         $prompt = [string]$payload.tool_input.prompt
@@ -140,7 +142,7 @@ if (Test-Path $seatFile) {
             $taskId = $null
             if ($prompt -match 'TASK-\d{1,5}') { $taskId = $Matches[0] }
             if (-not $taskId) {
-                [Console]::Error.WriteLine("BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. If this is Direct or Standard work (one module or one domain, off the Guarded list in AGENTS.md), say so: put 'TIER: direct' or 'TIER: standard' in the prompt. Guarded work needs a registered task: register it (see /new-task), put its code in the prompt, and dispatch again.")
+                [Console]::Error.WriteLine("BLOCKED: '$stype' can write, but this dispatch names no TASK-NNN and no tier. The main session does the work at every tier (AGENTS.md): make the change in this session. Dispatch a writing seat only when the user named it - say which tier the change is, 'TIER: direct' or 'TIER: standard', in the prompt - or for a task registered with /new-task, with its TASK-NNN in the prompt.")
                 exit 2
             }
             if (-not (Get-ChildItem -Path $activeDir -Filter "*$taskId*" -ErrorAction SilentlyContinue)) {

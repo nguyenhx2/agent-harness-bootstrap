@@ -5,6 +5,9 @@ argument-hint: <migration-name>
 
 Generate the migration **$1**. If $1 is empty, ask for a migration name and stop.
 
+A migration is Guarded work (`AGENTS.md`): the main session runs this command, and step 6 is its
+gate - never skipped, however small the migration.
+
 1. Diff the schema against the data model in `docs/specs/`. If the design is new, update the ERD
    and the data dictionary in the same {{PR_OR_MR}} as the migration.
 2. Generate the migration with the project's migration tool, against the LOCAL development database
@@ -17,3 +20,5 @@ Generate the migration **$1**. If $1 is empty, ask for a migration name and stop
 4. Update the seed script in the same {{PR_OR_MR}} so it still matches the schema.
 5. Record the migration in `docs/context/tool-changelog.md`: what changed, why, and how it was
    verified.
+6. The gate: {{#IF_TESTS}}run the tests that touch the changed tables, then {{/IF_TESTS}}run `/review-changes` on the branch
+   before the {{PR_OR_MR}} is opened. Its independent review is required for a schema change.

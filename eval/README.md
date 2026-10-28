@@ -4,9 +4,9 @@
 
 ## Result
 
-`python eval/guardrail_eval.py` -> **290/290 correct (134 must-block, 178 must-allow).**
+`python eval/guardrail_eval.py` -> **314/314 correct (134 must-block, 180 must-allow).**
 
-With `--flavor ps1` the same payloads also run through the `.ps1` hooks, for **624/624** across both
+With `--flavor ps1` the same payloads also run through the `.ps1` hooks, for **628/628** across both
 flavours. CI runs both.
 
 The guardrails are hooks and `settings.json` deny rules: shell scripts, exit codes and glob matching.

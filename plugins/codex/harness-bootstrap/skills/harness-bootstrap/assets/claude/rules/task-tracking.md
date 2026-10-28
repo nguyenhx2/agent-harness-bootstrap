@@ -4,8 +4,9 @@ Loaded in every session, deliberately: an agent that forgets where state lives w
 
 ## Task files are the source of truth
 
-This covers registered work - Guarded changes, and anything the user asked to track. Inline, Direct
-and Standard work (the `AGENTS.md` tier table) has no task file: its record is the commit and the
+This covers registered work - {{#IF_PURPOSE_CODE}}an FR through `/implement-fr`, {{/IF_PURPOSE_CODE}}work that must survive a compacted
+session, a mission the orchestrator runs, and anything the user asked to track. Other work, at any
+tier of the `AGENTS.md` table, has no task file: its record is the commit, the gate results and the
 report. The conversation is not the record; it gets compacted.
 
 - `docs/tasks/master-plan.md` - the board, one row per task.

@@ -59,29 +59,47 @@ Routing:
 
 ### How much process a change gets
 
-Decide the tier before dispatching anything. Most requests are Inline or Direct.
+**The main session does the work, at every tier.** Inside one repository and one domain - auth and
+schema included - one agent loop with this repository's rules, module `CLAUDE.md` files and skills
+does the job; a subagent that writes the code re-reads what you already have and loses detail on
+the way back. Decide the tier before you start. Most requests are Inline or Direct.
 
 | Tier | The change | Who runs it | What it adds |
 |------|------------|-------------|--------------|
-| **Inline** | a question, a lookup, a small edit you can see whole in one or two files | the main session itself - no subagent, no orchestrator, no task file | one check of the thing changed |
-| **Direct** | {{#IF_PURPOSE_CODE}}one module, reversible, touches no contract, schema, auth, payment, or infrastructure{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}one section or one question, one seat, nothing that leaves the repo{{/IF_PURPOSE_CODE}} | the owning seat, called straight - no orchestrator, no task file | the seat proves each criterion itself and reports how |
-| **Standard** | {{#IF_PURPOSE_CODE}}one domain, several files, or an FR behind it{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}one deliverable, several files, one producing seat{{/IF_PURPOSE_CODE}} | the owning seat; register a task file when the work must survive a compacted session | {{#IF_PURPOSE_CODE}}{{#IF_TESTS}}`{{TEST_CMD}}` over what changed{{/IF_TESTS}}{{^IF_TESTS}}a hand check of every criterion{{/IF_TESTS}}{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}`checker` once, on the finished deliverable{{/IF_PURPOSE_CODE}} |
-| **Guarded** | two or more seats in a dependent order{{#IF_PURPOSE_CODE}}, OR it touches schema, auth, money, a public contract, a migration, a deploy{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}, OR a deliverable that leaves the repo (published, sent to a client or a decision-maker){{/IF_PURPOSE_CODE}}, or {{PII_OR_DATA}} | `orchestrator` - one at a time, never two on the same board | the full flow below |
+| **Inline** | a question, a lookup, a small edit you can see whole in one or two files | the main session | one check of the thing changed |
+| **Direct** | {{#IF_PURPOSE_CODE}}one module, reversible{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}one section or one question, nothing that leaves the repo{{/IF_PURPOSE_CODE}} | the main session | prove each criterion yourself and say how |
+| **Standard** | {{#IF_PURPOSE_CODE}}one domain, several files, or an FR behind it{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}one deliverable, several files{{/IF_PURPOSE_CODE}} | the main session; a task file when the work must survive a compacted session | {{#IF_PURPOSE_CODE}}{{#IF_TESTS}}`{{TEST_CMD}}` over what changed{{/IF_TESTS}}{{^IF_TESTS}}a hand check of every criterion{{/IF_TESTS}}{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}`checker` once, on the finished deliverable{{/IF_PURPOSE_CODE}} |
+| **Guarded** | {{#IF_PURPOSE_CODE}}it touches schema, auth, money, a public contract, a migration, a deploy, or {{PII_OR_DATA}}{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}a deliverable that leaves the repo (published, sent to a client or a decision-maker), or {{PII_OR_DATA}}{{/IF_PURPOSE_CODE}} | the main session, then the independent reviewer | the gate below - **required, never skipped** |
 
-Delegate only work that is large, or independent and parallel; what you can finish in a handful of
-tool calls stays with you, and no subagent checks work you have just done. A heavier tier than the
-change needs is a defect, not caution; a lighter one for a Guarded change is the failure the table
-exists to prevent. When the user names the orchestrator, it gets the mission.
+A heavier tier than the change needs is a defect, not caution; a lighter one for a Guarded change is
+the failure the table exists to prevent. The routing table above says who owns each area: read that
+module's `CLAUDE.md` and the rules for its paths, which carry what its seat knows, and do the work
+here.
 
-{{#IF_PURPOSE_CODE}}The Guarded flow for code, none of it optional (`/implement-fr FR-NN`): `spec-guardian` locks the
-scope, the specialist implements against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}),
+**A subagent earns its context only for:**
+- **The independent review** - {{#IF_PURPOSE_CODE}}{{#IF_SOLO_REVIEW}}`reviewer`{{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}`checker`{{/IF_PURPOSE_CODE}}, read-only. **Required** on every
+  Guarded change and whenever the user asks; never for work you can check in a handful of calls.
+- **A large read that returns only a summary** - a codebase sweep, a long source, a failing run's
+  logs. The seat reads; you get the conclusion.
+- **Independent batches in parallel** - units that share no file and need no result from each other.
+
+Dispatch, then **wait for the report and check it** (`git diff --stat`, the task file) before your
+final answer. Never end a turn with a subagent still running: a background result nobody verified is
+lost work. A seat that can write (its `tools:` grants Edit or Write) is not dispatched by default:
+the user can name one, and the orchestrator uses them.
+
+**The orchestrator is opt-in.** It runs only when the user asks for it, for a mission across several
+domains or repositories. No tier routes to it.
+
+{{#IF_PURPOSE_CODE}}The Guarded gate for code, none of it optional (`/implement-fr FR-NN` for a new FR): `spec-guardian`
+locks the scope, you implement against the locked criteria ({{#IF_TESTS}}{{#IF_TDD}}test-first{{/IF_TDD}}{{^IF_TDD}}tests in the same change{{/IF_TDD}}{{/IF_TESTS}}{{^IF_TESTS}}verified by hand against each criterion{{/IF_TESTS}}),
 then the branch gate runs before the {{PR_OR_MR}} is opened. **The gate runs once, on the branch,
-not after each agent or step:** `/review-changes` - {{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, and `/secret-scan`
+not after each step:** `/review-changes` - {{#IF_TESTS}}the suites, {{/IF_TESTS}}{{#IF_SOLO_REVIEW}}`reviewer` (code quality and security in one pass){{/IF_SOLO_REVIEW}}{{^IF_SOLO_REVIEW}}`code-reviewer` and `security-reviewer`{{/IF_SOLO_REVIEW}}, and `/secret-scan`
 over the whole branch diff. **Verify per feature, not per step:** while building, run only the tests
 that touch what you changed; the full suite runs once, when the feature is complete.
-{{/IF_PURPOSE_CODE}}{{#IF_CHECKER}}The Guarded flow for {{#IF_PURPOSE_CODE}}a non-code deliverable{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}a deliverable{{/IF_PURPOSE_CODE}}: the orchestrator restates the brief and its acceptance
-criteria, the producing seat drafts, and `checker` reads the finished deliverable once, then
-`/secret-scan`. Evidence comes before the decision that rests on it, and both before the prose.
+{{/IF_PURPOSE_CODE}}{{#IF_CHECKER}}The Guarded gate for {{#IF_PURPOSE_CODE}}a non-code deliverable{{/IF_PURPOSE_CODE}}{{^IF_PURPOSE_CODE}}a deliverable{{/IF_PURPOSE_CODE}}: restate the brief and its acceptance criteria, draft,
+and `checker` reads the finished deliverable once, then `/secret-scan`. Evidence comes before the
+decision that rests on it, and both before the prose.
 {{#IF_PURPOSE_RESEARCH}}
 - `researcher` produces evidence; the check traces every claim to a source that says it.
 {{/IF_PURPOSE_RESEARCH}}{{#IF_PURPOSE_STRATEGY}}

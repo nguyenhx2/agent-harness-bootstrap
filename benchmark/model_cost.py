@@ -9,7 +9,15 @@ that is a quality question, and quality cannot be derived from prices. See eval/
 test that.
 
 What is GROUNDED (measured from the repo):
-  - each agent's system-prompt size = its own body + the 4 unconditional rules, in bytes.
+  - each agent's system-prompt size = its own body + the unconditional rules, plus AGENTS.md and
+    CLAUDE.md for every seat without `omitClaudeMd: true`, in bytes.
+  - each seat's model and effort in the default roster, read from its frontmatter.
+  - prompt caching: the prefix a turn re-sends is billed at the cache-read rate, and what is new in
+    it at the cache-write rate (the 5-minute TTL multipliers below).
+
+The flow modelled is one feature through every seat - the path the opt-in orchestrator takes. Since
+1.23.0 the default is the main session doing the work with the reviewers as the gate, which this
+script does not model; benchmark/live/ measures it instead.
 
 What is ASSUMED (stated here, editable, not measured):
   - how many turns each seat takes, and how much it reads and writes per turn.
@@ -41,6 +49,11 @@ PRICES = {
     "haiku":  {"in":  1.00, "out":  5.00},
 }
 
+# Prompt-caching multipliers on the input price (5-minute TTL): a cache write costs 1.25x, a cache
+# read 0.1x. Every turn after the first re-sends a cached prefix.
+CACHE_WRITE = 1.25
+CACHE_READ = 0.10
+
 # --------------------------------------------------------------------------- ASSUMPTIONS (edit me)
 CHARS_PER_TOKEN = 3.6
 
@@ -63,18 +76,30 @@ WORKLOAD = {
     "history-tracker":   {"turns": 2, "read_kb": 15, "write_kb": 2},
 }
 
-# The roster's default allocation, from reference/roster.md.
-DEFAULT_ALLOC = {
-    "orchestrator":      ("opus",   "high"),
-    "spec-guardian":     ("sonnet", "medium"),
-    "app-dev":           ("sonnet", "high"),
-    "qa-test":           ("sonnet", "medium"),
-    "code-reviewer":     ("opus",   "high"),
-    "security-reviewer": ("opus",   "high"),
-    "history-tracker":   ("haiku",  "low"),
-}
-
 SEATS = list(WORKLOAD)
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+AGENTS_DIR = ROOT / "harness-bootstrap/assets/claude/agents"
+
+
+def seat_file(seat: str) -> pathlib.Path:
+    f = AGENTS_DIR / f"{seat}.md"
+    return f if f.is_file() else AGENTS_DIR / "dev-agent.md"  # app-dev comes from the template
+
+
+def frontmatter(seat: str) -> dict[str, str]:
+    text = seat_file(seat).read_text(encoding="utf-8", errors="replace")
+    fm = text.split("---")[1] if text.startswith("---") else ""
+    out: dict[str, str] = {}
+    for ln in fm.splitlines():
+        k, sep, v = ln.partition(":")
+        if sep and not ln.startswith(" "):
+            out[k.strip()] = v.strip()
+    return out
+
+
+# The roster's default allocation, read from each seat's frontmatter - typed here, it drifted
+# (app-dev was costed at high effort while its file said medium).
+DEFAULT_ALLOC = {s: (frontmatter(s)["model"], frontmatter(s)["effort"]) for s in SEATS}
 
 
 def profile(model: str, effort: str) -> dict:
@@ -107,7 +132,8 @@ def tok(nbytes: float) -> float:
 
 
 def system_prompt_bytes(root: pathlib.Path) -> dict[str, int]:
-    """GROUNDED: agent body + the rules that load unconditionally into every session."""
+    """GROUNDED: agent body + the rules that load unconditionally into every session, plus the
+    root AGENTS.md and CLAUDE.md for a seat that does not set omitClaudeMd."""
     rules = root / "harness-bootstrap/assets/claude/rules"
     always = 0
     for p in sorted(rules.glob("*.md")):
@@ -116,13 +142,13 @@ def system_prompt_bytes(root: pathlib.Path) -> dict[str, int]:
         if "paths:" not in fm:
             always += len(head)
 
-    agents = root / "harness-bootstrap/assets/claude/agents"
+    root_files = sum(len((root / "harness-bootstrap/assets/root" / n).read_text(
+        encoding="utf-8", errors="replace")) for n in ("AGENTS.md", "CLAUDE.md"))
     out: dict[str, int] = {}
     for seat in SEATS:
-        f = agents / f"{seat}.md"
-        if not f.is_file():
-            f = agents / "dev-agent.md"  # app-dev is instantiated from the dev-agent template
-        out[seat] = len(f.read_text(encoding="utf-8", errors="replace")) + always
+        body = len(seat_file(seat).read_text(encoding="utf-8", errors="replace"))
+        omit = frontmatter(seat).get("omitClaudeMd", "").lower() == "true"
+        out[seat] = body + always + (0 if omit else root_files)
     return out
 
 
@@ -138,11 +164,15 @@ def cost_of(alloc: dict, sysb: dict[str, int]) -> tuple[float, dict]:
         out_tok = tok(w["write_kb"] * 1024) * EFFORT_MULT[effort]
 
         # Each turn re-sends system + everything read so far. Approximate the growing prefix as
-        # linear: turn i carries sys + read*(i/turns). Sum over turns.
+        # linear: turn i carries sys + read*(i/turns). What turn i adds is written to the cache;
+        # what it re-sends from earlier turns is read from it.
         n = w["turns"]
         in_tok = sum(sys_tok + read_tok * (i / n) for i in range(1, n + 1))
+        written = sys_tok + read_tok
+        cached = in_tok - written
+        in_usd = (written * CACHE_WRITE + cached * CACHE_READ) / 1e6 * p["in"]
 
-        c = in_tok / 1e6 * p["in"] + out_tok / 1e6 * p["out"]
+        c = in_usd + out_tok / 1e6 * p["out"]
         total += c
         per_seat[seat] = {"model": model, "effort": effort,
                           "in_tokens": round(in_tok), "out_tokens": round(out_tok),
@@ -155,8 +185,7 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
-    root = pathlib.Path(__file__).resolve().parent.parent
-    sysb = system_prompt_bytes(root)
+    sysb = system_prompt_bytes(ROOT)
 
     rows = []
     for name, alloc in PROFILES.items():
@@ -169,6 +198,7 @@ def main() -> int:
     if a.json:
         print(json.dumps({"prices": PRICES, "assumptions": {
             "chars_per_token": CHARS_PER_TOKEN, "effort_mult": EFFORT_MULT,
+            "cache_write": CACHE_WRITE, "cache_read": CACHE_READ,
             "workload": WORKLOAD}, "rows": rows}, indent=2))
         return 0
 

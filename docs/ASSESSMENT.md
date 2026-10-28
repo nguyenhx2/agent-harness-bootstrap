@@ -16,7 +16,7 @@ when a file or a runnable script in this repo backs it. Anything else is marked 
 | Pillar | Status | Evidence, or the gap |
 |---|---|---|
 | Models are commoditising | Acted on | `reference/cost-model.md` uses current pricing: Opus is 1.67x Sonnet, not 5x. Tier choice pays at the cheap end (Haiku), not between Opus and Sonnet. |
-| Advantage is the harness | Delivered, re-runnable | `eval/guardrail_eval.py` fires 312 payloads (134 must-block, 178 must-allow) at a scaffolded harness: 312/312 per hook flavour, 624/624 for `sh` and `ps1` together. No model is consulted. |
+| Advantage is the harness | Delivered, re-runnable | `eval/guardrail_eval.py` fires 314 payloads (134 must-block, 180 must-allow) at a scaffolded harness: 314/314 per hook flavour, 628/628 for `sh` and `ps1` together. No model is consulted. |
 | ROI | Half delivered | Cost per roster is modelled (`benchmark/model_cost.py`) and the harness's own overhead is measured (`benchmark/RESULTS.md`). Value per feature is only starting to be measured. See Gap 3. |
 | Privacy | Delivered | `security-privacy.md`, enforced by `protect-secrets` and `settings.json` deny rules, both in the eval. Audit mode mounts product source read-only. |
 | Governance: IP | Delivered | `ip-compliance.md`: licence allow/deny by family, the AGPL-on-SaaS trigger, provenance of reproduced blocks, a diff check for reviewers. |
@@ -139,7 +139,7 @@ table. A vendor swap would then be a one-file edit and a re-run.
 ## Gap 3 - ROI has no numerator yet
 
 The repo measures what the harness costs. `benchmark/model_cost.py` puts a sonnet-only roster at
-0.80x the default and haiku-only at 0.26x. It cannot say whether the cheaper output is worth
+0.85x the default and haiku-only at 0.26x. It cannot say whether the cheaper output is worth
 shipping, and that is the question the thesis rests on.
 
 `eval/guardrail_eval.py` measures the floor: what a model is prevented from doing. v1.21.0 adds
@@ -177,7 +177,7 @@ and fails past a drift threshold. Not the bootstrap itself, which must not need 
 
 ## What the repo supports today
 
-1. **Safety does not depend on the model.** 290/290 per hook flavour, re-runnable, on a harness
+1. **Safety does not depend on the model.** 314/314 per hook flavour, re-runnable, on a harness
    scaffolded with `hooks_strict`, `long` and `db` on.
 2. **The hooks are proven in real sessions, not only on scripted payloads.** v1.20.1 ran them inside
    `claude -p` and fixed the four holes that only showed up there. The eval now runs the `ps1`
@@ -188,12 +188,12 @@ and fails past a drift threshold. Not the bootstrap itself, which must not need 
 4. **Cost is a decision.** Every seat carries an explicit `model:` and `effort:`. The default roster
    spends more than sonnet-only on Opus review gates. That is a stated bet, and the cost table lets
    you take the other side.
-5. **Proportion is enforced.** The tier table sends small work Inline or Direct. The verification
+5. **Proportion is enforced.** The tier table gives small work one check and requires tests and the independent review only on Guarded changes. The verification
    ledger refuses a review or suite re-run on content that already passed, a third review round, an
    identical brief, or a dispatch past the task's budget.
 6. **The spawn boundary is a gate.** `guard-agent-spawn` blocks a seat outside the roster, a model
    override, and a write-capable dispatch with neither a `TASK-NNN` nor a `TIER: direct` /
-   `TIER: standard` marker.
+   `TIER: standard` marker (the opt-in `orchestrator` is exempt, since it registers tasks).
 7. **The harness is maintained, not dropped.** `/harness-update` never overwrites a differing file.
    `/harness-tune` changes a dial only after showing the diff. Both end on `harness-check.py`.
 

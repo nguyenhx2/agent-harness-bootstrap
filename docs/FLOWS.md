@@ -157,7 +157,7 @@ flowchart TD
     MISS["Unresolved variable"]
     REC["Reconcile by hand"]
     GAP["Author judgment files"]
-    WIRE["Wire orchestration"]
+    WIRE["Seed the board"]
 
     ROSTER --> SK --> OS --> VARS --> DRY --> SC
     SC --> ADDED
@@ -184,7 +184,7 @@ flowchart TD
 
 | Step | What it decides |
 |---|---|
-| Roster | The purpose sets the base. Code: orchestrator, review gate, `spec-guardian`, dev agents (preset S/M/L). Research, strategy, docs: three to five seats with a `checker`. Every seat gets explicit `model`, `effort`, `tools` and `maxTurns`. |
+| Roster | The purpose sets the base. Code: the opt-in orchestrator, review gate, `spec-guardian`, dev agents (preset S/M/L). Research, strategy, docs: three to five seats with a `checker`. Every seat gets explicit `model`, `effort`, `tools` and `maxTurns`. |
 | Skills | Runs only when the questionnaire asks. Each candidate's files are read; nothing installs without its own tick. `/skill-wire` maps a skill to a seat, `/new-skill` creates one when nothing fits. |
 | Dev OS | Windows gets `.ps1` hooks, macOS and Linux `.sh`. Exactly one of the `windows` / `posix` flags. |
 | `vars.json` | `vars` (names, commands, globs), `flags` and `modules` (one module `CLAUDE.md` each, 40 lines at most). Flags: the four `purpose_*`, then `ui`, `db`, `db_engineer`, `db_seeder`, `ai`, `audit`, `tdd`, `ddd`, `light`, `unit`, `e2e`, `tests`, `deploy_ask`, `long`, `solo_review`, `merge_gate`, `hooks_strict`, `terse`, `rtk`, `pr_cli`, `target_cursor`, `target_codex`. |
@@ -207,7 +207,7 @@ flowchart TD
     SM["Smoke-test one task"]
     MAPS["Build the maps"]
     PORT["Port to Cursor, Codex"]
-    DONE(["Runs under orchestration"])
+    DONE(["Harness in place"])
 
     GATE -->|"a check fails"| FIX --> GATE
     GATE -->|"all green"| HC --> HK --> SM --> MAPS --> PORT --> DONE
@@ -246,7 +246,7 @@ panel shows how the generated pieces hold each other in check.
 
 - **The model authors only what cannot be templated:** the routing table, each dev agent's scope and
   the three project-specific rules. Everything else is a file copy.
-- **No seat is trusted on its own.** The orchestrator routes but cannot write outside `docs/` and
+- **No seat is trusted on its own.** The opt-in orchestrator plans and dispatches but cannot write outside `docs/` and
   `.claude/`. Reviewers gate but hold no `Edit` or `Write`. The board records only what the session
   log can prove. The hooks bind every agent, including the one dispatching them.
 
@@ -354,8 +354,9 @@ Re-running on an unchanged repo is idempotent: everything comes back `KEPT`.
 
 ### 4a. Pick the tier first
 
-Not every change runs the full flow. The tier table in the generated `AGENTS.md` decides, before
-anything is dispatched, how much process a request gets.
+The main session does the work at every tier, inside one repository and one domain - auth and schema
+included. The tier table in the generated `AGENTS.md` decides, before anything is written, how much
+checking a request gets.
 
 ```mermaid
 flowchart TD
@@ -365,36 +366,53 @@ flowchart TD
     DI["Direct"]
     ST["Standard"]
     GU["Guarded"]
+    WORK["Main session does the work"]
+    GATE["Tests + independent review, required"]
 
     REQ --> T
     T -->|"small, seen whole"| IN
     T -->|"one module"| DI
     T -->|"one domain"| ST
-    T -->|"risky or multi-seat"| GU
+    T -->|"schema, auth, money, contract, migration, deploy, PII"| GU
+    IN --> WORK
+    DI --> WORK
+    ST --> WORK
+    GU --> WORK
+    WORK -.->|"Guarded only"| GATE
 
     classDef mod fill:#5A189A,stroke:#240046,stroke-width:1px,color:#E0AAFF
     classDef hum fill:#1D3557,stroke:#0B1B2B,stroke-width:1px,color:#A8DADC
     classDef gate fill:#9D0208,stroke:#370617,stroke-width:1px,color:#FFBA08
 
     class REQ,T hum
-    class IN,DI,ST mod
-    class GU gate
+    class IN,DI,ST,WORK mod
+    class GU,GATE gate
 ```
 
-| Tier | When | Who does it | Task file |
-|---|---|---|---|
-| Inline | A question, a lookup, a small edit | The main session, no subagent | No |
-| Direct | One module, reversible | The owning agent, called straight | No - the prompt carries `TIER: direct` |
-| Standard | One domain, several files | The owning agent | Only if it must survive compaction - else `TIER: standard` |
-| Guarded | Two or more seats in order, or schema, auth, money, a public contract, a migration, a deploy, personal data | `orchestrator` | Yes, registered |
+| Tier | The change | What it adds |
+|---|---|---|
+| Inline | A question, a lookup, a small edit seen whole | One check of the thing changed |
+| Direct | One module, reversible | Prove each criterion yourself and say how |
+| Standard | One domain, several files, or an FR behind it | The tests over what changed (a hand check without a suite); a task file only if the work must survive compaction |
+| Guarded | Schema, auth, money, a public contract, a migration, a deploy, personal data | The gate below - required, never skipped |
 
-`guard-agent-spawn` accepts the `TIER:` line in place of a `TASK-NNN` for a write-capable seat.
-A heavier tier than the change needs is a defect, not caution. For a long Guarded mission the session
-can start as the orchestrator itself: `claude --agent orchestrator`.
+A heavier tier than the change needs is a defect, not caution; a lighter one for a Guarded change is
+the failure the table exists to prevent.
 
-The rest of this section is the **Guarded** flow, split into three sequences. The roster shown is
-the default (`tests` set, split reviewers). Without `tests`, `qa-test` and its gate do not exist.
-With `solo_review`, one `reviewer` seat replaces the two reviewers.
+A subagent is dispatched by default only for three things: the independent read-only reviewer
+(required on a Guarded change, or on request), a large read that returns a summary, and independent
+parallel batches. The main session waits for every dispatch and checks its result before the final
+answer. A seat that can write (the dev agents, `qa-test`, `ba-analyst`, `data-modeler`, `writer`)
+still ships, but runs only when the user names it. `guard-agent-spawn` refuses such a dispatch unless
+the prompt carries a `TASK-NNN` or `TIER: direct` / `TIER: standard`; the `orchestrator` is exempt,
+since it registers the tasks.
+
+The `orchestrator` is opt-in: it runs only when the user asks for it, for a mission across several
+domains or repositories. No tier routes to it.
+
+The rest of this section is the **Guarded** gate for code, split into three sequences. The roster
+shown is the default (`tests` set, split reviewers). Without `tests`, `qa-test` and its gate do not
+exist. With `solo_review`, one `reviewer` seat replaces the two reviewers.
 
 ### 4b. Register the task and lock the contract
 
@@ -402,26 +420,21 @@ With `solo_review`, one `reviewer` seat replaces the two reviewers.
 sequenceDiagram
     autonumber
     actor User
-    participant Orch as orchestrator
+    participant Main as main session
     participant Board as task board
     participant Spec as spec-guardian
 
-    User->>Orch: Mission: implement FR-07
-    Orch->>Board: task.py resume, task.py check
-    Board-->>Orch: Unfinished work first
-    Orch->>Board: task.py new - status Planned
-    Orch->>Board: task.py log - first row
-    Orch->>Spec: Lock scope and criteria
+    User->>Main: /implement-fr FR-07
+    Main->>Spec: Lock scope and criteria
     Note over Spec: Read-only, no Bash
-    Spec-->>Orch: Contract locked, or drift
-    Orch->>Board: task.py move - Active
+    Spec-->>Main: Contract locked, or drift
+    Main->>Board: /new-task - status Planned
+    Main->>Board: task.py move - Active
 ```
 
-- The session-start scan is a procedure in the orchestrator's body, not a hook. Human-gate rows
-  come first, then Active and Blocked.
 - `task.py` is the only way a status moves. It writes the task file's frontmatter, its folder and
   its master-plan row together and reads the row back. `guard-board` blocks a hand edit of a row.
-- `spec-guardian` runs once per mission, before any code. The FR must be `Confirmed` in
+- `spec-guardian` runs once per FR, before any code. The FR must be `Confirmed` in
   `docs/specs/index.json`.
 
 ### 4c. Build on a branch
@@ -429,21 +442,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Orch as orchestrator
-    participant Dev as domain-dev
+    participant Main as main session
     participant Hooks as hooks
     participant Board as task board
 
-    Orch->>Dev: Dispatch TASK-NNN in a worktree
-    Note over Dev: Design first, tests with the code
-    Dev->>Hooks: Edit / Write
-    Hooks-->>Dev: Allowed - exit 0
-    Dev->>Hooks: git commit on main
-    Hooks-->>Dev: BLOCKED - exit 2
-    Dev->>Hooks: Branch, then commit
-    Hooks-->>Dev: Message valid - exit 0
-    Dev->>Board: task.py log, checkpoint
-    Dev-->>Orch: Done - a claim, not a fact
+    Note over Main: Read the module CLAUDE.md, design first
+    Main->>Hooks: Edit / Write
+    Hooks-->>Main: Allowed - exit 0
+    Main->>Hooks: git commit on main
+    Hooks-->>Main: BLOCKED - exit 2
+    Main->>Hooks: Branch, then commit
+    Hooks-->>Main: Message valid - exit 0
+    Main->>Board: task.py checkpoint
 ```
 
 | Hook | Event | Does |
@@ -454,39 +464,41 @@ sequenceDiagram
 | `specs-reminder`, `graph-stale` | PostToolUse | Remind about specs; name a cross-module import the boundary map does not list |
 
 A hook that blocks you is a rule you were about to break; never route around it with a shell
-equivalent. While building, a dev agent runs only the tests that touch what it changed. The full
-suite runs once, at the gate.
+equivalent. The routing table names the owner of the area: the main session reads that module's
+`CLAUDE.md` and the rules for its paths, states the design in the task file, and ships the tests
+with the code. While building it runs only the tests that touch what it changed. The full suite runs
+once, at the gate.
 
-### 4d. Gate once, then merge and close
+### 4d. Gate once, then hand over
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Orch as orchestrator
+    participant Main as main session
     participant Plan as verify-plan.py
-    participant QA as qa-test
     participant Rev as reviewers
     participant Board as task board
+    actor Human
 
-    Orch->>Plan: Gates for this diff?
-    Plan-->>Orch: Required or skipped
-    Note over Orch: /secret-scan, always
-    Orch->>QA: Full suite, once
-    QA-->>Orch: Green
-    Orch->>Rev: Code + security, parallel
-    Rev-->>Orch: Pass or findings
-    Note over Orch,Rev: Two rounds at most
-    Orch->>Board: task.py gate
-    Note over Orch: Merge on live tip
-    Orch->>Board: task.py move - Done
-    Orch->>Board: MISSION COMPLETE row
+    Main->>Plan: Gates for this diff?
+    Plan-->>Main: Required or skipped
+    Note over Main: /secret-scan, always
+    Note over Main: Full suite, once
+    Main->>Rev: Code + security, parallel, read-only
+    Rev-->>Main: Pass or findings
+    Note over Main,Rev: Two rounds at most
+    Main->>Board: task.py gate
+    Main->>Human: Reviewed PR, evidence map
+    Note over Human: The human merges
 ```
 
-- **The gate runs once, on the branch, at the pull-request boundary** - not after each agent. A
-  reviewer per agent re-reads the same files and reports the same findings each time.
+- **The gate runs once, on the branch, at the pull-request boundary** - not after each step. A
+  reviewer per step re-reads the same files and reports the same findings each time.
 - **What runs is decided by the diff.** `verify-plan.py` prints each gate as required or skipped
   with the reason; a docs-only change needs the secret scan and nothing else. The verification
   ledger skips a gate that passed on these exact bytes and narrows one whose files changed.
+- **The independent review is required on a Guarded change.** `/review-changes` is never skipped
+  for one, however small; `/db-migration` ends in the same gate.
 - **`guard-agent-spawn` enforces it at dispatch time.** It refuses a re-run on content that passed,
   a third review round, an identical brief, and a dispatch past the task's budget
   (`dispatch_budget`, default 24).
@@ -496,17 +508,17 @@ sequenceDiagram
 - **A gate counts only when its row exists.** `task.py gate` writes the ledger line and the
   session-log row in one step. "All gates green" over a log with no reviewer rows is the classic
   failure.
-- **Merge rules:** one merger, serialized, against the live mainline tip; diff with three dots;
-  union on shared lists, never `--ours` or `--theirs`. The optional `merge-manager` seat does this
-  when fielded; otherwise the orchestrator does.
-- **Close-out:** remove the worktree, delete the merged branch, then write the `MISSION COMPLETE`
-  row. Marker present and silent means finished; no marker and silent means crashed - resume from
-  the files.
+- **Nothing in this flow merges on its own.** `/review-changes` does not merge and does not deploy.
+  The human merges; with the `merge_gate` flag, the optional `merge-manager` seat does, one pull
+  request at a time against the live mainline tip.
+- **A mission across several domains or repositories** is where the opt-in `orchestrator` comes in:
+  it scans the board at session start (`task.py resume`, `task.py check`), plans and dispatches the
+  seats, and records state in `docs/tasks/`. It never merges either.
 
-**Cost:** the orchestrator, the reviewers and the debugger are Opus seats; the dev agents,
-`qa-test` and `spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are
-Haiku at `low` effort. The hooks are shell scripts and cost nothing, and they are the only
-participant that can say no.
+**Cost:** the reviewers and the debugger are Opus seats; the dev agents, `qa-test` and
+`spec-guardian` are Sonnet; the mechanical seats (`history-tracker`, `db-seeder`) are Haiku at
+`low` effort. The hooks are shell scripts and cost nothing, and they are the only participant that
+can say no.
 
 ## 5. spec-builder
 
@@ -670,7 +682,7 @@ Three more levers:
 
 ## 7. Delivery commands, command by command
 
-The commands a dev agent or the orchestrator runs while building the product. Commands that adjust
+The commands the main session runs while building the product. Commands that adjust
 the harness itself are in [`TUNING.md`](TUNING.md).
 
 ```mermaid
@@ -746,21 +758,22 @@ business logic; no slug. **Ships:** `purpose_code`.
 
 #### `/implement-fr <FR-id>`
 
-The Guarded flow of section 4, for one FR. If the work turns out to be Direct, it says so and hands
-it to the owning agent. With no argument it lists the FRs that are Confirmed, decided yes, and have
+The Guarded gate of section 4, for one FR, run by the main session. If the work turns out to be
+Direct, it says so and does it at that tier. With no argument it lists the FRs that are Confirmed, decided yes, and have
 no open issues or task, and asks.
 
 1. Reads the FR's entry in `docs/specs/index.json` and only its block. **Stops unless it says
    `Confirmed` and `yes`.**
 2. `spec-guardian` locks scope and criteria; an FR with no observable criteria stops here.
-3. Registers via `/new-task`, moves it to Active, assigns the owner from the routing table.
+3. Registers via `/new-task`, moves it to Active, and implements in the main
+   session. The routing table names the area owner; that seat is dispatched only if the user asked.
 4. Design pass in the task file, then code: test-first under TDD, tests in the same change under
    DDD, a hand-verification note per criterion where there is no suite.
 5. Once the whole FR is done, `/review-changes TASK-NNN` once.
 6. Closes with an evidence map - one line per `AC-nn.n` naming the test, command or screen - and the
    checkpoint.
 
-**Writes:** session-log rows, the checkpoint, the code (via the dev agent). **Refuses:** an FR that
+**Writes:** session-log rows, the checkpoint, the code (in the main session). **Refuses:** an FR that
 is not Confirmed; deploying; skipping the review gate, even under Lightweight; a criterion with no
 evidence. **Ships:** `purpose_code`.
 
@@ -919,7 +932,7 @@ row; closing on a claim of a fix - only a clean re-check sets `Verified`; applyi
 | `/new-adr` | ADR file, ADR index row | Always |
 | `/new-spec-section` | Spec section, revision-history row | `purpose_code` |
 | `/scaffold-feature` | Skeleton files, routing row for a new domain | `purpose_code` |
-| `/implement-fr` | Log rows, checkpoint, code via the dev agent | `purpose_code` |
+| `/implement-fr` | Log rows, checkpoint, code in the main session | `purpose_code` |
 | `/db-migration` | Migration, ERD and dictionary, seed script, tool-changelog | `db` |
 | `/seed-db` | Rows in the local database only | `db` + `db_seeder` |
 | `/test` | Log row (pass/fail, coverage) | `tests` |

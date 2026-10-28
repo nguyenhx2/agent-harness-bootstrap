@@ -5,7 +5,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 Every release ships installable `.zip` artifacts with a `VERSION` file inside each skill. See
 [`docs/RELEASING.md`](docs/RELEASING.md).
 
-## v1.22.1
+## v1.23.0
+
+One agent loop by default. An external audit and benchmark of v1.22.1 (155 headless sessions over
+eight repositories: a Python fixture, three client codebases and four open-source projects in
+TypeScript, Go, Java and .NET) found that, for work inside one repository and one domain, auth and
+schema changes included, the main session with skills matched or beat routing work to writing
+seats and the orchestrator on every task, at a fraction of the cost and wall time. Every failure of
+the shipped routing came from two defects on the orchestrator path. So the generated harness now
+has the main session do the work at every tier. A Guarded change - schema, auth, money, personal
+data, a public contract, a migration, a deploy - requires tests and the independent read-only
+review. Subagents are kept where they earn their context: that reviewer, a large read that returns
+a summary, and independent parallel batches. Writing seats still ship and run when the user names
+one. The orchestrator is opt-in, for missions across several domains or repositories, and its two
+defects are fixed. The benchmark now counts subagent tokens and wall-clock time, and the
+repository validates in the Claude plugin directory.
 
 Ready for two more ways in. Each skill folder is now a plugin the Claude plugin directory accepts:
 a generated `.claude-plugin/plugin.json`, a square icon rendered from the project mark, and a

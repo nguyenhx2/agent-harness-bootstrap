@@ -5,9 +5,10 @@ argument-hint: <FR-id> (e.g. FR-03)
 
 Implement functional requirement **$1**.
 
-This is the Guarded flow from `AGENTS.md`: it locks scope, registers a task, and ends at the branch
-gate. That is right for an FR and wrong for a one-module fix - if the work turns out to be Direct,
-say so and hand it to the owning agent instead of running the ceremony around it.
+This is the Guarded gate from `AGENTS.md`, run by the main session: it locks scope, registers a
+task, and ends at the branch gate. That is right for an FR and wrong for a one-module fix - if the
+work turns out to be Direct, say so and do it at that tier instead of running the ceremony around
+it.
 
 A change that leaves every criterion's outcome unchanged needs no FR work at all; new behaviour
 inside an FR already agreed needs one appended criterion, not this flow. Use it for a new promise:
@@ -30,9 +31,13 @@ no `open_issues` and no `tasks`, and ask which one to implement. Do not guess.
    escalate.
 3. Register the work with `/new-task` (it starts `Planned`), then
    `python .claude/scripts/task.py move TASK-NNN Active` when implementation begins.
-4. Assign the specialist agent per the routing table:
+4. Implement it in this session. The routing table names the area's owner:
 
 {{ROUTING_TABLE}}
+
+   Read that module's `CLAUDE.md` and the rules for its paths before the first edit. Dispatch the
+   owning seat instead only when the user asked for it, with the TASK-NNN in the brief, and wait
+   for its report.
 
 5. Design before code. Before the first line{{#IF_TDD}} or the first test{{/IF_TDD}} is written, state in the task file: the modules and
    types this change introduces or alters, the contract of each new interface, the edge cases the

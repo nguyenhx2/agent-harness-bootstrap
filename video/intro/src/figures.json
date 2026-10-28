@@ -1,5 +1,5 @@
 {
-  "eval_cases": 312,
+  "eval_cases": 314,
   "hooks": 27,
   "roster_min": 3,
   "roster_max": 17,
@@ -59,15 +59,15 @@
     },
     {
       "name": "Direct",
-      "who": "owning agent"
+      "who": "main session"
     },
     {
       "name": "Standard",
-      "who": "owning agent"
+      "who": "main session"
     },
     {
       "name": "Guarded",
-      "who": "orchestrator"
+      "who": "main session"
     }
   ]
 }
