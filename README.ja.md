@@ -15,6 +15,8 @@
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="エージェント 18 席と、モジュールごとの dev-agent テンプレート"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="フック 27 本"></a>
   <a href="https://hub.xerj.org/contributors/nguyenhx2"><img src="https://hub.xerj.org/contributors/nguyenhx2/badge.svg" alt="XERJ Corpus Hub コントリビューター"></a>
+  <a href="https://github.com/sponsors/nguyenhx2"><img src="https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa.svg" alt="GitHub Sponsors で支援する"></a>
+  <a href="https://buymeacoffee.com/nguyenhx2"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00.svg" alt="Buy Me a Coffee で支援する"></a>
 </p>
 
 実際のリポジトリに AI エージェントを載せると、失敗の仕方はだいたい決まっています。読むべきでないものを読み、
@@ -300,6 +302,11 @@ Marvel の作品は一切使っていません。いずれのプロジェクト�
 
 Issue と Pull Request を歓迎します。基準は「これでもまだ持ちこたえるか」で、それを判定するゲートは
 自動化されています: [`CONTRIBUTING.md`](CONTRIBUTING.md)。
+
+このスキルで時間が浮いたなら、[GitHub Sponsors](https://github.com/sponsors/nguyenhx2) または
+[Buy Me a Coffee](https://buymeacoffee.com/nguyenhx2) で保守を支援していただけます。
+
+<p><a href="https://buymeacoffee.com/nguyenhx2"><img src="docs/assets/bmc-button.svg" alt="Buy Me a Coffee で支援する" height="44"></a></p>
 
 ## ライセンス
 
