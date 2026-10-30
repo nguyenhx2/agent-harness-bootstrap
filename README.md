@@ -15,6 +15,8 @@
   <a href="harness-bootstrap/reference/roster.md"><img src="https://img.shields.io/badge/agents-18%20%2B%20dev%20template-blue.svg" alt="18 agents, plus a per-module dev-agent template"></a>
   <a href="harness-bootstrap/assets/claude/hooks/README.md"><img src="https://img.shields.io/badge/hooks-27-blue.svg" alt="27 hooks"></a>
   <a href="https://hub.xerj.org/contributors/nguyenhx2"><img src="https://hub.xerj.org/contributors/nguyenhx2/badge.svg" alt="XERJ Corpus Hub contributor"></a>
+  <a href="https://github.com/sponsors/nguyenhx2"><img src="https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ea4aaa.svg" alt="Sponsor on GitHub Sponsors"></a>
+  <a href="https://buymeacoffee.com/nguyenhx2"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00.svg" alt="Support on Buy Me a Coffee"></a>
 </p>
 
 An AI agent on a real repository fails in predictable ways: it reads what it should not, edits what
@@ -314,6 +316,12 @@ used. None of these projects endorse this one.
 
 Issues and pull requests are welcome. The bar is "does this still hold up", and the gates that
 answer it are automated: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+If this skill saves you time, you can support its upkeep through
+[GitHub Sponsors](https://github.com/sponsors/nguyenhx2) or
+[Buy Me a Coffee](https://buymeacoffee.com/nguyenhx2).
+
+<p><a href="https://buymeacoffee.com/nguyenhx2"><img src="docs/assets/bmc-button.svg" alt="Buy me a coffee" height="44"></a></p>
 
 ## License
 
